@@ -1,0 +1,490 @@
+/* Import luxury design tokens */
+@import './styles/design-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Base Layer
+ * 
+ * Mobile Optimizations:
+ * - Smooth font rendering
+ * - Tap highlight color removed
+ * - Better text legibility on mobile
+ * - Prevent text size adjustments
+ * 
+ * RTL Support:
+ * - Direction automatically set via i18n config on <html dir="rtl/ltr">
+ * - Logical properties used throughout for proper mirroring
+ */
+@layer base {
+  /* Luxury base styling */
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-stone-50);
+    color: var(--color-stone-900);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Premium typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: var(--font-semibold);
+    letter-spacing: -0.01em;
+    color: var(--color-stone-950);
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+    line-height: var(--leading-tight);
+  }
+
+  h2 {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+  }
+
+  h4 {
+    font-size: var(--text-xl);
+    line-height: var(--leading-snug);
+  }
+
+  p {
+    line-height: var(--leading-relaxed);
+  }
+
+  /* Prevent text size adjustment on mobile */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better tap target for links and buttons */
+  a, button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling with respect to prefers-reduced-motion */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Disable smooth scroll for reduced-motion users */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /**
+   * RTL Support - Base Elements
+   */
+  html[dir="rtl"] body {
+    text-align: start;
+  }
+}
+
+/**
+ * Component Layer
+ * 
+ * Mobile-First Button Styles:
+ * - Minimum 44px touch targets
+ * - Active states for touch feedback
+ * - Responsive padding
+ */
+@layer components {
+  /* === Luxury Button Styles === */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--btn-padding-x-md);
+    min-height: var(--btn-height-md);
+    border-radius: var(--radius-lg);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    line-height: 1;
+    transition: all var(--transition-base);
+    cursor: pointer;
+    border: none;
+    outline: none;
+    user-select: none;
+  }
+
+  .btn:focus-visible {
+    ring: 2px;
+    ring-offset: 2px;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-wine-600) 0%, var(--color-wine-700) 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--color-wine-700) 0%, var(--color-wine-800) 100%);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary:focus-visible {
+    ring-color: var(--color-wine-400);
+  }
+
+  .btn-secondary {
+    background-color: white;
+    color: var(--color-stone-700);
+    border: 1.5px solid var(--color-stone-300);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-stone-50);
+    border-color: var(--color-stone-400);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-secondary:focus-visible {
+    ring-color: var(--color-stone-400);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-stone-700);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-stone-100);
+  }
+
+  .btn-danger {
+    background-color: var(--color-error);
+    color: white;
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: #a04545;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .btn-sm {
+    padding: var(--space-2) var(--btn-padding-x-sm);
+    min-height: var(--btn-height-sm);
+    font-size: var(--text-sm);
+  }
+
+  .btn-lg {
+    padding: var(--space-4) var(--btn-padding-x-lg);
+    min-height: var(--btn-height-lg);
+    font-size: var(--text-lg);
+  }
+
+  /* === Luxury Input Styles === */
+  .input {
+    width: 100%;
+    height: var(--input-height);
+    padding: 0 var(--input-padding-x);
+    background-color: white;
+    border: 1.5px solid var(--color-stone-300);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 16px; /* Prevents iOS zoom */
+    color: var(--color-stone-900);
+    transition: all var(--transition-base);
+  }
+
+  .input::placeholder {
+    color: var(--color-stone-400);
+  }
+
+  .input:hover {
+    border-color: var(--color-stone-400);
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-wine-500);
+    box-shadow: 0 0 0 3px var(--color-wine-100);
+  }
+
+  .input:disabled {
+    background-color: var(--color-stone-100);
+    cursor: not-allowed;
+  }
+
+  /* === Luxury Card Styles === */
+  .card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-stone-200);
+    box-shadow: var(--shadow-sm);
+    padding: var(--card-padding-md);
+    transition: all var(--transition-base);
+  }
+
+  .card-hover {
+    cursor: pointer;
+  }
+
+  .card-hover:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: var(--color-stone-300);
+  }
+
+  @media (max-width: 640px) {
+    .card {
+      padding: var(--card-padding-sm);
+    }
+  }
+
+  /* === Premium Badges === */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .badge-wine {
+    background-color: var(--color-wine-100);
+    color: var(--color-wine-800);
+  }
+
+  .badge-success {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+  }
+
+  .badge-warning {
+    background-color: var(--color-warning-light);
+    color: #9d7b23;
+  }
+
+  .badge-error {
+    background-color: var(--color-error-light);
+    color: var(--color-error);
+  }
+
+  .badge-info {
+    background-color: var(--color-info-light);
+    color: var(--color-info);
+  }
+
+  .badge-neutral {
+    background-color: var(--color-stone-100);
+    color: var(--color-stone-700);
+  }
+}
+
+/**
+ * Utilities Layer
+ * 
+ * Custom mobile-specific utilities + RTL support
+ */
+@layer utilities {
+  /* Fade in animation for dropdowns and modals */
+  .animate-fadeIn {
+    animation: fadeIn 0.15s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Safe area for notched devices (iPhone X+) */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Touch-friendly scrolling */
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbar but keep scrolling functionality */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+
+  /**
+   * RTL-Specific Utilities
+   * 
+   * Logical properties that automatically flip in RTL:
+   * - Use these instead of hardcoded left/right
+   * - Tailwind handles most cases, these are for edge cases
+   */
+  
+  /* Text alignment using logical properties */
+  .text-start {
+    text-align: start; /* left in LTR, right in RTL */
+  }
+  
+  .text-end {
+    text-align: end; /* right in LTR, left in RTL */
+  }
+
+  /* Flip icons/arrows in RTL */
+  html[dir="rtl"] .flip-rtl {
+    transform: scaleX(-1);
+  }
+
+  /* Keep certain elements LTR even in RTL context (e.g., numbers, prices) */
+  .ltr-content {
+    direction: ltr;
+    text-align: left;
+  }
+
+  /* Force RTL for specific elements */
+  .rtl-content {
+    direction: rtl;
+    text-align: right;
+  }
+
+  /**
+   * Logical Property Utilities
+   * 
+   * Use these when Tailwind's built-in classes don't handle RTL properly
+   */
+  
+  /* Margin inline (start/end instead of left/right) */
+  .ms-2 {
+    margin-inline-start: 0.5rem; /* 8px */
+  }
+  
+  .me-2 {
+    margin-inline-end: 0.5rem; /* 8px */
+  }
+
+  .ms-3 {
+    margin-inline-start: 0.75rem; /* 12px */
+  }
+  
+  .me-3 {
+    margin-inline-end: 0.75rem; /* 12px */
+  }
+
+  .ms-4 {
+    margin-inline-start: 1rem; /* 16px */
+  }
+  
+  .me-4 {
+    margin-inline-end: 1rem; /* 16px */
+  }
+
+  /* Padding inline */
+  .ps-2 {
+    padding-inline-start: 0.5rem;
+  }
+  
+  .pe-2 {
+    padding-inline-end: 0.5rem;
+  }
+
+  .ps-3 {
+    padding-inline-start: 0.75rem;
+  }
+  
+  .pe-3 {
+    padding-inline-end: 0.75rem;
+  }
+
+  .ps-4 {
+    padding-inline-start: 1rem;
+  }
+  
+  .pe-4 {
+    padding-inline-end: 1rem;
+  }
+
+  /* Border inline */
+  .border-s {
+    border-inline-start: 1px solid;
+  }
+  
+  .border-e {
+    border-inline-end: 1px solid;
+  }
+
+  /* Positioning inline */
+  .start-0 {
+    inset-inline-start: 0;
+  }
+  
+  .end-0 {
+    inset-inline-end: 0;
+  }
+
+  .start-2 {
+    inset-inline-start: 0.5rem;
+  }
+  
+  .end-2 {
+    inset-inline-end: 0.5rem;
+  }
+
+  .start-4 {
+    inset-inline-start: 1rem;
+  }
+  
+  .end-4 {
+    inset-inline-end: 1rem;
+  }
+}
+

@@ -1,0 +1,277 @@
+/**
+ * Label Capture Component
+ * 
+ * Camera/upload interface for capturing wine label photos
+ * 
+ * Features:
+ * - Mobile: Triggers camera via input[capture]
+ * - Desktop: Standard file upload
+ * - Image preview
+ * - Loading state while processing
+ * - Error handling with retry
+ */
+
+import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
+import { scanLabelImage } from '../services/labelScanService';
+import type { ExtractedWineData } from '../services/labelScanService';
+
+interface LabelCaptureProps {
+  onSuccess: (data: { imageUrl: string; extractedData: ExtractedWineData }) => void;
+  onCancel: () => void;
+}
+
+export function LabelCapture({ onSuccess, onCancel }: LabelCaptureProps) {
+  const { t } = useTranslation();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError(t('cellar.labelScan.errorInvalidFile'));
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t('cellar.labelScan.errorFileTooLarge'));
+      return;
+    }
+
+    setCurrentFile(file);
+    setError(null);
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleProcess = async () => {
+    if (!currentFile) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const result = await scanLabelImage(currentFile);
+      onSuccess(result);
+    } catch (err: any) {
+      console.error('Scan error:', err);
+      setError(err.message || t('cellar.labelScan.error'));
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRetake = () => {
+    setPreview(null);
+    setCurrentFile(null);
+    setError(null);
+    setIsProcessing(false);
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black z-50 flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 p-4 flex items-center justify-between bg-black/80 backdrop-blur-sm">
+          <button
+            onClick={onCancel}
+            className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+            disabled={isProcessing}
+            aria-label={t('common.cancel')}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h2 className="text-white font-semibold text-lg">
+            {t('cellar.labelScan.title')}
+          </h2>
+          <div className="w-10" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
+          {preview ? (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="max-w-md w-full"
+            >
+              {/* Preview */}
+              <div className="relative rounded-xl overflow-hidden shadow-2xl mb-6">
+                <img 
+                  src={preview} 
+                  alt="Label preview" 
+                  className="w-full h-auto"
+                />
+                {isProcessing && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                    <div className="text-center">
+                      <div 
+                        className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"
+                        style={{
+                          borderColor: 'white',
+                          borderTopColor: 'transparent',
+                        }}
+                      />
+                      <p className="text-white font-medium">
+                        {t('cellar.labelScan.processing')}
+                      </p>
+                      <p className="text-white/70 text-sm mt-2">
+                        {t('cellar.labelScan.processingHint')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Error */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-lg bg-red-500/20 border border-red-500/50 mb-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-red-200 text-sm flex-1">{error}</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Actions */}
+              {!isProcessing && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleRetake}
+                    className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors"
+                    style={{
+                      backgroundColor: 'var(--color-stone-700)',
+                      color: 'white',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-stone-600)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-stone-700)';
+                    }}
+                  >
+                    {error ? t('cellar.labelScan.tryAgain') : t('cellar.labelScan.retake')}
+                  </button>
+                  {!error && (
+                    <button
+                      onClick={handleProcess}
+                      className="flex-1 py-3 px-4 rounded-lg font-medium transition-all"
+                      style={{
+                        backgroundColor: 'var(--color-wine-500)',
+                        color: 'white',
+                        boxShadow: 'var(--glow-wine)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
+                      }}
+                    >
+                      {t('cellar.labelScan.usePhoto')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center max-w-md w-full"
+            >
+              {/* Icon */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <svg 
+                  className="w-24 h-24 mx-auto mb-6"
+                  style={{ color: 'var(--color-wine-400)' }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </motion.div>
+
+              {/* Instructions */}
+              <h3 className="text-white text-xl font-semibold mb-3">
+                {t('cellar.labelScan.instruction')}
+              </h3>
+              <p className="text-white/70 mb-8">
+                {t('cellar.labelScan.instructionDetail')}
+              </p>
+
+              {/* Capture Button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-primary btn-lg w-full"
+                style={{
+                  backgroundColor: 'var(--color-wine-500)',
+                  color: 'white',
+                  boxShadow: 'var(--glow-wine)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
+                }}
+              >
+                <svg className="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {t('cellar.labelScan.capture')}
+              </button>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment" // Triggers rear camera on mobile
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+

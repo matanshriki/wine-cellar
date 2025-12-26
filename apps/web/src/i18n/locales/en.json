@@ -1,0 +1,473 @@
+{
+  "app": {
+    "title": "Wine Cellar Brain",
+    "tagline": "Smart wine management & recommendations"
+  },
+  "nav": {
+    "cellar": "Cellar",
+    "tonight": "Tonight?",
+    "history": "History",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "createAccount": "Create Account",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "signIn": "Sign In",
+      "signUp": "Create Account",
+      "signInButton": "Sign In",
+      "createAccountButton": "Create Account",
+      "noAccount": "Don't have an account? Sign up",
+      "hasAccount": "Already have an account? Sign in",
+      "or": "OR",
+      "googleSignIn": "Sign in with Google",
+      "demo": {
+        "title": "Demo credentials:",
+        "email": "Email: demo@winecellarbrain.com",
+        "password": "Password: demo123"
+      }
+    },
+    "welcome": "Welcome back!",
+    "accountCreated": "Account created successfully!",
+    "authFailed": "Authentication failed",
+    "loggedOut": "Logged out successfully"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your account settings",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter your name",
+    "displayNameHint": "This is how you'll appear in the app",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "emailReadOnly": "Email cannot be changed",
+    "avatarUrl": "Avatar URL",
+    "avatarUrlHint": "Optional: Link to your profile picture",
+    "preferredLanguage": "Preferred Language",
+    "memberSince": "Member Since",
+    "accountInfo": "Account Information",
+    "userId": "User ID",
+    "authProvider": "Sign-in Method",
+    "editProfile": "Edit Profile",
+    "updateSuccess": "Profile updated successfully!",
+    "updateFailed": "Failed to update profile",
+    "notProvided": "Not provided",
+    "avatar": {
+      "title": "Profile Photo",
+      "description": "Upload a profile photo. It will be displayed across the app.",
+      "upload": "Upload Photo",
+      "uploading": "Uploading...",
+      "remove": "Remove",
+      "removed": "Photo removed",
+      "uploadSuccess": "Photo uploaded successfully",
+      "uploadFailed": "Failed to upload photo",
+      "removeFailed": "Failed to remove photo",
+      "removeConfirm": "Are you sure you want to remove your profile photo?",
+      "requirements": "JPG, PNG, or WebP. Max 5MB. Photo will be resized to 512x512.",
+      "errorNotImage": "Please select an image file",
+      "errorTooLarge": "Image is too large. Maximum size is 5MB"
+    },
+    "welcome": "Welcome, {{name}}",
+    "menu": {
+      "openMenu": "Open user menu",
+      "viewProfile": "View Profile"
+    },
+    "complete": {
+      "title": "Complete Your Profile",
+      "subtitle": "Please provide your name to continue",
+      "nameRequired": "Name is required",
+      "hint": "This is how you'll appear in the app",
+      "continue": "Continue",
+      "success": "Profile completed!",
+      "failed": "Failed to complete profile",
+      "required": "You must complete your profile to use the app"
+    }
+  },
+  "cellar": {
+    "title": "My Cellar",
+    "bottleCount_one": "{{count}} bottle",
+    "bottleCount_other": "{{count}} bottles",
+    "filteredCount": "{{count}} of {{total}} bottles",
+    "addBottleButton": "Add Bottle",
+    "importCsv": "Import CSV",
+    "empty": {
+      "title": "Your cellar is empty",
+      "subtitle": "Add your first bottle or import from CSV",
+      "addButton": "Add Bottle",
+      "importButton": "Import CSV"
+    },
+    "loading": "Loading your cellar...",
+    "search": {
+      "placeholder": "Search by name, producer, region, vintage...",
+      "clear": "Clear search",
+      "noResults": "No bottles found",
+      "noResultsHint": "Try adjusting your search or filters"
+    },
+    "filters": {
+      "label": "Filters",
+      "ready": "Ready to drink",
+      "aging": "Needs aging",
+      "analyzed": "Analyzed",
+      "clear": "Clear all"
+    },
+    "labelScan": {
+      "title": "Scan Label",
+      "instruction": "Center the wine label",
+      "instructionDetail": "Position the label within the frame and take a photo",
+      "capture": "Capture Photo",
+      "retake": "Retake",
+      "usePhoto": "Use Photo",
+      "tryAgain": "Try Again",
+      "processing": "Analyzing label...",
+      "processingHint": "This may take a few seconds",
+      "error": "Could not extract wine details. Please try again or enter manually.",
+      "errorInvalidFile": "Please select a valid image file",
+      "errorFileTooLarge": "Image is too large. Maximum size is 10MB"
+    },
+    "addBottle": {
+      "title": "Add Bottle",
+      "scanLabel": "Scan Label",
+      "scanLabelDesc": "Use your camera to scan the wine label",
+      "uploadPhoto": "Upload Photo",
+      "uploadPhotoDesc": "Choose a photo from your device",
+      "manualEntry": "Enter Manually",
+      "manualEntryDesc": "Fill in the details yourself"
+    },
+    "bottle": {
+      "vintage": "Vintage",
+      "region": "Region",
+      "grapes": "Grapes",
+      "quantity": "Quantity",
+      "rating": "Rating",
+      "analyze": "Analyze",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this bottle?",
+      "deleted": "Bottle deleted",
+      "deleteFailed": "Failed to delete bottle",
+      "markOpened": "Mark as Opened",
+      "markOpenedFailed": "Failed to mark bottle as opened"
+    },
+    "wineStyles": {
+      "red": "Red",
+      "white": "White",
+      "rose": "Rosé",
+      "sparkling": "Sparkling"
+    },
+    "readinessStatus": {
+      "Peak": "Peak",
+      "InWindow": "In Window",
+      "Approaching": "Approaching",
+      "TooYoung": "Too Young",
+      "PastPeak": "Past Peak",
+      "Unknown": "Unknown"
+    },
+    "analysis": {
+      "readiness": "Readiness",
+      "analyzing": "Analyzing...",
+      "complete": "Analysis complete!",
+      "failed": "Analysis failed"
+    },
+    "sommelier": {
+      "title": "Sommelier Notes",
+      "aiPowered": "AI-powered analysis",
+      "generate": "Generate Sommelier Notes",
+      "refresh": "Refresh analysis",
+      "failed": "Failed to generate analysis. Please try again.",
+      "whyThisAnalysis": "Why this analysis?",
+      "assumptions": "Assumptions",
+      "analyzedOn": "Analyzed on",
+      "status": {
+        "ready": "Ready to Drink",
+        "hold": "Hold for Aging",
+        "peak_soon": "Peak Soon"
+      },
+      "confidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence",
+        "low": "Low confidence"
+      }
+    }
+  },
+  "bottleForm": {
+    "addTitle": "Add Bottle",
+    "editTitle": "Edit Bottle",
+    "name": "Name",
+    "namePlaceholder": "e.g., Château Margaux",
+    "producer": "Producer",
+    "producerPlaceholder": "e.g., Château Margaux",
+    "vintage": "Vintage",
+    "vintagePlaceholder": "e.g., 2015",
+    "style": "Style",
+    "styles": {
+      "red": "Red",
+      "white": "White",
+      "rose": "Rosé",
+      "sparkling": "Sparkling"
+    },
+    "quantity": "Quantity",
+    "region": "Region",
+    "regionPlaceholder": "e.g., Bordeaux, France",
+    "grapes": "Grapes",
+    "grapesPlaceholder": "e.g., Cabernet Sauvignon, Merlot",
+    "rating": "Rating (0-100)",
+    "ratingPlaceholder": "e.g., 95",
+    "purchasePrice": "Purchase Price",
+    "purchasePricePlaceholder": "e.g., 50.00",
+    "notes": "Notes",
+    "notesPlaceholder": "Tasting notes, storage location, etc.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "update": "Update",
+    "saving": "Saving...",
+    "required": "Required",
+    "bottleAdded": "Bottle added!",
+    "bottleUpdated": "Bottle updated!",
+    "saveFailed": "Failed to save bottle"
+  },
+  "recommendation": {
+    "title": "What Should I Open Tonight?",
+    "subtitle": "Tell us about the occasion and we'll recommend the perfect bottle",
+    "form": {
+      "mealType": "What are you eating?",
+      "mealTypes": {
+        "any": "Any",
+        "pizza": "Pizza",
+        "steak": "Steak",
+        "pasta": "Pasta",
+        "fish": "Fish / Seafood",
+        "spicy_asian": "Spicy Asian",
+        "cheese": "Cheese",
+        "custom": "Something Else"
+      },
+      "occasion": "What's the occasion?",
+      "occasions": {
+        "any": "Any",
+        "casual": "Casual Night",
+        "date_night": "Date Night",
+        "hosting_friends": "Hosting Friends",
+        "celebration": "Celebration"
+      },
+      "vibe": "Desired vibe?",
+      "vibes": {
+        "any": "Any",
+        "easy_drinking": "Easy Drinking",
+        "crowd_pleaser": "Crowd Pleaser",
+        "special": "Something Special",
+        "surprise_me": "Surprise Me"
+      },
+      "preferences": "Preferences",
+      "avoidTooYoung": "Avoid wines that are too young",
+      "avoidTooYoungHelp": "Skip bottles that need more aging time",
+      "preferReadyToDrink": "Prefer ready-to-drink wines",
+      "preferReadyToDrinkHelp": "Prioritize wines at their peak drinking window",
+      "maxPrice": "Maximum price (optional)",
+      "maxPricePlaceholder": "e.g., 100",
+      "getRecommendations": "Get Recommendations",
+      "finding": "Finding recommendations..."
+    },
+    "results": {
+      "title": "Tonight's Recommendations",
+      "subtitle": "Based on your preferences",
+      "backToForm": "Back to form",
+      "score": "Score",
+      "whyThisBottle": "Why this bottle?",
+      "servingInstructions": "Serving Instructions",
+      "markAsOpened": "Mark as Opened",
+      "markConfirm": "Mark \"{{name}}\" as opened?",
+      "marked": "Bottle marked as opened! Enjoy! 🍷",
+      "markFailed": "Failed to mark as opened",
+      "noResults": "No matching bottles found. Try adjusting your preferences."
+    }
+  },
+  "history": {
+    "title": "History & Stats",
+    "subtitle": "Your wine tasting journey",
+    "loading": "Loading history...",
+    "unknownBottle": "Unknown Bottle",
+    "stats": {
+      "totalOpens": "Total Opens",
+      "averageRating": "Average Rating",
+      "favoriteStyle": "Favorite Style",
+      "bottlesOpened": "{{count}} bottles opened",
+      "favoriteRegion": "Favorite Region",
+      "topRegions": "Top Regions"
+    },
+    "openingHistory": "Opening History",
+    "empty": {
+      "title": "No bottles opened yet",
+      "subtitle": "Mark bottles as opened from the Cellar or Recommendations page"
+    },
+    "error": {
+      "title": "Unable to Load History",
+      "subtitle": "We couldn't load your opening history. Please try again.",
+      "retry": "Try Again",
+      "loadFailed": "Failed to load history"
+    }
+  },
+  "csvImport": {
+    "title": "Import from CSV",
+    "upload": {
+      "subtitle": "Upload a CSV file with your wine collection. Supports both standard format and Vivino exports.",
+      "vivino": {
+        "title": "Import from Vivino",
+        "description": "Export your Vivino cellar as CSV and upload it here. We'll automatically detect and import all your wines with ratings, regions, and more!",
+        "guide": "How to export from Vivino"
+      },
+      "downloadStandard": "Download Standard Template",
+      "downloadVivino": "Download Vivino Sample",
+      "chooseFile": "Choose CSV File",
+      "fileLoaded": "File loaded successfully",
+      "next": "Next: Map Columns",
+      "processing": "Processing...",
+      "cancel": "Cancel"
+    },
+    "mapping": {
+      "vivinoDetected": {
+        "title": "Vivino Format Detected!",
+        "description": "We've automatically mapped your Vivino columns. Review the mapping below and adjust if needed. Vivino ratings (1-5 scale) will be converted to 0-100 scale.",
+        "confidence": "Confidence: {{percent}}%"
+      },
+      "instructions": "Map your CSV columns to wine bottle fields. Name and Style are required.",
+      "columns": {
+        "name": "Name Column",
+        "producer": "Producer Column",
+        "vintage": "Vintage Column",
+        "region": "Region Column",
+        "grapes": "Grapes Column",
+        "style": "Style Column",
+        "rating": "Rating Column",
+        "quantity": "Quantity Column",
+        "notes": "Notes Column",
+        "select": "-- Select --",
+        "skip": "-- Skip --",
+        "required": "Required"
+      },
+      "preview": "Preview (first 5 rows)",
+      "back": "Back",
+      "import": "Import Bottles",
+      "importing": "Importing..."
+    },
+    "success": "Successfully imported bottles",
+    "imported": "bottles imported",
+    "failed": "failed",
+    "successVivino": "Successfully imported {{count}} bottles from Vivino",
+    "importFailed": "Import failed",
+    "csvRequired": "CSV text is required",
+    "mappingRequired": "Column mapping is required",
+    "noBottles": "No valid bottles found in CSV",
+    "parseFailed": "Failed to parse CSV",
+    "processing": {
+      "preparing": "Preparing import...",
+      "found": "Found {{count}} bottles to import",
+      "importing": "Importing {{current}} of {{total}}: {{wine}}",
+      "complete": "Import complete! 🍷"
+    }
+  },
+  "loading": {
+    "importing": "Importing your wines...",
+    "pleaseWait": "Please wait, this may take a moment"
+  },
+  "languageSwitcher": {
+    "changeLanguage": "Change Language",
+    "currentLanguage": "Current language"
+  },
+  "celebration": {
+    "title": "Cheers!",
+    "message": "You've successfully marked as opened:",
+    "enjoy": "Enjoy responsibly! 🍷",
+    "close": "Nice!",
+    "viewHistory": "View History"
+  },
+  "vivinoGuide": {
+    "title": "How to Export from Vivino",
+    "subtitle": "Step-by-step guide to get your wine cellar data",
+    "note": {
+      "title": "Important Note",
+      "description": "Vivino's export feature may vary by region and app version. If you don't see the export option, try using the web version or contact Vivino support."
+    },
+    "method1": {
+      "title": "Method 1: Mobile App Export (Recommended)",
+      "step1": {
+        "title": "Open Vivino App",
+        "description": "Launch the Vivino app on your phone and tap on your profile/account icon (usually in the bottom right)."
+      },
+      "step2": {
+        "title": "Go to My Wines → Export",
+        "description": "Navigate to 'My Wines' or 'My Cellar', then look for an 'Export' or 'Download' option in the settings/menu (three dots icon)."
+      },
+      "step3": {
+        "title": "Download CSV File",
+        "description": "Select 'Export to CSV' or 'Export Data'. The file will be downloaded to your device. Transfer it to your computer if needed."
+      }
+    },
+    "method2": {
+      "title": "Method 2: Web Export (If Available)",
+      "info": {
+        "title": "Alternative Method",
+        "description": "Some users can export from Vivino's website:"
+      },
+      "step1": "Visit vivino.com and log in",
+      "step2": "Go to your profile → My Wines",
+      "step3": "Look for an 'Export' button or similar option"
+    },
+    "afterExport": {
+      "title": "After Exporting",
+      "step1": "Locate the downloaded CSV file (usually in Downloads folder)",
+      "step2": "Come back to this import page and click 'Choose File'",
+      "step3": "Select your Vivino CSV - we'll auto-detect it and map the columns!"
+    },
+    "troubleshooting": {
+      "title": "Troubleshooting",
+      "q1": {
+        "title": "I don't see an export option",
+        "answer": "Try updating your Vivino app, or use the sample CSV template instead and manually enter your wines."
+      },
+      "q2": {
+        "title": "The CSV doesn't import correctly",
+        "answer": "Make sure it's a valid CSV file. You can also download our sample Vivino CSV template and match the format."
+      }
+    },
+    "screenshot": {
+      "placeholder": "Screenshot placeholder",
+      "todo": "TODO: Replace with actual Vivino app screenshot"
+    },
+    "gotIt": "Got it, thanks!"
+  },
+  "common": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "pleaseWait": "Please wait...",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You need to be logged in",
+    "notFound": "Not found",
+    "serverError": "Server error. Please try again later."
+  }
+}
+

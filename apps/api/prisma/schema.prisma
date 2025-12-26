@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  passwordHash  String?     // Optional now - OAuth users may not have a password
+  name          String?
+  authProvider  String      @default("local") // local, google
+  googleId      String?     @unique // Google OAuth ID
+  picture       String?     // Profile picture URL (from OAuth)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  bottles       Bottle[]
+  openEvents    OpenEvent[]
+}
+
+model Bottle {
+  id              String    @id @default(uuid())
+  userId          String
+  name            String
+  producer        String?
+  vintage         Int?
+  region          String?
+  grapes          String?
+  style           String    // red, white, rose, sparkling
+  rating          Float?
+  quantity        Int       @default(1)
+  purchaseDate    DateTime?
+  purchasePrice   Float?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis        BottleAnalysis?
+  openEvents      OpenEvent[]
+  
+  @@index([userId])
+}
+
+model BottleAnalysis {
+  id                String    @id @default(uuid())
+  bottleId          String    @unique
+  readinessStatus   String    // TooYoung, Approaching, InWindow, Peak, PastPeak, Unknown
+  drinkFromYear     Int?
+  drinkToYear       Int?
+  decantMinutes     Int?
+  serveTempC        Float?
+  explanation       String?
+  aiGenerated       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  bottle            Bottle    @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  
+  @@index([bottleId])
+}
+
+model OpenEvent {
+  id              String    @id @default(uuid())
+  userId          String
+  bottleId        String
+  openedAt        DateTime  @default(now())
+  mealType        String?   // pizza, steak, pasta, fish, spicy_asian, cheese, custom
+  occasion        String?   // casual, date_night, hosting_friends, celebration
+  vibe            String?   // easy_drinking, crowd_pleaser, special, surprise_me
+  constraintsJson String?   // JSON string for additional constraints
+  userRating      Int?      // 1-5
+  notes           String?
+  createdAt       DateTime  @default(now())
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bottle          Bottle    @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([bottleId])
+  @@index([openedAt])
+}
+

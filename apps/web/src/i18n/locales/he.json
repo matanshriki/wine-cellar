@@ -1,0 +1,473 @@
+{
+  "app": {
+    "title": "מוח מרתף היין",
+    "tagline": "ניהול יין חכם והמלצות"
+  },
+  "nav": {
+    "cellar": "מרתף",
+    "tonight": "מה לפתוח הערב?",
+    "history": "היסטוריה",
+    "profile": "פרופיל",
+    "logout": "התנתק"
+  },
+  "auth": {
+    "login": {
+      "title": "התחברות",
+      "createAccount": "צור חשבון",
+      "email": "דוא״ל",
+      "emailPlaceholder": "you@example.com",
+      "password": "סיסמה",
+      "passwordPlaceholder": "••••••••",
+      "name": "שם",
+      "namePlaceholder": "השם שלך",
+      "signIn": "התחבר",
+      "signUp": "צור חשבון",
+      "signInButton": "התחבר",
+      "createAccountButton": "צור חשבון",
+      "noAccount": "אין לך חשבון? הירשם",
+      "hasAccount": "כבר יש לך חשבון? התחבר",
+      "or": "או",
+      "googleSignIn": "התחבר עם Google",
+      "demo": {
+        "title": "פרטי כניסה להדגמה:",
+        "email": "דוא״ל: demo@winecellarbrain.com",
+        "password": "סיסמה: demo123"
+      }
+    },
+    "welcome": "ברוך שובך!",
+    "accountCreated": "החשבון נוצר בהצלחה!",
+    "authFailed": "האימות נכשל",
+    "loggedOut": "התנתקת בהצלחה"
+  },
+  "profile": {
+    "title": "פרופיל",
+    "subtitle": "נהל את הגדרות החשבון שלך",
+    "displayName": "שם תצוגה",
+    "displayNamePlaceholder": "הזן את שמך",
+    "displayNameHint": "כך תופיע באפליקציה",
+    "firstName": "שם פרטי",
+    "lastName": "שם משפחה",
+    "email": "דוא״ל",
+    "emailReadOnly": "לא ניתן לשנות את הדוא״ל",
+    "avatarUrl": "כתובת תמונה",
+    "avatarUrlHint": "אופציונלי: קישור לתמונת הפרופיל שלך",
+    "preferredLanguage": "שפה מועדפת",
+    "memberSince": "חבר מאז",
+    "accountInfo": "מידע על החשבון",
+    "userId": "מזהה משתמש",
+    "authProvider": "שיטת כניסה",
+    "editProfile": "ערוך פרופיל",
+    "updateSuccess": "הפרופיל עודכן בהצלחה!",
+    "updateFailed": "עדכון הפרופיל נכשל",
+    "notProvided": "לא סופק",
+    "avatar": {
+      "title": "תמונת פרופיל",
+      "description": "העלה תמונת פרופיל. היא תוצג בכל האפליקציה.",
+      "upload": "העלה תמונה",
+      "uploading": "מעלה...",
+      "remove": "הסר",
+      "removed": "התמונה הוסרה",
+      "uploadSuccess": "התמונה הועלתה בהצלחה",
+      "uploadFailed": "העלאת התמונה נכשלה",
+      "removeFailed": "הסרת התמונה נכשלה",
+      "removeConfirm": "האם אתה בטוח שברצונך להסיר את תמונת הפרופיל?",
+      "requirements": "JPG, PNG, או WebP. מקסימום 5MB. התמונה תשונה לגודל 512x512.",
+      "errorNotImage": "אנא בחר קובץ תמונה",
+      "errorTooLarge": "התמונה גדולה מדי. גודל מקסימלי הוא 5MB"
+    },
+    "welcome": "שלום, {{name}}",
+    "menu": {
+      "openMenu": "פתח תפריט משתמש",
+      "viewProfile": "צפה בפרופיל"
+    },
+    "complete": {
+      "title": "השלם את הפרופיל שלך",
+      "subtitle": "אנא הזן את שמך כדי להמשיך",
+      "nameRequired": "שם הוא שדה חובה",
+      "hint": "כך תופיע באפליקציה",
+      "continue": "המשך",
+      "success": "הפרופיל הושלם!",
+      "failed": "השלמת הפרופיל נכשלה",
+      "required": "עליך להשלים את הפרופיל שלך כדי להשתמש באפליקציה"
+    }
+  },
+  "cellar": {
+    "title": "המרתף שלי",
+    "bottleCount_one": "בקבוק אחד",
+    "bottleCount_other": "{{count}} בקבוקים",
+    "filteredCount": "{{count}} מתוך {{total}} בקבוקים",
+    "addBottleButton": "הוסף בקבוק",
+    "importCsv": "ייבוא מ-CSV",
+    "empty": {
+      "title": "המרתף שלך ריק",
+      "subtitle": "הוסף את הבקבוק הראשון שלך או ייבא מ-CSV",
+      "addButton": "הוסף בקבוק",
+      "importButton": "ייבוא מ-CSV"
+    },
+    "loading": "טוען את המרתף שלך...",
+    "search": {
+      "placeholder": "חפש לפי שם, יצרן, אזור, בציר...",
+      "clear": "נקה חיפוש",
+      "noResults": "לא נמצאו בקבוקים",
+      "noResultsHint": "נסה להתאים את החיפוש או המסננים"
+    },
+    "filters": {
+      "label": "מסננים",
+      "ready": "מוכן לשתייה",
+      "aging": "צריך יישון",
+      "analyzed": "נותח",
+      "clear": "נקה הכל"
+    },
+    "labelScan": {
+      "title": "סרוק תווית",
+      "instruction": "מרכז את התווית",
+      "instructionDetail": "מקם את התווית במסגרת וצלם תמונה",
+      "capture": "צלם תמונה",
+      "retake": "צלם שוב",
+      "usePhoto": "השתמש בתמונה",
+      "tryAgain": "נסה שוב",
+      "processing": "מנתח תווית...",
+      "processingHint": "זה עשוי לקחת מספר שניות",
+      "error": "לא ניתן לחלץ את פרטי היין. נסה שוב או הזן ידנית.",
+      "errorInvalidFile": "אנא בחר קובץ תמונה תקין",
+      "errorFileTooLarge": "התמונה גדולה מדי. גודל מקסימלי: 10MB"
+    },
+    "addBottle": {
+      "title": "הוסף בקבוק",
+      "scanLabel": "סרוק תווית",
+      "scanLabelDesc": "השתמש במצלמה לסריקת תווית היין",
+      "uploadPhoto": "העלה תמונה",
+      "uploadPhotoDesc": "בחר תמונה מהמכשיר שלך",
+      "manualEntry": "הזן ידנית",
+      "manualEntryDesc": "מלא את הפרטים בעצמך"
+    },
+    "bottle": {
+      "vintage": "בציר",
+      "region": "אזור",
+      "grapes": "ענבים",
+      "quantity": "כמות",
+      "rating": "דירוג",
+      "analyze": "נתח",
+      "edit": "ערוך",
+      "delete": "מחק",
+      "deleteConfirm": "האם אתה בטוח שברצונך למחוק את הבקבוק הזה?",
+      "deleted": "הבקבוק נמחק",
+      "deleteFailed": "מחיקת הבקבוק נכשלה",
+      "markOpened": "סמן כנפתח",
+      "markOpenedFailed": "סימון הבקבוק כנפתח נכשל"
+    },
+    "wineStyles": {
+      "red": "אדום",
+      "white": "לבן",
+      "rose": "רוזה",
+      "sparkling": "מבעבע"
+    },
+    "readinessStatus": {
+      "Peak": "שיא",
+      "InWindow": "בחלון השתייה",
+      "Approaching": "מתקרב",
+      "TooYoung": "צעיר מדי",
+      "PastPeak": "עבר את השיא",
+      "Unknown": "לא ידוע"
+    },
+    "analysis": {
+      "readiness": "מוכנות",
+      "analyzing": "מנתח...",
+      "complete": "הניתוח הושלם!",
+      "failed": "הניתוח נכשל"
+    },
+    "sommelier": {
+      "title": "הערות סומלייה",
+      "aiPowered": "ניתוח מבוסס AI",
+      "generate": "צור הערות סומלייה",
+      "refresh": "רענן ניתוח",
+      "failed": "יצירת הניתוח נכשלה. נסה שוב.",
+      "whyThisAnalysis": "למה ניתוח זה?",
+      "assumptions": "הנחות",
+      "analyzedOn": "נותח ב",
+      "status": {
+        "ready": "מוכן לשתייה",
+        "hold": "שמור ליישון",
+        "peak_soon": "שיא בקרוב"
+      },
+      "confidence": {
+        "high": "ביטחון גבוה",
+        "medium": "ביטחון בינוני",
+        "low": "ביטחון נמוך"
+      }
+    }
+  },
+  "bottleForm": {
+    "addTitle": "הוסף בקבוק",
+    "editTitle": "ערוך בקבוק",
+    "name": "שם",
+    "namePlaceholder": "למשל, שאטו מרגו",
+    "producer": "יצרן",
+    "producerPlaceholder": "למשל, שאטו מרגו",
+    "vintage": "בציר",
+    "vintagePlaceholder": "למשל, 2015",
+    "style": "סגנון",
+    "styles": {
+      "red": "אדום",
+      "white": "לבן",
+      "rose": "רוזה",
+      "sparkling": "מבעבע"
+    },
+    "quantity": "כמות",
+    "region": "אזור",
+    "regionPlaceholder": "למשל, בורדו, צרפת",
+    "grapes": "ענבים",
+    "grapesPlaceholder": "למשל, קברנה סוביניון, מרלו",
+    "rating": "דירוג (0-100)",
+    "ratingPlaceholder": "למשל, 95",
+    "purchasePrice": "מחיר רכישה",
+    "purchasePricePlaceholder": "למשל, 50.00",
+    "notes": "הערות",
+    "notesPlaceholder": "הערות טעימה, מיקום אחסון, וכו׳",
+    "cancel": "ביטול",
+    "save": "שמור",
+    "update": "עדכן",
+    "saving": "שומר...",
+    "required": "חובה",
+    "bottleAdded": "הבקבוק נוסף!",
+    "bottleUpdated": "הבקבוק עודכן!",
+    "saveFailed": "שמירת הבקבוק נכשלה"
+  },
+  "recommendation": {
+    "title": "מה לפתוח הערב?",
+    "subtitle": "ספר לנו על האירוע ואנו נמליץ על הבקבוק המושלם",
+    "form": {
+      "mealType": "מה אתה אוכל?",
+      "mealTypes": {
+        "any": "הכל",
+        "pizza": "פיצה",
+        "steak": "סטייק",
+        "pasta": "פסטה",
+        "fish": "דגים / פירות ים",
+        "spicy_asian": "אסייתי חריף",
+        "cheese": "גבינה",
+        "custom": "משהו אחר"
+      },
+      "occasion": "מה האירוע?",
+      "occasions": {
+        "any": "הכל",
+        "casual": "ערב רגיל",
+        "date_night": "דייט",
+        "hosting_friends": "אירוח חברים",
+        "celebration": "חגיגה"
+      },
+      "vibe": "איזו אווירה רוצה?",
+      "vibes": {
+        "any": "הכל",
+        "easy_drinking": "שתייה קלה",
+        "crowd_pleaser": "מוצלח בקהל",
+        "special": "משהו מיוחד",
+        "surprise_me": "הפתע אותי"
+      },
+      "preferences": "העדפות",
+      "avoidTooYoung": "הימנע מיינות צעירים מדי",
+      "avoidTooYoungHelp": "דלג על בקבוקים שצריכים עוד זמן התבגרות",
+      "preferReadyToDrink": "העדף יינות מוכנים לשתייה",
+      "preferReadyToDrinkHelp": "תן עדיפות ליינות בשיא חלון השתייה",
+      "maxPrice": "מחיר מקסימלי (אופציונלי)",
+      "maxPricePlaceholder": "למשל, 100",
+      "getRecommendations": "קבל המלצות",
+      "finding": "מחפש המלצות..."
+    },
+    "results": {
+      "title": "המלצות להערב",
+      "subtitle": "בהתאם להעדפותיך",
+      "backToForm": "חזרה לטופס",
+      "score": "ציון",
+      "whyThisBottle": "למה הבקבוק הזה?",
+      "servingInstructions": "הוראות הגשה",
+      "markAsOpened": "סמן כנפתח",
+      "markConfirm": "לסמן את \"{{name}}\" כנפתח?",
+      "marked": "הבקבוק סומן כנפתח! תהנה! 🍷",
+      "markFailed": "הסימון כנפתח נכשל",
+      "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך."
+    }
+  },
+  "history": {
+    "title": "היסטוריה וסטטיסטיקות",
+    "subtitle": "מסע טעימות היין שלך",
+    "loading": "טוען היסטוריה...",
+    "unknownBottle": "בקבוק לא ידוע",
+    "stats": {
+      "totalOpens": "סה״כ פתיחות",
+      "averageRating": "דירוג ממוצע",
+      "favoriteStyle": "סגנון מועדף",
+      "bottlesOpened": "{{count}} בקבוקים נפתחו",
+      "favoriteRegion": "אזור מועדף",
+      "topRegions": "אזורים מובילים"
+    },
+    "openingHistory": "היסטוריית פתיחות",
+    "empty": {
+      "title": "עדיין לא נפתחו בקבוקים",
+      "subtitle": "סמן בקבוקים כנפתחים מעמוד המרתף או ההמלצות"
+    },
+    "error": {
+      "title": "לא ניתן לטעון היסטוריה",
+      "subtitle": "לא הצלחנו לטעון את היסטוריית הפתיחות שלך. אנא נסה שוב.",
+      "retry": "נסה שוב",
+      "loadFailed": "טעינת ההיסטוריה נכשלה"
+    }
+  },
+  "csvImport": {
+    "title": "ייבוא מ-CSV",
+    "upload": {
+      "subtitle": "העלה קובץ CSV עם אוסף היינות שלך. תומך בפורמט רגיל ובייצוא מ-Vivino.",
+      "vivino": {
+        "title": "ייבוא מ-Vivino",
+        "description": "ייצא את המרתף שלך מ-Vivino כ-CSV והעלה אותו כאן. נזהה אוטומטית ונייבא את כל היינות שלך עם דירוגים, אזורים ועוד!",
+        "guide": "איך לייצא מ-Vivino"
+      },
+      "downloadStandard": "הורד תבנית רגילה",
+      "downloadVivino": "הורד דוגמה מ-Vivino",
+      "chooseFile": "בחר קובץ CSV",
+      "fileLoaded": "הקובץ נטען בהצלחה",
+      "next": "הבא: מיפוי עמודות",
+      "processing": "מעבד...",
+      "cancel": "ביטול"
+    },
+    "mapping": {
+      "vivinoDetected": {
+        "title": "זוהה פורמט Vivino!",
+        "description": "מיפינו אוטומטית את עמודות Vivino שלך. בדוק את המיפוי למטה והתאם במידת הצורך. דירוגי Vivino (סולם 1-5) יומרו לסולם 0-100.",
+        "confidence": "רמת ודאות: {{percent}}%"
+      },
+      "instructions": "מפה את עמודות ה-CSV לשדות הבקבוק. שם וסגנון הם חובה.",
+      "columns": {
+        "name": "עמודת שם",
+        "producer": "עמודת יצרן",
+        "vintage": "עמודת בציר",
+        "region": "עמודת אזור",
+        "grapes": "עמודת ענבים",
+        "style": "עמודת סגנון",
+        "rating": "עמודת דירוג",
+        "quantity": "עמודת כמות",
+        "notes": "עמודת הערות",
+        "select": "-- בחר --",
+        "skip": "-- דלג --",
+        "required": "חובה"
+      },
+      "preview": "תצוגה מקדימה (5 שורות ראשונות)",
+      "back": "חזור",
+      "import": "ייבא בקבוקים",
+      "importing": "מייבא..."
+    },
+    "success": "הייבוא הושלם בהצלחה",
+    "imported": "בקבוקים יובאו",
+    "failed": "נכשלו",
+    "successVivino": "ייובאו בהצלחה {{count}} בקבוקים מ-Vivino",
+    "importFailed": "הייבוא נכשל",
+    "csvRequired": "נדרש טקסט CSV",
+    "mappingRequired": "נדרש מיפוי עמודות",
+    "noBottles": "לא נמצאו בקבוקים תקינים ב-CSV",
+    "parseFailed": "ניתוח ה-CSV נכשל",
+    "processing": {
+      "preparing": "מכין ייבוא...",
+      "found": "נמצאו {{count}} בקבוקים לייבוא",
+      "importing": "מייבא {{current}} מתוך {{total}}: {{wine}}",
+      "complete": "הייבוא הושלם! 🍷"
+    }
+  },
+  "loading": {
+    "importing": "מייבא את היינות שלך...",
+    "pleaseWait": "אנא המתן, זה עשוי לקחת רגע"
+  },
+  "languageSwitcher": {
+    "changeLanguage": "שנה שפה",
+    "currentLanguage": "שפה נוכחית"
+  },
+  "celebration": {
+    "title": "לחיים!",
+    "message": "סימנת בהצלחה כפתוח:",
+    "enjoy": "תהנה באחריות! 🍷",
+    "close": "יפה!",
+    "viewHistory": "צפה בהיסטוריה"
+  },
+  "vivinoGuide": {
+    "title": "כיצד לייצא מ-Vivino",
+    "subtitle": "מדריך שלב אחר שלב לקבלת נתוני מרתף היין שלך",
+    "note": {
+      "title": "הערה חשובה",
+      "description": "תכונת הייצוא של Vivino עשויה להשתנות לפי אזור וגרסת האפליקציה. אם אינך רואה את אפשרות הייצוא, נסה להשתמש בגרסת האינטרנט או פנה לתמיכה של Vivino."
+    },
+    "method1": {
+      "title": "שיטה 1: ייצוא מאפליקציית הנייד (מומלץ)",
+      "step1": {
+        "title": "פתח את אפליקציית Vivino",
+        "description": "הפעל את אפליקציית Vivino בטלפון שלך והקש על סמל הפרופיל/חשבון שלך (בדרך כלל בפינה הימנית התחתונה)."
+      },
+      "step2": {
+        "title": "עבור אל היינות שלי ← ייצוא",
+        "description": "נווט אל 'היינות שלי' או 'המרתף שלי', ואז חפש אפשרות 'ייצוא' או 'הורדה' בהגדרות/תפריט (סמל שלוש נקודות)."
+      },
+      "step3": {
+        "title": "הורד קובץ CSV",
+        "description": "בחר 'ייצוא ל-CSV' או 'ייצוא נתונים'. הקובץ יורד למכשיר שלך. העבר אותו למחשב שלך במידת הצורך."
+      }
+    },
+    "method2": {
+      "title": "שיטה 2: ייצוא מהאינטרנט (אם זמין)",
+      "info": {
+        "title": "שיטה חלופית",
+        "description": "משתמשים מסוימים יכולים לייצא מאתר Vivino:"
+      },
+      "step1": "בקר ב-vivino.com והתחבר",
+      "step2": "עבור לפרופיל שלך ← היינות שלי",
+      "step3": "חפש כפתור 'ייצוא' או אפשרות דומה"
+    },
+    "afterExport": {
+      "title": "לאחר הייצוא",
+      "step1": "אתר את קובץ ה-CSV שהורד (בדרך כלל בתיקיית ההורדות)",
+      "step2": "חזור לדף הייבוא הזה ולחץ על 'בחר קובץ'",
+      "step3": "בחר את ה-CSV של Vivino - נזהה אותו אוטומטית ונמפה את העמודות!"
+    },
+    "troubleshooting": {
+      "title": "פתרון בעיות",
+      "q1": {
+        "title": "אני לא רואה אפשרות ייצוא",
+        "answer": "נסה לעדכן את אפליקציית Vivino שלך, או השתמש בתבנית CSV לדוגמה במקום זאת והזן את היינות שלך באופן ידני."
+      },
+      "q2": {
+        "title": "ה-CSV לא מיובא כראוי",
+        "answer": "ודא שזהו קובץ CSV תקין. תוכל גם להוריד את תבנית CSV לדוגמה של Vivino שלנו ולהתאים את הפורמט."
+      }
+    },
+    "screenshot": {
+      "placeholder": "מקום לצילום מסך",
+      "todo": "TODO: החלף עם צילום מסך אמיתי של אפליקציית Vivino"
+    },
+    "gotIt": "הבנתי, תודה!"
+  },
+  "common": {
+    "loading": "טוען...",
+    "saving": "שומר...",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "close": "סגור",
+    "back": "חזור",
+    "next": "הבא",
+    "confirm": "אשר",
+    "search": "חפש",
+    "filter": "סנן",
+    "sort": "מיין",
+    "pleaseWait": "אנא המתן...",
+    "required": "חובה",
+    "optional": "אופציונלי"
+  },
+  "errors": {
+    "generic": "משהו השתבש",
+    "network": "שגיאת רשת. אנא בדוק את החיבור שלך.",
+    "unauthorized": "עליך להיות מחובר",
+    "notFound": "לא נמצא",
+    "serverError": "שגיאת שרת. אנא נסה שוב מאוחר יותר."
+  }
+}
+

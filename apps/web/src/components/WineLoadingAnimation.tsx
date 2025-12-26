@@ -1,0 +1,159 @@
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+interface Props {
+  message?: string;
+  showProgress?: boolean;
+  progress?: number; // 0-100
+}
+
+export function WineLoadingAnimation({ message, showProgress = false, progress = 0 }: Props) {
+  const { t } = useTranslation();
+  const [fillLevel, setFillLevel] = useState(0);
+
+  useEffect(() => {
+    if (showProgress) {
+      // Use provided progress
+      setFillLevel(progress);
+    } else {
+      // Animate continuously
+      const interval = setInterval(() => {
+        setFillLevel((prev) => {
+          if (prev >= 100) return 0;
+          return prev + 2;
+        });
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [showProgress, progress]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+      {/* Wine Glass Animation */}
+      <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-6">
+        {/* Glass Outline */}
+        <svg
+          viewBox="0 0 100 140"
+          className="w-full h-full"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Glass bowl (trapezoid) */}
+          <path
+            d="M 20 20 L 35 80 L 65 80 L 80 20 Z"
+            fill="transparent"
+            stroke="#9333EA"
+            strokeWidth="2"
+            className="wine-glass-outline"
+          />
+          
+          {/* Glass stem */}
+          <line
+            x1="50"
+            y1="80"
+            x2="50"
+            y2="110"
+            stroke="#9333EA"
+            strokeWidth="2"
+          />
+          
+          {/* Glass base */}
+          <line
+            x1="35"
+            y1="110"
+            x2="65"
+            y2="110"
+            stroke="#9333EA"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          
+          {/* Wine fill (animated) */}
+          <defs>
+            <linearGradient id="wineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#DC2626" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#7F1D1D" stopOpacity="1" />
+            </linearGradient>
+            
+            <clipPath id="glassClip">
+              <path d="M 20 20 L 35 80 L 65 80 L 80 20 Z" />
+            </clipPath>
+          </defs>
+          
+          {/* Animated wine fill */}
+          <g clipPath="url(#glassClip)">
+            <rect
+              x="20"
+              y={80 - (fillLevel * 0.6)} // 60px max fill height
+              width="60"
+              height="60"
+              fill="url(#wineGradient)"
+              className="transition-all duration-300 ease-out"
+            />
+            
+            {/* Wine surface (with slight wave) */}
+            <ellipse
+              cx="50"
+              cy={80 - (fillLevel * 0.6)}
+              rx="15"
+              ry="2"
+              fill="#DC2626"
+              opacity="0.8"
+              className="animate-pulse"
+            />
+          </g>
+          
+          {/* Bubbles */}
+          {fillLevel > 20 && (
+            <>
+              <circle cx="40" cy={70 - (fillLevel * 0.4)} r="1.5" fill="#FCA5A5" opacity="0.6" className="animate-ping" />
+              <circle cx="60" cy={65 - (fillLevel * 0.5)} r="1" fill="#FCA5A5" opacity="0.7" className="animate-ping" style={{ animationDelay: '0.3s' }} />
+              <circle cx="45" cy={60 - (fillLevel * 0.5)} r="1.2" fill="#FCA5A5" opacity="0.5" className="animate-ping" style={{ animationDelay: '0.6s' }} />
+            </>
+          )}
+        </svg>
+        
+        {/* Sparkle effect */}
+        {fillLevel > 50 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-4xl animate-bounce">✨</div>
+          </div>
+        )}
+      </div>
+
+      {/* Loading Message */}
+      <div className="text-center space-y-2">
+        <p className="text-base sm:text-lg font-semibold text-gray-800">
+          {message || t('loading.importing')}
+        </p>
+        
+        {showProgress && (
+          <div className="w-48 sm:w-64 mx-auto">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              {Math.round(progress)}%
+            </p>
+          </div>
+        )}
+        
+        {!showProgress && (
+          <p className="text-xs sm:text-sm text-gray-500">
+            {t('loading.pleaseWait')}
+          </p>
+        )}
+      </div>
+
+      {/* Animated dots */}
+      <div className="flex gap-1 mt-4">
+        <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+        <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+      </div>
+    </div>
+  );
+}
+
