@@ -458,7 +458,7 @@ export function CellarPage() {
           </p>
           <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-sm mx-auto px-4">
             <button 
-              onClick={() => setShowForm(true)} 
+              onClick={() => setShowAddSheet(true)} 
               className="btn btn-primary w-full xs:w-auto"
             >
               + {t('cellar.empty.addButton')}
