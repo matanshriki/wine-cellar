@@ -40,28 +40,28 @@ export function AddBottleSheet({
             onClick={onClose}
           />
 
-          {/* Bottom Sheet */}
+          {/* Bottom Sheet - iOS optimized */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl ios-modal-scroll"
             style={{
               maxHeight: '80vh',
-              paddingBottom: 'env(safe-area-inset-bottom)',
+              maxHeight: '80dvh',
             }}
           >
             {/* Handle */}
-            <div className="flex justify-center pt-3 pb-2">
+            <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
               <div 
                 className="w-12 h-1 rounded-full"
                 style={{ backgroundColor: 'var(--color-stone-300)' }}
               />
             </div>
 
-            {/* Content */}
-            <div className="px-6 pb-6">
+            {/* Content - scrollable with safe area */}
+            <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom">
               {/* Title */}
               <h2 
                 className="text-2xl font-bold mb-6 text-center"

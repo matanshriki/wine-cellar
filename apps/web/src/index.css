@@ -19,7 +19,13 @@
  * - Logical properties used throughout for proper mirroring
  */
 @layer base {
-  /* Luxury base styling */
+  /* iOS Viewport & Scrolling Fixes */
+  html {
+    /* Fix for iOS viewport height issues */
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     font-family: var(--font-body);
     background-color: var(--color-stone-50);
@@ -27,6 +33,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
+    
+    /* iOS scrolling fixes */
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
   }
 
   /* Premium typography */
@@ -342,9 +354,51 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  .safe-area-inset-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
   /* Touch-friendly scrolling */
   .touch-scroll {
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* iOS-safe viewport heights */
+  .h-screen-ios {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for iOS */
+  }
+
+  .min-h-screen-ios {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .max-h-screen-ios {
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
+
+  /* iOS modal/dialog fixes */
+  .ios-modal-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    overflow-y: auto;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* iOS-safe fixed positioning */
+  .ios-fixed-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* Hide scrollbar but keep scrolling functionality */

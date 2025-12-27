@@ -306,9 +306,22 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 ios-modal-scroll"
+      style={{
+        height: '100vh',
+        height: '100dvh',
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom"
+        style={{
+          maxHeight: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100dvh - 2rem)',
+          overflowY: 'auto',
+        }}
+      >
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 z-10">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('csvImport.title')}</h2>
         </div>
 
@@ -613,8 +626,14 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
 
       {/* Import Loading Overlay */}
       {importing && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full mx-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] backdrop-blur-sm"
+          style={{
+            height: '100vh',
+            height: '100dvh',
+          }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full mx-4 safe-area-inset-bottom">
             <WineLoadingAnimation
               message={importMessage}
               showProgress={true}

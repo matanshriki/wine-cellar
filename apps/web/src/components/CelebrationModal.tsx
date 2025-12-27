@@ -143,12 +143,16 @@ export function CelebrationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 ios-modal-scroll"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="celebration-title"
       aria-describedby="celebration-description"
+      style={{
+        height: '100vh',
+        height: '100dvh',
+      }}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -156,7 +160,12 @@ export function CelebrationModal({
       {/* Modal Content */}
       <div
         ref={modalRef}
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn"
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom"
+        style={{
+          maxHeight: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100dvh - 2rem)',
+          overflowY: 'auto',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Success Icon */}

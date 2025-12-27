@@ -85,13 +85,17 @@ export function LabelCapture({ onSuccess, onCancel }: LabelCaptureProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black z-50 flex flex-col"
+        className="fixed inset-0 bg-black z-50 flex flex-col h-screen-ios"
+        style={{
+          height: '100vh',
+          height: '100dvh',
+        }}
       >
-        {/* Header */}
-        <div className="flex-shrink-0 p-4 flex items-center justify-between bg-black/80 backdrop-blur-sm">
+        {/* Header with safe area */}
+        <div className="flex-shrink-0 p-4 safe-area-top flex items-center justify-between bg-black/80 backdrop-blur-sm">
           <button
             onClick={onCancel}
-            className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             disabled={isProcessing}
             aria-label={t('common.cancel')}
           >
@@ -105,8 +109,8 @@ export function LabelCapture({ onSuccess, onCancel }: LabelCaptureProps) {
           <div className="w-10" />
         </div>
 
-        {/* Content */}
-        <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
+        {/* Content - iOS scrollable */}
+        <div className="flex-1 flex items-center justify-center p-6 ios-modal-scroll safe-area-inset-bottom">
           {preview ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

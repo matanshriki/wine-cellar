@@ -45,8 +45,21 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 ios-modal-scroll"
+      style={{
+        height: '100vh',
+        height: '100dvh',
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom"
+        style={{
+          maxHeight: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100dvh - 2rem)',
+          overflowY: 'auto',
+        }}
+      >
         <div className="text-center mb-6">
           <div className="mx-auto w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mb-4">
             <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

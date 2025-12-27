@@ -18,10 +18,23 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-[60]">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-[60] ios-modal-scroll"
+      style={{
+        height: '100vh',
+        height: '100dvh',
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-3xl w-full shadow-2xl touch-scroll safe-area-inset-bottom"
+        style={{
+          maxHeight: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100dvh - 2rem)',
+          overflowY: 'auto',
+        }}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10 flex-shrink-0">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
               {t('vivinoGuide.title')}
