@@ -100,19 +100,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
       style={{
-        padding: 'max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left))',
+        padding: 'env(safe-area-inset-top) 0.5rem env(safe-area-inset-bottom) 0.5rem',
       }}
     >
       <div 
         className="bg-white rounded-lg w-full flex flex-col overflow-hidden"
         style={{
-          maxWidth: 'min(90vw, 56rem)', // Larger: 896px max (was 672px)
-          maxHeight: 'calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
+          maxWidth: 'min(90vw, 56rem)', // Larger: 896px max
+          height: 'min(95dvh, 1000px)', // Use 95% of viewport height, max 1000px
+          maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
         }}
       >
         {/* Header - Fixed at top */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-2 sm:py-3 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
         </div>
@@ -262,7 +263,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
         {/* Footer - Fixed at bottom, always visible */}
         <div 
-          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
+          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 flex-shrink-0"
         >
           <div className="flex gap-2 sm:gap-3">
             <button
