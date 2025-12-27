@@ -110,7 +110,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         className="bg-white rounded-lg w-full"
         style={{
           maxWidth: 'min(90vw, 56rem)',
-          maxHeight: '90vh',
           maxHeight: '90dvh',
           display: 'flex',
           flexDirection: 'column',

@@ -48,16 +48,15 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
     <div 
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 ios-modal-scroll"
       style={{
-        height: '100vh',
         height: '100dvh',
       }}
     >
       <div 
         className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom"
         style={{
-          maxHeight: 'calc(100vh - 2rem)',
           maxHeight: 'calc(100dvh - 2rem)',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <div className="text-center mb-6">
