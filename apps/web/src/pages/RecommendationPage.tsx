@@ -473,12 +473,12 @@ export function RecommendationPage() {
           </div>
         </motion.div>
 
-        {/* Submit Button */}
+        {/* Submit Button - positioned above bottom nav on mobile */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="sticky bottom-4 z-10"
+          className="sticky z-10 bottom-above-nav"
         >
           <motion.button
             type="submit"

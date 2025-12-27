@@ -358,6 +358,48 @@
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
+  /**
+   * Bottom Navigation Spacing
+   * 
+   * Prevents content overlap with fixed bottom nav on mobile.
+   * Only applies on mobile (<md), where bottom nav is visible.
+   * 
+   * Usage:
+   * - Main content wrapper: pb-bottom-nav
+   * - Modal max-height: max-h-mobile-modal
+   * - Fixed action bars: bottom-above-nav
+   */
+  
+  /* Padding for main content (includes safe-area) */
+  .pb-bottom-nav {
+    padding-bottom: calc(var(--app-bottom-nav-total) + 1.5rem); /* nav + 24px buffer */
+  }
+
+  /* For modals: max height that accounts for bottom nav on mobile */
+  .max-h-mobile-modal {
+    max-height: calc(100dvh - var(--app-bottom-nav-total) - 2rem); /* nav + 32px spacing */
+  }
+
+  /* Position element above bottom nav */
+  .bottom-above-nav {
+    bottom: var(--app-bottom-nav-total);
+  }
+
+  /* On desktop (md+), remove the bottom nav spacing */
+  @media (min-width: 768px) {
+    .pb-bottom-nav {
+      padding-bottom: 2rem; /* Standard desktop padding */
+    }
+
+    .max-h-mobile-modal {
+      max-height: 90dvh; /* Standard modal height on desktop */
+    }
+
+    .bottom-above-nav {
+      bottom: 1rem; /* Standard spacing on desktop */
+    }
+  }
+
   /* Touch-friendly scrolling */
   .touch-scroll {
     -webkit-overflow-scrolling: touch;

@@ -73,10 +73,13 @@ export const BottomNav: React.FC = () => {
 
   return (
     <>
-      {/* Spacer to prevent content from being hidden behind fixed nav */}
-      <div className="h-20 md:hidden" />
-
-      {/* Bottom Navigation */}
+      {/**
+       * Bottom Navigation
+       * 
+       * Fixed to bottom on mobile only (md:hidden).
+       * Content spacing handled by Layout's pb-bottom-nav utility.
+       * Height: h-16 (64px) + env(safe-area-inset-bottom)
+       */}
       <nav
         className="fixed bottom-0 inset-x-0 bg-white border-t md:hidden safe-area-bottom"
         style={{

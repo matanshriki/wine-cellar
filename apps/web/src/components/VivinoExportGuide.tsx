@@ -25,9 +25,8 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
       }}
     >
       <div 
-        className="bg-white rounded-lg max-w-3xl w-full shadow-2xl touch-scroll safe-area-inset-bottom"
+        className="bg-white rounded-lg max-w-3xl w-full shadow-2xl touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
-          maxHeight: 'calc(100dvh - 2rem)',
           overflowY: 'auto',
         }}
       >

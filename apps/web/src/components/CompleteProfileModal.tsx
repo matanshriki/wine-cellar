@@ -52,9 +52,8 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
       }}
     >
       <div 
-        className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom"
+        className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
-          maxHeight: 'calc(100dvh - 2rem)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}

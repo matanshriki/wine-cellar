@@ -133,9 +133,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/**
        * Main Content Area
-       * Mobile: extra padding bottom for bottom nav
+       * Mobile: extra padding bottom for bottom nav (pb-bottom-nav includes safe-area)
+       * Desktop: standard padding (pb-bottom-nav automatically switches at md breakpoint)
        */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 md:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav">
         {children}
       </main>
 

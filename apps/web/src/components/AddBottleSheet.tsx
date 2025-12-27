@@ -64,9 +64,9 @@ export function AddBottleSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl ios-modal-scroll"
+            className="fixed left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl ios-modal-scroll bottom-above-nav md:bottom-0"
             style={{
-              maxHeight: '80dvh',
+              maxHeight: 'calc(80dvh - var(--app-bottom-nav-total))',
             }}
           >
             {/* Handle */}

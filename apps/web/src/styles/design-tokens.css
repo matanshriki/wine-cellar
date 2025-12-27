@@ -152,6 +152,22 @@
   --z-modal: 1050;
   --z-toast: 1060;
   --z-tooltip: 1070;
+
+  /* === Layout Dimensions === */
+  /**
+   * Bottom Navigation Height
+   * Used to prevent content overlap with fixed bottom nav on mobile.
+   * 
+   * Total height = nav bar (64px) + safe-area-inset-bottom
+   * This ensures buttons, forms, and modals are never hidden behind the nav.
+   * 
+   * Usage:
+   * - Main content: padding-bottom: var(--app-bottom-nav-total)
+   * - Modals on mobile: maxHeight: calc(100dvh - var(--app-bottom-nav-total) - spacing)
+   * - Fixed action bars: bottom: var(--app-bottom-nav-total)
+   */
+  --app-bottom-nav-height: 64px; /* h-16 from BottomNav component */
+  --app-bottom-nav-total: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom));
 }
 
 /* === Component-specific tokens === */
