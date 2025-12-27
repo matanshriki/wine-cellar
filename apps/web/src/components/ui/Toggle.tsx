@@ -36,17 +36,20 @@ export const Toggle: React.FC<ToggleProps> = ({
     sm: {
       container: 'w-10 h-6',
       thumb: 'w-4 h-4',
-      translate: checked ? 'translateX(16px)' : 'translateX(2px)',
+      checkedClass: 'translate-x-4',
+      uncheckedClass: 'translate-x-0.5',
     },
     md: {
       container: 'w-14 h-8',
       thumb: 'w-6 h-6',
-      translate: checked ? 'translateX(24px)' : 'translateX(4px)',
+      checkedClass: 'translate-x-6',
+      uncheckedClass: 'translate-x-1',
     },
     lg: {
       container: 'w-16 h-10',
       thumb: 'w-8 h-8',
-      translate: checked ? 'translateX(24px)' : 'translateX(4px)',
+      checkedClass: 'translate-x-6',
+      uncheckedClass: 'translate-x-1',
     },
   };
 
@@ -77,19 +80,13 @@ export const Toggle: React.FC<ToggleProps> = ({
         }}
       >
         <span className="sr-only">{label || 'Toggle'}</span>
-        <motion.span
-          animate={{
-            x: checked ? (size === 'sm' ? 16 : 24) : (size === 'sm' ? 2 : 4),
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 500,
-            damping: 30,
-          }}
+        <span 
           className={`
             ${sizeConfig.thumb}
             rounded-full bg-white shadow-md
-            absolute top-1/2 -translate-y-1/2
+            absolute top-1/2 -translate-y-1/2 start-0
+            transition-transform duration-200 ease-in-out
+            ${checked ? sizeConfig.checkedClass : sizeConfig.uncheckedClass}
           `}
         />
       </button>
