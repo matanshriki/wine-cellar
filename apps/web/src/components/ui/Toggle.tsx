@@ -32,24 +32,39 @@ export const Toggle: React.FC<ToggleProps> = ({
   size = 'md',
   id,
 }) => {
+  /**
+   * Size configurations with RTL-aware positioning
+   * 
+   * For unchecked state:
+   * - LTR: Uses small positive offset (0.25rem or 0.125rem)
+   * - RTL: Uses slightly smaller negative offset (-0.2rem or -0.1rem)
+   *   to account for visual weight and ensure perfect alignment
+   * 
+   * For checked state:
+   * - Both LTR/RTL use same translate-x value
+   * - The `start-0` positioning handles the direction flip
+   */
   const sizes = {
     sm: {
       container: 'w-10 h-6',
       thumb: 'w-4 h-4',
       checkedClass: 'translate-x-4',
-      uncheckedClass: 'translate-x-0.5',
+      // LTR: 0.125rem, RTL: -0.1rem
+      uncheckedClass: 'translate-x-[0.125rem] rtl:translate-x-[-0.1rem]',
     },
     md: {
       container: 'w-14 h-8',
       thumb: 'w-6 h-6',
       checkedClass: 'translate-x-6',
-      uncheckedClass: 'translate-x-1',
+      // LTR: 0.25rem, RTL: -0.2rem (fixes the reported bug)
+      uncheckedClass: 'translate-x-[0.25rem] rtl:translate-x-[-0.2rem]',
     },
     lg: {
       container: 'w-16 h-10',
       thumb: 'w-8 h-8',
       checkedClass: 'translate-x-6',
-      uncheckedClass: 'translate-x-1',
+      // LTR: 0.25rem, RTL: -0.2rem
+      uncheckedClass: 'translate-x-[0.25rem] rtl:translate-x-[-0.2rem]',
     },
   };
 
