@@ -34,6 +34,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [i18n.language]);
 
+  /**
+   * SAFEGUARD: Reset body overflow on route change
+   * Prevents stuck scroll lock if a modal fails to clean up
+   * Only resets if no modal/dialog is currently open
+   */
+  useEffect(() => {
+    // Check if any modal is open by looking for common modal attributes
+    const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
+    
+    if (!hasOpenModal && document.body.style.overflow === 'hidden') {
+      // No modal is open but scroll is locked - unlock it
+      console.warn('[Layout] Unlocking stuck scroll on route change');
+      document.body.style.overflow = '';
+    }
+  }, [location.pathname]);
+
   async function handleProfileComplete() {
     setShowCompleteProfile(false);
     await refreshProfile();

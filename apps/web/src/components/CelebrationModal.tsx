@@ -89,6 +89,7 @@ export function CelebrationModal({
    */
   useEffect(() => {
     if (isOpen && !confettiTriggered.current) {
+      console.log('[CelebrationModal] Opening, will trigger confetti');
       // Small delay to let modal render first
       setTimeout(() => {
         triggerConfetti();
@@ -103,7 +104,7 @@ export function CelebrationModal({
   }, [isOpen]);
 
   /**
-   * Handle ESC key to close modal
+   * Handle ESC key and scroll lock
    */
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -113,15 +114,21 @@ export function CelebrationModal({
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll when modal is open
+      // Store original overflow before locking
+      const originalOverflow = document.body.style.overflow;
+      
+      // Lock scroll
       document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleEscape);
+
+      // Cleanup: ALWAYS restore scroll when modal closes or unmounts
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
 
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
+    // No cleanup needed when modal is not open
   }, [isOpen, onClose]);
 
   /**
