@@ -98,29 +98,36 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4"
       style={{
         paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
-        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
       }}
     >
       <div 
-        className="bg-white rounded-lg max-w-2xl w-full flex flex-col"
+        className="bg-white rounded-lg max-w-2xl w-full flex flex-col overflow-hidden"
         style={{
-          maxHeight: '100%',
+          maxHeight: 'calc(100dvh - max(1.5rem, env(safe-area-inset-top)) - max(1.5rem, env(safe-area-inset-bottom)))',
         }}
       >
         {/* Header - Fixed at top */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 rounded-t-lg">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
         </div>
 
         {/* Scrollable Form Content */}
-        <form id="bottle-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto touch-scroll" style={{ WebkitOverflowScrolling: 'touch', minHeight: 0 }}>
+        <form 
+          id="bottle-form" 
+          onSubmit={handleSubmit} 
+          className="p-4 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto touch-scroll"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            flex: '1 1 0',
+            minHeight: 0,
+          }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -253,13 +260,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
         </form>
 
-        {/* Footer - Fixed at bottom, always visible, safe-area aware */}
+        {/* Footer - Fixed at bottom, always visible */}
         <div 
-          className="bg-white border-t border-gray-200 px-4 sm:px-6 flex-shrink-0 rounded-b-lg"
-          style={{
-            paddingTop: '0.75rem',
-            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-          }}
+          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
         >
           <div className="flex gap-2 sm:gap-3">
             <button

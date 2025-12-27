@@ -80,7 +80,6 @@ export const Toggle: React.FC<ToggleProps> = ({
         <motion.span
           animate={{
             x: checked ? (size === 'sm' ? 16 : 24) : (size === 'sm' ? 2 : 4),
-            y: '-50%',
           }}
           transition={{
             type: 'spring',
@@ -89,8 +88,8 @@ export const Toggle: React.FC<ToggleProps> = ({
           }}
           className={`
             ${sizeConfig.thumb}
-            inline-block rounded-full bg-white shadow-md
-            absolute top-1/2
+            rounded-full bg-white shadow-md
+            absolute top-1/2 -translate-y-1/2
           `}
         />
       </button>

@@ -25,7 +25,7 @@ export function AddBottleSheet({
   const { t } = useTranslation();
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <>
           {/* Backdrop */}
@@ -34,7 +34,10 @@ export function AddBottleSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
           />
 
           {/* Bottom Sheet - iOS optimized */}
@@ -43,9 +46,9 @@ export function AddBottleSheet({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
             className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl ios-modal-scroll"
             style={{
-              maxHeight: '80vh',
               maxHeight: '80dvh',
             }}
           >
