@@ -98,21 +98,30 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+      className="fixed inset-0 bg-black bg-opacity-50 z-50"
       style={{
-        padding: 'env(safe-area-inset-top) 0.5rem env(safe-area-inset-bottom) 0.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.5rem',
       }}
     >
       <div 
-        className="bg-white rounded-lg w-full flex flex-col overflow-hidden"
+        className="bg-white rounded-lg w-full"
         style={{
-          maxWidth: 'min(90vw, 56rem)', // Larger: 896px max
-          height: 'min(95dvh, 1000px)', // Use 95% of viewport height, max 1000px
-          maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+          maxWidth: 'min(90vw, 56rem)',
+          maxHeight: '90vh',
+          maxHeight: '90dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         {/* Header - Fixed at top */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-2 sm:py-3 flex-shrink-0">
+        <div 
+          className="bg-white border-b border-gray-200 px-4 sm:px-6 py-2 sm:py-3"
+          style={{ flexShrink: 0 }}
+        >
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
@@ -122,10 +131,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         <form 
           id="bottle-form" 
           onSubmit={handleSubmit} 
-          className="p-4 sm:p-6 md:p-8 space-y-3 sm:space-y-4 overflow-y-auto touch-scroll"
+          className="p-4 sm:p-6 space-y-3 sm:space-y-4"
           style={{ 
+            flex: '1 1 0%',
+            overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
-            flex: '1 1 0',
             minHeight: 0,
           }}
         >
@@ -261,9 +271,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
         </form>
 
-        {/* Footer - Fixed at bottom, always visible */}
+        {/* Footer - Sticky at bottom, always visible */}
         <div 
-          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 flex-shrink-0"
+          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4"
+          style={{ 
+            flexShrink: 0,
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+          }}
         >
           <div className="flex gap-2 sm:gap-3">
             <button
