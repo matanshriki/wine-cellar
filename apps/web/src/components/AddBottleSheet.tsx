@@ -2,9 +2,8 @@
  * Add Bottle Options Sheet
  * 
  * Premium bottom sheet showing options for adding a bottle:
- * - Scan label (camera) - PRIMARY
- * - Upload photo - FALLBACK
- * - Manual entry - FALLBACK
+ * - Take/Upload photo (camera or gallery) - PRIMARY - includes AI label extraction
+ * - Manual entry - SECONDARY
  */
 
 import { useTranslation } from 'react-i18next';
@@ -13,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface AddBottleSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onScanLabel: () => void;
   onUploadPhoto: () => void;
   onManualEntry: () => void;
 }
@@ -21,7 +19,6 @@ interface AddBottleSheetProps {
 export function AddBottleSheet({
   isOpen,
   onClose,
-  onScanLabel,
   onUploadPhoto,
   onManualEntry,
 }: AddBottleSheetProps) {
@@ -75,10 +72,10 @@ export function AddBottleSheet({
 
               {/* Options */}
               <div className="space-y-3">
-                {/* PRIMARY: Scan Label */}
+                {/* PRIMARY: Take/Upload Photo (Camera + Gallery) */}
                 <button
-                  onClick={onScanLabel}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4"
+                  onClick={onUploadPhoto}
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
                   style={{
                     backgroundColor: 'var(--color-wine-500)',
                     color: 'white',
@@ -93,61 +90,30 @@ export function AddBottleSheet({
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
-                  <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-lg">
-                      {t('cellar.addBottle.scanLabel')}
-                    </div>
-                    <div className="text-sm opacity-90">
-                      {t('cellar.addBottle.scanLabelDesc')}
-                    </div>
+                  {/* Camera + Image Icon */}
+                  <div className="relative w-8 h-8 flex-shrink-0">
+                    <svg className="w-8 h-8 absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                   </div>
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                {/* FALLBACK: Upload Photo */}
-                <button
-                  onClick={onUploadPhoto}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4"
-                  style={{
-                    backgroundColor: 'var(--color-stone-100)',
-                    color: 'var(--color-stone-800)',
-                    border: '2px solid var(--color-stone-200)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-stone-200)';
-                    e.currentTarget.style.borderColor = 'var(--color-stone-300)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-stone-100)';
-                    e.currentTarget.style.borderColor = 'var(--color-stone-200)';
-                  }}
-                >
-                  <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold">
+                  <div className="flex-1 text-start">
+                    <div className="font-semibold text-lg">
                       {t('cellar.addBottle.uploadPhoto')}
                     </div>
-                    <div className="text-sm opacity-70">
-                      {t('cellar.addBottle.uploadPhotoDesc')}
+                    <div className="text-sm opacity-90 mt-0.5">
+                      {t('cellar.addBottle.uploadPhotoDescNew')}
                     </div>
                   </div>
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
 
-                {/* FALLBACK: Manual Entry */}
+                {/* SECONDARY: Manual Entry */}
                 <button
                   onClick={onManualEntry}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4"
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
                   style={{
                     backgroundColor: 'var(--color-stone-100)',
                     color: 'var(--color-stone-800)',
@@ -165,15 +131,15 @@ export function AddBottleSheet({
                   <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <div className="flex-1 text-left">
+                  <div className="flex-1 text-start">
                     <div className="font-semibold">
                       {t('cellar.addBottle.manualEntry')}
                     </div>
-                    <div className="text-sm opacity-70">
+                    <div className="text-sm opacity-70 mt-0.5">
                       {t('cellar.addBottle.manualEntryDesc')}
                     </div>
                   </div>
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>

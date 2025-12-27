@@ -137,10 +137,8 @@
     },
     "addBottle": {
       "title": "הוסף בקבוק",
-      "scanLabel": "סרוק תווית",
-      "scanLabelDesc": "השתמש במצלמה לסריקת תווית היין",
-      "uploadPhoto": "העלה תמונה",
-      "uploadPhotoDesc": "בחר תמונה מהמכשיר שלך",
+      "uploadPhoto": "צלם או העלה תמונה",
+      "uploadPhotoDescNew": "השתמש במצלמה או בחר מהגלריה • חילוץ תווית אוטומטי",
       "manualEntry": "הזן ידנית",
       "manualEntryDesc": "מלא את הפרטים בעצמך"
     },

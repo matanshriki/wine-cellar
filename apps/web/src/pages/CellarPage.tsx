@@ -580,14 +580,9 @@ export function CellarPage() {
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={() => setShowAddSheet(false)}
-        onScanLabel={() => {
-          setShowAddSheet(false);
-          setLabelCaptureMode('camera');
-          setShowLabelCapture(true);
-        }}
         onUploadPhoto={() => {
           setShowAddSheet(false);
-          setLabelCaptureMode('upload');
+          setLabelCaptureMode('upload'); // 'upload' mode allows both camera and gallery
           setShowLabelCapture(true);
         }}
         onManualEntry={() => {

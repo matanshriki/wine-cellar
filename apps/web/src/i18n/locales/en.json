@@ -137,10 +137,8 @@
     },
     "addBottle": {
       "title": "Add Bottle",
-      "scanLabel": "Scan Label",
-      "scanLabelDesc": "Use your camera to scan the wine label",
-      "uploadPhoto": "Upload Photo",
-      "uploadPhotoDesc": "Choose a photo from your device",
+      "uploadPhoto": "Take or Upload Photo",
+      "uploadPhotoDescNew": "Use camera or choose from gallery • AI label extraction",
       "manualEntry": "Enter Manually",
       "manualEntryDesc": "Fill in the details yourself"
     },

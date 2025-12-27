@@ -21,7 +21,6 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
     <div 
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-[60] ios-modal-scroll"
       style={{
-        height: '100vh',
         height: '100dvh',
       }}
     >

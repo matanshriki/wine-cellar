@@ -55,7 +55,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   const toggleId = id || `toggle-${Math.random().toString(36).substring(2, 9)}`;
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-center gap-3 min-h-[44px]">
       <button
         type="button"
         role="switch"
@@ -80,6 +80,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         <motion.span
           animate={{
             x: checked ? (size === 'sm' ? 16 : 24) : (size === 'sm' ? 2 : 4),
+            y: '-50%',
           }}
           transition={{
             type: 'spring',
@@ -88,33 +89,33 @@ export const Toggle: React.FC<ToggleProps> = ({
           }}
           className={`
             ${sizeConfig.thumb}
-            inline-block transform rounded-full bg-white shadow-md
+            inline-block rounded-full bg-white shadow-md
+            absolute top-1/2
           `}
-          style={{
-            y: size === 'sm' ? 4 : size === 'md' ? 4 : 4,
-          }}
         />
       </button>
 
       {(label || helperText) && (
-        <div className="flex-1 min-w-0">
+        <div 
+          className="flex-1 min-w-0 cursor-pointer" 
+          onClick={() => !disabled && onChange(!checked)}
+        >
           {label && (
-            <label
+            <div
               id={`${toggleId}-label`}
-              htmlFor={toggleId}
               className={`
-                block font-medium text-sm cursor-pointer
+                block font-medium text-base leading-snug
                 ${disabled ? 'text-gray-400' : 'text-gray-900'}
               `}
               style={{ color: disabled ? 'var(--color-stone-400)' : 'var(--color-stone-900)' }}
             >
               {label}
-            </label>
+            </div>
           )}
           {helperText && (
             <p
               id={`${toggleId}-helper`}
-              className="mt-1 text-xs"
+              className="mt-1 text-xs leading-tight"
               style={{ color: 'var(--color-stone-600)' }}
             >
               {helperText}
