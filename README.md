@@ -387,6 +387,59 @@ MIT
 
 ---
 
+## ✅ Production Checklist
+
+### **Before Deploying to Vercel**
+
+1. **Environment Variables** (in Vercel dashboard):
+   ```bash
+   VITE_SUPABASE_URL=https://pktelrzyllbwrmcfgocx.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   ```
+
+2. **Supabase Auth URLs** (in Supabase dashboard → Auth → URL Configuration):
+   - **Site URL**: `https://your-app.vercel.app`
+   - **Redirect URLs**: Add both localhost and production URLs
+   ```
+   http://localhost:5173,https://your-app.vercel.app,https://*.vercel.app
+   ```
+
+3. **Google OAuth** (in Google Cloud Console):
+   - **Authorized JavaScript origins**: Add your Vercel domain
+   - **Authorized redirect URIs**: Add `https://pktelrzyllbwrmcfgocx.supabase.co/auth/v1/callback`
+
+4. **Build Command** (already configured in `vercel.json`):
+   ```json
+   {
+     "buildCommand": "npm run build --workspace=apps/web",
+     "outputDirectory": "apps/web/dist"
+   }
+   ```
+
+5. **Optional - Deploy Edge Functions** (for AI features):
+   ```bash
+   supabase functions deploy analyze-wine
+   supabase functions deploy extract-wine-label
+   supabase secrets set OPENAI_API_KEY=sk-...
+   ```
+   
+   **Note**: App works without Edge Functions (uses fallback analysis)
+
+### **Post-Deployment Smoke Test**
+- [ ] Login (email + Google)
+- [ ] View/edit profile + upload avatar
+- [ ] Add bottle (manual + CSV import)
+- [ ] Generate sommelier notes
+- [ ] Get recommendations
+- [ ] Mark bottle as opened
+- [ ] View history
+- [ ] Switch language (EN/HE)
+- [ ] Test on mobile
+
+**Full deployment guide**: See `PRODUCTION_READINESS.md`
+
+---
+
 ## 📞 Support
 
 - **Issues**: Open an issue on GitHub
