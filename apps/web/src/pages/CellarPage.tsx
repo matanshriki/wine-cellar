@@ -278,15 +278,31 @@ export function CellarPage() {
           {bottles.length > 0 && (
             <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
               <button
-                onClick={() => setShowImport(true)}
-                className="btn btn-secondary text-sm sm:text-base w-full xs:w-auto"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowImport(true);
+                }}
+                className="btn btn-secondary text-sm sm:text-base w-full xs:w-auto min-h-[44px]"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
               >
                 <span className="hidden xs:inline">{t('cellar.importCsv')}</span>
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
               </button>
               <button
-                onClick={() => setShowAddSheet(true)}
-                className="btn btn-primary text-sm sm:text-base w-full xs:w-auto"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowAddSheet(true);
+                }}
+                className="btn btn-primary text-sm sm:text-base w-full xs:w-auto min-h-[44px]"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
               >
                 <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
                 <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
@@ -344,8 +360,16 @@ export function CellarPage() {
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSearchQuery('');
+                }}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors min-w-[44px] min-h-[44px]"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
                 aria-label={t('cellar.search.clear')}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,8 +389,12 @@ export function CellarPage() {
             {['red', 'white', 'rose', 'sparkling'].map((type) => (
               <button
                 key={type}
-                onClick={() => toggleFilter(type)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleFilter(type);
+                }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
                 style={{
                   backgroundColor: activeFilters.includes(type)
                     ? 'var(--color-wine-500)'
@@ -375,6 +403,8 @@ export function CellarPage() {
                   border: `2px solid ${
                     activeFilters.includes(type) ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
                   }`,
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
                 }}
               >
                 {t(`cellar.wineStyles.${type}`)}
@@ -383,8 +413,12 @@ export function CellarPage() {
 
             {/* Readiness Filters */}
             <button
-              onClick={() => toggleFilter('ready')}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFilter('ready');
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('ready')
                   ? 'var(--color-wine-500)'
@@ -393,14 +427,20 @@ export function CellarPage() {
                 border: `2px solid ${
                   activeFilters.includes('ready') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
                 }`,
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
               }}
             >
               ✓ {t('cellar.filters.ready')}
             </button>
 
             <button
-              onClick={() => toggleFilter('aging')}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFilter('aging');
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('aging')
                   ? 'var(--color-wine-500)'
@@ -409,14 +449,20 @@ export function CellarPage() {
                 border: `2px solid ${
                   activeFilters.includes('aging') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
                 }`,
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
               }}
             >
               ⏳ {t('cellar.filters.aging')}
             </button>
 
             <button
-              onClick={() => toggleFilter('analyzed')}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFilter('analyzed');
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('analyzed')
                   ? 'var(--color-wine-500)'
@@ -425,6 +471,8 @@ export function CellarPage() {
                 border: `2px solid ${
                   activeFilters.includes('analyzed') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
                 }`,
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
               }}
             >
               🔍 {t('cellar.filters.analyzed')}
@@ -459,14 +507,30 @@ export function CellarPage() {
           </p>
           <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-sm mx-auto px-4">
             <button 
-              onClick={() => setShowAddSheet(true)} 
-              className="btn btn-primary w-full xs:w-auto"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowAddSheet(true);
+              }}
+              className="btn btn-primary w-full xs:w-auto min-h-[44px]"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
             >
               + {t('cellar.empty.addButton')}
             </button>
             <button 
-              onClick={() => setShowImport(true)} 
-              className="btn btn-secondary w-full xs:w-auto"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowImport(true);
+              }}
+              className="btn btn-secondary w-full xs:w-auto min-h-[44px]"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
             >
               {t('cellar.empty.importButton')}
             </button>

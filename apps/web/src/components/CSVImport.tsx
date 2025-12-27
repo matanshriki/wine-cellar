@@ -316,9 +316,9 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
       <div 
         className="bg-white rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom"
         style={{
-          maxHeight: 'calc(100vh - 2rem)',
           maxHeight: 'calc(100dvh - 2rem)',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 z-10">
