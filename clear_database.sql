@@ -82,3 +82,4 @@ SELECT
 
 -- Note: Avatar images in 'avatars' bucket are preserved (users keep their profile pics)
 
+

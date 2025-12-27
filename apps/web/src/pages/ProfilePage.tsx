@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
+import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
 
@@ -84,14 +85,7 @@ export function ProfilePage() {
   }
 
   if (!profile) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
-        </div>
-      </div>
-    );
+    return <WineLoader variant="page" size="lg" message={t('common.loading')} />;
   }
 
   return (

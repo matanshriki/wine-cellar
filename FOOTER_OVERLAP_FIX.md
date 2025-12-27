@@ -347,3 +347,4 @@ This fix ensures that **no content or buttons are ever hidden** behind the fixed
 
 Enjoy your Wine Cellar Brain app with perfect mobile UX! 🍷✨
 
+

@@ -11,20 +11,58 @@
  * - Accessible (aria-label)
  * - Works in RTL/LTR
  * - Mobile + desktop optimized
+ * - Multiple variants (page, inline, small)
+ * - No layout shift (reserves space)
+ * 
+ * @example
+ * // Full-page loading
+ * <WineLoader variant="page" message="Loading your cellar..." />
+ * 
+ * @example
+ * // Inline loading
+ * <WineLoader variant="inline" size="sm" />
+ * 
+ * @example
+ * // Custom size
+ * <WineLoader size={64} message="Processing..." />
  */
 
 import { useEffect, useState } from 'react';
 
+type LoaderVariant = 'page' | 'inline' | 'default';
+type LoaderSize = 'sm' | 'md' | 'lg' | number;
+
 interface WineLoaderProps {
-  /** Size in pixels (default: 48) */
-  size?: number;
+  /** 
+   * Visual variant
+   * - 'page': Full-page centered loader with min-height
+   * - 'inline': Compact inline loader
+   * - 'default': Standard centered loader
+   */
+  variant?: LoaderVariant;
+  /** 
+   * Size preset or custom pixel value
+   * - 'sm': 32px
+   * - 'md': 48px (default)
+   * - 'lg': 64px
+   * - number: Custom size in pixels
+   */
+  size?: LoaderSize;
   /** Optional loading message */
   message?: string;
   /** Custom color (default: wine color from CSS vars) */
   color?: string;
+  /** Additional CSS classes for the container */
+  className?: string;
 }
 
-export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
+export function WineLoader({ 
+  variant = 'default', 
+  size = 'md', 
+  message, 
+  color,
+  className = '' 
+}: WineLoaderProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -38,17 +76,33 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
+  // Convert size to pixels
+  const sizeInPixels = typeof size === 'number' 
+    ? size 
+    : size === 'sm' 
+      ? 32 
+      : size === 'lg' 
+        ? 64 
+        : 48; // default to 'md'
+
+  // Determine container classes based on variant
+  const containerClasses = variant === 'page'
+    ? 'flex flex-col items-center justify-center min-h-[60vh]'
+    : variant === 'inline'
+      ? 'inline-flex flex-col items-center justify-center'
+      : 'flex flex-col items-center justify-center';
+
   return (
     <div 
-      className="flex flex-col items-center justify-center"
+      className={`${containerClasses} ${className}`}
       role="status"
       aria-live="polite"
       aria-label={message || 'Loading'}
     >
       {/* Wine Glass SVG */}
       <svg
-        width={size}
-        height={size}
+        width={sizeInPixels}
+        height={sizeInPixels}
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -61,7 +115,7 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
           {/* Bowl */}
           <path
             d="M 25 15 Q 20 35, 25 50 L 40 50 L 40 75 L 30 75 L 30 80 L 70 80 L 70 75 L 60 75 L 60 50 L 75 50 Q 80 35, 75 15 Z"
-            stroke={color || 'var(--color-wine-500)'}
+            stroke={color || 'var(--wine-500)'}
             strokeWidth="2"
             fill="none"
             strokeLinecap="round"
@@ -74,7 +128,7 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
             y1="50"
             x2="50"
             y2="75"
-            stroke={color || 'var(--color-wine-500)'}
+            stroke={color || 'var(--wine-500)'}
             strokeWidth="2"
             strokeLinecap="round"
           />
@@ -85,7 +139,7 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
             y1="80"
             x2="70"
             y2="80"
-            stroke={color || 'var(--color-wine-500)'}
+            stroke={color || 'var(--wine-500)'}
             strokeWidth="2.5"
             strokeLinecap="round"
           />
@@ -126,8 +180,8 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
             <g clipPath="url(#wine-glass-clip)" mask="url(#wine-fill-mask)">
               <defs>
                 <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor={color || 'var(--color-wine-400)'} stopOpacity="0.9" />
-                  <stop offset="100%" stopColor={color || 'var(--color-wine-600)'} stopOpacity="1" />
+                  <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
+                  <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
                 </linearGradient>
               </defs>
               
@@ -155,8 +209,8 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
                 <path d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z" />
               </clipPath>
               <linearGradient id="wine-gradient-static" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor={color || 'var(--color-wine-400)'} stopOpacity="0.9" />
-                <stop offset="100%" stopColor={color || 'var(--color-wine-600)'} stopOpacity="1" />
+                <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
+                <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
               </linearGradient>
             </defs>
             
@@ -195,10 +249,11 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
       {/* Loading Message */}
       {message && (
         <p 
-          className="mt-3 text-sm text-gray-600"
+          className="mt-3 text-sm"
           style={{ 
-            color: 'var(--color-stone-600)',
+            color: 'var(--text-secondary)',
             fontWeight: 500,
+            fontFamily: 'var(--font-body)',
           }}
         >
           {message}
@@ -210,4 +265,5 @@ export function WineLoader({ size = 48, message, color }: WineLoaderProps) {
     </div>
   );
 }
+
 

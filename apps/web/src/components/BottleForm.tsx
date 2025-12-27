@@ -98,16 +98,19 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50"
+      className="fixed inset-0 z-50"
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0.5rem',
+        background: 'var(--bg-overlay)',
+        backdropFilter: 'var(--blur-medium)',
+        WebkitBackdropFilter: 'var(--blur-medium)',
       }}
     >
       <div 
-        className="bg-white rounded-lg w-full max-h-mobile-modal"
+        className="modal-luxury w-full max-h-mobile-modal"
         style={{
           maxWidth: 'min(90vw, 56rem)',
           display: 'flex',
@@ -117,10 +120,19 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       >
         {/* Header - Fixed at top */}
         <div 
-          className="bg-white border-b border-gray-200 px-4 sm:px-6 py-2 sm:py-3"
-          style={{ flexShrink: 0 }}
+          className="px-4 sm:px-6 py-2 sm:py-3"
+          style={{ 
+            flexShrink: 0,
+            borderBottom: '1px solid var(--border-light)',
+          }}
         >
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+          <h2 
+            className="text-lg sm:text-xl font-bold"
+            style={{ 
+              color: 'var(--text-primary)',
+              fontWeight: 'var(--font-bold)',
+            }}
+          >
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
         </div>
@@ -129,7 +141,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         <form 
           id="bottle-form" 
           onSubmit={handleSubmit} 
-          className="p-4 sm:p-6 space-y-3 sm:space-y-4"
+          className="p-4 sm:p-6 space-y-3 sm:space-y-4 luxury-scrollbar"
           style={{ 
             flex: '1 1 0%',
             overflowY: 'auto',
@@ -139,41 +151,50 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.name')} *
               </label>
               <input
                 type="text"
                 value={formData.wine_name}
                 onChange={(e) => handleChange('wine_name', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 required
                 placeholder={t('bottleForm.namePlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.producer')}
               </label>
               <input
                 type="text"
                 value={formData.producer}
                 onChange={(e) => handleChange('producer', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 placeholder={t('bottleForm.producerPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.vintage')}
               </label>
               <input
                 type="number"
                 value={formData.vintage}
                 onChange={(e) => handleChange('vintage', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 placeholder={t('bottleForm.vintagePlaceholder')}
                 min="1800"
                 max={new Date().getFullYear() + 1}
@@ -181,13 +202,16 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.style')} *
               </label>
               <select
                 value={formData.color}
                 onChange={(e) => handleChange('color', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 required
               >
                 <option value="red">{t('bottleForm.styles.red')}</option>
@@ -198,14 +222,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.quantity')} *
               </label>
               <input
                 type="number"
                 value={formData.quantity}
                 onChange={(e) => handleChange('quantity', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 required
                 min="0"
                 placeholder="1"
@@ -213,40 +240,49 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.region')}
               </label>
               <input
                 type="text"
                 value={formData.region}
                 onChange={(e) => handleChange('region', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 placeholder={t('bottleForm.regionPlaceholder')}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.grapes')}
               </label>
               <input
                 type="text"
                 value={formData.grapes}
                 onChange={(e) => handleChange('grapes', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 placeholder={t('bottleForm.grapesPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.purchasePrice')}
               </label>
               <input
                 type="number"
                 value={formData.purchase_price}
                 onChange={(e) => handleChange('purchase_price', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 placeholder={t('bottleForm.purchasePricePlaceholder')}
                 min="0"
                 step="0.01"
@@ -254,13 +290,16 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {t('bottleForm.notes')}
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => handleChange('notes', e.target.value)}
-                className="input"
+                className="input-luxury w-full"
                 rows={3}
                 placeholder={t('bottleForm.notesPlaceholder')}
               />
@@ -271,17 +310,18 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
         {/* Footer - Sticky at bottom, always visible */}
         <div 
-          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4"
+          className="px-4 sm:px-6 py-3 sm:py-4"
           style={{ 
             flexShrink: 0,
-            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+            borderTop: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div className="flex gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn btn-secondary text-sm sm:text-base min-h-[44px]"
+              className="flex-1 btn-luxury-secondary text-sm sm:text-base"
               disabled={loading}
             >
               {t('bottleForm.cancel')}
@@ -289,7 +329,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             <button
               type="submit"
               form="bottle-form"
-              className="flex-1 btn btn-primary text-sm sm:text-base min-h-[44px]"
+              className="flex-1 btn-luxury-primary text-sm sm:text-base"
               disabled={loading}
             >
               {loading

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
+import { WineLoader } from '../components/WineLoader';
 import * as historyService from '../services/historyService';
 
 interface HistoryEvent {
@@ -70,14 +71,7 @@ export function HistoryPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-sm sm:text-base text-gray-600">{t('history.loading')}</p>
-        </div>
-      </div>
-    );
+    return <WineLoader variant="page" size="lg" message={t('history.loading')} />;
   }
 
   if (error) {

@@ -574,7 +574,7 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle">
                     <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-white border-b-2 border-gray-200">
                         <tr>
                           {headers.map((h) => (
                             <th key={h} className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">

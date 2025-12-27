@@ -14,6 +14,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WineLoader } from './WineLoader';
 import { scanLabelImage } from '../services/labelScanService';
 import type { ExtractedWineData } from '../services/labelScanService';
 
@@ -125,22 +126,18 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
                   className="w-full h-auto"
                 />
                 {isProcessing && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                    <div className="text-center">
-                      <div 
-                        className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"
-                        style={{
-                          borderColor: 'white',
-                          borderTopColor: 'transparent',
-                        }}
-                      />
-                      <p className="text-white font-medium">
-                        {t('cellar.labelScan.processing')}
-                      </p>
-                      <p className="text-white/70 text-sm mt-2">
-                        {t('cellar.labelScan.processingHint')}
-                      </p>
-                    </div>
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+                    <WineLoader 
+                      variant="default" 
+                      size="lg" 
+                      color="white"
+                    />
+                    <p className="text-white font-medium mt-4">
+                      {t('cellar.labelScan.processing')}
+                    </p>
+                    <p className="text-white/70 text-sm mt-2">
+                      {t('cellar.labelScan.processingHint')}
+                    </p>
                   </div>
                 )}
               </div>

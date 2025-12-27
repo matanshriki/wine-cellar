@@ -91,6 +91,21 @@
       "required": "You must complete your profile to use the app"
     }
   },
+  "dashboard": {
+    "tonightsOrbit": {
+      "title": "Tonight's Selection",
+      "subtitle": "Perfect bottles for this evening",
+      "needMore": "Add more bottles to see personalized recommendations"
+    },
+    "drinkWindow": {
+      "title": "Drink Window",
+      "subtitle": "Optimal timing for your collection",
+      "hold": "Hold",
+      "peakSoon": "Peak Soon",
+      "ready": "Ready Now",
+      "noAnalysis": "No analysis available yet"
+    }
+  },
   "cellar": {
     "title": "My Cellar",
     "bottleCount_one": "{{count}} bottle",

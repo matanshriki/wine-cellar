@@ -74,10 +74,11 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl"
+      className="p-4 rounded-lg"
       style={{
-        backgroundColor: 'var(--color-stone-50)',
-        border: '1px solid var(--color-stone-200)',
+        backgroundColor: 'var(--bg-subtle)',
+        border: '1px solid var(--border-base)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       {/* Header with Status and Confidence */}
@@ -96,7 +97,10 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
           </span>
 
           {/* Confidence Badge */}
-          <span className="flex items-center gap-1 text-xs text-gray-600">
+          <span 
+            className="flex items-center gap-1 text-xs"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -111,11 +115,23 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="p-1.5 rounded-lg hover:bg-white/50 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (!isRefreshing) {
+                e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
             aria-label={t('cellar.sommelier.refresh')}
           >
             <svg
-              className={`w-4 h-4 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              style={{ color: 'var(--text-secondary)' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -127,7 +143,10 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
       </div>
 
       {/* AI Label */}
-      <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+      <div 
+        className="flex items-center gap-1 text-xs mb-2"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
@@ -135,26 +154,38 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
       </div>
 
       {/* Sommelier Summary */}
-      <p className="text-sm text-gray-800 leading-relaxed mb-3">
+      <p 
+        className="text-sm leading-relaxed mb-3"
+        style={{ color: 'var(--text-primary)' }}
+      >
         {analysis.analysis_summary}
       </p>
 
       {/* Serving Suggestions */}
       <div className="flex items-center gap-3 mb-3 text-sm">
         {analysis.serving_temp_c && (
-          <div className="flex items-center gap-1.5 text-gray-700">
+          <div 
+            className="flex items-center gap-1.5"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             <span>🌡️</span>
             <span>{analysis.serving_temp_c}°C</span>
           </div>
         )}
         {analysis.decant_minutes > 0 && (
-          <div className="flex items-center gap-1.5 text-gray-700">
+          <div 
+            className="flex items-center gap-1.5"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             <span>⏱️</span>
             <span>{analysis.decant_minutes}min</span>
           </div>
         )}
         {analysis.drink_window_start && analysis.drink_window_end && (
-          <div className="flex items-center gap-1.5 text-gray-700">
+          <div 
+            className="flex items-center gap-1.5"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             <span>📅</span>
             <span>{analysis.drink_window_start}-{analysis.drink_window_end}</span>
           </div>
@@ -166,8 +197,14 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
         <div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-xs font-medium text-wine-600 hover:text-wine-700 transition-colors"
-            style={{ color: 'var(--color-wine-600)' }}
+            className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+            style={{ color: 'var(--wine-600)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--wine-700)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--wine-600)';
+            }}
           >
             <svg
               className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -188,7 +225,7 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
                 className="mt-2 pl-4 border-l-2"
-                style={{ borderColor: 'var(--color-wine-300)' }}
+                style={{ borderColor: 'var(--wine-300)' }}
               >
                 <ul className="space-y-1.5">
                   {analysis.analysis_reasons.map((reason, index) => (
@@ -197,7 +234,8 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="text-xs text-gray-700 flex items-start gap-2"
+                      className="text-xs flex items-start gap-2"
+                      style={{ color: 'var(--text-secondary)' }}
                     >
                       <span className="text-wine-500 flex-shrink-0 mt-0.5">•</span>
                       <span>{reason}</span>
@@ -207,7 +245,10 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
 
                 {/* Assumptions (if confidence is low) */}
                 {analysis.assumptions && (
-                  <p className="mt-2 text-xs text-gray-500 italic">
+                  <p 
+                    className="mt-2 text-xs italic"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
                     {t('cellar.sommelier.assumptions')}: {analysis.assumptions}
                   </p>
                 )}
@@ -218,7 +259,13 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
       )}
 
       {/* Analysis Date */}
-      <div className="mt-3 pt-2 border-t border-stone-200 text-xs text-gray-500">
+      <div 
+        className="mt-3 pt-2 text-xs"
+        style={{ 
+          borderTop: '1px solid var(--border-subtle)',
+          color: 'var(--text-tertiary)'
+        }}
+      >
         {t('cellar.sommelier.analyzedOn')} {new Date(analysis.analyzed_at).toLocaleDateString()}
       </div>
     </motion.div>

@@ -62,15 +62,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-stone-50)' }}>
+    <div className="min-h-screen" style={{ position: 'relative' }}>
+      {/* Luxury Background (light with subtle texture) */}
+      <div className="luxury-background" />
+
       {/**
-       * Top Navigation Bar - Luxury Design
+       * Top Navigation Bar - Light Luxury Design
        */}
       <nav 
-        className="bg-white sticky top-0 z-40"
+        className="sticky top-0 z-40"
         style={{ 
-          borderBottom: `1px solid var(--color-stone-200)`,
-          boxShadow: 'var(--shadow-sm)'
+          background: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,14 +90,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className="hidden xs:inline text-xl sm:text-2xl font-bold transition-colors"
                   style={{ 
                     fontFamily: 'var(--font-display)',
-                    color: 'var(--color-wine-700)',
+                    color: 'var(--wine-700)',
                   }}
                 >
                   {t('app.title')}
                 </span>
               </Link>
 
-              {/* Desktop Navigation - Premium pill tabs */}
+              {/* Desktop Navigation - Light Luxury pill tabs */}
               <div className="hidden md:flex gap-2">
                 {navItems.map((item) => (
                   <Link
@@ -103,17 +107,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       px-4 py-2 rounded-full text-sm font-medium transition-all
                       ${
                         location.pathname === item.path
-                          ? 'shadow-md'
-                          : 'hover:bg-opacity-50'
+                          ? ''
+                          : 'hover:bg-opacity-80'
                       }
                     `}
                     style={{
-                      backgroundColor: location.pathname === item.path 
-                        ? 'var(--color-wine-100)' 
-                        : 'transparent',
+                      background: location.pathname === item.path 
+                        ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
+                        : 'var(--bg-surface-2)',
                       color: location.pathname === item.path 
-                        ? 'var(--color-wine-800)' 
-                        : 'var(--color-stone-600)',
+                        ? 'var(--text-inverse)' 
+                        : 'var(--text-secondary)',
+                      boxShadow: location.pathname === item.path 
+                        ? 'var(--shadow-sm)' 
+                        : 'none',
                     }}
                   >
                     {item.label}

@@ -212,7 +212,7 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
             </h3>
 
             <div className="space-y-3">
-              <div className="bg-gray-50 rounded-lg p-3">
+              <div className="border border-gray-200 rounded-lg p-3 bg-white">
                 <h4 className="font-semibold text-gray-900 text-sm mb-1">
                   {t('vivinoGuide.troubleshooting.q1.title')}
                 </h4>
@@ -221,7 +221,7 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-3">
+              <div className="border border-gray-200 rounded-lg p-3 bg-white">
                 <h4 className="font-semibold text-gray-900 text-sm mb-1">
                   {t('vivinoGuide.troubleshooting.q2.title')}
                 </h4>

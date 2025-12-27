@@ -48,7 +48,12 @@ export function AddBottleSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40"
+            style={{
+              background: 'var(--bg-overlay)',
+              backdropFilter: 'var(--blur-medium)',
+              WebkitBackdropFilter: 'var(--blur-medium)',
+            }}
             onClick={(e) => {
               e.stopPropagation();
               if (allowBackdropClose) {
@@ -57,34 +62,41 @@ export function AddBottleSheet({
             }}
           />
 
-          {/* Bottom Sheet - iOS optimized */}
+          {/* Bottom Sheet - Light Luxury */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl ios-modal-scroll bottom-above-nav md:bottom-0"
+            className="fixed left-0 right-0 z-50 ios-modal-scroll bottom-above-nav md:bottom-0"
             style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-xl)',
               maxHeight: 'calc(80dvh - var(--app-bottom-nav-total))',
+              borderTopLeftRadius: 'var(--radius-2xl)',
+              borderTopRightRadius: 'var(--radius-2xl)',
+              borderBottom: 'none',
             }}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
               <div 
                 className="w-12 h-1 rounded-full"
-                style={{ backgroundColor: 'var(--color-stone-300)' }}
+                style={{ backgroundColor: 'var(--border-medium)' }}
               />
             </div>
 
             {/* Content - scrollable with safe area */}
-            <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom">
+            <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom luxury-scrollbar">
               {/* Title */}
               <h2 
                 className="text-2xl font-bold mb-6 text-center"
                 style={{ 
-                  color: 'var(--color-stone-900)',
+                  color: 'var(--text-primary)',
                   fontFamily: 'var(--font-display)',
+                  fontWeight: 'var(--font-bold)',
                 }}
               >
                 {t('cellar.addBottle.title')}
@@ -99,11 +111,12 @@ export function AddBottleSheet({
                     e.stopPropagation();
                     onUploadPhoto();
                   }}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px] hover:opacity-90 active:scale-[0.98]"
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
                   style={{
-                    backgroundColor: 'var(--color-wine-500)',
-                    color: 'white',
-                    boxShadow: 'var(--glow-wine)',
+                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    border: '1px solid var(--wine-700)',
+                    color: 'var(--text-inverse)',
+                    boxShadow: 'var(--shadow-sm)',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                   }}
@@ -135,11 +148,12 @@ export function AddBottleSheet({
                     e.stopPropagation();
                     onManualEntry();
                   }}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px] hover:opacity-90 active:scale-[0.98]"
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
                   style={{
-                    backgroundColor: 'var(--color-stone-100)',
-                    color: 'var(--color-stone-800)',
-                    border: '2px solid var(--color-stone-200)',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-xs)',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                   }}
@@ -168,12 +182,7 @@ export function AddBottleSheet({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="w-full mt-6 py-3 rounded-lg font-medium transition-colors hover:bg-stone-100 active:bg-stone-200 min-h-[44px]"
-                style={{
-                  color: 'var(--color-stone-600)',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
+                className="btn-luxury-ghost w-full mt-6"
               >
                 {t('common.cancel')}
               </button>

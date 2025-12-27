@@ -10,6 +10,8 @@ import { CelebrationModal } from '../components/CelebrationModal';
 import { AddBottleSheet } from '../components/AddBottleSheet';
 import { LabelCapture } from '../components/LabelCapture';
 import { WineLoader } from '../components/WineLoader';
+import { TonightsOrbit } from '../components/TonightsOrbit';
+import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -243,11 +245,7 @@ export function CellarPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <WineLoader size={56} message={t('cellar.loading')} />
-      </div>
-    );
+    return <WineLoader variant="page" size="lg" message={t('cellar.loading')} />;
   }
 
   return (
@@ -264,8 +262,22 @@ export function CellarPage() {
       <div className="mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('cellar.title')}</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
+            <h1 
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ 
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 'var(--font-bold)',
+                lineHeight: 'var(--leading-tight)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {t('cellar.title')}
+            </h1>
+            <p 
+              className="text-sm sm:text-base mt-1"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {filteredBottles.length === bottles.length
                 ? t('cellar.bottleCount', { count: bottles.length })
                 : t('cellar.filteredCount', { count: filteredBottles.length, total: bottles.length })}
@@ -281,11 +293,7 @@ export function CellarPage() {
                   e.stopPropagation();
                   setShowImport(true);
                 }}
-                className="btn btn-secondary text-sm sm:text-base w-full xs:w-auto min-h-[44px]"
-                style={{
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
+                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
               >
                 <span className="hidden xs:inline">{t('cellar.importCsv')}</span>
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
@@ -296,11 +304,7 @@ export function CellarPage() {
                   e.stopPropagation();
                   setShowAddSheet(true);
                 }}
-                className="btn btn-primary text-sm sm:text-base w-full xs:w-auto min-h-[44px]"
-                style={{
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
+                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto"
               >
                 <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
                 <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
@@ -339,21 +343,9 @@ export function CellarPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('cellar.search.placeholder')}
-              className="w-full pl-11 pr-11 py-3 rounded-xl border-2 transition-all text-sm sm:text-base"
+              className="input-luxury w-full pl-11 pr-11 py-3 text-sm sm:text-base"
               style={{
-                borderColor: searchQuery ? 'var(--color-wine-500)' : 'var(--color-stone-200)',
-                backgroundColor: 'white',
-                boxShadow: searchQuery ? 'var(--glow-wine)' : 'none',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-wine-500)';
-                e.currentTarget.style.boxShadow = 'var(--glow-wine)';
-              }}
-              onBlur={(e) => {
-                if (!searchQuery) {
-                  e.currentTarget.style.borderColor = 'var(--color-stone-200)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }
+                borderRadius: 'var(--radius-lg)',
               }}
             />
             {searchQuery && (
@@ -489,6 +481,25 @@ export function CellarPage() {
         </motion.div>
       )}
 
+      {/* Innovation Widgets - Tonight's Orbit and Drink Window */}
+      {bottles.length > 0 && !searchQuery && activeFilters.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
+        >
+          <TonightsOrbit 
+            bottles={filteredBottles}
+            onBottleClick={(bottle) => {
+              // Optional: could open a detail modal or navigate
+              console.log('Bottle clicked:', bottle);
+            }}
+          />
+          <DrinkWindowTimeline bottles={filteredBottles} />
+        </motion.div>
+      )}
+
       {bottles.length === 0 ? (
         /**
          * Empty State - Mobile Optimized
@@ -498,9 +509,17 @@ export function CellarPage() {
          * - Adequate padding for touch
          * - Buttons ONLY show here when empty (not in header)
          */
-        <div className="text-center py-8 sm:py-12 card">
-          <p className="text-lg sm:text-xl text-gray-600 mb-3 sm:mb-4">{t('cellar.empty.title')}</p>
-          <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6 px-4">
+        <div className="luxury-card text-center py-8 sm:py-12">
+          <p 
+            className="text-lg sm:text-xl mb-3 sm:mb-4"
+            style={{ color: 'var(--text-primary)', fontWeight: 'var(--font-semibold)' }}
+          >
+            {t('cellar.empty.title')}
+          </p>
+          <p 
+            className="text-sm sm:text-base mb-4 sm:mb-6 px-4"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             {t('cellar.empty.subtitle')}
           </p>
           <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-sm mx-auto px-4">
@@ -510,11 +529,7 @@ export function CellarPage() {
                 e.stopPropagation();
                 setShowAddSheet(true);
               }}
-              className="btn btn-primary w-full xs:w-auto min-h-[44px]"
-              style={{
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="btn-luxury-primary w-full xs:w-auto"
             >
               + {t('cellar.empty.addButton')}
             </button>
@@ -524,11 +539,7 @@ export function CellarPage() {
                 e.stopPropagation();
                 setShowImport(true);
               }}
-              className="btn btn-secondary w-full xs:w-auto min-h-[44px]"
-              style={{
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="btn-luxury-secondary w-full xs:w-auto"
             >
               {t('cellar.empty.importButton')}
             </button>
@@ -541,16 +552,24 @@ export function CellarPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-8 sm:py-12 card"
+          className="luxury-card text-center py-8 sm:py-12"
         >
           <div className="text-5xl mb-4">🔍</div>
-          <p className="text-lg sm:text-xl text-gray-600 mb-2">{t('cellar.search.noResults')}</p>
-          <p className="text-sm sm:text-base text-gray-500 mb-4">
+          <p 
+            className="text-lg sm:text-xl mb-2"
+            style={{ color: 'var(--text-primary)', fontWeight: 'var(--font-semibold)' }}
+          >
+            {t('cellar.search.noResults')}
+          </p>
+          <p 
+            className="text-sm sm:text-base mb-4"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             {t('cellar.search.noResultsHint')}
           </p>
           <button
             onClick={clearFilters}
-            className="btn btn-secondary"
+            className="btn-luxury-secondary"
           >
             {t('cellar.filters.clear')}
           </button>

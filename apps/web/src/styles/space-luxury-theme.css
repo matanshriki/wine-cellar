@@ -1,0 +1,353 @@
+/**
+ * Space-Inspired Luxury Design System
+ * 
+ * Premium, cosmic depth WITHOUT sci-fi/neon/gaming aesthetics.
+ * Calm, elegant, readable - high-end brand feel.
+ * 
+ * Accent Colors:
+ * - Primary: Wine/Burgundy (#722F37, #8B3A47, #A44D5A)
+ * - Highlight: Champagne/Gold (#D4AF37, #F4E4C1)
+ */
+
+:root {
+  /* ===== BACKGROUND LAYERS ===== */
+  --space-bg-deep: #0a0a0f; /* Deep night base */
+  --space-bg-overlay: rgba(10, 10, 15, 0.85); /* For overlays */
+  
+  /* Subtle vignette gradient */
+  --space-vignette: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+
+  /* ===== GLASS SURFACES ===== */
+  --glass-surface: rgba(255, 255, 255, 0.06);
+  --glass-surface-hover: rgba(255, 255, 255, 0.09);
+  --glass-surface-active: rgba(255, 255, 255, 0.12);
+  
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-accent: rgba(212, 175, 55, 0.3); /* Gold tint */
+  
+  --glass-blur: blur(24px);
+  --glass-blur-heavy: blur(40px);
+
+  /* ===== WINE ACCENT (Primary) ===== */
+  --wine-50: #faf5f6;
+  --wine-100: #f5e8eb;
+  --wine-200: #ebd1d6;
+  --wine-300: #d9a8b2;
+  --wine-400: #c47889;
+  --wine-500: #a44d5a; /* Main wine */
+  --wine-600: #8B3A47;
+  --wine-700: #722F37;
+  --wine-800: #5a242c;
+  --wine-900: #401a20;
+
+  /* ===== CHAMPAGNE/GOLD ACCENT (Highlight) ===== */
+  --gold-50: #fefdfb;
+  --gold-100: #fdf9f0;
+  --gold-200: #f9f0d9;
+  --gold-300: #f4e4c1; /* Champagne */
+  --gold-400: #e8d098;
+  --gold-500: #d4af37; /* Pure gold */
+  --gold-600: #b8941e;
+  --gold-700: #8f7216;
+  --gold-800: #6b5511;
+  --gold-900: #4a3a0c;
+
+  /* ===== TEXT & CONTENT ===== */
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  
+  --text-inverse: #0a0a0f;
+
+  /* ===== BORDERS ===== */
+  --border-glass: 1px solid var(--glass-border);
+  --border-glass-thick: 2px solid var(--glass-border);
+  --border-accent: 1px solid var(--glass-border-accent);
+
+  /* ===== SHADOWS ===== */
+  --shadow-glass-sm: 0 2px 16px rgba(0, 0, 0, 0.25);
+  --shadow-glass-md: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --shadow-glass-lg: 0 8px 40px rgba(0, 0, 0, 0.45);
+  
+  --shadow-wine: 0 0 24px rgba(164, 77, 90, 0.15);
+  --shadow-gold: 0 0 24px rgba(212, 175, 55, 0.15);
+
+  /* ===== SPACING & SIZING ===== */
+  --space-xs: 0.5rem;   /* 8px */
+  --space-sm: 0.75rem;  /* 12px */
+  --space-md: 1rem;     /* 16px */
+  --space-lg: 1.5rem;   /* 24px */
+  --space-xl: 2rem;     /* 32px */
+  --space-2xl: 3rem;    /* 48px */
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-display: 'Inter', -apple-system, system-ui, sans-serif;
+  
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 0.75rem;  /* 12px */
+  --radius-lg: 1rem;     /* 16px */
+  --radius-xl: 1.25rem;  /* 20px */
+  --radius-2xl: 1.5rem;  /* 24px */
+  --radius-full: 9999px;
+
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== Z-INDEX ===== */
+  --z-base: 1;
+  --z-dropdown: 50;
+  --z-modal-backdrop: 100;
+  --z-modal: 101;
+  --z-toast: 200;
+}
+
+/* ===== STARFIELD BACKGROUND ===== */
+.space-starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--space-bg-deep);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.space-starfield::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 60% 70%, rgba(255, 255, 255, 0.12), transparent),
+    radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 80% 10%, rgba(255, 255, 255, 0.13), transparent),
+    radial-gradient(1px 1px at 90% 60%, rgba(255, 255, 255, 0.08), transparent),
+    radial-gradient(0.5px 0.5px at 33% 80%, rgba(255, 255, 255, 0.1), transparent),
+    radial-gradient(0.5px 0.5px at 70% 40%, rgba(255, 255, 255, 0.09), transparent);
+  background-size: 200px 200px, 300px 300px, 250px 250px, 180px 180px, 220px 220px, 150px 150px, 280px 280px;
+  background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 160px 190px, 90px 50px, 120px 220px;
+  animation: stars-drift 120s linear infinite;
+}
+
+.space-starfield::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--space-vignette);
+}
+
+@keyframes stars-drift {
+  from {
+    transform: translateX(0) translateY(0);
+  }
+  to {
+    transform: translateX(-50px) translateY(-50px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-starfield::before {
+    animation: none;
+  }
+}
+
+/* ===== GLASS CARD PRIMITIVE ===== */
+.glass-card {
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass-md);
+  transition: all var(--transition-base);
+}
+
+.glass-card-hover:hover {
+  background: var(--glass-surface-hover);
+  box-shadow: var(--shadow-glass-lg);
+  transform: translateY(-2px);
+}
+
+.glass-card-active:active {
+  background: var(--glass-surface-active);
+  transform: translateY(0);
+}
+
+/* ===== GLASS BUTTON PRIMITIVE ===== */
+.btn-glass {
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--border-glass);
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-glass:hover {
+  background: var(--glass-surface-hover);
+  box-shadow: var(--shadow-glass-sm);
+}
+
+.btn-glass:active {
+  background: var(--glass-surface-active);
+  transform: scale(0.98);
+}
+
+.btn-glass:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== WINE ACCENT BUTTON ===== */
+.btn-wine {
+  background: linear-gradient(135deg, var(--wine-500), var(--wine-600));
+  border: 1px solid var(--wine-400);
+  color: white;
+  font-weight: var(--weight-semibold);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-wine);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-wine:hover {
+  background: linear-gradient(135deg, var(--wine-600), var(--wine-700));
+  box-shadow: var(--shadow-wine), var(--shadow-glass-sm);
+  transform: translateY(-1px);
+}
+
+.btn-wine:active {
+  transform: scale(0.98);
+}
+
+.btn-wine:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== GLASS INPUT PRIMITIVE ===== */
+.input-glass {
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--border-glass);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.input-glass::placeholder {
+  color: var(--text-muted);
+}
+
+.input-glass:focus {
+  outline: none;
+  border-color: var(--glass-border-accent);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+  background: var(--glass-surface-hover);
+}
+
+.input-glass:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== GLASS MODAL PRIMITIVE ===== */
+.modal-glass {
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass-lg);
+  padding: var(--space-xl);
+  max-width: 90vw;
+  max-height: 90dvh;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-gradient-wine {
+  background: linear-gradient(135deg, var(--wine-400), var(--wine-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-wine {
+  border-color: var(--wine-500);
+}
+
+.border-gold {
+  border-color: var(--gold-500);
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+.glass-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.glass-scrollbar::-webkit-scrollbar-track {
+  background: var(--glass-surface);
+  border-radius: var(--radius-sm);
+}
+
+.glass-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--space-bg-deep);
+}
+
+.glass-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-accent);
+}
+

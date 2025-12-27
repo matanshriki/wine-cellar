@@ -64,7 +64,7 @@ describe('Toggle Component', () => {
     expect(thumb?.className).toContain('rtl:translate-x-[-0.2rem]');
   });
 
-  it('applies correct translate classes for checked state', () => {
+  it('applies correct translate classes for checked state (RTL-aware)', () => {
     const onChange = vi.fn();
     const { container } = render(
       <Toggle checked={true} onChange={onChange} label="Test Toggle" size="md" />
@@ -72,8 +72,12 @@ describe('Toggle Component', () => {
     
     const thumb = container.querySelector('span:not(.sr-only)');
     
-    // Should have checked offset: translate-x-6
+    // CRITICAL: Checked state MUST be RTL-aware to prevent the bug!
+    // LTR: positive translate moves knob to the right
     expect(thumb?.className).toContain('translate-x-6');
+    
+    // RTL: negative translate moves knob to the left (opposite direction)
+    expect(thumb?.className).toContain('rtl:-translate-x-6');
   });
 
   it('renders with helper text', () => {
@@ -99,44 +103,94 @@ describe('Toggle Component', () => {
   });
 
   describe('RTL Support', () => {
-    it('small size has correct RTL offsets', () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <Toggle checked={false} onChange={onChange} label="Test Toggle" size="sm" />
-      );
-      
-      const thumb = container.querySelector('span:not(.sr-only)');
-      
-      // LTR: 0.125rem, RTL: -0.1rem
-      expect(thumb?.className).toContain('translate-x-[0.125rem]');
-      expect(thumb?.className).toContain('rtl:translate-x-[-0.1rem]');
+    describe('Unchecked State (OFF)', () => {
+      it('small size has correct RTL offsets', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={false} onChange={onChange} label="Test Toggle" size="sm" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: 0.125rem, RTL: -0.1rem
+        expect(thumb?.className).toContain('translate-x-[0.125rem]');
+        expect(thumb?.className).toContain('rtl:translate-x-[-0.1rem]');
+      });
+
+      it('medium size has correct RTL offsets', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={false} onChange={onChange} label="Test Toggle" size="md" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: 0.25rem, RTL: -0.2rem
+        expect(thumb?.className).toContain('translate-x-[0.25rem]');
+        expect(thumb?.className).toContain('rtl:translate-x-[-0.2rem]');
+      });
+
+      it('large size has correct RTL offsets', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={false} onChange={onChange} label="Test Toggle" size="lg" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: 0.25rem, RTL: -0.2rem
+        expect(thumb?.className).toContain('translate-x-[0.25rem]');
+        expect(thumb?.className).toContain('rtl:translate-x-[-0.2rem]');
+      });
     });
 
-    it('medium size has correct RTL offsets', () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <Toggle checked={false} onChange={onChange} label="Test Toggle" size="md" />
-      );
-      
-      const thumb = container.querySelector('span:not(.sr-only)');
-      
-      // LTR: 0.25rem, RTL: -0.2rem (fixes the reported bug)
-      expect(thumb?.className).toContain('translate-x-[0.25rem]');
-      expect(thumb?.className).toContain('rtl:translate-x-[-0.2rem]');
-    });
+    describe('Checked State (ON) - RTL Bug Fix', () => {
+      it('small size: checked state is RTL-aware', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={true} onChange={onChange} label="Test Toggle" size="sm" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: Move knob right (+4)
+        expect(thumb?.className).toContain('translate-x-4');
+        
+        // RTL: Move knob left (-4) - CRITICAL for fixing the bug!
+        expect(thumb?.className).toContain('rtl:-translate-x-4');
+      });
 
-    it('large size has correct RTL offsets', () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <Toggle checked={false} onChange={onChange} label="Test Toggle" size="lg" />
-      );
-      
-      const thumb = container.querySelector('span:not(.sr-only)');
-      
-      // LTR: 0.25rem, RTL: -0.2rem
-      expect(thumb?.className).toContain('translate-x-[0.25rem]');
-      expect(thumb?.className).toContain('rtl:translate-x-[-0.2rem]');
+      it('medium size: checked state is RTL-aware', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={true} onChange={onChange} label="Test Toggle" size="md" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: Move knob right (+6)
+        expect(thumb?.className).toContain('translate-x-6');
+        
+        // RTL: Move knob left (-6) - CRITICAL for fixing the bug!
+        expect(thumb?.className).toContain('rtl:-translate-x-6');
+      });
+
+      it('large size: checked state is RTL-aware', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+          <Toggle checked={true} onChange={onChange} label="Test Toggle" size="lg" />
+        );
+        
+        const thumb = container.querySelector('span:not(.sr-only)');
+        
+        // LTR: Move knob right (+6)
+        expect(thumb?.className).toContain('translate-x-6');
+        
+        // RTL: Move knob left (-6) - CRITICAL for fixing the bug!
+        expect(thumb?.className).toContain('rtl:-translate-x-6');
+      });
     });
   });
 });
+
 

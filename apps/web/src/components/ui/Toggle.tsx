@@ -2,12 +2,20 @@
  * Luxury Toggle/Switch Component
  * 
  * Premium switch with:
- * - Smooth animations (Framer Motion)
+ * - Smooth animations (CSS transitions)
  * - Elegant styling
  * - Large touch targets for mobile
  * - Accessible (keyboard, aria)
- * - RTL support
+ * - Full RTL/LTR support (direction-aware transforms)
  * - Helper text support
+ * 
+ * RTL Implementation:
+ * - Knob starts at `start-0` (left in LTR, right in RTL)
+ * - When UNCHECKED: Small offset for visual centering
+ * - When CHECKED: Transform moves knob across track
+ *   - LTR: Positive translate-x (moves right)
+ *   - RTL: Negative translate-x (moves left)
+ * - Both states use `rtl:` prefix for direction-aware classes
  */
 
 import React from 'react';
@@ -35,35 +43,41 @@ export const Toggle: React.FC<ToggleProps> = ({
   /**
    * Size configurations with RTL-aware positioning
    * 
+   * CRITICAL: Both checked and unchecked states MUST be RTL-aware!
+   * 
    * For unchecked state:
-   * - LTR: Uses small positive offset (0.25rem or 0.125rem)
-   * - RTL: Uses slightly smaller negative offset (-0.2rem or -0.1rem)
-   *   to account for visual weight and ensure perfect alignment
+   * - LTR: Small positive offset (0.25rem or 0.125rem) from start
+   * - RTL: Small negative offset (-0.2rem or -0.1rem) from start
    * 
    * For checked state:
-   * - Both LTR/RTL use same translate-x value
-   * - The `start-0` positioning handles the direction flip
+   * - LTR: Positive translate to move knob to the right
+   * - RTL: NEGATIVE translate to move knob to the left (opposite direction)
+   * - The `start-0` positioning handles the initial placement (left in LTR, right in RTL)
+   * - The translate must flip direction to move the knob across the track properly
    */
   const sizes = {
     sm: {
       container: 'w-10 h-6',
       thumb: 'w-4 h-4',
-      checkedClass: 'translate-x-4',
-      // LTR: 0.125rem, RTL: -0.1rem
+      // Checked: LTR moves right (+4), RTL moves left (-4)
+      checkedClass: 'translate-x-4 rtl:-translate-x-4',
+      // Unchecked: Small offset for visual centering
       uncheckedClass: 'translate-x-[0.125rem] rtl:translate-x-[-0.1rem]',
     },
     md: {
       container: 'w-14 h-8',
       thumb: 'w-6 h-6',
-      checkedClass: 'translate-x-6',
-      // LTR: 0.25rem, RTL: -0.2rem (fixes the reported bug)
+      // Checked: LTR moves right (+6), RTL moves left (-6)
+      checkedClass: 'translate-x-6 rtl:-translate-x-6',
+      // Unchecked: Small offset for visual centering
       uncheckedClass: 'translate-x-[0.25rem] rtl:translate-x-[-0.2rem]',
     },
     lg: {
       container: 'w-16 h-10',
       thumb: 'w-8 h-8',
-      checkedClass: 'translate-x-6',
-      // LTR: 0.25rem, RTL: -0.2rem
+      // Checked: LTR moves right (+6), RTL moves left (-6)
+      checkedClass: 'translate-x-6 rtl:-translate-x-6',
+      // Unchecked: Small offset for visual centering
       uncheckedClass: 'translate-x-[0.25rem] rtl:translate-x-[-0.2rem]',
     },
   };

@@ -171,3 +171,4 @@ The photo will appear:
 2. Screenshot of Storage → Buckets in Supabase dashboard
 3. Result of the verification SQL query
 
+

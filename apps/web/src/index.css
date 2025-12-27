@@ -1,5 +1,6 @@
 /* Import luxury design tokens */
 @import './styles/design-tokens.css';
+@import './styles/luxury-theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -172,20 +173,20 @@
   }
 
   .btn-secondary {
-    background-color: white;
-    color: var(--color-stone-700);
-    border: 1.5px solid var(--color-stone-300);
-    box-shadow: var(--shadow-sm);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-base);
+    box-shadow: var(--shadow-xs);
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background-color: var(--color-stone-50);
-    border-color: var(--color-stone-400);
-    box-shadow: var(--shadow-md);
+    background-color: var(--bg-subtle);
+    border-color: var(--wine-300);
+    box-shadow: var(--shadow-sm);
   }
 
   .btn-secondary:focus-visible {
-    ring-color: var(--color-stone-400);
+    ring-color: var(--wine-500);
   }
 
   .btn-ghost {

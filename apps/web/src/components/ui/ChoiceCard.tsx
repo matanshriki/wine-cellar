@@ -81,7 +81,7 @@ export const ChoiceCard: React.FC<ChoiceCardProps> = ({
             style={{
               backgroundColor: selected
                 ? 'var(--color-wine-100)'
-                : 'var(--color-stone-100)',
+                : 'transparent',
               color: selected ? 'var(--color-wine-700)' : 'var(--color-stone-700)',
             }}
           >
