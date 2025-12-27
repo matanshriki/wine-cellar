@@ -19,17 +19,26 @@ export function UserMenu() {
   const navigate = useNavigate();
 
   // Close menu when clicking outside
+  // Delay adding the listener to prevent the opening click from immediately closing the menu
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
 
-    if (isOpen) {
+    // Wait for next event loop before adding click-outside listener
+    // This prevents the opening click from being detected as "outside"
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [isOpen]);
 
   // Close menu on Escape key

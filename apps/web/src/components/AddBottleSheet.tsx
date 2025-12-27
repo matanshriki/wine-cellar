@@ -6,6 +6,7 @@
  * - Manual entry - SECONDARY
  */
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,6 +24,20 @@ export function AddBottleSheet({
   onManualEntry,
 }: AddBottleSheetProps) {
   const { t } = useTranslation();
+  const [allowBackdropClose, setAllowBackdropClose] = useState(false);
+
+  // Prevent backdrop from closing sheet immediately after opening
+  // (the opening click would otherwise propagate to backdrop)
+  useEffect(() => {
+    if (isOpen) {
+      setAllowBackdropClose(false);
+      // Allow backdrop clicks after a brief delay
+      const timer = setTimeout(() => {
+        setAllowBackdropClose(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence mode="wait">
@@ -36,7 +51,9 @@ export function AddBottleSheet({
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             onClick={(e) => {
               e.stopPropagation();
-              onClose();
+              if (allowBackdropClose) {
+                onClose();
+              }
             }}
           />
 

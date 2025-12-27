@@ -43,19 +43,24 @@ export function LanguageSwitcher() {
 
   /**
    * Close dropdown when clicking outside
+   * Delay adding the listener to prevent the opening click from immediately closing the dropdown
    */
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
+    // Wait for next event loop before adding click-outside listener
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);

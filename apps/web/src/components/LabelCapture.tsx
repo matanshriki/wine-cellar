@@ -88,7 +88,6 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-50 flex flex-col h-screen-ios"
         style={{
-          height: '100vh',
           height: '100dvh',
         }}
       >
