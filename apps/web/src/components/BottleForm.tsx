@@ -98,16 +98,16 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
       style={{
-        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        padding: 'max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left))',
       }}
     >
       <div 
-        className="bg-white rounded-lg max-w-2xl w-full flex flex-col overflow-hidden"
+        className="bg-white rounded-lg w-full flex flex-col overflow-hidden"
         style={{
-          maxHeight: 'calc(100dvh - max(1.5rem, env(safe-area-inset-top)) - max(1.5rem, env(safe-area-inset-bottom)))',
+          maxWidth: 'min(90vw, 56rem)', // Larger: 896px max (was 672px)
+          maxHeight: 'calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
         }}
       >
         {/* Header - Fixed at top */}
@@ -121,7 +121,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         <form 
           id="bottle-form" 
           onSubmit={handleSubmit} 
-          className="p-4 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto touch-scroll"
+          className="p-4 sm:p-6 md:p-8 space-y-3 sm:space-y-4 overflow-y-auto touch-scroll"
           style={{ 
             WebkitOverflowScrolling: 'touch',
             flex: '1 1 0',
