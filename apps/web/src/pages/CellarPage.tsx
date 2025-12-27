@@ -32,6 +32,7 @@ export function CellarPage() {
   // Label scan state
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showLabelCapture, setShowLabelCapture] = useState(false);
+  const [labelCaptureMode, setLabelCaptureMode] = useState<'camera' | 'upload'>('camera');
   const [extractedData, setExtractedData] = useState<{
     imageUrl: string;
     data: ExtractedWineData;
@@ -581,10 +582,12 @@ export function CellarPage() {
         onClose={() => setShowAddSheet(false)}
         onScanLabel={() => {
           setShowAddSheet(false);
+          setLabelCaptureMode('camera');
           setShowLabelCapture(true);
         }}
         onUploadPhoto={() => {
           setShowAddSheet(false);
+          setLabelCaptureMode('upload');
           setShowLabelCapture(true);
         }}
         onManualEntry={() => {
@@ -598,6 +601,7 @@ export function CellarPage() {
       <AnimatePresence>
         {showLabelCapture && (
           <LabelCapture
+            mode={labelCaptureMode}
             onSuccess={(result) => {
               setShowLabelCapture(false);
               setExtractedData(result);

@@ -97,21 +97,28 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 ios-modal-scroll">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      style={{
+        padding: 'max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left))',
+      }}
+    >
       <div 
-        className="bg-white rounded-lg max-w-2xl w-full flex flex-col ios-modal-scroll"
+        className="bg-white rounded-lg max-w-2xl w-full flex flex-col"
         style={{
-          maxHeight: 'calc(100vh - 2rem)',
-          maxHeight: 'calc(100dvh - 2rem)',
+          maxHeight: '100%',
+          height: '100%',
         }}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 z-10">
+        {/* Header - Fixed at top */}
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 rounded-t-lg">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
         </div>
 
-        <form id="bottle-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto touch-scroll">
+        {/* Scrollable Form Content */}
+        <form id="bottle-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 overflow-y-auto touch-scroll" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -242,12 +249,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             </div>
           </div>
 
-          {/* Add bottom padding to ensure content doesn't get hidden behind buttons */}
-          <div className="h-20"></div>
         </form>
 
-        {/* Sticky footer with safe area - always visible */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 safe-area-inset-bottom">
+        {/* Footer - Fixed at bottom, always visible */}
+        <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 rounded-b-lg">
           <div className="flex gap-2 sm:gap-3">
             <button
               type="button"
