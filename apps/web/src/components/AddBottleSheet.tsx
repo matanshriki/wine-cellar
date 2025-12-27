@@ -94,20 +94,18 @@ export function AddBottleSheet({
               <div className="space-y-3">
                 {/* PRIMARY: Take/Upload Photo (Camera + Gallery) */}
                 <button
-                  onClick={onUploadPhoto}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onUploadPhoto();
+                  }}
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px] hover:opacity-90 active:scale-[0.98]"
                   style={{
                     backgroundColor: 'var(--color-wine-500)',
                     color: 'white',
                     boxShadow: 'var(--glow-wine)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
-                    e.currentTarget.style.transform = 'scale(1)';
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
                   }}
                 >
                   {/* Camera + Image Icon */}
@@ -132,20 +130,18 @@ export function AddBottleSheet({
 
                 {/* SECONDARY: Manual Entry */}
                 <button
-                  onClick={onManualEntry}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onManualEntry();
+                  }}
+                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px] hover:opacity-90 active:scale-[0.98]"
                   style={{
                     backgroundColor: 'var(--color-stone-100)',
                     color: 'var(--color-stone-800)',
                     border: '2px solid var(--color-stone-200)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-stone-200)';
-                    e.currentTarget.style.borderColor = 'var(--color-stone-300)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-stone-100)';
-                    e.currentTarget.style.borderColor = 'var(--color-stone-200)';
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
                   }}
                 >
                   <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,16 +163,16 @@ export function AddBottleSheet({
 
               {/* Cancel */}
               <button
-                onClick={onClose}
-                className="w-full mt-6 py-3 rounded-lg font-medium transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="w-full mt-6 py-3 rounded-lg font-medium transition-colors hover:bg-stone-100 active:bg-stone-200 min-h-[44px]"
                 style={{
                   color: 'var(--color-stone-600)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-stone-100)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
                 }}
               >
                 {t('common.cancel')}

@@ -109,20 +109,18 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         </div>
       ) : (
         <button
-          onClick={onAnalyze}
-          className="w-full mb-3 sm:mb-4 py-2.5 px-4 text-sm font-medium rounded-lg transition-all"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAnalyze();
+          }}
+          className="w-full mb-3 sm:mb-4 py-2.5 px-4 text-sm font-medium rounded-lg transition-all hover:opacity-90 active:scale-[0.98] min-h-[44px]"
           style={{
             backgroundColor: 'var(--color-wine-50)',
             color: 'var(--color-wine-700)',
             border: '2px solid var(--color-wine-200)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-wine-100)';
-            e.currentTarget.style.borderColor = 'var(--color-wine-300)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-wine-50)';
-            e.currentTarget.style.borderColor = 'var(--color-wine-200)';
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
           }}
         >
           <div className="flex items-center justify-center gap-2">
@@ -138,19 +136,17 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         {/* Mark as Opened Button - Only show if quantity > 0 and handler is provided */}
         {onMarkOpened && bottle.quantity > 0 && (
           <button
-            onClick={onMarkOpened}
-            className="w-full py-2.5 px-4 text-sm font-medium rounded-lg transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onMarkOpened();
+            }}
+            className="w-full py-2.5 px-4 text-sm font-medium rounded-lg transition-all hover:opacity-90 active:scale-[0.98] min-h-[44px]"
             style={{
               backgroundColor: 'var(--color-wine-500)',
               color: 'white',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
-              e.currentTarget.style.boxShadow = 'var(--glow-wine)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
-              e.currentTarget.style.boxShadow = 'none';
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
             }}
           >
             🍷 {t('cellar.bottle.markOpened')}

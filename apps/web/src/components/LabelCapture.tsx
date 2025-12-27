@@ -165,35 +165,35 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
               {!isProcessing && (
                 <div className="flex gap-3">
                   <button
-                    onClick={handleRetake}
-                    className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRetake();
+                    }}
+                    className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors hover:opacity-90 active:scale-[0.98] min-h-[44px]"
                     style={{
                       backgroundColor: 'var(--color-stone-700)',
                       color: 'white',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--color-stone-600)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--color-stone-700)';
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
                     }}
                   >
                     {error ? t('cellar.labelScan.tryAgain') : t('cellar.labelScan.retake')}
                   </button>
                   {!error && (
                     <button
-                      onClick={handleProcess}
-                      className="flex-1 py-3 px-4 rounded-lg font-medium transition-all"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleProcess();
+                      }}
+                      className="flex-1 py-3 px-4 rounded-lg font-medium transition-all hover:opacity-90 active:scale-[0.98] min-h-[44px]"
                       style={{
                         backgroundColor: 'var(--color-wine-500)',
                         color: 'white',
                         boxShadow: 'var(--glow-wine)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
                       }}
                     >
                       {t('cellar.labelScan.usePhoto')}
@@ -241,18 +241,18 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
 
               {/* Capture/Upload Button */}
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="btn btn-primary btn-lg w-full"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="btn btn-primary btn-lg w-full hover:opacity-90 active:scale-[0.98] min-h-[44px]"
                 style={{
                   backgroundColor: 'var(--color-wine-500)',
                   color: 'white',
                   boxShadow: 'var(--glow-wine)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-wine-600)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-wine-500)';
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
                 }}
               >
                 {mode === 'camera' ? (

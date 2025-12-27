@@ -157,7 +157,6 @@ export function CelebrationModal({
       aria-labelledby="celebration-title"
       aria-describedby="celebration-description"
       style={{
-        height: '100vh',
         height: '100dvh',
       }}
     >
@@ -169,9 +168,9 @@ export function CelebrationModal({
         ref={modalRef}
         className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom"
         style={{
-          maxHeight: 'calc(100vh - 2rem)',
           maxHeight: 'calc(100dvh - 2rem)',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
         onClick={(e) => e.stopPropagation()}
       >
