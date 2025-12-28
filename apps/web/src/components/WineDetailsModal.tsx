@@ -113,10 +113,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
                   )}
 
                   {/* Quick Stats */}
-                  <div className="flex-1 grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="flex-1 flex flex-wrap gap-4 sm:gap-6">
                     {/* Vintage */}
                     {wine.vintage && (
-                      <div>
+                      <div className="flex-shrink-0">
                         <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                           {t('cellar.bottle.vintage')}
                         </div>
@@ -127,7 +127,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
                     )}
 
                     {/* Wine Type */}
-                    <div>
+                    <div className="flex-shrink-0">
                       <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                         {t('cellar.bottle.type')}
                       </div>
@@ -137,7 +137,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
                     </div>
 
                     {/* Quantity */}
-                    <div>
+                    <div className="flex-shrink-0">
                       <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                         {t('cellar.bottle.quantity')}
                       </div>
@@ -148,7 +148,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
 
                     {/* Rating */}
                     {wine.rating && (
-                      <div>
+                      <div className="flex-shrink-0">
                         <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                           Vivino Rating
                         </div>
