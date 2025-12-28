@@ -138,6 +138,17 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       
       // Auto-map column names
       const autoMapping: any = {};
+      
+      // FIRST PASS: Look for high-priority exact matches (especially "Average rating")
+      parsedHeaders.forEach((header: string) => {
+        const lower = header.toLowerCase();
+        // Priority: "Average rating" must be detected first, before any other rating column
+        if (lower === 'average rating' || lower === 'avg rating' || lower === 'avg. rating' || lower === 'community rating') {
+          autoMapping.ratingColumn = header;
+        }
+      });
+      
+      // SECOND PASS: Map all other columns (only if not already set)
       parsedHeaders.forEach((header: string) => {
         const lower = header.toLowerCase();
         if (lower.includes('name') || (lower === 'wine' && vivinoDetection.isVivino)) {
@@ -153,17 +164,14 @@ export function CSVImport({ onClose, onSuccess }: Props) {
         } else if (lower.includes('type') || lower.includes('style') || lower.includes('color')) {
           autoMapping.styleColumn = header;
         } else if (
-          // Prioritize "Average rating" (Vivino standard) over other rating columns
-          lower === 'average rating' ||
-          lower === 'avg rating' ||
-          lower === 'avg. rating' ||
-          lower === 'community rating' ||
-          // Then check for rating-like columns, but exclude ranking columns
-          (lower.includes('rating') && !lower.includes('rank')) ||
-          (lower.includes('score') && !lower.includes('rank')) ||
-          (lower.includes('average') && lower.includes('rating')) ||
-          (lower.includes('avg') && lower.includes('rating')) ||
-          (lower.includes('community') && lower.includes('rating'))
+          // Only match if rating column NOT already set by first pass
+          !autoMapping.ratingColumn &&
+          (
+            (lower.includes('rating') && !lower.includes('rank')) ||
+            (lower.includes('score') && !lower.includes('rank')) ||
+            (lower.includes('average') && lower.includes('rating')) ||
+            (lower.includes('avg') && lower.includes('rating'))
+          )
         ) {
           autoMapping.ratingColumn = header;
         } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
@@ -193,9 +201,20 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       const ratingLikeColumns = parsedHeaders.filter(h => 
         h.toLowerCase().includes('rating') || h.toLowerCase().includes('score')
       );
-      if (ratingLikeColumns.length > 1) {
-        console.log('[CSV Import] 🔍 Multiple rating-like columns found:', ratingLikeColumns);
-        console.log(`[CSV Import] ✅ Selected: "${autoMapping.ratingColumn}"`);
+      if (ratingLikeColumns.length > 0) {
+        console.log('[CSV Import] 🔍 Rating-like columns found:', ratingLikeColumns);
+        if (autoMapping.ratingColumn) {
+          console.log(`[CSV Import] ✅ Auto-selected for RATING: "${autoMapping.ratingColumn}"`);
+          
+          // Verify it's the right one
+          const isAverageRating = autoMapping.ratingColumn.toLowerCase().includes('average');
+          if (isAverageRating) {
+            console.log('[CSV Import] ✅ Perfect! "Average rating" was prioritized.');
+          } else if (ratingLikeColumns.some(c => c.toLowerCase().includes('average'))) {
+            console.error('[CSV Import] ❌ WARNING: "Average rating" exists but was NOT selected!');
+            console.error('[CSV Import] This is a bug. Please report.');
+          }
+        }
       }
       
       console.log('[CSV Import] Auto-detected columns:', {
