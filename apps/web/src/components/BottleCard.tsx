@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { SommelierNotes } from './SommelierNotes';
+import { WineDetailsModal } from './WineDetailsModal';
 import type { AIAnalysis } from '../services/aiAnalysisService';
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 
 export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }: Props) {
   const { t } = useTranslation();
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div className="luxury-card luxury-card-hover p-4 sm:p-5">
@@ -259,46 +262,77 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
           </button>
         )}
         
-        {/* Secondary Actions: Edit / Delete */}
-        <div className="flex gap-2">
+        {/* Secondary Actions: Details / Edit / Delete */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDetails(true);
+            }}
+            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+            style={{
+              backgroundColor: 'var(--wine-50)',
+              color: 'var(--wine-700)',
+              border: '1px solid var(--wine-200)',
+              boxShadow: 'var(--shadow-xs)',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span className="hidden sm:inline">{t('cellar.bottle.details')}</span>
+          </button>
+          
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onEdit();
             }}
-            className="flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all min-h-[44px]"
+            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-base)',
               boxShadow: 'var(--shadow-xs)',
-            WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-          }}
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             {t('cellar.bottle.edit')}
           </button>
+          
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onDelete();
             }}
-            className="py-2.5 px-4 text-sm font-medium rounded-lg transition-all min-h-[44px]"
+            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--color-error)',
               border: '1px solid var(--border-base)',
               boxShadow: 'var(--shadow-xs)',
-            WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-          }}
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             {t('cellar.bottle.delete')}
           </button>
         </div>
       </div>
+      
+      {/* Wine Details Modal */}
+      <WineDetailsModal 
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        bottle={bottle}
+      />
     </div>
   );
 }
