@@ -50,6 +50,55 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             {bottle.wine.producer}
           </p>
         )}
+
+        {/* Vivino Rating - Note: NOT translated, it's numerical data */}
+        {bottle.wine.rating && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1" title={`${bottle.wine.rating} ${t('cellar.bottle.vivinoRating')}`}>
+              {[1, 2, 3, 4, 5].map((star) => {
+                const rating = bottle.wine.rating || 0;
+                const filled = star <= Math.floor(rating);
+                const halfFilled = !filled && star <= Math.ceil(rating);
+                
+                return (
+                  <span
+                    key={star}
+                    className="text-base"
+                    style={{
+                      color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
+                    }}
+                    aria-hidden="true"
+                  >
+                    {filled ? '★' : halfFilled ? '⯪' : '☆'}
+                  </span>
+                );
+              })}
+              <span
+                className="text-xs font-medium ms-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {bottle.wine.rating.toFixed(1)}
+              </span>
+            </div>
+            {/* Vivino Link */}
+            {bottle.wine.vivino_url && (
+              <a
+                href={bottle.wine.vivino_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  color: 'var(--wine-600)',
+                  backgroundColor: 'var(--wine-50)',
+                  border: '1px solid var(--wine-200)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Vivino
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Details Section - Clean icon-based layout */}

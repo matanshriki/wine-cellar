@@ -79,6 +79,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
     grapesColumn: '',
     styleColumn: '',
     ratingColumn: '',
+    vivinoUrlColumn: '',
     quantityColumn: '',
     notesColumn: '',
   });
@@ -152,6 +153,8 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           autoMapping.styleColumn = header;
         } else if (lower.includes('rating') || lower.includes('score')) {
           autoMapping.ratingColumn = header;
+        } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
+          autoMapping.vivinoUrlColumn = header;
         } else if (lower.includes('quantity') || lower.includes('qty') || lower.includes('bottles')) {
           autoMapping.quantityColumn = header;
         } else if (lower.includes('note')) {
@@ -203,7 +206,8 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       const regionIdx = mapping.regionColumn ? headers.indexOf(mapping.regionColumn) : -1;
       const grapesIdx = mapping.grapesColumn ? headers.indexOf(mapping.grapesColumn) : -1;
       const styleIdx = headers.indexOf(mapping.styleColumn);
-      // const ratingIdx = mapping.ratingColumn ? headers.indexOf(mapping.ratingColumn) : -1; // Not currently used
+      const ratingIdx = mapping.ratingColumn ? headers.indexOf(mapping.ratingColumn) : -1;
+      const vivinoUrlIdx = mapping.vivinoUrlColumn ? headers.indexOf(mapping.vivinoUrlColumn) : -1;
       const quantityIdx = mapping.quantityColumn ? headers.indexOf(mapping.quantityColumn) : -1;
       const notesIdx = mapping.notesColumn ? headers.indexOf(mapping.notesColumn) : -1;
       
@@ -233,6 +237,19 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             continue;
           }
           
+          // Parse rating (Vivino format is usually "4.2" or similar)
+          let rating: number | null = null;
+          if (ratingIdx >= 0 && row[ratingIdx]) {
+            const ratingStr = row[ratingIdx].trim();
+            const ratingNum = parseFloat(ratingStr);
+            if (!isNaN(ratingNum) && ratingNum >= 0 && ratingNum <= 5) {
+              rating = ratingNum;
+            }
+          }
+          
+          // Get Vivino URL if available
+          const vivinoUrl = vivinoUrlIdx >= 0 ? row[vivinoUrlIdx]?.trim() : null;
+          
           // Build bottle data
           const bottleInput: bottleService.CreateBottleInput = {
             wine_name: wineName,
@@ -245,6 +262,8 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             country: null,
             appellation: null,
             vivino_wine_id: null,
+            rating: rating,
+            vivino_url: vivinoUrl,
             wine_notes: null,
             quantity: quantityIdx >= 0 && row[quantityIdx] ? parseInt(row[quantityIdx]) : 1,
             notes: notesIdx >= 0 ? row[notesIdx]?.trim() : null,

@@ -93,6 +93,8 @@ export interface CreateBottleInput {
   color: 'red' | 'white' | 'rose' | 'sparkling';
   grapes?: string[] | null;
   vivino_wine_id?: string | null;
+  rating?: number | null;
+  vivino_url?: string | null;
   wine_notes?: string | null;
   
   // Bottle info
@@ -126,6 +128,8 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     color: input.color,
     grapes: input.grapes ? input.grapes : null,
     vivino_wine_id: input.vivino_wine_id || null,
+    rating: input.rating || null,
+    vivino_url: input.vivino_url || null,
     notes: input.wine_notes || null,
   };
 
