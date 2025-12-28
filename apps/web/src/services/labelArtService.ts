@@ -12,14 +12,52 @@
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
 
-// Feature flag check
-export const isLabelArtEnabled = (): boolean => {
+// App-level feature flag check (master switch)
+export const isLabelArtFeatureAvailable = (): boolean => {
   return import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART === 'true';
 };
 
+/**
+ * Check if current user has AI label art enabled
+ * Two-level check: App-level flag AND user-level flag
+ */
+export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
+  // First check: Is feature available at app level?
+  if (!isLabelArtFeatureAvailable()) {
+    return false;
+  }
+
+  // Second check: Is feature enabled for this specific user?
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return false;
+  }
+
+  // Get user's profile to check their ai_label_art_enabled flag
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('ai_label_art_enabled')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !profile) {
+    console.error('Error fetching user profile:', error);
+    return false;
+  }
+
+  return profile.ai_label_art_enabled === true;
+};
+
+/**
+ * Legacy function name for backwards compatibility
+ * @deprecated Use isLabelArtEnabledForUser() instead
+ */
+export const isLabelArtEnabled = isLabelArtFeatureAvailable;
+
 export const isOpenAIConfigured = (): boolean => {
   // Check if OpenAI is configured (backend will validate actual key)
-  return isLabelArtEnabled();
+  return isLabelArtFeatureAvailable();
 };
 
 export type LabelArtStyle = 'classic' | 'modern';

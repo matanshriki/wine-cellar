@@ -4,7 +4,8 @@
  * Displays comprehensive wine information in a beautiful bottle-themed modal
  */
 
-import { useState } from 'react';
+import { useState, useEffect as React_useEffect } from 'react';
+import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
@@ -26,6 +27,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
 
   if (!bottle) return null;
 
@@ -33,6 +35,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
   // Get display image with priority: user > generated > placeholder
   const displayImage = labelArtService.getWineDisplayImage(wine);
+
+  // Check if user has AI label art enabled (per-user flag)
+  React.useEffect(() => {
+    const checkUserAccess = async () => {
+      const enabled = await labelArtService.isLabelArtEnabledForUser();
+      setUserCanGenerateAI(enabled);
+    };
+    
+    if (isOpen) {
+      checkUserAccess();
+    }
+  }, [isOpen]);
 
   const handleSaveImage = async (imageUrl: string) => {
     try {
@@ -231,7 +245,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       </button>
 
                       {/* Generate Label Art Button */}
-                      {labelArtService.isLabelArtEnabled() && !wine.image_url && (
+                      {userCanGenerateAI && !wine.image_url && (
                         <button
                           onClick={() => setShowGenerateDialog(true)}
                           disabled={isGenerating}
