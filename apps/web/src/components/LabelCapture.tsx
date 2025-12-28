@@ -111,7 +111,12 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
         </div>
 
         {/* Content - iOS scrollable */}
-        <div className="flex-1 flex items-center justify-center p-6 ios-modal-scroll safe-area-inset-bottom">
+        <div 
+          className="flex-1 flex items-center justify-center p-6 ios-modal-scroll overflow-y-auto"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom), 2rem)',
+          }}
+        >
           {preview ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -160,19 +165,20 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
 
               {/* Actions */}
               {!isProcessing && (
-                <div className="flex gap-3">
+                <div className="flex gap-3 mt-2">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleRetake();
                     }}
-                    className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors hover:opacity-90 active:scale-[0.98] min-h-[44px]"
+                    className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors active:scale-[0.98] min-h-[44px]"
                     style={{
                       backgroundColor: 'var(--color-stone-700)',
                       color: 'white',
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
+                      cursor: 'pointer',
                     }}
                   >
                     {error ? t('cellar.labelScan.tryAgain') : t('cellar.labelScan.retake')}
@@ -184,13 +190,14 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
                         e.stopPropagation();
                         handleProcess();
                       }}
-                      className="flex-1 py-3 px-4 rounded-lg font-medium transition-all hover:opacity-90 active:scale-[0.98] min-h-[44px]"
+                      className="flex-1 py-3 px-4 rounded-lg font-medium transition-all active:scale-[0.98] min-h-[44px]"
                       style={{
-                        backgroundColor: 'var(--color-wine-500)',
+                        backgroundColor: 'var(--wine-600)',
                         color: 'white',
-                        boxShadow: 'var(--glow-wine)',
+                        boxShadow: '0 2px 8px rgba(138, 58, 71, 0.3)',
                         WebkitTapHighlightColor: 'transparent',
                         touchAction: 'manipulation',
+                        cursor: 'pointer',
                       }}
                     >
                       {t('cellar.labelScan.usePhoto')}
