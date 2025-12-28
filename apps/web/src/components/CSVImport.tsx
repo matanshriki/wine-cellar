@@ -152,7 +152,13 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           autoMapping.grapesColumn = header;
         } else if (lower.includes('type') || lower.includes('style') || lower.includes('color')) {
           autoMapping.styleColumn = header;
-        } else if (lower.includes('rating') || lower.includes('score')) {
+        } else if (
+          lower.includes('rating') || 
+          lower.includes('score') || 
+          lower === 'average rating' ||
+          lower === 'avg rating' ||
+          lower === 'vivino rating'
+        ) {
           autoMapping.ratingColumn = header;
         } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
           autoMapping.vivinoUrlColumn = header;
@@ -167,8 +173,18 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       
       setMapping((prev) => ({ ...prev, ...autoMapping }));
       
+      // Log detected columns for debugging
+      console.log('[CSV Import] Auto-detected columns:', {
+        name: autoMapping.nameColumn,
+        producer: autoMapping.producerColumn,
+        rating: autoMapping.ratingColumn,
+        vivinoUrl: autoMapping.vivinoUrlColumn,
+        imageUrl: autoMapping.imageUrlColumn,
+      });
+      
       if (vivinoDetection.isVivino) {
-        toast.success('🍷 Vivino format detected! Auto-mapped columns.');
+        const mappedCount = Object.values(autoMapping).filter(v => v).length;
+        toast.success(`🍷 Vivino format detected! Auto-mapped ${mappedCount} columns.`);
       }
       
       setStep('map');
@@ -242,12 +258,25 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           }
           
           // Parse rating (Vivino format is usually "4.2" or similar)
+          // Handle both dot (4.2) and comma (4,2) decimal separators
           let rating: number | null = null;
           if (ratingIdx >= 0 && row[ratingIdx]) {
-            const ratingStr = row[ratingIdx].trim();
+            let ratingStr = row[ratingIdx].trim();
+            // Replace comma with dot for European format (e.g., 4,2 → 4.2)
+            ratingStr = ratingStr.replace(',', '.');
             const ratingNum = parseFloat(ratingStr);
-            if (!isNaN(ratingNum) && ratingNum >= 0 && ratingNum <= 5) {
-              rating = ratingNum;
+            // Vivino ratings are 0-5 scale, clamp to valid range
+            if (!isNaN(ratingNum)) {
+              if (ratingNum >= 0 && ratingNum <= 5) {
+                rating = ratingNum;
+                // Log first few ratings to help debug
+                if (successCount < 3) {
+                  console.log(`[CSV Import] Parsed rating for "${wineName}": ${rating}`);
+                }
+              } else if (ratingNum > 5) {
+                // If rating is out of range, assume it might be a different scale
+                console.warn(`[CSV Import] Rating ${ratingNum} for "${wineName}" is out of Vivino's 0-5 range, skipping`);
+              }
             }
           }
           
@@ -281,7 +310,6 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             storage_location: null,
             bottle_size_ml: 750,
             tags: null,
-            image_url: null,
           };
           
           await bottleService.createBottle(bottleInput);
