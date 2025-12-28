@@ -703,6 +703,7 @@ export function CellarPage() {
           setSelectedBottle(null);
         }}
         bottle={selectedBottle}
+        onMarkAsOpened={handleMarkOpened}
       />
     </div>
   );

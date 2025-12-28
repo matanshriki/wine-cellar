@@ -12,9 +12,10 @@ interface WineDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   bottle: BottleWithWineInfo | null;
+  onMarkAsOpened?: (bottle: BottleWithWineInfo) => void;
 }
 
-export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalProps) {
+export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: WineDetailsModalProps) {
   const { t } = useTranslation();
 
   if (!bottle) return null;
@@ -326,40 +327,79 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                   </div>
                 )}
 
-                {/* Vivino Link */}
-                {wine.vivino_url && (
+                {/* Action Buttons */}
+                {(onMarkAsOpened || wine.vivino_url) && (
                   <div className="pt-4 border-t mt-6" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <a
-                      href={wine.vivino_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="vivino-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 mt-4"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
-                        color: 'white',
-                        minHeight: '44px',
-                        boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
-                        border: '1px solid var(--wine-600)',
-                        WebkitTapHighlightColor: 'transparent',
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                      </svg>
-                      <span>{t('cellar.bottle.openVivino')}</span>
-                      <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </a>
+                    <div className="space-y-3 mt-4">
+                      {/* Mark as Opened Button */}
+                      {onMarkAsOpened && (
+                        <button
+                          onClick={() => {
+                            onMarkAsOpened(bottle);
+                            onClose();
+                          }}
+                          className="mark-opened-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200"
+                          style={{
+                            background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
+                            color: 'white',
+                            minHeight: '44px',
+                            boxShadow: '0 2px 8px rgba(212, 175, 55, 0.2)',
+                            border: '1px solid var(--gold-600)',
+                            WebkitTapHighlightColor: 'transparent',
+                            touchAction: 'manipulation',
+                          }}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>{t('cellar.bottle.markOpened')}</span>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* Vivino Link */}
+                      {wine.vivino_url && (
+                        <a
+                          href={wine.vivino_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="vivino-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200"
+                          style={{
+                            background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                            color: 'white',
+                            minHeight: '44px',
+                            boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
+                            border: '1px solid var(--wine-600)',
+                            WebkitTapHighlightColor: 'transparent',
+                            touchAction: 'manipulation',
+                          }}
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                          </svg>
+                          <span>{t('cellar.bottle.openVivino')}</span>
+                          <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                    
                     <style>{`
                       @media (hover: hover) and (pointer: fine) {
-                        .vivino-button:hover {
+                        .vivino-button:hover, .mark-opened-button:hover {
                           transform: translateY(-1px);
+                        }
+                        .vivino-button:hover {
                           box-shadow: 0 4px 12px rgba(164, 77, 90, 0.3) !important;
                         }
+                        .mark-opened-button:hover {
+                          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+                        }
                       }
-                      .vivino-button:active {
+                      .vivino-button:active, .mark-opened-button:active {
                         transform: scale(0.98);
                       }
                     `}</style>
