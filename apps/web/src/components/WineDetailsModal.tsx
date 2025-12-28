@@ -90,33 +90,36 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
               </div>
 
               {/* Content */}
-              <div className="px-6 pb-6 space-y-6">
+              <div className="px-4 sm:px-6 pb-6 space-y-6">
                 {/* Wine Image & Quick Stats */}
-                <div className="flex gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   {/* Wine Bottle Image */}
                   {wine.image_url && (
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 mx-auto sm:mx-0">
                       <img 
                         src={wine.image_url}
                         alt={wine.wine_name}
-                        className="w-32 h-40 sm:w-40 sm:h-52 object-cover rounded-lg"
+                        className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg"
                         style={{
                           border: '2px solid var(--border-base)',
                           boxShadow: 'var(--shadow-lg)',
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
                         }}
                       />
                     </div>
                   )}
 
                   {/* Quick Stats */}
-                  <div className="flex-1 grid grid-cols-2 gap-4">
+                  <div className="flex-1 grid grid-cols-2 gap-3 sm:gap-4">
                     {/* Vintage */}
                     {wine.vintage && (
                       <div>
                         <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                           {t('cellar.bottle.vintage')}
                         </div>
-                        <div className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        <div className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                           {wine.vintage}
                         </div>
                       </div>
@@ -127,7 +130,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                       <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                         {t('cellar.bottle.type')}
                       </div>
-                      <span className="badge-luxury badge-luxury-wine">
+                      <span className="badge-luxury badge-luxury-wine text-xs">
                         {t(`cellar.wineStyles.${wine.color}`)}
                       </span>
                     </div>
@@ -137,7 +140,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                       <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                         {t('cellar.bottle.quantity')}
                       </div>
-                      <div className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      <div className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                         ×{bottle.quantity}
                       </div>
                     </div>
@@ -149,10 +152,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                           Vivino Rating
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xl font-semibold" style={{ color: 'var(--wine-500)' }}>
+                          <span className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--wine-500)' }}>
                             ★
                           </span>
-                          <span className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          <span className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                             {wine.rating.toFixed(1)}
                           </span>
                         </div>
@@ -165,7 +168,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                 <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
 
                 {/* Location Info */}
-                {(wine.region || wine.country) && (
+                {(wine.region || wine.country || (wine as any).regional_wine_style) && (
                   <div>
                     <h3 
                       className="text-sm font-semibold mb-3 flex items-center gap-2"
@@ -174,7 +177,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                       <span>📍</span>
                       {t('cellar.bottle.origin')}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {wine.region && (
                         <div>
                           <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Region</div>
@@ -185,6 +188,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
                         <div>
                           <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Country</div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{wine.country}</div>
+                        </div>
+                      )}
+                      {(wine as any).regional_wine_style && (
+                        <div className="col-span-1 sm:col-span-2">
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Regional Wine Style</div>
+                          <div className="text-sm font-medium" style={{ color: 'var(--wine-600)' }}>
+                            {(wine as any).regional_wine_style}
+                          </div>
                         </div>
                       )}
                     </div>

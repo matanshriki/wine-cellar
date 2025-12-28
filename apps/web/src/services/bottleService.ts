@@ -89,6 +89,7 @@ export interface CreateBottleInput {
   vintage?: number | null;
   country?: string | null;
   region?: string | null;
+  regional_wine_style?: string | null;
   appellation?: string | null;
   color: 'red' | 'white' | 'rose' | 'sparkling';
   grapes?: string[] | null;
@@ -124,6 +125,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     vintage: input.vintage || null,
     country: input.country || null,
     region: input.region || null,
+    regional_wine_style: input.regional_wine_style || null,
     appellation: input.appellation || null,
     color: input.color,
     grapes: input.grapes ? input.grapes : null,

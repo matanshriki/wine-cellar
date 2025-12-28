@@ -76,6 +76,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
     producerColumn: '',
     vintageColumn: '',
     regionColumn: '',
+    regionalWineStyleColumn: '',
     countryColumn: '',
     grapesColumn: '',
     styleColumn: '',
@@ -158,6 +159,8 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           autoMapping.producerColumn = header;
         } else if (lower.includes('vintage') || lower.includes('year')) {
           autoMapping.vintageColumn = header;
+        } else if ((lower.includes('regional') || lower.includes('region')) && (lower.includes('style') || lower.includes('wine style'))) {
+          autoMapping.regionalWineStyleColumn = header;
         } else if (lower.includes('region') || lower.includes('appellation')) {
           autoMapping.regionColumn = header;
         } else if (lower.includes('country') || lower.includes('nation')) {
@@ -283,6 +286,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       const producerIdx = mapping.producerColumn ? headers.indexOf(mapping.producerColumn) : -1;
       const vintageIdx = mapping.vintageColumn ? headers.indexOf(mapping.vintageColumn) : -1;
       const regionIdx = mapping.regionColumn ? headers.indexOf(mapping.regionColumn) : -1;
+      const regionalWineStyleIdx = mapping.regionalWineStyleColumn ? headers.indexOf(mapping.regionalWineStyleColumn) : -1;
       const countryIdx = mapping.countryColumn ? headers.indexOf(mapping.countryColumn) : -1;
       const grapesIdx = mapping.grapesColumn ? headers.indexOf(mapping.grapesColumn) : -1;
       const styleIdx = headers.indexOf(mapping.styleColumn);
@@ -388,6 +392,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             producer: producerIdx >= 0 ? row[producerIdx]?.trim() : 'Unknown',
             vintage: vintageIdx >= 0 && row[vintageIdx] ? parseInt(row[vintageIdx]) : null,
             region: regionIdx >= 0 ? row[regionIdx]?.trim() : null,
+            regional_wine_style: regionalWineStyleIdx >= 0 ? row[regionalWineStyleIdx]?.trim() : null,
             country: countryIdx >= 0 ? row[countryIdx]?.trim() : null,
             grapes: grapesIdx >= 0 && row[grapesIdx] ? 
               row[grapesIdx].split(/[,;]/).map(g => g.trim()).filter(Boolean) : null,
@@ -687,6 +692,24 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
                   <select
                     value={mapping.regionColumn}
                     onChange={(e) => setMapping({ ...mapping, regionColumn: e.target.value })}
+                    className="input"
+                  >
+                    <option value="">{t('csvImport.mapping.columns.skip')}</option>
+                    {headers.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    {t('csvImport.mapping.columns.regionalWineStyle')}
+                  </label>
+                  <select
+                    value={mapping.regionalWineStyleColumn}
+                    onChange={(e) => setMapping({ ...mapping, regionalWineStyleColumn: e.target.value })}
                     className="input"
                   >
                     <option value="">{t('csvImport.mapping.columns.skip')}</option>
