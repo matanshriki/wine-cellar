@@ -4,6 +4,7 @@ import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import { WineLoader } from './components/WineLoader';
 import { Layout } from './components/Layout';
+import { ScrollToTop } from './components/ScrollToTop';
 import { LoginPage } from './pages/LoginPage';
 import { CellarPage } from './pages/CellarPage';
 import { RecommendationPage } from './pages/RecommendationPage';
@@ -41,7 +42,9 @@ function AppRoutes() {
   const { user } = useAuth();
 
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route
         path="/login"
         element={user ? <Navigate to="/cellar" replace /> : <LoginPage />}
@@ -88,7 +91,8 @@ function AppRoutes() {
       />
       <Route path="/" element={<Navigate to="/cellar" replace />} />
       <Route path="*" element={<Navigate to="/cellar" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

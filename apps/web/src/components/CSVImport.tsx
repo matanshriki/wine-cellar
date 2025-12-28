@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
 import { VivinoExportGuide } from './VivinoExportGuide';
@@ -70,6 +70,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
   const [isVivino, setIsVivino] = useState(false);
   const [vivinoConfidence, setVivinoConfidence] = useState(0);
   const [showVivinoGuide, setShowVivinoGuide] = useState(false);
+  const modalContentRef = useRef<HTMLDivElement>(null);
   const [mapping, setMapping] = useState({
     nameColumn: '',
     producerColumn: '',
@@ -85,6 +86,16 @@ export function CSVImport({ onClose, onSuccess }: Props) {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importMessage, setImportMessage] = useState('');
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [step]);
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -313,6 +324,7 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
       }}
     >
       <div 
+        ref={modalContentRef}
         className="bg-white rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
           overflowY: 'auto',
@@ -338,9 +350,32 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
                   <p className="text-xs sm:text-sm text-purple-700 mb-3">
                     {t('csvImport.upload.vivino.description')}
                   </p>
+                  
+                  {/* Connect Vivino - Stub with explanation */}
+                  <div className="bg-gray-100 border border-gray-300 rounded-md p-3 mb-3 opacity-75">
+                    <button
+                      disabled
+                      className="w-full sm:w-auto btn-luxury-secondary text-sm mb-2 opacity-50 cursor-not-allowed"
+                      title={t('csvImport.upload.vivino.connectUnavailable')}
+                    >
+                      <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      {t('csvImport.upload.vivino.connectButton')}
+                    </button>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold">❌ {t('csvImport.upload.vivino.whyUnavailable.title')}:</span>{' '}
+                      {t('csvImport.upload.vivino.whyUnavailable.description')}
+                    </p>
+                  </div>
+                  
                   <button
                     onClick={() => setShowVivinoGuide(true)}
                     className="text-xs sm:text-sm text-purple-600 hover:text-purple-700 font-medium underline flex items-center gap-1 min-h-[44px] py-2"
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
+                    }}
                   >
                     📖 {t('csvImport.upload.vivino.guide')} →
                   </button>

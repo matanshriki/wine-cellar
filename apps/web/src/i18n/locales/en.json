@@ -336,7 +336,13 @@
       "vivino": {
         "title": "Import from Vivino",
         "description": "Export your Vivino cellar as CSV and upload it here. We'll automatically detect and import all your wines with ratings, regions, and more!",
-        "guide": "How to export from Vivino"
+        "guide": "How to export from Vivino",
+        "connectButton": "Connect Vivino Account",
+        "connectUnavailable": "Direct Vivino connection is not available",
+        "whyUnavailable": {
+          "title": "Why not available",
+          "description": "Vivino does not provide a public API for third-party apps. Use the web export method below instead."
+        }
       },
       "downloadStandard": "Download Standard Template",
       "downloadVivino": "Download Vivino Sample",
@@ -405,56 +411,96 @@
   },
   "vivinoGuide": {
     "title": "How to Export from Vivino",
-    "subtitle": "Step-by-step guide to get your wine cellar data",
-    "note": {
-      "title": "Important Note",
-      "description": "Vivino's export feature may vary by region and app version. If you don't see the export option, try using the web version or contact Vivino support."
+    "subtitle": "Web-only export guide - Step",
+    "webOnly": {
+      "title": "⚠️ Vivino Export is WEB ONLY",
+      "description": "Vivino DOES NOT support exporting your cellar from the mobile app. You MUST use a web browser.",
+      "works": "Works: Vivino website (desktop or mobile browser)",
+      "doesntWork": "Doesn't work: Vivino mobile app"
     },
-    "method1": {
-      "title": "Method 1: Mobile App Export (Recommended)",
-      "step1": {
-        "title": "Open Vivino App",
-        "description": "Launch the Vivino app on your phone and tap on your profile/account icon (usually in the bottom right)."
+    "prerequisites": {
+      "title": "Before You Start",
+      "item1": "You need a web browser (desktop or mobile phone browser)",
+      "item2": "Log into vivino.com (not the mobile app)",
+      "item3": "Have your Vivino account credentials ready"
+    },
+    "step1": {
+      "title": "Go to Vivino Website",
+      "description": "Open your web browser (Safari, Chrome, Firefox, etc.) and navigate to vivino.com. Log in with your Vivino account.",
+      "tip": "You can do this on desktop or on your phone's browser (Safari, Chrome, etc.), but NOT in the Vivino mobile app.",
+      "warning": "Do not use the Vivino mobile app - it does not support export."
+    },
+    "step2": {
+      "title": "Navigate to My Wines",
+      "description": "Once logged in, go to your wine list. The exact navigation may vary depending on Vivino's current interface:",
+      "option1": {
+        "title": "Option A: Profile Menu",
+        "description": "Click your profile icon (top right) → \"My Wines\" or \"My Cellar\""
       },
-      "step2": {
-        "title": "Go to My Wines → Export",
-        "description": "Navigate to 'My Wines' or 'My Cellar', then look for an 'Export' or 'Download' option in the settings/menu (three dots icon)."
+      "option2": {
+        "title": "Option B: Direct Link",
+        "description": "Go to: https://www.vivino.com/users/[your-username]/wines"
       },
-      "step3": {
-        "title": "Download CSV File",
-        "description": "Select 'Export to CSV' or 'Export Data'. The file will be downloaded to your device. Transfer it to your computer if needed."
+      "tip": "Vivino's interface changes occasionally. Look for sections like \"My Profile\", \"My Account\", or \"My Wines\"."
+    },
+    "step3": {
+      "title": "Request Data Export from Vivino",
+      "howItWorks": {
+        "title": "How Vivino Export Works",
+        "description": "Vivino allows you to export your data, but it requires a manual request. The Vivino team will prepare your export and notify you when it's ready (usually within 24-48 hours)."
+      },
+      "substep1": {
+        "title": "Click your profile picture",
+        "description": "In the top-right corner of the Vivino website, click on your profile picture or avatar."
+      },
+      "substep2": {
+        "title": "Go to Settings → Account Management",
+        "description": "From the dropdown menu, select \"Settings\", then navigate to the \"Account Management\" tab."
+      },
+      "substep3": {
+        "title": "Request data export",
+        "description": "Look for \"Export your data\" section and click \"Start an export\" or similar button. Vivino will start preparing your data."
+      },
+      "substep4": {
+        "title": "Wait for email & download",
+        "description": "Vivino will email you when your export is ready (24-48 hours). Return to the same page and click \"Ready to download\" to get your CSV file."
+      },
+      "timing": {
+        "title": "Processing Time",
+        "description": "Vivino's team manually processes export requests. You'll receive an email when your data is ready to download."
+      },
+      "alternative": {
+        "title": "Don't want to wait? Use our template",
+        "description": "If you prefer to start immediately or have a small collection, download our CSV template and enter your wines manually:",
+        "download": "Download CSV Template"
       }
     },
-    "method2": {
-      "title": "Method 2: Web Export (If Available)",
-      "info": {
-        "title": "Alternative Method",
-        "description": "Some users can export from Vivino's website:"
-      },
-      "step1": "Visit vivino.com and log in",
-      "step2": "Go to your profile → My Wines",
-      "step3": "Look for an 'Export' button or similar option"
-    },
-    "afterExport": {
-      "title": "After Exporting",
-      "step1": "Locate the downloaded CSV file (usually in Downloads folder)",
-      "step2": "Come back to this import page and click 'Choose File'",
-      "step3": "Select your Vivino CSV - we'll auto-detect it and map the columns!"
+    "step4": {
+      "title": "Import to Wine Cellar Brain",
+      "description": "Once you have your CSV file ready (from the template or another method), import it here:",
+      "substep1": "Close this guide and click \"Choose CSV File\"",
+      "substep2": "Select your CSV file",
+      "substep3": "We'll auto-detect the columns (or you can map them manually)",
+      "substep4": "Click \"Import Bottles\" and we'll add them to your cellar!",
+      "success": {
+        "title": "Success!",
+        "description": "Your wines will appear in your cellar. You can edit details, add sommelier notes, and get recommendations."
+      }
     },
     "troubleshooting": {
-      "title": "Troubleshooting",
+      "title": "Common Issues",
       "q1": {
-        "title": "I don't see an export option",
-        "answer": "Try updating your Vivino app, or use the sample CSV template instead and manually enter your wines."
+        "title": "I requested the export but haven't received it yet",
+        "answer": "Vivino's export process is manual and can take 24-48 hours. Check your email (including spam folder) for a notification from Vivino. If it's been more than 48 hours, you can request again or contact Vivino support."
       },
       "q2": {
-        "title": "The CSV doesn't import correctly",
-        "answer": "Make sure it's a valid CSV file. You can also download our sample Vivino CSV template and match the format."
+        "title": "My CSV file isn't importing correctly",
+        "answer": "Make sure your CSV follows our template format: Wine, Producer, Vintage, Type, Region, Country, Rating, etc. Check for proper comma separation and no special characters that break CSV format."
+      },
+      "q3": {
+        "title": "This is too much work - is there an easier way?",
+        "answer": "Yes! You can add bottles manually one-by-one using our \"Add Bottle\" feature, or upload photos of wine labels for quick entry. For large collections, the CSV template is still the fastest bulk method."
       }
-    },
-    "screenshot": {
-      "placeholder": "Screenshot placeholder",
-      "todo": "TODO: Replace with actual Vivino app screenshot"
     },
     "gotIt": "Got it, thanks!"
   },
@@ -476,7 +522,9 @@
     "sort": "Sort",
     "pleaseWait": "Please wait...",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "important": "Important",
+    "tip": "Tip"
   },
   "errors": {
     "generic": "Something went wrong",
