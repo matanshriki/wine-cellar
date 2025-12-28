@@ -560,6 +560,20 @@
     "updateSuccess": "תמונת היין עודכנה!",
     "removeSuccess": "תמונת היין הוסרה"
   },
+  "labelArt": {
+    "generate": "צור אמנות תווית",
+    "generating": "מייצר...",
+    "generateSuccess": "אמנות תווית נוצרה בהצלחה!",
+    "generateFailed": "נכשל ביצירת אמנות תווית",
+    "cachedSuccess": "משתמש באמנות תווית קיימת",
+    "selectStyle": "בחר סגנון",
+    "styleClassic": "קלאסי",
+    "styleModern": "מודרני",
+    "styleClassicDesc": "תווית יין מסורתית עם טיפוגרפיה אלגנטית",
+    "styleModernDesc": "עיצוב עכשווי עם צורות גיאומטריות נקיות",
+    "disclaimer": "יצירה מקורית בבינה מלאכותית. לא שחזור של תווית אמיתית.",
+    "notConfigured": "יצירת תווית בבינה מלאכותית אינה מוגדרת"
+  },
   "errors": {
     "generic": "משהו השתבש",
     "network": "שגיאת רשת. אנא בדוק את החיבור שלך.",

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
+import * as labelArtService from '../services/labelArtService';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { toast } from '../lib/toast';
 
@@ -23,10 +24,15 @@ interface WineDetailsModalProps {
 export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh }: WineDetailsModalProps) {
   const { t } = useTranslation();
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   if (!bottle) return null;
 
   const wine = bottle.wine;
+
+  // Get display image with priority: user > generated > placeholder
+  const displayImage = labelArtService.getWineDisplayImage(wine);
 
   const handleSaveImage = async (imageUrl: string) => {
     try {
@@ -44,6 +50,31 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     } catch (error: any) {
       console.error('Error updating wine image:', error);
       throw error; // Let dialog handle the error
+    }
+  };
+
+  const handleGenerateLabelArt = async (style: labelArtService.LabelArtStyle) => {
+    setIsGenerating(true);
+    setShowGenerateDialog(false);
+    
+    try {
+      const result = await labelArtService.generateLabelArt(bottle, style);
+      
+      if (result.cached) {
+        toast.success(t('labelArt.cachedSuccess', 'Using existing generated label art'));
+      } else {
+        toast.success(t('labelArt.generateSuccess', 'Label art generated successfully!'));
+      }
+      
+      // Refresh to show new image
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error generating label art:', error);
+      toast.error(error.message || t('labelArt.generateFailed', 'Failed to generate label art'));
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -122,29 +153,47 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   {/* Wine Bottle Image or Placeholder */}
                   <div className="flex-shrink-0 mx-auto sm:mx-0">
                     <div className="relative group">
-                      {wine.image_url ? (
-                        <img 
-                          src={wine.image_url}
-                          alt={wine.wine_name}
-                          className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg wine-image"
-                          style={{
-                            border: '2px solid var(--border-base)',
-                            boxShadow: 'var(--shadow-lg)',
-                          }}
-                          onError={(e) => {
-                            // Show placeholder on error
-                            const placeholder = e.currentTarget.nextElementSibling;
-                            if (placeholder) {
-                              placeholder.classList.remove('hidden');
-                            }
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                      {displayImage.imageUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={displayImage.imageUrl}
+                            alt={wine.wine_name}
+                            className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg wine-image"
+                            style={{
+                              border: '2px solid var(--border-base)',
+                              boxShadow: 'var(--shadow-lg)',
+                            }}
+                            onError={(e) => {
+                              // Show placeholder on error
+                              const placeholder = e.currentTarget.parentElement?.nextElementSibling;
+                              if (placeholder) {
+                                placeholder.classList.remove('hidden');
+                              }
+                              e.currentTarget.parentElement!.style.display = 'none';
+                            }}
+                          />
+                          {/* AI Generated Badge */}
+                          {displayImage.isGenerated && (
+                            <div 
+                              className="absolute top-2 end-2 px-2 py-1 rounded text-xs font-medium flex items-center gap-1"
+                              style={{
+                                background: 'rgba(0, 0, 0, 0.6)',
+                                color: 'white',
+                                backdropFilter: 'blur(4px)',
+                              }}
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                              </svg>
+                              <span>AI</span>
+                            </div>
+                          )}
+                        </div>
                       ) : null}
                       
                       {/* Premium Placeholder */}
                       <div 
-                        className={`w-40 h-48 sm:w-40 sm:h-52 rounded-lg flex flex-col items-center justify-center ${wine.image_url ? 'hidden' : ''}`}
+                        className={`w-40 h-48 sm:w-40 sm:h-52 rounded-lg flex flex-col items-center justify-center ${displayImage.imageUrl ? 'hidden' : ''}`}
                         style={{
                           border: '2px dashed var(--border-base)',
                           background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
@@ -159,25 +208,61 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       </div>
                     </div>
 
-                    {/* Add/Update Image Button */}
-                    <button
-                      onClick={() => setShowImageDialog(true)}
-                      className="w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
-                      style={{
-                        background: 'var(--bg-surface)',
-                        border: '1px solid var(--border-base)',
-                        color: 'var(--text-secondary)',
-                        minHeight: '36px',
-                      }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      {wine.image_url 
-                        ? t('wineImage.updateButton', 'Update Image')
-                        : t('wineImage.addButton', 'Add Image')
-                      }
-                    </button>
+                    {/* Image Management Buttons */}
+                    <div className="mt-2 space-y-2">
+                      {/* Add/Update User Image */}
+                      <button
+                        onClick={() => setShowImageDialog(true)}
+                        className="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                        style={{
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border-base)',
+                          color: 'var(--text-secondary)',
+                          minHeight: '36px',
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {wine.image_url 
+                          ? t('wineImage.updateButton', 'Update Image')
+                          : t('wineImage.addButton', 'Add Image')
+                        }
+                      </button>
+
+                      {/* Generate Label Art Button */}
+                      {labelArtService.isLabelArtEnabled() && !wine.image_url && (
+                        <button
+                          onClick={() => setShowGenerateDialog(true)}
+                          disabled={isGenerating}
+                          className="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                          style={{
+                            background: isGenerating ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
+                            border: '1px solid var(--gold-600)',
+                            color: 'white',
+                            minHeight: '36px',
+                            opacity: isGenerating ? 0.6 : 1,
+                          }}
+                        >
+                          {isGenerating ? (
+                            <>
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>{t('labelArt.generating', 'Generating...')}</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                              </svg>
+                              <span>{t('labelArt.generate', 'Generate Label Art')}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Quick Stats */}
@@ -488,6 +573,73 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           currentImageUrl={wine.image_url}
           wineName={wine.wine_name}
         />
+      )}
+
+      {/* Generate Label Art Style Selection Dialog */}
+      {showGenerateDialog && bottle && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowGenerateDialog(false)}
+            className="fixed inset-0 bg-black bg-opacity-50 z-[60]"
+            style={{ backdropFilter: 'blur(4px)' }}
+          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="luxury-card w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  {t('labelArt.selectStyle')}
+                </h3>
+                
+                <div className="space-y-3 mb-4">
+                  <button
+                    onClick={() => handleGenerateLabelArt('classic')}
+                    className="w-full p-4 rounded-lg text-left transition-all border-2"
+                    style={{
+                      borderColor: 'var(--border-base)',
+                      background: 'var(--bg-surface)',
+                    }}
+                  >
+                    <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {t('labelArt.styleClassic')}
+                    </div>
+                    <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {t('labelArt.styleClassicDesc')}
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleGenerateLabelArt('modern')}
+                    className="w-full p-4 rounded-lg text-left transition-all border-2"
+                    style={{
+                      borderColor: 'var(--border-base)',
+                      background: 'var(--bg-surface)',
+                    }}
+                  >
+                    <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {t('labelArt.styleModern')}
+                    </div>
+                    <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {t('labelArt.styleModernDesc')}
+                    </div>
+                  </button>
+                </div>
+
+                <p className="text-xs text-center italic" style={{ color: 'var(--text-tertiary)' }}>
+                  {t('labelArt.disclaimer')}
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </>
       )}
     </AnimatePresence>
   );

@@ -560,6 +560,20 @@
     "updateSuccess": "Wine image updated!",
     "removeSuccess": "Wine image removed"
   },
+  "labelArt": {
+    "generate": "Generate Label Art",
+    "generating": "Generating...",
+    "generateSuccess": "Label art generated successfully!",
+    "generateFailed": "Failed to generate label art",
+    "cachedSuccess": "Using existing generated label art",
+    "selectStyle": "Select Style",
+    "styleClassic": "Classic",
+    "styleModern": "Modern",
+    "styleClassicDesc": "Traditional wine label with elegant serif typography",
+    "styleModernDesc": "Contemporary design with clean geometric shapes",
+    "disclaimer": "AI-generated original artwork. Not a reproduction of any real label.",
+    "notConfigured": "AI label generation not configured"
+  },
   "errors": {
     "generic": "Something went wrong",
     "network": "Network error. Please check your connection.",
