@@ -328,18 +328,41 @@ export function WineDetailsModal({ isOpen, onClose, bottle }: WineDetailsModalPr
 
                 {/* Vivino Link */}
                 {wine.vivino_url && (
-                  <div className="pt-4">
+                  <div className="pt-4 border-t mt-6" style={{ borderColor: 'var(--border-subtle)' }}>
                     <a
                       href={wine.vivino_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-luxury-secondary w-full justify-center gap-2"
+                      className="vivino-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 mt-4"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                        color: 'white',
+                        minHeight: '44px',
+                        boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
+                        border: '1px solid var(--wine-600)',
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
+                      }}
                     >
-                      <span>View on Vivino</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                      </svg>
+                      <span>{t('cellar.bottle.openVivino')}</span>
+                      <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </a>
+                    <style>{`
+                      @media (hover: hover) and (pointer: fine) {
+                        .vivino-button:hover {
+                          transform: translateY(-1px);
+                          box-shadow: 0 4px 12px rgba(164, 77, 90, 0.3) !important;
+                        }
+                      }
+                      .vivino-button:active {
+                        transform: scale(0.98);
+                      }
+                    `}</style>
                   </div>
                 )}
               </div>
