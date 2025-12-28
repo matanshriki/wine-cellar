@@ -626,13 +626,13 @@ export function CellarPage() {
             setExtractedData(null);
           }}
           prefillData={extractedData ? {
-            wine_name: extractedData.data.wine_name,
-            producer: extractedData.data.producer,
-            vintage: extractedData.data.vintage,
-            region: extractedData.data.region,
-            country: extractedData.data.country,
-            grapes: extractedData.data.grape_variety,
-            color: extractedData.data.wine_type,
+            wine_name: extractedData.extractedData.wine_name,
+            producer: extractedData.extractedData.producer,
+            vintage: extractedData.extractedData.vintage,
+            region: extractedData.extractedData.region,
+            country: extractedData.extractedData.country,
+            grapes: extractedData.extractedData.grape,
+            color: extractedData.extractedData.wine_color,
             label_image_url: extractedData.imageUrl,
           } : undefined}
         />
