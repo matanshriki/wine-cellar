@@ -16,6 +16,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Compress and resize image client-side
+  // Target: Small avatar files (~50-200KB) for fast loading
   async function compressImage(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -31,10 +32,14 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
             return;
           }
 
-          // Calculate new dimensions (max 512px)
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+
+          // Calculate new dimensions (max 512px for avatars)
+          // Avatars are small, 512px is plenty for profile pictures
           const MAX_SIZE = 512;
-          let width = img.width;
-          let height = img.height;
+          let width = originalWidth;
+          let height = originalHeight;
 
           if (width > height) {
             if (width > MAX_SIZE) {
@@ -51,13 +56,28 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
           canvas.width = width;
           canvas.height = height;
 
+          console.log('[AvatarUpload] Resizing:', {
+            original: `${originalWidth}x${originalHeight}`,
+            new: `${Math.round(width)}x${Math.round(height)}`,
+          });
+
+          // Enable image smoothing for better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
           // Draw image on canvas (resized)
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert to blob (JPEG, 85% quality)
+          // Convert to blob (JPEG, 80% quality for smaller files)
           canvas.toBlob(
             (blob) => {
               if (blob) {
+                console.log('[AvatarUpload] Compression:', {
+                  originalSize: `${(file.size / 1024).toFixed(0)} KB`,
+                  compressedSize: `${(blob.size / 1024).toFixed(0)} KB`,
+                  reduction: `${Math.round((1 - blob.size / file.size) * 100)}%`,
+                });
+                
                 const compressedFile = new File([blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now(),
@@ -68,7 +88,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
               }
             },
             'image/jpeg',
-            0.85
+            0.80  // Reduced from 0.85 to 0.80 for smaller files
           );
         };
         img.onerror = () => reject(new Error('Failed to load image'));

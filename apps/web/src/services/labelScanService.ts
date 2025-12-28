@@ -27,8 +27,11 @@ export interface ExtractedWineData {
 /**
  * Compress and resize image before upload (client-side)
  * Reduces upload time and storage costs
+ * 
+ * Target: Reduce file size by 70-90% while maintaining readability
+ * Strategy: Resize to reasonable dimensions + JPEG compression
  */
-export async function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
+export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -36,14 +39,30 @@ export async function compressImage(file: File, maxWidth = 1200): Promise<Blob> 
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions
-        let width = img.width;
-        let height = img.height;
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        
+        // Calculate new dimensions (max 1024px for labels, good balance of quality vs size)
+        let width = originalWidth;
+        let height = originalHeight;
         
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
+        
+        // Also cap height to prevent extremely tall images
+        const maxHeight = 1400;
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+        
+        console.log('[compressImage] Resizing:', {
+          original: `${originalWidth}x${originalHeight}`,
+          new: `${Math.round(width)}x${Math.round(height)}`,
+          reduction: `${Math.round((1 - (width * height) / (originalWidth * originalHeight)) * 100)}%`,
+        });
         
         // Create canvas and draw resized image
         const canvas = document.createElement('canvas');
@@ -56,19 +75,29 @@ export async function compressImage(file: File, maxWidth = 1200): Promise<Blob> 
           return;
         }
         
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convert to blob (JPEG, 85% quality)
+        // Convert to blob (JPEG, 80% quality - good balance)
+        // 80% is sweet spot: much smaller files, imperceptible quality loss
         canvas.toBlob(
           (blob) => {
             if (blob) {
+              console.log('[compressImage] Compression complete:', {
+                originalSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+                compressedSize: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
+                reduction: `${Math.round((1 - blob.size / file.size) * 100)}%`,
+              });
               resolve(blob);
             } else {
               reject(new Error('Failed to create blob'));
             }
           },
           'image/jpeg',
-          0.85
+          0.80  // Reduced from 0.85 to 0.80 for smaller files
         );
       };
       
