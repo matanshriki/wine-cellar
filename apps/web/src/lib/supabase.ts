@@ -23,6 +23,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    storage: window.localStorage, // Explicitly use localStorage for better persistence
+    storageKey: 'wine-cellar-auth', // Custom key for better isolation
+    flowType: 'pkce', // More secure and works better with mobile/PWA
   },
 });
 

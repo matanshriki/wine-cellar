@@ -10,6 +10,13 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import * as profileService from '../services/profileService';
 import type { Database } from '../types/supabase';
+import { 
+  markSessionActive, 
+  shouldRecoverSession, 
+  clearSessionMarkers, 
+  isStandalone,
+  setupSessionKeepAlive 
+} from '../utils/sessionPersistence';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -69,33 +76,100 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    // Get initial session
+    let keepAliveCleanup: (() => void) | null = null;
+
+    // Get initial session with recovery support
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Set loading false BEFORE profile load
       
-      // Load profile in background (non-blocking)
       if (session?.user) {
+        // Mark session as active
+        markSessionActive();
+        
+        // Load profile in background (non-blocking)
         loadProfile(session.user);
+
+        // Setup session keep-alive for PWA mode
+        if (isStandalone()) {
+          console.log('Running in standalone mode - enabling session keep-alive');
+          keepAliveCleanup = setupSessionKeepAlive(async () => {
+            // Refresh the session
+            const { data } = await supabase.auth.refreshSession();
+            if (data.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+            }
+          });
+        }
+      } else if (shouldRecoverSession()) {
+        // Attempt to recover session if there was recent activity
+        console.log('Attempting session recovery...');
+        supabase.auth.refreshSession().then(({ data, error }) => {
+          if (error) {
+            console.warn('Session recovery failed:', error);
+            clearSessionMarkers();
+          } else if (data.session) {
+            console.log('Session recovered successfully');
+            setSession(data.session);
+            setUser(data.session.user);
+            markSessionActive();
+            if (data.session.user) {
+              loadProfile(data.session.user);
+            }
+          }
+        });
       }
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Set loading false BEFORE profile load
       
-      // Load profile in background (non-blocking)
       if (session?.user) {
+        // Mark session as active on any auth change
+        markSessionActive();
+        
+        // Load profile in background (non-blocking)
         loadProfile(session.user);
+
+        // Setup keep-alive if not already active
+        if (isStandalone() && !keepAliveCleanup) {
+          keepAliveCleanup = setupSessionKeepAlive(async () => {
+            const { data } = await supabase.auth.refreshSession();
+            if (data.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+            }
+          });
+        }
+      } else {
+        // Clear session markers on sign out
+        if (event === 'SIGNED_OUT') {
+          clearSessionMarkers();
+        }
+        
+        // Cleanup keep-alive
+        if (keepAliveCleanup) {
+          keepAliveCleanup();
+          keepAliveCleanup = null;
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (keepAliveCleanup) {
+        keepAliveCleanup();
+      }
+    };
   }, []);
 
   const signUp = async (email: string, password: string, displayName?: string) => {

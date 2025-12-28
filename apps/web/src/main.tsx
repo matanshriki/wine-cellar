@@ -4,6 +4,7 @@
  * Initializes:
  * - i18n (internationalization) with language detection and RTL support
  * - React app with strict mode for better development experience
+ * - Service Worker for PWA support and session persistence
  * - Global styles
  */
 
@@ -16,11 +17,20 @@ import './index.css';
 import './i18n/config';
 import { initializeDirection } from './i18n/config';
 
+// Import service worker registration
+import { registerServiceWorker } from './utils/registerServiceWorker';
+
 /**
  * Initialize document direction based on selected language
  * Must be called before React renders to prevent FOUC (Flash of Unstyled Content)
  */
 initializeDirection();
+
+/**
+ * Register service worker for PWA support
+ * This enables session persistence and offline capabilities
+ */
+registerServiceWorker().catch(console.error);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
