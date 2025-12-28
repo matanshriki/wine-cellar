@@ -114,7 +114,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {topBottles.map((bottle, index) => (
             <motion.button
-              key={bottle.bottle_id}
+              key={bottle.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ 
@@ -223,7 +223,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                         
                         return (
                           <span
-                            key={`${bottle.bottle_id}-star-${star}`}
+                            key={`${bottle.id}-star-${star}`}
                             className="text-xs"
                             style={{
                               color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
