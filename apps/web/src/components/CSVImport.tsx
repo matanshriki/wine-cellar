@@ -153,12 +153,17 @@ export function CSVImport({ onClose, onSuccess }: Props) {
         } else if (lower.includes('type') || lower.includes('style') || lower.includes('color')) {
           autoMapping.styleColumn = header;
         } else if (
-          lower.includes('rating') || 
-          lower.includes('score') ||
-          lower.includes('average') && lower.includes('rating') ||
-          lower.includes('avg') && lower.includes('rating') ||
-          lower.includes('vivino') && lower.includes('rating') ||
-          lower.includes('community') && lower.includes('rating')
+          // Prioritize "Average rating" (Vivino standard) over other rating columns
+          lower === 'average rating' ||
+          lower === 'avg rating' ||
+          lower === 'avg. rating' ||
+          lower === 'community rating' ||
+          // Then check for rating-like columns, but exclude ranking columns
+          (lower.includes('rating') && !lower.includes('rank')) ||
+          (lower.includes('score') && !lower.includes('rank')) ||
+          (lower.includes('average') && lower.includes('rating')) ||
+          (lower.includes('avg') && lower.includes('rating')) ||
+          (lower.includes('community') && lower.includes('rating'))
         ) {
           autoMapping.ratingColumn = header;
         } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
@@ -183,6 +188,16 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       
       // Log detected columns for debugging
       console.log('[CSV Import] CSV Headers:', parsedHeaders);
+      
+      // Show all columns that contain "rating" to help debug
+      const ratingLikeColumns = parsedHeaders.filter(h => 
+        h.toLowerCase().includes('rating') || h.toLowerCase().includes('score')
+      );
+      if (ratingLikeColumns.length > 1) {
+        console.log('[CSV Import] 🔍 Multiple rating-like columns found:', ratingLikeColumns);
+        console.log(`[CSV Import] ✅ Selected: "${autoMapping.ratingColumn}"`);
+      }
+      
       console.log('[CSV Import] Auto-detected columns:', {
         name: autoMapping.nameColumn,
         producer: autoMapping.producerColumn,
@@ -197,6 +212,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       // Warn if critical columns are missing
       if (!autoMapping.ratingColumn) {
         console.warn('[CSV Import] ⚠️ Rating column not detected! Check your CSV headers.');
+        console.log('[CSV Import] Available rating-like columns:', ratingLikeColumns);
       }
       if (!autoMapping.quantityColumn) {
         console.warn('[CSV Import] ⚠️ Quantity column not detected! Will default to 1 per bottle.');
@@ -266,12 +282,28 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       // Log first row data for debugging
       if (dataRows.length > 0) {
         const firstRow = dataRows[0];
+        const sampleRating = ratingIdx >= 0 ? firstRow[ratingIdx] : 'N/A';
+        
         console.log('[CSV Import] First row sample:', {
           wineName: firstRow[nameIdx],
-          rating: ratingIdx >= 0 ? firstRow[ratingIdx] : 'N/A',
+          rating: sampleRating,
           quantity: quantityIdx >= 0 ? firstRow[quantityIdx] : 'N/A',
           vivinoUrl: vivinoUrlIdx >= 0 ? firstRow[vivinoUrlIdx] : 'N/A',
         });
+        
+        // Validate rating looks correct (should be 0-5, not 100+)
+        if (ratingIdx >= 0 && sampleRating !== 'N/A') {
+          const ratingValue = parseFloat(sampleRating.toString().replace(',', '.'));
+          if (!isNaN(ratingValue) && ratingValue > 100) {
+            console.error(
+              `[CSV Import] ❌ WRONG COLUMN DETECTED! ` +
+              `Column "${headers[ratingIdx]}" has value ${ratingValue}, ` +
+              `which looks like a RANKING (global position), not a RATING (0-5 scale). ` +
+              `Please manually select the "Average rating" column in the mapping step.`
+            );
+            toast.error('⚠️ Wrong rating column detected! Please select "Average rating" manually in the next step.');
+          }
+        }
       }
       
       // Import each row
