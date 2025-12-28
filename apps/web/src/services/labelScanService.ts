@@ -88,16 +88,23 @@ export async function uploadLabelImage(file: File): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    throw new Error('Not authenticated');
+    throw new Error('Not authenticated. Please log in and try again.');
   }
+
+  console.log('[uploadLabelImage] Starting upload for user:', user.id);
 
   // Compress image before upload
   const compressedBlob = await compressImage(file);
+  console.log('[uploadLabelImage] Image compressed:', {
+    original: file.size,
+    compressed: compressedBlob.size,
+  });
   
   // Generate unique filename
   const fileExt = 'jpg'; // Always JPEG after compression
   const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-  const filePath = `labels/${fileName}`;
+
+  console.log('[uploadLabelImage] Uploading to bucket: labels, path:', fileName);
 
   // Upload to Supabase Storage
   const { data, error } = await supabase.storage
@@ -108,14 +115,32 @@ export async function uploadLabelImage(file: File): Promise<string> {
     });
 
   if (error) {
-    console.error('Upload error:', error);
-    throw new Error('Failed to upload image');
+    console.error('[uploadLabelImage] Upload error:', error);
+    
+    // Provide user-friendly error messages
+    if (error.message?.includes('row-level security')) {
+      throw new Error(
+        'Upload permissions not configured. Please contact support or check Storage policies in Supabase Dashboard.'
+      );
+    }
+    
+    if (error.message?.includes('Bucket not found')) {
+      throw new Error(
+        'Storage bucket not found. Please ensure the "labels" bucket exists in Supabase Storage.'
+      );
+    }
+    
+    throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
   }
+
+  console.log('[uploadLabelImage] Upload successful:', data);
 
   // Get public URL
   const { data: { publicUrl } } = supabase.storage
     .from('labels')
     .getPublicUrl(fileName);
+
+  console.log('[uploadLabelImage] Public URL:', publicUrl);
 
   return publicUrl;
 }

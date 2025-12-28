@@ -64,11 +64,22 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
     setError(null);
 
     try {
+      console.log('[LabelCapture] Processing image...');
       const result = await scanLabelImage(currentFile);
+      console.log('[LabelCapture] Processing complete:', result);
       onSuccess(result);
     } catch (err: any) {
-      console.error('Scan error:', err);
-      setError(err.message || t('cellar.labelScan.error'));
+      console.error('[LabelCapture] Scan error:', err);
+      
+      // Show user-friendly error messages
+      let errorMessage = err.message || t('cellar.labelScan.error');
+      
+      // If it's a storage error, add helpful hint
+      if (errorMessage.includes('Upload permissions') || errorMessage.includes('Storage bucket')) {
+        errorMessage += '\n\n💡 Tip: Check the STORAGE_UPLOAD_FIX_GUIDE.md file for setup instructions.';
+      }
+      
+      setError(errorMessage);
       setIsProcessing(false);
     }
   };

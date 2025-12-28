@@ -133,7 +133,21 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
 
       if (uploadError) {
         console.error('[AvatarUpload] Upload error:', uploadError);
-        throw new Error(uploadError.message);
+        
+        // Provide user-friendly error messages
+        if (uploadError.message?.includes('row-level security')) {
+          throw new Error(
+            'Upload permissions not configured. Please contact support or check Storage policies in Supabase Dashboard.'
+          );
+        }
+        
+        if (uploadError.message?.includes('Bucket not found')) {
+          throw new Error(
+            'Storage bucket not found. Please ensure the "avatars" bucket exists in Supabase Storage.'
+          );
+        }
+        
+        throw new Error(`Upload failed: ${uploadError.message || 'Unknown error'}`);
       }
 
       setUploadProgress(80);
