@@ -12,6 +12,7 @@ import { LabelCapture } from '../components/LabelCapture';
 import { WineLoader } from '../components/WineLoader';
 import { TonightsOrbit } from '../components/TonightsOrbit';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
+import { WineDetailsModal } from '../components/WineDetailsModal';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -31,6 +32,10 @@ export function CellarPage() {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  
+  // Wine Details Modal state
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   
   // Label scan state
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -492,8 +497,8 @@ export function CellarPage() {
           <TonightsOrbit 
             bottles={filteredBottles}
             onBottleClick={(bottle) => {
-              // Optional: could open a detail modal or navigate
-              console.log('Bottle clicked:', bottle);
+              setSelectedBottle(bottle);
+              setShowDetailsModal(true);
             }}
           />
           <DrinkWindowTimeline bottles={filteredBottles} />
@@ -689,6 +694,16 @@ export function CellarPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Wine Details Modal (for Tonight's Selection clicks) */}
+      <WineDetailsModal 
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedBottle(null);
+        }}
+        bottle={selectedBottle}
+      />
     </div>
   );
 }

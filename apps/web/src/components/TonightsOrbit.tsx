@@ -135,7 +135,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
               }}
             >
               <div
-                className="relative h-full p-4 rounded-lg transition-all duration-200"
+                className="relative h-full p-4 rounded-lg transition-all duration-200 group-active:scale-[0.98]"
                 style={{
                   background: 'var(--bg-surface)',
                   border: '1px solid var(--border-subtle)',
@@ -253,12 +253,26 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
                 {/* Hover effect overlay */}
                 <div 
-                  className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 pointer-events-none"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.03), rgba(164, 77, 90, 0.03))',
-                    border: '2px solid var(--border-accent)',
+                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(164, 77, 90, 0.05))',
+                    border: '2px solid var(--wine-300)',
                   }}
                 />
+                
+                {/* Click hint icon (visible on hover/focus) */}
+                <div 
+                  className="absolute bottom-3 end-3 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  style={{
+                    background: 'var(--wine-500)',
+                    color: 'white',
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
               </div>
             </motion.button>
           ))}
