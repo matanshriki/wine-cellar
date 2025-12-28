@@ -36,7 +36,7 @@ export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
 
   // Get user's profile to check their ai_label_art_enabled flag
   const { data: profile, error } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .select('ai_label_art_enabled')
     .eq('id', user.id)
     .single();

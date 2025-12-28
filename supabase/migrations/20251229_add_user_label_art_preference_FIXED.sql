@@ -1,11 +1,11 @@
 -- Add per-user AI label art feature flag
--- Allows granular control over who can use AI generation feature
+-- FIXED: Uses 'profiles' table (not 'user_profiles')
 
 -- Add column to profiles table
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS ai_label_art_enabled BOOLEAN DEFAULT false;
 
--- Add index for faster queries
+-- Add index for performance
 CREATE INDEX IF NOT EXISTS profiles_ai_label_art_enabled_idx 
 ON public.profiles(ai_label_art_enabled) 
 WHERE ai_label_art_enabled = true;

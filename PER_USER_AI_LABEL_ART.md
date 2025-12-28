@@ -34,16 +34,16 @@ Run this SQL in your Supabase SQL Editor:
 
 ```sql
 -- Add per-user AI label art feature flag
-ALTER TABLE public.user_profiles
+ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS ai_label_art_enabled BOOLEAN DEFAULT false;
 
 -- Add index for performance
-CREATE INDEX IF NOT EXISTS user_profiles_ai_label_art_enabled_idx 
-ON public.user_profiles(ai_label_art_enabled) 
+CREATE INDEX IF NOT EXISTS profiles_ai_label_art_enabled_idx 
+ON public.profiles(ai_label_art_enabled) 
 WHERE ai_label_art_enabled = true;
 
 -- Add comment explaining the column
-COMMENT ON COLUMN public.user_profiles.ai_label_art_enabled IS 
+COMMENT ON COLUMN public.profiles.ai_label_art_enabled IS 
 'Per-user feature flag for AI-generated label art. Enables "Generate Label Art" button. Default false (opt-in).';
 ```
 
@@ -63,12 +63,12 @@ Run SQL to enable for specific users:
 
 ```sql
 -- Enable for yourself (replace with your email)
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE email = 'your-email@example.com';
 
 -- Or enable for multiple users
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE email IN (
   'user1@example.com',
@@ -77,7 +77,7 @@ WHERE email IN (
 );
 
 -- Or enable for ALL users (use carefully!)
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true;
 ```
 
@@ -88,7 +88,7 @@ SET ai_label_art_enabled = true;
 ### 1. **Beta Testing**
 Enable only for yourself and a few testers:
 ```sql
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE email IN (
   'admin@yourapp.com',
@@ -101,7 +101,7 @@ WHERE email IN (
 - Charge users $X/month for AI generation access
 - Enable when they subscribe:
 ```sql
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE user_id = 'subscription_user_id';
 ```
@@ -113,7 +113,7 @@ WHERE user_id = 'subscription_user_id';
 
 ```sql
 -- Enable for 10% of users (randomized)
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE (hashtext(id::text)::bigint % 100) < 10;
 ```
@@ -141,7 +141,7 @@ VITE_FEATURE_GENERATED_LABEL_ART=true
 ```
 ```sql
 -- In database
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = false 
 WHERE email = 'your-email@example.com';
 ```
@@ -154,7 +154,7 @@ VITE_FEATURE_GENERATED_LABEL_ART=true
 ```
 ```sql
 -- In database
-UPDATE public.user_profiles 
+UPDATE public.profiles 
 SET ai_label_art_enabled = true 
 WHERE email = 'your-email@example.com';
 ```
@@ -177,7 +177,7 @@ WHERE email = 'your-email@example.com';
 ```sql
 -- Check your user's profile
 SELECT id, email, ai_label_art_enabled 
-FROM public.user_profiles 
+FROM public.profiles 
 WHERE email = 'your-email@example.com';
 ```
 
@@ -205,14 +205,14 @@ Ensure only authenticated users can see their own profile:
 
 ```sql
 -- Check existing RLS policies
-SELECT * FROM pg_policies WHERE tablename = 'user_profiles';
+SELECT * FROM pg_policies WHERE tablename = 'profiles';
 
 -- If missing, add RLS
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read their own profile
 CREATE POLICY "Users can view own profile"
-ON public.user_profiles FOR SELECT
+ON public.profiles FOR SELECT
 TO authenticated
 USING (auth.uid() = id);
 ```
@@ -225,14 +225,14 @@ USING (auth.uid() = id);
 ```sql
 -- Count how many users have AI enabled
 SELECT COUNT(*) as users_with_ai
-FROM public.user_profiles
+FROM public.profiles
 WHERE ai_label_art_enabled = true;
 
 -- Track generated images per user
 SELECT 
   up.email,
   COUNT(w.generated_image_path) as ai_images_generated
-FROM public.user_profiles up
+FROM public.profiles up
 LEFT JOIN public.wines w ON w.user_id = up.id AND w.generated_image_path IS NOT NULL
 WHERE up.ai_label_art_enabled = true
 GROUP BY up.email
@@ -365,7 +365,7 @@ Build an admin panel to manage user flags:
 
 | Aspect | Implementation |
 |--------|---------------|
-| **Database Column** | `user_profiles.ai_label_art_enabled` (BOOLEAN, default `false`) |
+| **Database Column** | `profiles.ai_label_art_enabled` (BOOLEAN, default `false`) |
 | **Global Flag** | `VITE_FEATURE_GENERATED_LABEL_ART` (env var, default `false`) |
 | **Check Function** | `labelArtService.isLabelArtEnabledForUser()` |
 | **UI Location** | Wine Details Modal (below image) |
