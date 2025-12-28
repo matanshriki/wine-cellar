@@ -25,8 +25,6 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
   const totalSteps = 5;
   const contentRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen) return null;
-
   // Scroll to top when step changes
   useEffect(() => {
     if (contentRef.current) {
@@ -36,6 +34,8 @@ export function VivinoExportGuide({ isOpen, onClose }: Props) {
       });
     }
   }, [currentStep]);
+
+  if (!isOpen) return null;
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
