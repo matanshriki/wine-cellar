@@ -372,6 +372,7 @@
         "producer": "Producer Column",
         "vintage": "Vintage Column",
         "region": "Region Column",
+        "country": "Country Column",
         "grapes": "Grapes Column",
         "style": "Style Column",
         "rating": "Rating Column",
