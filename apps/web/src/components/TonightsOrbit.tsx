@@ -189,6 +189,39 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                       📍 {bottle.wine.region}
                     </div>
                   )}
+
+                  {/* Rating */}
+                  {bottle.wine.rating && (
+                    <div 
+                      className="flex items-center gap-1"
+                      title={`${bottle.wine.rating} ${t('cellar.bottle.vivinoRating')}`}
+                    >
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const rating = bottle.wine.rating || 0;
+                        const filled = star <= Math.floor(rating);
+                        const halfFilled = !filled && star <= Math.ceil(rating);
+                        
+                        return (
+                          <span
+                            key={star}
+                            className="text-xs"
+                            style={{
+                              color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
+                            }}
+                            aria-hidden="true"
+                          >
+                            {filled ? '★' : halfFilled ? '⯪' : '☆'}
+                          </span>
+                        );
+                      })}
+                      <span
+                        className="text-xs font-medium ms-1"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {bottle.wine.rating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Wine style badge */}
