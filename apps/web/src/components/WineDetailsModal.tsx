@@ -123,20 +123,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="luxury-card w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+              className="luxury-card w-full max-w-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
+              style={{
+                maxHeight: 'calc(100dvh - 2rem)',
+                height: 'auto',
+              }}
             >
               {/* Header */}
               <div 
-                className="sticky top-0 z-10 p-6 pb-4"
+                className="flex-shrink-0 p-4 sm:p-6 pb-3 sm:pb-4 border-b"
                 style={{
-                  background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(255,255,255,0) 100%)',
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-subtle)',
                 }}
               >
                 <div className="flex items-start justify-between">
@@ -176,8 +181,13 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="px-4 sm:px-6 pb-6 space-y-6">
+              {/* Content - Scrollable */}
+              <div 
+                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-6"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
                 {/* Wine Image & Quick Stats */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   {/* Wine Bottle Image or Placeholder */}

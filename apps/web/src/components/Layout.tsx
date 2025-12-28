@@ -50,6 +50,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [location.pathname]);
 
+  /**
+   * Luxury Scroll Restoration
+   * Smoothly scrolls to top on route changes (mobile-first UX)
+   * Critical for bottom nav navigation experience
+   */
+  useEffect(() => {
+    // Small delay to ensure DOM has updated after navigation
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth',
+      });
+    }, 10);
+
+    return () => clearTimeout(scrollTimer);
+  }, [location.pathname]);
+
   async function handleProfileComplete() {
     setShowCompleteProfile(false);
     await refreshProfile();
@@ -103,6 +121,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.path}
                     to={item.path}
+                    onClick={() => {
+                      // Instant scroll for desktop (smooth scroll handled by Layout useEffect)
+                      window.scrollTo(0, 0);
+                    }}
                     className={`
                       px-4 py-2 rounded-full text-sm font-medium transition-all
                       ${

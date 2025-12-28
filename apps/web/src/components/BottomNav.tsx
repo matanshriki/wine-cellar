@@ -26,6 +26,16 @@ export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
 
+  /**
+   * Smooth scroll to top with luxury easing
+   */
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   const navItems: NavItem[] = [
     {
       path: '/cellar',
@@ -95,6 +105,7 @@ export const BottomNav: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={scrollToTop}
                 className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
                 aria-label={t(item.labelKey)}
                 aria-current={isActive ? 'page' : undefined}
