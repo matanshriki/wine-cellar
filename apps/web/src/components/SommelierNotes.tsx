@@ -117,16 +117,8 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
             disabled={isRefreshing}
             className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
             style={{
-              backgroundColor: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              if (!isRefreshing) {
-                e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            backgroundColor: 'transparent',
+          }}
             aria-label={t('cellar.sommelier.refresh')}
           >
             <svg
@@ -197,14 +189,8 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
         <div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-xs font-medium transition-colors"
-            style={{ color: 'var(--wine-600)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--wine-700)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--wine-600)';
-            }}
+          className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+          style={{ color: 'var(--wine-600)' }}
           >
             <svg
               className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}

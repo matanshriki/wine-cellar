@@ -239,10 +239,13 @@
   transition: all var(--transition-base);
 }
 
-.luxury-card-hover:hover {
-  border-color: var(--wine-200);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+/* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
+@media (hover: hover) and (pointer: fine) {
+  .luxury-card-hover:hover {
+    border-color: var(--wine-200);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
 }
 
 .luxury-card-elevated {
@@ -270,14 +273,19 @@
   touch-action: manipulation;
 }
 
-.btn-luxury-primary:hover {
-  background: linear-gradient(135deg, var(--wine-700), var(--wine-800));
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+/* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
+@media (hover: hover) and (pointer: fine) {
+  .btn-luxury-primary:hover {
+    background: linear-gradient(135deg, var(--wine-700), var(--wine-800));
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
 }
 
+/* Active state for all devices (immediate touch feedback) */
 .btn-luxury-primary:active {
   transform: scale(0.98);
+  box-shadow: var(--shadow-xs);
 }
 
 .btn-luxury-primary:disabled {
@@ -302,12 +310,16 @@
   touch-action: manipulation;
 }
 
-.btn-luxury-secondary:hover {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
+/* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
+@media (hover: hover) and (pointer: fine) {
+  .btn-luxury-secondary:hover {
+    background: var(--bg-surface-elevated);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
+/* Active state for all devices (immediate touch feedback) */
 .btn-luxury-secondary:active {
   transform: scale(0.98);
 }
@@ -332,13 +344,31 @@
   touch-action: manipulation;
 }
 
-.btn-luxury-ghost:hover {
-  background: var(--bg-surface);
-  color: var(--text-primary);
+/* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
+@media (hover: hover) and (pointer: fine) {
+  .btn-luxury-ghost:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
 }
 
+/* Active state for all devices (immediate touch feedback) */
 .btn-luxury-ghost:active {
   transform: scale(0.98);
+  background: var(--bg-subtle);
+}
+
+/* Special hover class for wine-themed buttons (sommelier notes, etc.) */
+@media (hover: hover) and (pointer: fine) {
+  .hover-wine-btn:hover {
+    background-color: var(--wine-50) !important;
+    border-color: var(--wine-300) !important;
+  }
+}
+
+.hover-wine-btn:active {
+  transform: scale(0.98);
+  background-color: var(--wine-100) !important;
 }
 
 /* ===== INPUT PRIMITIVE ===== */

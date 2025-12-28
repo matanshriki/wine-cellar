@@ -133,7 +133,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             e.stopPropagation();
             onAnalyze();
           }}
-          className="w-full mb-4 py-3 px-4 text-sm font-medium rounded-lg transition-all min-h-[44px] group"
+          className="w-full mb-4 py-3 px-4 text-sm font-medium rounded-lg transition-all min-h-[44px] group hover-wine-btn"
           style={{
             backgroundColor: 'var(--bg-subtle)',
             color: 'var(--wine-700)',
@@ -141,14 +141,6 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             boxShadow: 'var(--shadow-xs)',
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--wine-50)';
-            e.currentTarget.style.borderColor = 'var(--wine-300)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
-            e.currentTarget.style.borderColor = 'var(--border-base)';
           }}
         >
           <div className="flex items-center justify-center gap-2">
@@ -180,17 +172,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
               boxShadow: 'var(--shadow-sm)',
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
             onMouseDown={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
             }}
@@ -216,17 +200,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               color: 'var(--text-primary)',
               border: '1px solid var(--border-base)',
               boxShadow: 'var(--shadow-xs)',
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
-              e.currentTarget.style.borderColor = 'var(--wine-300)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
-              e.currentTarget.style.borderColor = 'var(--border-base)';
-            }}
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
           >
             {t('cellar.bottle.edit')}
           </button>
@@ -242,17 +218,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               color: 'var(--color-error)',
               border: '1px solid var(--border-base)',
               boxShadow: 'var(--shadow-xs)',
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#fee';
-              e.currentTarget.style.borderColor = 'var(--color-error)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
-              e.currentTarget.style.borderColor = 'var(--border-base)';
-            }}
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
           >
             {t('cellar.bottle.delete')}
           </button>
