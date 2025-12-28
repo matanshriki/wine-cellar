@@ -176,6 +176,7 @@ export async function uploadLabelImage(file: File): Promise<string> {
 
 /**
  * Extract wine data from label image using AI
+ * TEMPORARY: Returns placeholder data until Edge Function is deployed
  */
 export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedWineData> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -184,6 +185,30 @@ export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedW
     throw new Error('Not authenticated');
   }
 
+  console.log('[extractWineFromLabel] AI extraction temporarily disabled, returning placeholder');
+  console.log('[extractWineFromLabel] To enable AI: Deploy Edge Function (see DEPLOY_EDGE_FUNCTION_FIX.md)');
+
+  // TEMPORARY: Return placeholder data until Edge Function is deployed
+  // User can manually fill in the details
+  return {
+    producer: null,
+    wine_name: null,
+    vintage: null,
+    country: null,
+    region: null,
+    wine_color: null,
+    grape: null,
+    bottle_size_ml: 750,
+    confidence: {
+      producer: 'low',
+      wine_name: 'low',
+      vintage: 'low',
+      overall: 'low',
+    },
+    notes: 'AI extraction is not configured. Please enter details manually.',
+  };
+
+  /* ORIGINAL CODE - Uncomment when Edge Function is deployed
   try {
     // Call Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('extract-wine-label', {
@@ -197,7 +222,7 @@ export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedW
       throw new Error('Failed to extract wine data from label');
     }
 
-    if (!data.success || !data.data) {
+    if (data.success || !data.data) {
       throw new Error(data.error || 'Failed to extract wine data');
     }
 
@@ -206,6 +231,7 @@ export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedW
     console.error('Label extraction error:', error);
     throw error;
   }
+  */
 }
 
 /**
