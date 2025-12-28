@@ -35,6 +35,9 @@ export interface Recommendation {
     style: string;
     region?: string;
     quantity: number;
+    rating?: number | null;
+    vivinoUrl?: string | null;
+    imageUrl?: string | null;
   };
   explanation: string;
   servingInstructions: string;
@@ -190,6 +193,9 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
         style: wine.color,
         region: wine.region || undefined,
         quantity: bottle.quantity,
+        rating: wine.rating || null,
+        vivinoUrl: wine.vivino_url || null,
+        imageUrl: wine.image_url || null,
       },
       explanation,
       servingInstructions,

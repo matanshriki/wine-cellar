@@ -84,7 +84,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
                   
                   return (
                     <span
-                      key={star}
+                      key={`${bottle.id}-star-${star}`}
                       className="text-base"
                       style={{
                         color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',

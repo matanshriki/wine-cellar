@@ -178,9 +178,28 @@ export function RecommendationPage() {
               className="card-hover card"
               style={{ border: '2px solid var(--color-stone-200)' }}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-start gap-4 mb-4">
+                {/* Wine Image */}
+                {rec.bottle?.imageUrl && (
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={rec.bottle.imageUrl} 
+                      alt={rec.bottle.name}
+                      className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-md"
+                      style={{
+                        border: '1px solid var(--color-stone-200)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      }}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-3 mb-3">
                     <div
                       className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
                       style={{
@@ -191,7 +210,7 @@ export function RecommendationPage() {
                       {index + 1}
                     </div>
                     {rec.bottle && (
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h3 
                           className="text-xl sm:text-2xl font-bold mb-1"
                           style={{ 
@@ -201,17 +220,64 @@ export function RecommendationPage() {
                         >
                           {rec.bottle.name}
                         </h3>
-                        <p className="text-sm" style={{ color: 'var(--color-stone-600)' }}>
+                        <p className="text-sm mb-2" style={{ color: 'var(--color-stone-600)' }}>
                           {rec.bottle.producer && `${rec.bottle.producer} • `}
                           {rec.bottle.vintage || 'NV'} • {t(`cellar.wineStyles.${rec.bottle.style}`)}
                         </p>
+                        
+                        {/* Vivino Rating */}
+                        {rec.bottle.rating && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1" title={`${rec.bottle.rating} ${t('cellar.bottle.vivinoRating')}`}>
+                              {[1, 2, 3, 4, 5].map((star) => {
+                                const rating = rec.bottle!.rating || 0;
+                                const filled = star <= Math.floor(rating);
+                                const halfFilled = !filled && star <= Math.ceil(rating);
+                                
+                                return (
+                                  <span
+                                    key={`${rec.bottleId}-star-${star}`}
+                                    className="text-sm"
+                                    style={{
+                                      color: filled || halfFilled ? 'var(--color-wine-500)' : 'var(--color-stone-300)',
+                                    }}
+                                    aria-hidden="true"
+                                  >
+                                    {filled ? '★' : halfFilled ? '⯪' : '☆'}
+                                  </span>
+                                );
+                              })}
+                              <span
+                                className="text-sm font-medium ms-1"
+                                style={{ color: 'var(--color-stone-600)' }}
+                              >
+                                {rec.bottle.rating.toFixed(1)}
+                              </span>
+                            </div>
+                            
+                            {/* Vivino Link */}
+                            {rec.bottle.vivinoUrl && (
+                              <a
+                                href={rec.bottle.vivinoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs px-2 py-1 rounded transition-colors"
+                                style={{
+                                  color: 'var(--color-wine-600)',
+                                  backgroundColor: 'var(--color-wine-50)',
+                                  border: '1px solid var(--color-wine-200)',
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Vivino
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
-                <span className="badge badge-wine">
-                  {t('recommendation.results.score')}: {rec.score}
-                </span>
               </div>
 
               <div className="space-y-4">

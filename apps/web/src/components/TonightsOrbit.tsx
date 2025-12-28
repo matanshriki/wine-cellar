@@ -223,7 +223,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                         
                         return (
                           <span
-                            key={star}
+                            key={`${bottle.bottle_id}-star-${star}`}
                             className="text-xs"
                             style={{
                               color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
