@@ -23,7 +23,11 @@ export const isLabelArtFeatureAvailable = (): boolean => {
  */
 export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
   // First check: Is feature available at app level?
-  if (!isLabelArtFeatureAvailable()) {
+  const globalEnabled = isLabelArtFeatureAvailable();
+  console.log('[AI Label Art] Global flag (VITE_FEATURE_GENERATED_LABEL_ART):', globalEnabled);
+  
+  if (!globalEnabled) {
+    console.log('[AI Label Art] Feature disabled globally - button will not appear');
     return false;
   }
 
@@ -31,8 +35,11 @@ export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
+    console.log('[AI Label Art] No user authenticated - button will not appear');
     return false;
   }
+
+  console.log('[AI Label Art] Checking user flag for user:', user.email);
 
   // Get user's profile to check their ai_label_art_enabled flag
   const { data: profile, error } = await supabase
@@ -41,12 +48,27 @@ export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
     .eq('id', user.id)
     .single();
 
-  if (error || !profile) {
-    console.error('Error fetching user profile:', error);
+  if (error) {
+    console.error('[AI Label Art] Error fetching user profile:', error);
     return false;
   }
 
-  return profile.ai_label_art_enabled === true;
+  if (!profile) {
+    console.error('[AI Label Art] No profile found for user');
+    return false;
+  }
+
+  const userEnabled = profile.ai_label_art_enabled === true;
+  console.log('[AI Label Art] User flag (ai_label_art_enabled):', profile.ai_label_art_enabled, '→', userEnabled ? 'ENABLED ✅' : 'DISABLED ❌');
+  
+  if (userEnabled) {
+    console.log('[AI Label Art] ✅ Button WILL appear (both flags enabled)');
+  } else {
+    console.log('[AI Label Art] ❌ Button will NOT appear - user flag is disabled');
+    console.log('[AI Label Art] Run this SQL to enable:', `UPDATE public.profiles SET ai_label_art_enabled = true WHERE email = '${user.email}';`);
+  }
+
+  return userEnabled;
 };
 
 /**
