@@ -4,23 +4,48 @@
  * Displays comprehensive wine information in a beautiful bottle-themed modal
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import * as bottleService from '../services/bottleService';
+import { AddWineImageDialog } from './AddWineImageDialog';
+import { toast } from '../lib/toast';
 
 interface WineDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   bottle: BottleWithWineInfo | null;
   onMarkAsOpened?: (bottle: BottleWithWineInfo) => void;
+  onRefresh?: () => void;
 }
 
-export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: WineDetailsModalProps) {
+export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh }: WineDetailsModalProps) {
   const { t } = useTranslation();
+  const [showImageDialog, setShowImageDialog] = useState(false);
 
   if (!bottle) return null;
 
   const wine = bottle.wine;
+
+  const handleSaveImage = async (imageUrl: string) => {
+    try {
+      await bottleService.updateWineImage(wine.id, imageUrl || null);
+      toast.success(
+        imageUrl 
+          ? t('wineImage.updateSuccess', 'Wine image updated!')
+          : t('wineImage.removeSuccess', 'Wine image removed')
+      );
+      
+      // Refresh data if callback provided
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error updating wine image:', error);
+      throw error; // Let dialog handle the error
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -94,23 +119,66 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
               <div className="px-4 sm:px-6 pb-6 space-y-6">
                 {/* Wine Image & Quick Stats */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                  {/* Wine Bottle Image */}
-                  {wine.image_url && (
-                    <div className="flex-shrink-0 mx-auto sm:mx-0">
-                      <img 
-                        src={wine.image_url}
-                        alt={wine.wine_name}
-                        className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg"
+                  {/* Wine Bottle Image or Placeholder */}
+                  <div className="flex-shrink-0 mx-auto sm:mx-0">
+                    <div className="relative group">
+                      {wine.image_url ? (
+                        <img 
+                          src={wine.image_url}
+                          alt={wine.wine_name}
+                          className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg wine-image"
+                          style={{
+                            border: '2px solid var(--border-base)',
+                            boxShadow: 'var(--shadow-lg)',
+                          }}
+                          onError={(e) => {
+                            // Show placeholder on error
+                            const placeholder = e.currentTarget.nextElementSibling;
+                            if (placeholder) {
+                              placeholder.classList.remove('hidden');
+                            }
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      
+                      {/* Premium Placeholder */}
+                      <div 
+                        className={`w-40 h-48 sm:w-40 sm:h-52 rounded-lg flex flex-col items-center justify-center ${wine.image_url ? 'hidden' : ''}`}
                         style={{
-                          border: '2px solid var(--border-base)',
-                          boxShadow: 'var(--shadow-lg)',
+                          border: '2px dashed var(--border-base)',
+                          background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
                         }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                      >
+                        <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-xs text-center px-4" style={{ color: 'var(--text-tertiary)' }}>
+                          No image
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Add/Update Image Button */}
+                    <button
+                      onClick={() => setShowImageDialog(true)}
+                      className="w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-base)',
+                        color: 'var(--text-secondary)',
+                        minHeight: '36px',
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      {wine.image_url 
+                        ? t('wineImage.updateButton', 'Update Image')
+                        : t('wineImage.addButton', 'Add Image')
+                      }
+                    </button>
+                  </div>
 
                   {/* Quick Stats */}
                   <div className="flex-1 flex flex-wrap gap-4 sm:gap-6">
@@ -409,6 +477,17 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened }: Wi
             </motion.div>
           </div>
         </>
+      )}
+      
+      {/* Add/Update Wine Image Dialog */}
+      {bottle && (
+        <AddWineImageDialog 
+          isOpen={showImageDialog}
+          onClose={() => setShowImageDialog(false)}
+          onSave={handleSaveImage}
+          currentImageUrl={wine.image_url}
+          wineName={wine.wine_name}
+        />
       )}
     </AnimatePresence>
   );

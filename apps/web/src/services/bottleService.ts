@@ -256,3 +256,33 @@ export async function updateBottleAnalysis(
   } as any);
 }
 
+/**
+ * Update wine image URL
+ * User-driven image management (ToS compliant)
+ */
+export async function updateWineImage(
+  wineId: string,
+  imageUrl: string | null
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  // Update the wine's image_url
+  const { error } = await supabase
+    .from('wines')
+    .update({ 
+      image_url: imageUrl || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', wineId)
+    .eq('user_id', user.id); // Ensure user owns this wine
+
+  if (error) {
+    console.error('Error updating wine image:', error);
+    throw new Error('Failed to update wine image');
+  }
+}
+

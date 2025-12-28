@@ -704,6 +704,7 @@ export function CellarPage() {
         }}
         bottle={selectedBottle}
         onMarkAsOpened={handleMarkOpened}
+        onRefresh={loadBottles}
       />
     </div>
   );
