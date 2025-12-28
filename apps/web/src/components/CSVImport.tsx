@@ -80,6 +80,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
     styleColumn: '',
     ratingColumn: '',
     vivinoUrlColumn: '',
+    imageUrlColumn: '',
     quantityColumn: '',
     notesColumn: '',
   });
@@ -155,6 +156,8 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           autoMapping.ratingColumn = header;
         } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
           autoMapping.vivinoUrlColumn = header;
+        } else if (lower.includes('image') || lower.includes('photo') || lower.includes('picture')) {
+          autoMapping.imageUrlColumn = header;
         } else if (lower.includes('quantity') || lower.includes('qty') || lower.includes('bottles')) {
           autoMapping.quantityColumn = header;
         } else if (lower.includes('note')) {
@@ -208,6 +211,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       const styleIdx = headers.indexOf(mapping.styleColumn);
       const ratingIdx = mapping.ratingColumn ? headers.indexOf(mapping.ratingColumn) : -1;
       const vivinoUrlIdx = mapping.vivinoUrlColumn ? headers.indexOf(mapping.vivinoUrlColumn) : -1;
+      const imageUrlIdx = mapping.imageUrlColumn ? headers.indexOf(mapping.imageUrlColumn) : -1;
       const quantityIdx = mapping.quantityColumn ? headers.indexOf(mapping.quantityColumn) : -1;
       const notesIdx = mapping.notesColumn ? headers.indexOf(mapping.notesColumn) : -1;
       
@@ -250,6 +254,9 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           // Get Vivino URL if available
           const vivinoUrl = vivinoUrlIdx >= 0 ? row[vivinoUrlIdx]?.trim() : null;
           
+          // Get image URL if available
+          const imageUrl = imageUrlIdx >= 0 ? row[imageUrlIdx]?.trim() : null;
+          
           // Build bottle data
           const bottleInput: bottleService.CreateBottleInput = {
             wine_name: wineName,
@@ -264,6 +271,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             vivino_wine_id: null,
             rating: rating,
             vivino_url: vivinoUrl,
+            image_url: imageUrl,
             wine_notes: null,
             quantity: quantityIdx >= 0 && row[quantityIdx] ? parseInt(row[quantityIdx]) : 1,
             notes: notesIdx >= 0 ? row[notesIdx]?.trim() : null,
@@ -609,6 +617,42 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
                   <select
                     value={mapping.quantityColumn}
                     onChange={(e) => setMapping({ ...mapping, quantityColumn: e.target.value })}
+                    className="input"
+                  >
+                    <option value="">{t('csvImport.mapping.columns.skip')}</option>
+                    {headers.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Vivino URL (optional)
+                  </label>
+                  <select
+                    value={mapping.vivinoUrlColumn}
+                    onChange={(e) => setMapping({ ...mapping, vivinoUrlColumn: e.target.value })}
+                    className="input"
+                  >
+                    <option value="">{t('csvImport.mapping.columns.skip')}</option>
+                    {headers.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Image URL (optional)
+                  </label>
+                  <select
+                    value={mapping.imageUrlColumn}
+                    onChange={(e) => setMapping({ ...mapping, imageUrlColumn: e.target.value })}
                     className="input"
                   >
                     <option value="">{t('csvImport.mapping.columns.skip')}</option>

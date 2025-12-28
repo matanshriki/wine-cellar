@@ -155,6 +155,26 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   </span>
                 </div>
 
+                {/* Wine Image */}
+                {bottle.wine.image_url && (
+                  <div className="mb-3 flex justify-center">
+                    <img 
+                      src={bottle.wine.image_url} 
+                      alt={bottle.wine.wine_name}
+                      className="w-20 h-28 object-cover rounded-md"
+                      style={{
+                        border: '1px solid var(--border-base)',
+                        boxShadow: 'var(--shadow-sm)',
+                      }}
+                      loading="lazy"
+                      onError={(e) => {
+                        // Hide image if it fails to load
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
                 {/* Wine name */}
                 <div 
                   className="font-semibold text-base mb-2 pe-10 line-clamp-2 leading-snug"

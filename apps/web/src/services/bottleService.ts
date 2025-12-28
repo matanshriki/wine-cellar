@@ -130,6 +130,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     vivino_wine_id: input.vivino_wine_id || null,
     rating: input.rating || null,
     vivino_url: input.vivino_url || null,
+    image_url: input.image_url || null,
     notes: input.wine_notes || null,
   };
 
