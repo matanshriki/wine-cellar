@@ -154,17 +154,25 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           autoMapping.styleColumn = header;
         } else if (
           lower.includes('rating') || 
-          lower.includes('score') || 
-          lower === 'average rating' ||
-          lower === 'avg rating' ||
-          lower === 'vivino rating'
+          lower.includes('score') ||
+          lower.includes('average') && lower.includes('rating') ||
+          lower.includes('avg') && lower.includes('rating') ||
+          lower.includes('vivino') && lower.includes('rating') ||
+          lower.includes('community') && lower.includes('rating')
         ) {
           autoMapping.ratingColumn = header;
         } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
           autoMapping.vivinoUrlColumn = header;
         } else if (lower.includes('image') || lower.includes('photo') || lower.includes('picture')) {
           autoMapping.imageUrlColumn = header;
-        } else if (lower.includes('quantity') || lower.includes('qty') || lower.includes('bottles')) {
+        } else if (
+          lower.includes('quantity') || 
+          lower.includes('qty') || 
+          lower.includes('bottles') ||
+          lower.includes('cellar count') ||
+          lower.includes('user cellar count') ||
+          lower === 'count'
+        ) {
           autoMapping.quantityColumn = header;
         } else if (lower.includes('note')) {
           autoMapping.notesColumn = header;
@@ -174,13 +182,25 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       setMapping((prev) => ({ ...prev, ...autoMapping }));
       
       // Log detected columns for debugging
+      console.log('[CSV Import] CSV Headers:', parsedHeaders);
       console.log('[CSV Import] Auto-detected columns:', {
         name: autoMapping.nameColumn,
         producer: autoMapping.producerColumn,
+        vintage: autoMapping.vintageColumn,
+        style: autoMapping.styleColumn,
         rating: autoMapping.ratingColumn,
+        quantity: autoMapping.quantityColumn,
         vivinoUrl: autoMapping.vivinoUrlColumn,
         imageUrl: autoMapping.imageUrlColumn,
       });
+      
+      // Warn if critical columns are missing
+      if (!autoMapping.ratingColumn) {
+        console.warn('[CSV Import] ⚠️ Rating column not detected! Check your CSV headers.');
+      }
+      if (!autoMapping.quantityColumn) {
+        console.warn('[CSV Import] ⚠️ Quantity column not detected! Will default to 1 per bottle.');
+      }
       
       if (vivinoDetection.isVivino) {
         const mappedCount = Object.values(autoMapping).filter(v => v).length;
@@ -234,6 +254,25 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       let successCount = 0;
       let failureCount = 0;
       const totalRows = dataRows.length;
+      
+      // Log column indices for debugging
+      console.log('[CSV Import] Column indices:', {
+        ratingIdx,
+        quantityIdx,
+        vivinoUrlIdx,
+        imageUrlIdx
+      });
+      
+      // Log first row data for debugging
+      if (dataRows.length > 0) {
+        const firstRow = dataRows[0];
+        console.log('[CSV Import] First row sample:', {
+          wineName: firstRow[nameIdx],
+          rating: ratingIdx >= 0 ? firstRow[ratingIdx] : 'N/A',
+          quantity: quantityIdx >= 0 ? firstRow[quantityIdx] : 'N/A',
+          vivinoUrl: vivinoUrlIdx >= 0 ? firstRow[vivinoUrlIdx] : 'N/A',
+        });
+      }
       
       // Import each row
       for (let i = 0; i < dataRows.length; i++) {
