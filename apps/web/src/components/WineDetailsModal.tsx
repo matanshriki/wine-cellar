@@ -86,7 +86,23 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
       }
     } catch (error: any) {
       console.error('Error generating label art:', error);
-      toast.error(error.message || t('labelArt.generateFailed', 'Failed to generate label art'));
+      
+      // Check if it's a deployment issue (Edge Function not found)
+      if (error.message?.includes('Failed to send a request to the Edge Function') || 
+          error.message?.includes('FunctionsHttpError') ||
+          error.message?.includes('FunctionsFetchError')) {
+        toast.error(
+          '⚙️ AI generation not deployed yet. See DEPLOY_AI_LABEL_ART.md for setup instructions.',
+          { duration: 8000 }
+        );
+      } else if (error.message?.includes('AI image generation not configured')) {
+        toast.error(
+          '🔑 OpenAI API key not configured. Run: supabase secrets set OPENAI_API_KEY=sk-...',
+          { duration: 8000 }
+        );
+      } else {
+        toast.error(error.message || t('labelArt.generateFailed', 'Failed to generate label art'));
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -250,6 +266,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           onClick={() => setShowGenerateDialog(true)}
                           disabled={isGenerating}
                           className="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                          title="Generate AI label art (requires Edge Function deployment)"
                           style={{
                             background: isGenerating ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
                             border: '1px solid var(--gold-600)',

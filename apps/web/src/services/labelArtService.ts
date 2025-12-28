@@ -182,8 +182,10 @@ export async function generateLabelArt(
   bottle: BottleWithWineInfo,
   style: LabelArtStyle
 ): Promise<GenerateLabelArtResponse> {
-  if (!isLabelArtEnabled()) {
-    throw new Error('Label art generation is not enabled');
+  // Check if feature is enabled for this user (async check)
+  const enabled = await isLabelArtEnabledForUser();
+  if (!enabled) {
+    throw new Error('Label art generation is not enabled for your account');
   }
 
   const { data: { user } } = await supabase.auth.getUser();
