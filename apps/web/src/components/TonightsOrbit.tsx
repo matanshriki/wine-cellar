@@ -19,13 +19,17 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
   /**
    * Smart Selection Logic:
-   * 1. Prioritize bottles marked as "READY" (optimal drinking window)
-   * 2. Then "PEAK_SOON" bottles (approaching optimal window)
-   * 3. Then bottles with highest quantity (you have more to enjoy)
-   * 4. Finally, newest additions (most recent purchases)
+   * 1. Filter out bottles with quantity = 0 (already opened/consumed)
+   * 2. Prioritize bottles marked as "READY" (optimal drinking window)
+   * 3. Then "PEAK_SOON" bottles (approaching optimal window)
+   * 4. Then bottles with highest quantity (you have more to enjoy)
+   * 5. Finally, newest additions (most recent purchases)
    */
   const getSmartSelection = (bottles: BottleWithWineInfo[]) => {
-    const scored = bottles.map(bottle => {
+    // First, filter out bottles that are already opened (quantity = 0)
+    const availableBottles = bottles.filter(bottle => bottle.quantity > 0);
+    
+    const scored = availableBottles.map(bottle => {
       const analysis = bottle as any;
       let score = 0;
 
