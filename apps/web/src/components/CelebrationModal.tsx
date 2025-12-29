@@ -40,82 +40,128 @@ export function CelebrationModal({
    * Uses explicit canvas for iOS/mobile compatibility
    */
   const triggerConfetti = () => {
+    console.log('[CelebrationModal] 🎉 triggerConfetti called');
+    
     // Check if canvas exists
     if (!canvasRef.current) {
-      console.warn('[CelebrationModal] Canvas ref not available for confetti');
+      console.error('[CelebrationModal] ❌ Canvas ref is NULL - cannot show confetti');
       return;
     }
+
+    console.log('[CelebrationModal] ✅ Canvas ref exists:', {
+      canvas: canvasRef.current,
+      width: canvasRef.current.width,
+      height: canvasRef.current.height,
+      offsetWidth: canvasRef.current.offsetWidth,
+      offsetHeight: canvasRef.current.offsetHeight,
+    });
 
     // Check if user prefers reduced motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
     if (prefersReducedMotion) {
-      console.log('[CelebrationModal] Skipping confetti - user prefers reduced motion');
+      console.log('[CelebrationModal] ⚠️ Skipping confetti - user prefers reduced motion');
       return;
     }
 
-    console.log('[CelebrationModal] Starting confetti animation on canvas');
+    console.log('[CelebrationModal] 🚀 Creating confetti instance...');
 
-    // Create confetti instance bound to our canvas
-    const myConfetti = confetti.create(canvasRef.current, {
-      resize: true,
-      useWorker: true,
-    });
+    try {
+      // Create confetti instance bound to our canvas
+      const myConfetti = confetti.create(canvasRef.current, {
+        resize: true,
+        useWorker: true,
+      });
 
-    // Fire confetti from multiple angles for better effect
-    const duration = 1500;
-    const animationEnd = Date.now() + duration;
-    const defaults = { 
-      startVelocity: 30, 
-      spread: 360, 
-      ticks: 60,
-      colors: ['#a24c68', '#883d56', '#e0b7c5', '#cd8ca1'], // Wine cellar theme colors
-      disableForReducedMotion: true,
-    };
+      console.log('[CelebrationModal] ✅ Confetti instance created successfully');
 
-    function randomInRange(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
+      // Fire an immediate test burst
+      console.log('[CelebrationModal] 🎊 Firing immediate test burst...');
+      myConfetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'], // Bright test colors
+      });
 
-    const interval = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
+      // Fire confetti from multiple angles for better effect
+      const duration = 2500; // Longer duration for testing
+      const animationEnd = Date.now() + duration;
+      const defaults = { 
+        startVelocity: 30, 
+        spread: 360, 
+        ticks: 90, // More ticks = longer visible
+        gravity: 0.8,
+        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#a24c68', '#883d56', '#e0b7c5', '#cd8ca1'], // Bright + wine colors
+        disableForReducedMotion: true,
+      };
 
-      if (timeLeft <= 0) {
-        console.log('[CelebrationModal] Confetti animation complete');
-        return clearInterval(interval);
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min;
       }
 
-      const particleCount = 50 * (timeLeft / duration);
-      
-      // Fire from left and right
-      myConfetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-      });
-      myConfetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-      });
-    }, 250);
+      let burstCount = 0;
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          console.log('[CelebrationModal] ✅ Confetti animation complete. Total bursts:', burstCount);
+          return clearInterval(interval);
+        }
+
+        const particleCount = 80 * (timeLeft / duration); // More particles
+        
+        burstCount++;
+        console.log(`[CelebrationModal] 💥 Burst #${burstCount}, particles: ${Math.round(particleCount)}`);
+        
+        // Fire from left and right
+        myConfetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        myConfetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 250);
+
+      console.log('[CelebrationModal] ⏰ Animation interval started');
+    } catch (error) {
+      console.error('[CelebrationModal] ❌ Error creating confetti:', error);
+    }
   };
 
   /**
    * Trigger confetti when modal opens
    */
   useEffect(() => {
+    console.log('[CelebrationModal] useEffect triggered:', {
+      isOpen,
+      confettiTriggered: confettiTriggered.current,
+      canvasExists: !!canvasRef.current,
+    });
+
     if (isOpen && !confettiTriggered.current) {
-      console.log('[CelebrationModal] Opening, will trigger confetti');
+      console.log('[CelebrationModal] 🎬 Modal opened, scheduling confetti in 100ms...');
+      
       // Small delay to let modal render first
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        console.log('[CelebrationModal] ⏰ Timeout fired, triggering confetti now');
         triggerConfetti();
         confettiTriggered.current = true;
       }, 100);
+
+      return () => {
+        console.log('[CelebrationModal] 🧹 Cleaning up timeout');
+        clearTimeout(timeoutId);
+      };
     }
 
     // Reset when modal closes
     if (!isOpen) {
+      console.log('[CelebrationModal] 🚪 Modal closed, resetting confetti trigger');
       confettiTriggered.current = false;
     }
   }, [isOpen]);
@@ -183,11 +229,16 @@ export function CelebrationModal({
         className="fixed inset-0 pointer-events-none"
         style={{
           zIndex: 9999,
-          width: '100%',
-          height: '100%',
+          width: '100vw',
+          height: '100vh',
+          position: 'fixed',
+          top: 0,
+          left: 0,
           transform: 'translateZ(0)', // Force hardware acceleration on iOS
           WebkitTransform: 'translateZ(0)',
+          backgroundColor: 'transparent', // Explicit transparency for debugging
         }}
+        onLoad={() => console.log('[CelebrationModal] 🖼️ Canvas element loaded')}
       />
 
       {/* Backdrop */}
