@@ -183,7 +183,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
               {/* Content - Scrollable */}
               <div 
-                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-6"
+                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 pb-20 md:pb-6 space-y-6"
                 style={{
                   WebkitOverflowScrolling: 'touch',
                 }}
