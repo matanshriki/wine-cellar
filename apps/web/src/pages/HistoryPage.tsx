@@ -84,7 +84,11 @@ export function HistoryPage() {
     }
 
     try {
-      const bottle = await bottleService.getBottleById(event.bottle_id);
+      const bottle = await bottleService.getBottle(event.bottle_id);
+      if (!bottle) {
+        toast.error(t('history.error.noBottleData'));
+        return;
+      }
       setSelectedBottle(bottle);
       setIsModalOpen(true);
     } catch (error: any) {
