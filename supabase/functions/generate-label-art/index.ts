@@ -24,13 +24,29 @@ serve(async (req) => {
   }
 
   try {
+    // Get Authorization header
+    const authHeader = req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      console.error('[AI Label] Missing Authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
+
+    console.log('[AI Label] Authorization header present');
+
     // Get Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -38,17 +54,32 @@ serve(async (req) => {
     // Verify user is authenticated
     const {
       data: { user },
+      error: authError,
     } = await supabaseClient.auth.getUser();
 
-    if (!user) {
+    if (authError) {
+      console.error('[AI Label] Auth error:', authError.message);
       return new Response(
-        JSON.stringify({ error: 'Not authenticated' }),
+        JSON.stringify({ error: `Authentication failed: ${authError.message}` }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
         }
       );
     }
+
+    if (!user) {
+      console.error('[AI Label] No user found in token');
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated - invalid token' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
+
+    console.log('[AI Label] User authenticated:', user.id);
 
     // Parse request
     const body: GenerateRequest = await req.json();
@@ -234,4 +265,5 @@ serve(async (req) => {
     );
   }
 });
+
 
