@@ -198,7 +198,15 @@ export async function generateLabelArt(
   const prompt = buildSafeLabelPrompt(bottle.wine, style);
   const promptHash = await hashPrompt(prompt);
 
+  // Get current session to include auth header
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('No active session. Please log in again.');
+  }
+
   // Call backend Edge Function (Supabase Function)
+  // Explicitly pass Authorization header to ensure auth works
   const { data, error } = await supabase.functions.invoke('generate-label-art', {
     body: {
       wineId: bottle.wine.id,
@@ -206,6 +214,9 @@ export async function generateLabelArt(
       prompt,
       promptHash,
       style,
+    },
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
     },
   });
 
