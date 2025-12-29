@@ -14,7 +14,10 @@ import type { BottleWithWineInfo } from './bottleService';
 
 // App-level feature flag check (master switch)
 export const isLabelArtFeatureAvailable = (): boolean => {
-  return import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART === 'true';
+  // Temporarily disabled due to Edge Function auth issues
+  // TODO: Fix Supabase Edge Function JWT authentication
+  return false;
+  // return import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART === 'true';
 };
 
 /**
