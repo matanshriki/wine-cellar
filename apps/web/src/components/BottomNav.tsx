@@ -28,12 +28,55 @@ export const BottomNav: React.FC = () => {
 
   /**
    * Smooth scroll to top with luxury easing
+   * Multiple fallbacks for PWA compatibility
    */
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    console.log('[BottomNav] scrollToTop called');
+    console.log('[BottomNav] Current scroll position:', window.scrollY);
+    console.log('[BottomNav] Window height:', window.innerHeight);
+    console.log('[BottomNav] Document height:', document.documentElement.scrollHeight);
+    console.log('[BottomNav] isPWA (standalone):', window.matchMedia('(display-mode: standalone)').matches);
+    
+    // Try multiple methods for better PWA compatibility
+    try {
+      // Method 1: Standard window.scrollTo with smooth behavior
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth',
+      });
+      
+      // Method 2: Also scroll document element (for iOS PWA)
+      document.documentElement.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth',
+      });
+      
+      // Method 3: Also scroll body (some browsers need this)
+      document.body.scrollTo?.({
+        top: 0,
+        left: 0,
+        behavior: 'smooth',
+      });
+      
+      console.log('[BottomNav] All scroll methods executed');
+    } catch (error) {
+      console.error('[BottomNav] Scroll error:', error);
+      // Fallback: instant scroll if smooth fails
+      window.scrollTo(0, 0);
+    }
+    
+    // Verify after scroll attempt
+    setTimeout(() => {
+      console.log('[BottomNav] After 100ms - position:', window.scrollY);
+      if (window.scrollY > 50) {
+        console.warn('[BottomNav] Scroll did not work! Trying instant scroll...');
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    }, 100);
   };
 
   const navItems: NavItem[] = [
@@ -105,7 +148,12 @@ export const BottomNav: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={scrollToTop}
+                onClick={(e) => {
+                  console.log('[BottomNav] Link clicked:', item.path);
+                  console.log('[BottomNav] Current pathname:', location.pathname);
+                  console.log('[BottomNav] Is same route?', location.pathname === item.path);
+                  scrollToTop();
+                }}
                 className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
                 aria-label={t(item.labelKey)}
                 aria-current={isActive ? 'page' : undefined}
