@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
+import { WineDetailsModal } from '../components/WineDetailsModal';
 import * as historyService from '../services/historyService';
+import * as bottleService from '../services/bottleService';
+import type { BottleWithWineInfo } from '../services/bottleService';
 
 interface HistoryEvent {
   id: string;
@@ -12,6 +15,7 @@ interface HistoryEvent {
   vibe: string | null;
   user_rating: number | null;
   tasting_notes: string | null;
+  bottle_id: string;
   bottle: {
     wine: {
       producer: string;
@@ -29,6 +33,9 @@ export function HistoryPage() {
   const [stats, setStats] = useState<historyService.ConsumptionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [ratingLoading, setRatingLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -68,6 +75,48 @@ export function HistoryPage() {
       month: 'short',
       day: 'numeric',
     });
+  }
+
+  async function handleWineClick(event: HistoryEvent) {
+    if (!event.bottle_id) {
+      toast.error(t('history.error.noBottleData'));
+      return;
+    }
+
+    try {
+      const bottle = await bottleService.getBottleById(event.bottle_id);
+      setSelectedBottle(bottle);
+      setIsModalOpen(true);
+    } catch (error: any) {
+      console.error('[HistoryPage] Error loading bottle:', error);
+      toast.error(error.message || t('history.error.loadBottleFailed'));
+    }
+  }
+
+  async function handleQuickRating(eventId: string, isPositive: boolean) {
+    setRatingLoading(eventId);
+    
+    try {
+      // Update rating: thumbs up = 5, thumbs down = 2
+      await historyService.updateConsumptionHistory(eventId, {
+        user_rating: isPositive ? 5 : 2,
+      });
+
+      // Refresh data to show updated rating
+      await loadData();
+      
+      toast.success(t('history.ratingUpdated'));
+    } catch (error: any) {
+      console.error('[HistoryPage] Error updating rating:', error);
+      toast.error(error.message || t('history.error.ratingFailed'));
+    } finally {
+      setRatingLoading(null);
+    }
+  }
+
+  function handleModalClose() {
+    setIsModalOpen(false);
+    setSelectedBottle(null);
   }
 
   if (loading) {
@@ -178,24 +227,39 @@ export function HistoryPage() {
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {events.map((event) => (
-              <div key={event.id} className="border-l-4 border-primary-500 pl-3 sm:pl-4 py-2">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2">
-                  <div className="flex-1">
+              <div 
+                key={event.id} 
+                className="group relative border-l-4 border-primary-500 pl-3 sm:pl-4 py-3 sm:py-4 rounded-r-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                onClick={() => handleWineClick(event)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleWineClick(event);
+                  }
+                }}
+              >
+                {/* Wine Info Section */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
+                  <div className="flex-1 pr-2">
                     {/* Note: Wine name, producer, vintage are NOT translated - they're actual wine data */}
-                    <h3 className="font-semibold text-sm sm:text-base text-gray-900">
+                    <h3 className="font-semibold text-base sm:text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
                       {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
                     </h3>
-                    <div className="text-xs sm:text-sm text-gray-600">
+                    <div className="text-xs sm:text-sm text-gray-600 mt-1">
                       {event.bottle?.wine?.producer && `${event.bottle.wine.producer} • `}
-                      {event.bottle?.wine?.vintage || 'NV'}
+                      <span className="font-medium">{event.bottle?.wine?.vintage || 'NV'}</span>
+                      {event.bottle?.wine?.region && ` • ${event.bottle.wine.region}`}
                     </div>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-0 whitespace-nowrap">
+                  <div className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-0 whitespace-nowrap font-medium">
                     {formatDate(event.opened_at)}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
+                {/* Badges Section */}
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
                   {/* Wine color badge - translates the display text */}
                   {event.bottle?.wine?.color && (
                     <span className="badge badge-gray text-xs">
@@ -213,20 +277,89 @@ export function HistoryPage() {
                       {event.occasion.replace('_', ' ')}
                     </span>
                   )}
+                </div>
+
+                {/* Tasting Notes */}
+                {/* Note: tasting_notes are user-generated content, NOT translated */}
+                {event.tasting_notes && (
+                  <p className="text-xs sm:text-sm text-gray-700 italic mb-3 pl-3 border-l-2 border-gray-200">
+                    "{event.tasting_notes}"
+                  </p>
+                )}
+
+                {/* Rating Section */}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                  <span className="text-xs text-gray-600 font-medium">{t('history.quickRating')}:</span>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickRating(event.id, true);
+                      }}
+                      disabled={ratingLoading === event.id}
+                      className={`
+                        flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all
+                        ${event.user_rating && event.user_rating >= 4 
+                          ? 'bg-green-100 text-green-700 border-2 border-green-500' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600 border-2 border-transparent hover:border-green-300'
+                        }
+                        ${ratingLoading === event.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                      aria-label={t('history.thumbsUp')}
+                    >
+                      <span className="text-base">👍</span>
+                      <span>{t('history.liked')}</span>
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickRating(event.id, false);
+                      }}
+                      disabled={ratingLoading === event.id}
+                      className={`
+                        flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all
+                        ${event.user_rating && event.user_rating <= 3 
+                          ? 'bg-orange-100 text-orange-700 border-2 border-orange-500' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600 border-2 border-transparent hover:border-orange-300'
+                        }
+                        ${ratingLoading === event.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                      aria-label={t('history.thumbsDown')}
+                    >
+                      <span className="text-base">👎</span>
+                      <span>{t('history.notLiked')}</span>
+                    </button>
+                  </div>
+
+                  {/* Current Rating Display */}
                   {event.user_rating && (
-                    <span className="badge badge-yellow text-xs">⭐ {event.user_rating}/5</span>
+                    <span className="ml-auto badge badge-yellow text-xs">
+                      ⭐ {event.user_rating}/5
+                    </span>
                   )}
                 </div>
 
-                {/* Note: tasting_notes are user-generated content, NOT translated */}
-                {event.tasting_notes && (
-                  <p className="text-xs sm:text-sm text-gray-700 italic mt-2">{event.tasting_notes}</p>
-                )}
+                {/* Click Indicator */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Wine Details Modal */}
+      <WineDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        bottle={selectedBottle}
+        onRefresh={loadData}
+      />
     </div>
   );
 }

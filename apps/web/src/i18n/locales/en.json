@@ -317,6 +317,12 @@
     "subtitle": "Your wine tasting journey",
     "loading": "Loading history...",
     "unknownBottle": "Unknown Bottle",
+    "quickRating": "Quick Rating",
+    "thumbsUp": "Thumbs up",
+    "thumbsDown": "Thumbs down",
+    "liked": "Liked",
+    "notLiked": "Not Liked",
+    "ratingUpdated": "Rating updated successfully",
     "stats": {
       "totalOpens": "Total Opens",
       "averageRating": "Average Rating",
@@ -334,7 +340,10 @@
       "title": "Unable to Load History",
       "subtitle": "We couldn't load your opening history. Please try again.",
       "retry": "Try Again",
-      "loadFailed": "Failed to load history"
+      "loadFailed": "Failed to load history",
+      "noBottleData": "No bottle data available",
+      "loadBottleFailed": "Failed to load bottle details",
+      "ratingFailed": "Failed to update rating"
     }
   },
   "csvImport": {

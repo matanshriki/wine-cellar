@@ -137,6 +137,44 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
 }
 
 /**
+ * Update an existing consumption history entry
+ */
+export interface UpdateConsumptionHistoryInput {
+  occasion?: string;
+  meal_type?: string;
+  vibe?: string;
+  user_rating?: number;
+  tasting_notes?: string;
+  meal_notes?: string;
+}
+
+export async function updateConsumptionHistory(
+  historyId: string, 
+  updates: UpdateConsumptionHistoryInput
+): Promise<ConsumptionHistory> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('consumption_history')
+    .update(updates)
+    .eq('id', historyId)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating consumption history:', error);
+    throw new Error('Failed to update consumption history');
+  }
+
+  return data;
+}
+
+/**
  * Get consumption statistics for the current user
  */
 export interface ConsumptionStats {

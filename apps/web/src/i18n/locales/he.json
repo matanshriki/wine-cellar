@@ -317,6 +317,12 @@
     "subtitle": "מסע טעימות היין שלך",
     "loading": "טוען היסטוריה...",
     "unknownBottle": "בקבוק לא ידוע",
+    "quickRating": "דירוג מהיר",
+    "thumbsUp": "אהבתי",
+    "thumbsDown": "לא אהבתי",
+    "liked": "אהבתי",
+    "notLiked": "לא אהבתי",
+    "ratingUpdated": "הדירוג עודכן בהצלחה",
     "stats": {
       "totalOpens": "סה״כ פתיחות",
       "averageRating": "דירוג ממוצע",
@@ -334,7 +340,10 @@
       "title": "לא ניתן לטעון היסטוריה",
       "subtitle": "לא הצלחנו לטעון את היסטוריית הפתיחות שלך. אנא נסה שוב.",
       "retry": "נסה שוב",
-      "loadFailed": "טעינת ההיסטוריה נכשלה"
+      "loadFailed": "טעינת ההיסטוריה נכשלה",
+      "noBottleData": "אין נתוני בקבוק זמינים",
+      "loadBottleFailed": "טעינת פרטי הבקבוק נכשלה",
+      "ratingFailed": "עדכון הדירוג נכשל"
     }
   },
   "csvImport": {
