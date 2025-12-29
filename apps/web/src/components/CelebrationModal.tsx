@@ -31,20 +31,36 @@ export function CelebrationModal({
 }: CelebrationModalProps) {
   const { t } = useTranslation();
   const modalRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const confettiTriggered = useRef(false);
 
   /**
    * Trigger confetti animation
    * Respects prefers-reduced-motion for accessibility
+   * Uses explicit canvas for iOS/mobile compatibility
    */
   const triggerConfetti = () => {
+    // Check if canvas exists
+    if (!canvasRef.current) {
+      console.warn('[CelebrationModal] Canvas ref not available for confetti');
+      return;
+    }
+
     // Check if user prefers reduced motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
     if (prefersReducedMotion) {
-      // Skip animation if user prefers reduced motion
+      console.log('[CelebrationModal] Skipping confetti - user prefers reduced motion');
       return;
     }
+
+    console.log('[CelebrationModal] Starting confetti animation on canvas');
+
+    // Create confetti instance bound to our canvas
+    const myConfetti = confetti.create(canvasRef.current, {
+      resize: true,
+      useWorker: true,
+    });
 
     // Fire confetti from multiple angles for better effect
     const duration = 1500;
@@ -52,9 +68,9 @@ export function CelebrationModal({
     const defaults = { 
       startVelocity: 30, 
       spread: 360, 
-      ticks: 60, 
-      zIndex: 9999,
-      colors: ['#a24c68', '#883d56', '#e0b7c5', '#cd8ca1'] // Wine cellar theme colors
+      ticks: 60,
+      colors: ['#a24c68', '#883d56', '#e0b7c5', '#cd8ca1'], // Wine cellar theme colors
+      disableForReducedMotion: true,
     };
 
     function randomInRange(min: number, max: number) {
@@ -65,18 +81,19 @@ export function CelebrationModal({
       const timeLeft = animationEnd - Date.now();
 
       if (timeLeft <= 0) {
+        console.log('[CelebrationModal] Confetti animation complete');
         return clearInterval(interval);
       }
 
       const particleCount = 50 * (timeLeft / duration);
       
       // Fire from left and right
-      confetti({
+      myConfetti({
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
       });
-      confetti({
+      myConfetti({
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
@@ -160,8 +177,21 @@ export function CelebrationModal({
         height: '100dvh',
       }}
     >
+      {/* Confetti Canvas - Fixed to viewport for iOS compatibility */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 9999,
+          width: '100%',
+          height: '100%',
+          transform: 'translateZ(0)', // Force hardware acceleration on iOS
+          WebkitTransform: 'translateZ(0)',
+        }}
+      />
+
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" style={{ zIndex: 1 }} />
 
       {/* Modal Content */}
       <div
@@ -170,6 +200,7 @@ export function CelebrationModal({
         style={{
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
+          zIndex: 2, // Above backdrop, below confetti canvas
         }}
         onClick={(e) => e.stopPropagation()}
       >
