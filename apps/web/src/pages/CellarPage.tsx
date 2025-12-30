@@ -625,8 +625,7 @@ export function CellarPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
-          style={{ gridAutoRows: '1fr', width: '100%' }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 cellar-grid"
         >
           {filteredBottles.map((bottle, index) => (
             <motion.div
@@ -634,8 +633,7 @@ export function CellarPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05, duration: 0.3 }}
-              className="flex"
-              style={{ minWidth: 0 }}
+              className="flex cellar-grid-item"
             >
               <BottleCard
                 bottle={bottle}
@@ -740,6 +738,25 @@ export function CellarPage() {
         onMarkAsOpened={handleMarkOpened}
         onRefresh={loadBottles}
       />
+      
+      {/* Responsive Grid Styles */}
+      <style>{`
+        /* Mobile: Natural card heights (no forced uniformity) */
+        .cellar-grid {
+          width: 100%;
+        }
+        
+        .cellar-grid-item {
+          min-width: 0;
+        }
+        
+        /* Desktop: Uniform heights within same row */
+        @media (min-width: 640px) {
+          .cellar-grid {
+            grid-auto-rows: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }
