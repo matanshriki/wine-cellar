@@ -181,9 +181,26 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           )
         ) {
           autoMapping.ratingColumn = header;
-        } else if (lower.includes('url') || lower.includes('link') || lower.includes('vivino')) {
+        } else if (
+          // Prioritize "Vivino URL" or "Url" from Vivino exports, then other URL patterns
+          lower === 'vivino url' || 
+          lower === 'url' || 
+          lower === 'link' ||
+          lower.includes('vivino') && lower.includes('url') ||
+          lower.includes('wine') && lower.includes('url') ||
+          lower.includes('link') && lower.includes('wine')
+        ) {
           autoMapping.vivinoUrlColumn = header;
-        } else if (lower.includes('image') || lower.includes('photo') || lower.includes('picture')) {
+        } else if (
+          // Prioritize "Image URL" or "Image" from Vivino exports, then other image patterns
+          lower === 'image url' || 
+          lower === 'image' ||
+          lower === 'picture url' ||
+          lower === 'photo url' ||
+          lower.includes('image') && lower.includes('url') ||
+          lower.includes('wine') && lower.includes('image') ||
+          lower.includes('label') && lower.includes('image')
+        ) {
           autoMapping.imageUrlColumn = header;
         } else if (
           lower.includes('quantity') || 
@@ -320,6 +337,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           rating: sampleRating,
           quantity: quantityIdx >= 0 ? firstRow[quantityIdx] : 'N/A',
           vivinoUrl: vivinoUrlIdx >= 0 ? firstRow[vivinoUrlIdx] : 'N/A',
+          imageUrl: imageUrlIdx >= 0 ? firstRow[imageUrlIdx] : 'N/A',
         });
         
         // Validate rating looks correct (should be 0-5, not 100+)
@@ -387,6 +405,14 @@ export function CSVImport({ onClose, onSuccess }: Props) {
           
           // Get image URL if available
           const imageUrl = imageUrlIdx >= 0 ? row[imageUrlIdx]?.trim() : null;
+          
+          // Log URLs for first few bottles to help debug
+          if (successCount < 3 && (vivinoUrl || imageUrl)) {
+            console.log(`[CSV Import] URLs for "${wineName}":`, {
+              vivinoUrl: vivinoUrl || 'Not provided',
+              imageUrl: imageUrl || 'Not provided',
+            });
+          }
           
           // Build bottle data
           const bottleInput: bottleService.CreateBottleInput = {
@@ -800,7 +826,7 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
 
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Vivino URL (optional)
+                    Link to Wine / Vivino URL (optional)
                   </label>
                   <select
                     value={mapping.vivinoUrlColumn}
@@ -818,7 +844,7 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
 
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Image URL (optional)
+                    Wine Image URL (optional)
                   </label>
                   <select
                     value={mapping.imageUrlColumn}
