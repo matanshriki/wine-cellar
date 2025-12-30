@@ -24,11 +24,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[AI Label] Edge Function invoked');
+
     // Get Authorization header
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
-      console.error('[AI Label] Missing Authorization header');
+      console.error('[AI Label] ❌ Missing Authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         {
@@ -38,9 +40,37 @@ serve(async (req) => {
       );
     }
 
-    console.log('[AI Label] Authorization header present');
+    console.log('[AI Label] ✅ Authorization header present');
 
-    // Get Supabase client
+    // Create TWO Supabase clients:
+    // 1. Service role client for database operations (bypasses RLS)
+    // 2. User client for authentication verification
+    
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceRoleKey) {
+      console.error('[AI Label] ❌ SUPABASE_SERVICE_ROLE_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    // Service role client (for DB operations)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // User client (for auth verification)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -51,14 +81,16 @@ serve(async (req) => {
       }
     );
 
-    // Verify user is authenticated
+    console.log('[AI Label] 🔐 Verifying user authentication...');
+
+    // Verify user is authenticated using the JWT token
     const {
       data: { user },
       error: authError,
     } = await supabaseClient.auth.getUser();
 
     if (authError) {
-      console.error('[AI Label] Auth error:', authError.message);
+      console.error('[AI Label] ❌ Auth error:', authError.message);
       return new Response(
         JSON.stringify({ error: `Authentication failed: ${authError.message}` }),
         {
@@ -69,7 +101,7 @@ serve(async (req) => {
     }
 
     if (!user) {
-      console.error('[AI Label] No user found in token');
+      console.error('[AI Label] ❌ No user found in token');
       return new Response(
         JSON.stringify({ error: 'Not authenticated - invalid token' }),
         {
@@ -79,7 +111,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('[AI Label] User authenticated:', user.id);
+    console.log('[AI Label] ✅ User authenticated:', user.id, '(' + user.email + ')');
 
     // Parse request
     const body: GenerateRequest = await req.json();
@@ -95,14 +127,16 @@ serve(async (req) => {
       );
     }
 
-    // Check if wine belongs to user
-    const { data: wine, error: wineError } = await supabaseClient
+    // Check if wine belongs to user (use admin client to bypass RLS)
+    console.log('[AI Label] 🔍 Fetching wine:', wineId);
+    const { data: wine, error: wineError } = await supabaseAdmin
       .from('wines')
       .select('id, generated_image_prompt_hash, generated_image_path, user_id')
       .eq('id', wineId)
       .single();
 
     if (wineError || !wine) {
+      console.error('[AI Label] ❌ Wine not found:', wineError?.message);
       return new Response(
         JSON.stringify({ error: 'Wine not found' }),
         {
@@ -112,9 +146,12 @@ serve(async (req) => {
       );
     }
 
+    console.log('[AI Label] ✅ Wine found, owner:', wine.user_id);
+
     if (wine.user_id !== user.id) {
+      console.error('[AI Label] ❌ Unauthorized: Wine belongs to', wine.user_id, 'but user is', user.id);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - this wine does not belong to you' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403,
@@ -122,11 +159,13 @@ serve(async (req) => {
       );
     }
 
+    console.log('[AI Label] ✅ Authorization verified');
+
     // Check for idempotency: if prompt hash matches and image exists, return cached
     if (wine.generated_image_prompt_hash === promptHash && wine.generated_image_path) {
-      console.log('Returning cached generated image');
+      console.log('[AI Label] 🎨 Returning cached image:', wine.generated_image_path);
       
-      const { data: publicUrlData } = supabaseClient.storage
+      const { data: publicUrlData } = supabaseAdmin.storage
         .from('generated-labels')
         .getPublicUrl(wine.generated_image_path);
 
@@ -157,7 +196,7 @@ serve(async (req) => {
     }
 
     // Call OpenAI to generate image
-    console.log('Calling OpenAI to generate label art...');
+    console.log('[AI Label] 🎨 Calling OpenAI DALL-E 3 to generate label art...');
     const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -176,9 +215,24 @@ serve(async (req) => {
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
-      console.error('OpenAI error:', errorText);
+      console.error('[AI Label] ❌ OpenAI error:', openaiResponse.status, errorText);
+      
+      // Check if it's a billing/credit issue
+      if (openaiResponse.status === 429 || errorText.includes('insufficient_quota') || errorText.includes('billing')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'OpenAI API quota exceeded. Please add credits to your OpenAI account at platform.openai.com/account/billing',
+            details: errorText 
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 402, // Payment Required
+          }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to generate image' }),
+        JSON.stringify({ error: 'Failed to generate image', details: errorText }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
@@ -188,17 +242,21 @@ serve(async (req) => {
 
     const openaiData = await openaiResponse.json();
     const generatedImageUrl = openaiData.data[0].url;
+    console.log('[AI Label] ✅ OpenAI generated image');
 
     // Download the generated image
+    console.log('[AI Label] ⬇️ Downloading image from OpenAI...');
     const imageResponse = await fetch(generatedImageUrl);
     const imageBlob = await imageResponse.blob();
     const imageBuffer = await imageBlob.arrayBuffer();
+    console.log('[AI Label] ✅ Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (use admin client)
     const filename = `${wineId}-${style}-${promptHash.slice(0, 8)}.png`;
     const storagePath = `${user.id}/${filename}`;
-
-    const { error: uploadError } = await supabaseClient.storage
+    
+    console.log('[AI Label] ⬆️ Uploading to storage:', storagePath);
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('generated-labels')
       .upload(storagePath, imageBuffer, {
         contentType: 'image/png',
@@ -206,18 +264,21 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
+      console.error('[AI Label] ❌ Storage upload error:', uploadError);
       return new Response(
-        JSON.stringify({ error: 'Failed to store image' }),
+        JSON.stringify({ error: 'Failed to store image', details: uploadError.message }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         }
       );
     }
+    
+    console.log('[AI Label] ✅ Image uploaded to storage');
 
-    // Update wine record with generated image metadata
-    const { error: updateError } = await supabaseClient
+    // Update wine record with generated image metadata (use admin client)
+    console.log('[AI Label] 💾 Updating wine record...');
+    const { error: updateError } = await supabaseAdmin
       .from('wines')
       .update({
         generated_image_path: storagePath,
@@ -227,20 +288,24 @@ serve(async (req) => {
       .eq('id', wineId);
 
     if (updateError) {
-      console.error('Database update error:', updateError);
+      console.error('[AI Label] ❌ Database update error:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to update wine record' }),
+        JSON.stringify({ error: 'Failed to update wine record', details: updateError.message }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         }
       );
     }
+    
+    console.log('[AI Label] ✅ Wine record updated');
 
-    // Get public URL
-    const { data: publicUrlData } = supabaseClient.storage
+    // Get public URL (use admin client)
+    const { data: publicUrlData } = supabaseAdmin.storage
       .from('generated-labels')
       .getPublicUrl(storagePath);
+
+    console.log('[AI Label] ✅ SUCCESS! Image available at:', publicUrlData.publicUrl);
 
     return new Response(
       JSON.stringify({
@@ -255,9 +320,9 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('[AI Label] ❌ Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: error.message || 'Internal server error', stack: error.stack }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
