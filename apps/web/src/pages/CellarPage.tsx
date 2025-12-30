@@ -17,6 +17,7 @@ import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
+import * as labelParseService from '../services/labelParseService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 
 export function CellarPage() {
@@ -46,6 +47,8 @@ export function CellarPage() {
     imageUrl: string;
     data: ExtractedWineData;
   } | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedFields, setParsedFields] = useState<string[]>([]);
 
   useEffect(() => {
     loadBottles();
@@ -715,9 +718,65 @@ export function CellarPage() {
         {showLabelCapture && (
           <LabelCapture
             mode={labelCaptureMode}
-            onSuccess={(result) => {
+            onSuccess={async (result) => {
               setShowLabelCapture(false);
-              setExtractedData(result);
+              
+              // Show parsing state
+              setIsParsing(true);
+              toast.info(t('cellar.labelParse.reading'));
+              
+              try {
+                // Call AI parsing service
+                console.log('[CellarPage] Starting label parse for:', result.imageUrl);
+                const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+                
+                if (parseResult.success && parseResult.data) {
+                  console.log('[CellarPage] Parse successful!', parseResult);
+                  
+                  // Convert parsed data to form format
+                  const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
+                  const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
+                  
+                  // Store parsed fields for highlighting
+                  setParsedFields(extractedFieldNames);
+                  
+                  // Merge with any existing extracted data from old label scan
+                  setExtractedData({
+                    imageUrl: result.imageUrl,
+                    data: {
+                      ...result.data,
+                      ...formData,
+                    } as ExtractedWineData,
+                  });
+                  
+                  // Show success message
+                  const fieldsCount = extractedFieldNames.length;
+                  if (fieldsCount > 0) {
+                    toast.success(t('cellar.labelParse.success', { count: fieldsCount }));
+                  } else {
+                    toast.warning(t('cellar.labelParse.partial'));
+                  }
+                } else {
+                  console.warn('[CellarPage] Parse failed or no data:', parseResult);
+                  // Still allow manual entry with the image
+                  setExtractedData({
+                    imageUrl: result.imageUrl,
+                    data: result.data,
+                  });
+                  toast.warning(t('cellar.labelParse.failed'));
+                }
+              } catch (error: any) {
+                console.error('[CellarPage] Parse error:', error);
+                // Fallback to manual entry with image
+                setExtractedData({
+                  imageUrl: result.imageUrl,
+                  data: result.data,
+                });
+                toast.error(t('cellar.labelParse.error'));
+              } finally {
+                setIsParsing(false);
+              }
+              
               // Open form with prefilled data
               setEditingBottle(null);
               setShowForm(true);
