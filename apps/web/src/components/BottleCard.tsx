@@ -23,9 +23,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 w-full">
+      <div className="luxury-card luxury-card-hover p-4 sm:p-4 md:p-5 w-full">
         {/* Header Section */}
-        <div className="relative mb-4 flex gap-3 md:gap-4">
+        <div className="relative mb-3 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
           {displayImage.imageUrl && (
             <div className="flex-shrink-0 wine-image-container wine-image-size">
@@ -283,7 +283,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       )}
 
       {/* Actions Section */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {/* Primary Action: Mark as Opened - Only show if quantity > 0 */}
         {onMarkOpened && bottle.quantity > 0 && (
           <button
@@ -292,7 +292,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onMarkOpened();
             }}
-            className="w-full py-3 px-4 md:py-3.5 md:px-6 text-sm md:text-base font-semibold rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group mark-opened-hover"
+            className="w-full py-2.5 px-4 md:py-3 md:px-5 text-sm md:text-base font-semibold rounded-lg transition-all min-h-[44px] group mark-opened-hover"
             style={{
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
@@ -310,14 +310,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         )}
         
         {/* Secondary Actions: Details / Edit / Delete */}
-        <div className="grid grid-cols-3 gap-2 md:gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowDetails(true);
             }}
-            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-1.5 details-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] flex items-center justify-center gap-1 details-button-hover"
             style={{
               backgroundColor: 'var(--wine-50)',
               color: 'var(--wine-700)',
@@ -341,7 +341,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onEdit();
             }}
-            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] edit-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] edit-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-primary)',
@@ -361,7 +361,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onDelete();
             }}
-            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] delete-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] delete-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--color-error)',
