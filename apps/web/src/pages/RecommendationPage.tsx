@@ -16,10 +16,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { CelebrationModal } from '../components/CelebrationModal';
+import { WineDetailsModal } from '../components/WineDetailsModal';
 import { ChoiceCard } from '../components/ui/ChoiceCard';
 import { Toggle } from '../components/ui/Toggle';
 import * as historyService from '../services/historyService';
 import * as recommendationService from '../services/recommendationService';
+import * as bottleService from '../services/bottleService';
 import { trackRecommendation } from '../services/analytics';
 
 type Recommendation = recommendationService.Recommendation;
@@ -62,6 +64,9 @@ export function RecommendationPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
   const [celebrationBottleName, setCelebrationBottleName] = useState('');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -127,6 +132,29 @@ export function RecommendationPage() {
     setShowCelebrationModal(false);
     setCelebrationBottleName('');
     navigate('/history');
+  }
+
+  async function handleViewBottleDetails(bottleId: string) {
+    setLoadingDetails(true);
+    try {
+      const bottle = await bottleService.getBottle(bottleId);
+      if (bottle) {
+        setSelectedBottle(bottle);
+        setShowDetailsModal(true);
+      } else {
+        toast.error(t('errors.bottleNotFound', 'Bottle not found'));
+      }
+    } catch (error: any) {
+      console.error('[RecommendationPage] Error loading bottle details:', error);
+      toast.error(error.message || t('errors.generic'));
+    } finally {
+      setLoadingDetails(false);
+    }
+  }
+
+  function handleCloseDetailsModal() {
+    setShowDetailsModal(false);
+    setSelectedBottle(null);
   }
 
   // Results View
@@ -312,17 +340,40 @@ export function RecommendationPage() {
                   <p style={{ color: 'var(--color-stone-700)' }}>{rec.servingInstructions}</p>
                 </div>
 
-                {rec.bottle && rec.bottle.quantity > 0 && (
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* View Details Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => handleMarkOpened(rec)}
-                    className="w-full btn btn-primary btn-lg"
+                    onClick={() => handleViewBottleDetails(rec.bottleId)}
+                    disabled={loadingDetails}
+                    className="flex-1 btn btn-secondary"
+                    style={{
+                      background: 'var(--color-stone-100)',
+                      color: 'var(--color-stone-900)',
+                      border: '1px solid var(--color-stone-300)',
+                    }}
                   >
-                    <span className="text-xl">🍾</span>
-                    {t('recommendation.results.markAsOpened')}
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {loadingDetails ? t('common.loading', 'Loading...') : t('recommendation.results.viewDetails', 'View Details')}
                   </motion.button>
-                )}
+
+                  {/* Mark as Opened Button */}
+                  {rec.bottle && rec.bottle.quantity > 0 && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleMarkOpened(rec)}
+                      className="flex-1 btn btn-primary btn-lg"
+                    >
+                      <span className="text-xl">🍾</span>
+                      {t('recommendation.results.markAsOpened')}
+                    </motion.button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -333,6 +384,13 @@ export function RecommendationPage() {
           onClose={handleCelebrationClose}
           bottleName={celebrationBottleName}
           onViewHistory={handleViewHistory}
+        />
+
+        {/* Wine Details Modal */}
+        <WineDetailsModal
+          isOpen={showDetailsModal}
+          onClose={handleCloseDetailsModal}
+          bottle={selectedBottle}
         />
       </motion.div>
     );

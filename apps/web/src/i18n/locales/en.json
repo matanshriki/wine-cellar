@@ -305,6 +305,7 @@
       "score": "Score",
       "whyThisBottle": "Why this bottle?",
       "servingInstructions": "Serving Instructions",
+      "viewDetails": "View Details",
       "markAsOpened": "Mark as Opened",
       "markConfirm": "Mark \"{{name}}\" as opened?",
       "marked": "Bottle marked as opened! Enjoy! 🍷",
@@ -588,6 +589,7 @@
     "network": "Network error. Please check your connection.",
     "unauthorized": "You need to be logged in",
     "notFound": "Not found",
+    "bottleNotFound": "Bottle not found",
     "serverError": "Server error. Please try again later."
   }
 }

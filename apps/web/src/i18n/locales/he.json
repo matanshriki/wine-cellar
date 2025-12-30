@@ -305,6 +305,7 @@
       "score": "ציון",
       "whyThisBottle": "למה הבקבוק הזה?",
       "servingInstructions": "הוראות הגשה",
+      "viewDetails": "צפה בפרטים",
       "markAsOpened": "סמן כנפתח",
       "markConfirm": "לסמן את \"{{name}}\" כנפתח?",
       "marked": "הבקבוק סומן כנפתח! תהנה! 🍷",
@@ -588,6 +589,7 @@
     "network": "שגיאת רשת. אנא בדוק את החיבור שלך.",
     "unauthorized": "עליך להיות מחובר",
     "notFound": "לא נמצא",
+    "bottleNotFound": "בקבוק לא נמצא",
     "serverError": "שגיאת שרת. אנא נסה שוב מאוחר יותר."
   }
 }
