@@ -51,3 +51,4 @@ To populate ratings for existing wines:
 If a wine doesn't have a rating in Vivino, that's OK! The app handles it gracefully and just doesn't show the rating section.
 
 
+

@@ -101,3 +101,4 @@ echo "Cost: \$0.04 per image (cached images are free)"
 echo ""
 
 
+

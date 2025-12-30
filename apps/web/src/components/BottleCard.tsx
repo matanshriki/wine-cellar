@@ -18,28 +18,29 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
   const [showDetails, setShowDetails] = useState(false);
 
   return (
-    <div className="luxury-card luxury-card-hover p-4 sm:p-5">
-      {/* Header Section */}
-      <div className="relative mb-4 flex gap-3">
-        {/* Wine Image - Left Side */}
-        {bottle.wine.image_url && (
-          <div className="flex-shrink-0">
-            <img 
-              src={bottle.wine.image_url} 
-              alt={bottle.wine.wine_name}
-              className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-md"
-              style={{
-                border: '1px solid var(--border-base)',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-              loading="lazy"
-              onError={(e) => {
-                // Hide image if it fails to load
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
+    <>
+      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6">
+        {/* Header Section */}
+        <div className="relative mb-4 flex gap-3 md:gap-4">
+          {/* Wine Image - Left Side */}
+          {bottle.wine.image_url && (
+            <div className="flex-shrink-0 wine-image-container">
+              <img 
+                src={bottle.wine.image_url} 
+                alt={bottle.wine.wine_name}
+                className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-28 object-cover rounded-md transition-transform duration-300"
+                style={{
+                  border: '1px solid var(--border-base)',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+                loading="lazy"
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
 
         {/* Text Content */}
         <div className="flex-1 min-w-0">
@@ -52,7 +53,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
           {/* Wine Name - Note: NOT translated, it's actual wine data */}
           <h3 
-            className="text-lg sm:text-xl font-semibold line-clamp-2 leading-tight mb-2 pe-20"
+            className="text-lg sm:text-xl md:text-2xl font-semibold line-clamp-2 leading-tight mb-2 pe-20"
             style={{ 
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-display)',
@@ -112,13 +113,17 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
                   href={bottle.wine.vivino_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs px-2 py-1 rounded transition-colors"
+                  className="text-xs px-2 py-1 rounded transition-all duration-200 vivino-link-hover"
                   style={{
                     color: 'var(--wine-600)',
                     backgroundColor: 'var(--wine-50)',
                     border: '1px solid var(--wine-200)',
+                    minHeight: '28px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
                   }}
                   onClick={(e) => e.stopPropagation()}
+                  aria-label="View on Vivino"
                 >
                   Vivino
                 </a>
@@ -209,7 +214,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             e.stopPropagation();
             onAnalyze();
           }}
-          className="w-full mb-4 py-3 px-4 text-sm font-medium rounded-lg transition-all min-h-[44px] group hover-wine-btn"
+          className="w-full mb-4 py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
           style={{
             backgroundColor: 'var(--bg-subtle)',
             color: 'var(--wine-700)',
@@ -218,10 +223,11 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
           }}
+          aria-label="Generate sommelier notes"
         >
           <div className="flex items-center justify-center gap-2">
             <svg 
-              className="w-4 h-4 transition-transform group-hover:rotate-12" 
+              className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:rotate-12" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -243,34 +249,32 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onMarkOpened();
             }}
-            className="w-full py-3 px-4 text-sm font-semibold rounded-lg transition-all min-h-[44px] group"
+            className="w-full py-3 px-4 md:py-3.5 md:px-6 text-sm md:text-base font-semibold rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group mark-opened-hover"
             style={{
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
               boxShadow: 'var(--shadow-sm)',
-            WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-          }}
-            onMouseDown={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
             }}
+            aria-label="Mark bottle as opened"
           >
             <div className="flex items-center justify-center gap-2">
-              <span className="text-base">🍷</span>
+              <span className="text-base md:text-lg">🍷</span>
               <span>{t('cellar.bottle.markOpened')}</span>
             </div>
           </button>
         )}
         
         {/* Secondary Actions: Details / Edit / Delete */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowDetails(true);
             }}
-            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-1.5 details-button-hover"
             style={{
               backgroundColor: 'var(--wine-50)',
               color: 'var(--wine-700)',
@@ -279,6 +283,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
+            aria-label="View bottle details"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -293,7 +298,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onEdit();
             }}
-            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px]"
+            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] edit-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-primary)',
@@ -302,6 +307,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
+            aria-label="Edit bottle"
           >
             {t('cellar.bottle.edit')}
           </button>
@@ -312,7 +318,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               e.stopPropagation();
               onDelete();
             }}
-            className="py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px]"
+            className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[44px] delete-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--color-error)',
@@ -321,18 +327,87 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
+            aria-label="Delete bottle"
           >
             {t('cellar.bottle.delete')}
           </button>
         </div>
       </div>
-      
-      {/* Wine Details Modal */}
-      <WineDetailsModal 
-        isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
-        bottle={bottle}
-      />
     </div>
+      
+    {/* Desktop Hover Styles */}
+    <style>{`
+        @media (hover: hover) and (pointer: fine) {
+          /* Card hover effect */
+          .luxury-card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+          }
+          
+          /* Wine image zoom on card hover */
+          .luxury-card-hover:hover .wine-image-container img {
+            transform: scale(1.08);
+          }
+          
+          /* Vivino link hover */
+          .vivino-link-hover:hover {
+            background-color: var(--wine-100);
+            border-color: var(--wine-300);
+            transform: translateY(-1px);
+          }
+          
+          /* Analyze button hover */
+          .analyze-button-hover:hover {
+            background-color: var(--wine-50);
+            border-color: var(--wine-300);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+          }
+          
+          /* Mark opened button hover */
+          .mark-opened-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(164, 77, 90, 0.3);
+          }
+          
+          /* Details button hover */
+          .details-button-hover:hover {
+            background-color: var(--wine-100);
+            border-color: var(--wine-300);
+            transform: translateY(-1px);
+          }
+          
+          /* Edit button hover */
+          .edit-button-hover:hover {
+            background-color: var(--bg-muted);
+            border-color: var(--border-medium);
+            transform: translateY(-1px);
+          }
+          
+          /* Delete button hover */
+          .delete-button-hover:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+            transform: translateY(-1px);
+          }
+        }
+        
+        /* Touch feedback */
+        .mark-opened-hover:active,
+        .analyze-button-hover:active,
+        .details-button-hover:active,
+        .edit-button-hover:active,
+        .delete-button-hover:active {
+          transform: scale(0.98);
+        }
+    `}</style>
+    
+    {/* Wine Details Modal */}
+    <WineDetailsModal 
+      isOpen={showDetails}
+      onClose={() => setShowDetails(false)}
+      bottle={bottle}
+    />
+  </>
   );
 }

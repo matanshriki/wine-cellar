@@ -325,3 +325,4 @@ npx supabase functions logs generate-label-art --project-ref YOUR_REF
 **Next**: Follow setup steps 2-8  
 **Last Updated**: December 29, 2025
 
+

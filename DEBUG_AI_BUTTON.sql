@@ -22,3 +22,4 @@ LIMIT 10;
 -- SELECT email, ai_label_art_enabled FROM public.profiles WHERE email = 'YOUR_EMAIL_HERE';
 
 
+

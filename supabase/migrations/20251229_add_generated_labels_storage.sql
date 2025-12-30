@@ -40,3 +40,4 @@ TO public
 USING (bucket_id = 'generated-labels');
 
 
+

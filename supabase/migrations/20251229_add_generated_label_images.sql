@@ -28,3 +28,4 @@ COMMENT ON COLUMN public.wines.generated_at IS 'Timestamp when label art was gen
 COMMENT ON TABLE public.wines IS 'Wine catalog. Images: image_url (user-provided) preferred, generated_image_path (AI-generated) as fallback';
 
 
+

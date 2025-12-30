@@ -64,3 +64,4 @@ This key looks **truncated**. The full anon key should be MUCH longer (about 200
 
 **DO NOT** commit the `.env` file to git if it contains real keys! The `.env` file should be in `.gitignore`.
 
+

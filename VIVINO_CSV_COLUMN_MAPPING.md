@@ -309,3 +309,4 @@ All changes are **backward compatible**.
 If ratings are still NULL after this fix, **share the console logs** so I can see what's happening!
 
 
+

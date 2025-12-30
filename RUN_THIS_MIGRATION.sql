@@ -23,3 +23,4 @@ WHERE table_name = 'wines' AND column_name IN ('rating', 'vivino_url');
 -- vivino_url  | text
 
 
+

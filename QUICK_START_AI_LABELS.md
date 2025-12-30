@@ -189,3 +189,4 @@ For detailed technical info, see: **`ENABLE_AI_LABEL_GENERATION.md`**
 
 **Ready to generate beautiful wine labels!** 🍷✨
 
+

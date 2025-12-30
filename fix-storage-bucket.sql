@@ -43,3 +43,4 @@ USING (bucket_id = 'generated-labels');
 SELECT * FROM storage.buckets WHERE id = 'generated-labels';
 
 
+

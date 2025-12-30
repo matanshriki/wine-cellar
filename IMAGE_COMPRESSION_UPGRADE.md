@@ -362,3 +362,4 @@ After running SQL script:
 **The compression is ready. Just run the SQL script and you're good to go!** 🚀
 
 
+

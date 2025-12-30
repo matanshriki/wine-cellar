@@ -146,15 +146,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="luxury-card w-full max-w-2xl flex flex-col"
+              className="luxury-card w-full flex flex-col"
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  onClose();
+                }
+              }}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="wine-details-title"
               style={{
+                maxWidth: 'min(42rem, 100%)',
                 maxHeight: 'calc(100dvh - 2rem)',
                 height: 'auto',
               }}
@@ -170,7 +180,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pe-4">
                     <h2 
-                      className="text-2xl sm:text-3xl font-bold mb-1 leading-tight"
+                      id="wine-details-title"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 leading-tight"
                       style={{ 
                         color: 'var(--text-primary)',
                         fontFamily: 'var(--font-display)',
@@ -191,13 +202,15 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   {/* Close button */}
                   <button
                     onClick={onClose}
-                    className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                    className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 modal-close-button"
                     style={{
                       backgroundColor: 'var(--bg-muted)',
                       color: 'var(--text-secondary)',
+                      WebkitTapHighlightColor: 'transparent',
                     }}
+                    aria-label="Close wine details"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -206,9 +219,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
               {/* Content - Scrollable */}
               <div 
-                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 pb-20 md:pb-6 space-y-6"
+                className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 pb-20 md:pb-8 space-y-6 md:space-y-8 luxury-scrollbar"
                 style={{
                   WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
                 }}
               >
                 {/* Wine Image & Quick Stats */}
@@ -272,25 +286,29 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     </div>
 
                     {/* Image Management Buttons */}
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-2 md:mt-3 space-y-2">
                       {/* Add/Update User Image */}
                       <button
                         onClick={() => setShowImageDialog(true)}
-                        className="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 image-button-hover"
                         style={{
                           background: 'var(--bg-surface)',
                           border: '1px solid var(--border-base)',
                           color: 'var(--text-secondary)',
-                          minHeight: '36px',
+                          minHeight: '40px',
+                          WebkitTapHighlightColor: 'transparent',
                         }}
+                        aria-label={wine.image_url ? 'Update wine image' : 'Add wine image'}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        {wine.image_url 
-                          ? t('wineImage.updateButton', 'Update Image')
-                          : t('wineImage.addButton', 'Add Image')
-                        }
+                        <span>
+                          {wine.image_url 
+                            ? t('wineImage.updateButton', 'Update Image')
+                            : t('wineImage.addButton', 'Add Image')
+                          }
+                        </span>
                       </button>
 
                       {/* Generate Label Art Button */}
@@ -298,15 +316,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         <button
                           onClick={() => setShowGenerateDialog(true)}
                           disabled={isGenerating}
-                          className="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2"
-                          title="Generate AI label art (requires Edge Function deployment)"
+                          className="w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ai-button-hover"
+                          title="Generate AI label art"
                           style={{
                             background: isGenerating ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
                             border: '1px solid var(--gold-600)',
                             color: 'white',
-                            minHeight: '36px',
+                            minHeight: '40px',
                             opacity: isGenerating ? 0.6 : 1,
+                            cursor: isGenerating ? 'not-allowed' : 'pointer',
+                            WebkitTapHighlightColor: 'transparent',
                           }}
+                          aria-label="Generate AI label art"
                         >
                           {isGenerating ? (
                             <>
@@ -546,8 +567,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
                 {/* Action Buttons */}
                 {(onMarkAsOpened || wine.vivino_url) && (
-                  <div className="pt-4 border-t mt-6" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <div className="space-y-3 mt-4">
+                  <div className="pt-4 md:pt-6 border-t mt-6" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div className="space-y-3 md:space-y-4 mt-4">
                       {/* Mark as Opened Button */}
                       {onMarkAsOpened && (
                         <button
@@ -555,16 +576,17 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             onMarkAsOpened(bottle);
                             onClose();
                           }}
-                          className="mark-opened-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200"
+                          className="mark-opened-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200"
                           style={{
                             background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
                             color: 'white',
-                            minHeight: '44px',
+                            minHeight: '48px',
                             boxShadow: '0 2px 8px rgba(212, 175, 55, 0.2)',
                             border: '1px solid var(--gold-600)',
                             WebkitTapHighlightColor: 'transparent',
                             touchAction: 'manipulation',
                           }}
+                          aria-label="Mark this bottle as opened"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -582,16 +604,17 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           href={wine.vivino_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="vivino-button flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg font-medium transition-all duration-200"
+                          className="vivino-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200"
                           style={{
                             background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
                             color: 'white',
-                            minHeight: '44px',
+                            minHeight: '48px',
                             boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
                             border: '1px solid var(--wine-600)',
                             WebkitTapHighlightColor: 'transparent',
                             touchAction: 'manipulation',
                           }}
+                          aria-label="View this wine on Vivino"
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
@@ -605,19 +628,44 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     </div>
                     
                     <style>{`
+                      /* Desktop Hover States */
                       @media (hover: hover) and (pointer: fine) {
-                        .vivino-button:hover, .mark-opened-button:hover {
+                        .modal-close-button:hover {
+                          background-color: var(--bg-muted-hover) !important;
+                          transform: scale(1.05);
+                        }
+                        
+                        .image-button-hover:hover {
                           transform: translateY(-1px);
+                          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                          border-color: var(--border-medium);
                         }
+                        
+                        .ai-button-hover:hover:not(:disabled) {
+                          transform: translateY(-1px);
+                          box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+                        }
+                        
+                        .vivino-button:hover, .mark-opened-button:hover {
+                          transform: translateY(-2px);
+                        }
+                        
                         .vivino-button:hover {
-                          box-shadow: 0 4px 12px rgba(164, 77, 90, 0.3) !important;
+                          box-shadow: 0 6px 20px rgba(164, 77, 90, 0.35) !important;
                         }
+                        
                         .mark-opened-button:hover {
-                          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+                          box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35) !important;
                         }
                       }
+                      
+                      /* Touch Feedback */
                       .vivino-button:active, .mark-opened-button:active {
                         transform: scale(0.98);
+                      }
+                      
+                      .image-button-hover:active, .modal-close-button:active {
+                        transform: scale(0.95);
                       }
                     `}</style>
                   </div>

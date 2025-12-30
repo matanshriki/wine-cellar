@@ -491,3 +491,4 @@ If you encounter any issues:
 This feature makes the "Tonight's Selection" widget fully interactive by allowing users to click on recommended bottles to view their full details. The implementation reuses the existing `WineDetailsModal` component, ensuring consistency across the app while providing clear visual feedback and a smooth user experience on both desktop and mobile devices.
 
 
+
