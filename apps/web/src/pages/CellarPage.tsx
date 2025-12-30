@@ -798,12 +798,14 @@ export function CellarPage() {
               WebkitBackdropFilter: 'blur(16px)',
             }}
           >
-            <div className="flex flex-col items-center gap-8 px-6 text-center max-w-md">
-              {/* Luxury Wine Glass Loader */}
-              <WineLoader 
-                size={80}
-                color="var(--color-amber-600)"
-              />
+            <div className="flex flex-col items-center gap-6 px-6 text-center max-w-md">
+              {/* Luxury Wine Glass Loader - Large and Prominent */}
+              <div className="mb-2">
+                <WineLoader 
+                  size={120}
+                  variant="default"
+                />
+              </div>
               
               {/* Message */}
               <div className="space-y-3">
