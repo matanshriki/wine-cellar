@@ -591,6 +591,18 @@
     "notFound": "Not found",
     "bottleNotFound": "Bottle not found",
     "serverError": "Server error. Please try again later."
+  },
+  "cookieConsent": {
+    "title": "🍷 We Value Your Privacy",
+    "description": "We use cookies and analytics to improve your wine cellar experience. Your data helps us make the app better for everyone.",
+    "whatWeTrack": "What we track:",
+    "track1": "How you use the app (page views, features clicked)",
+    "track2": "Performance and errors (to fix issues faster)",
+    "noTrack": "We NEVER track: emails, wine names, tasting notes, or personal data",
+    "learnMore": "Learn more in our",
+    "privacyPolicy": "Privacy Policy",
+    "accept": "Accept & Continue",
+    "reject": "No Thanks"
   }
 }
 

@@ -591,6 +591,18 @@
     "notFound": "לא נמצא",
     "bottleNotFound": "בקבוק לא נמצא",
     "serverError": "שגיאת שרת. אנא נסה שוב מאוחר יותר."
+  },
+  "cookieConsent": {
+    "title": "🍷 אנחנו מעריכים את הפרטיות שלך",
+    "description": "אנחנו משתמשים בעוגיות וניתוח נתונים כדי לשפר את חווית מרתף היין שלך. הנתונים שלך עוזרים לנו לשפר את האפליקציה עבור כולם.",
+    "whatWeTrack": "מה אנחנו עוקבים אחריו:",
+    "track1": "איך אתה משתמש באפליקציה (צפיות בעמודים, לחיצות על תכונות)",
+    "track2": "ביצועים ושגיאות (כדי לתקן בעיות מהר יותר)",
+    "noTrack": "אנחנו אף פעם לא עוקבים אחרי: אימיילים, שמות יינות, רשומות טעימה, או מידע אישי",
+    "learnMore": "למד עוד ב",
+    "privacyPolicy": "מדיניות הפרטיות",
+    "accept": "אשר והמשך",
+    "reject": "לא תודה"
   }
 }
 

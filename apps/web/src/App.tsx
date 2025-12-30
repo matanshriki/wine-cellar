@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { WineLoader } from './components/WineLoader';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
+import { CookieConsent } from './components/CookieConsent';
 import { LoginPage } from './pages/LoginPage';
 import { CellarPage } from './pages/CellarPage';
 import { RecommendationPage } from './pages/RecommendationPage';
@@ -44,6 +45,7 @@ function AppRoutes() {
   return (
     <>
       <ScrollToTop />
+      <CookieConsent />
       <Routes>
       <Route
         path="/login"

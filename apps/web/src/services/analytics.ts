@@ -47,12 +47,36 @@ export function isAnalyticsEnabled(): boolean {
 }
 
 /**
+ * Check if user has given consent for analytics
+ */
+export function hasAnalyticsConsent(): boolean {
+  // Check localStorage for consent status
+  const consent = localStorage.getItem('cookie_consent');
+  const analyticsEnabled = localStorage.getItem('analytics_enabled');
+  
+  // If consent hasn't been given yet, return false (don't track)
+  if (!consent) {
+    return false;
+  }
+  
+  // Only track if consent was accepted and analytics explicitly enabled
+  return consent === 'accepted' && analyticsEnabled === 'true';
+}
+
+/**
  * Initialize Google Analytics 4
  * Loads the gtag.js script and initializes tracking
+ * Only runs if user has given consent
  */
 export function initializeAnalytics(): void {
   if (!isAnalyticsEnabled()) {
-    console.log('[Analytics] Skipping initialization - analytics disabled');
+    console.log('[Analytics] Skipping initialization - analytics disabled in env');
+    return;
+  }
+  
+  // Check if user has given consent
+  if (!hasAnalyticsConsent()) {
+    console.log('[Analytics] Skipping initialization - user has not given consent');
     return;
   }
   
@@ -63,6 +87,7 @@ export function initializeAnalytics(): void {
     measurementId,
     debugMode,
     environment: import.meta.env.DEV ? 'development' : 'production',
+    consent: 'given',
   });
   
   // Initialize dataLayer
@@ -109,7 +134,7 @@ export function initializeAnalytics(): void {
  * @param title - Optional page title
  */
 export function trackPageView(path: string, title?: string): void {
-  if (!isAnalyticsEnabled() || !window.gtag) {
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) {
     return;
   }
   
@@ -138,7 +163,7 @@ export function trackPageView(path: string, title?: string): void {
  * @param params - Event parameters (NO PII!)
  */
 export function trackEvent(eventName: string, params?: Record<string, any>): void {
-  if (!isAnalyticsEnabled() || !window.gtag) {
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) {
     return;
   }
   
