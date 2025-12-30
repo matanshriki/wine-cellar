@@ -27,6 +27,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
+  const [currentBottle, setCurrentBottle] = useState<BottleWithWineInfo | null>(bottle);
+
+  // Update current bottle when prop changes
+  useEffect(() => {
+    setCurrentBottle(bottle);
+  }, [bottle]);
 
   // Check if user has AI label art enabled (per-user flag)
   useEffect(() => {
@@ -41,9 +47,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   }, [isOpen, bottle]);
 
   // Early return AFTER all hooks
-  if (!bottle) return null;
+  if (!currentBottle) return null;
 
-  const wine = bottle.wine;
+  const wine = currentBottle.wine;
 
   // Get display image with priority: user > generated > placeholder
   const displayImage = labelArtService.getWineDisplayImage(wine);
@@ -56,6 +62,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           ? t('wineImage.updateSuccess', 'Wine image updated!')
           : t('wineImage.removeSuccess', 'Wine image removed')
       );
+      
+      // Refresh the bottle data to show the new image
+      const updatedBottle = await bottleService.getBottle(currentBottle.id);
+      if (updatedBottle) {
+        setCurrentBottle(updatedBottle);
+      }
       
       // Refresh data if callback provided
       if (onRefresh) {
@@ -72,7 +84,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     setShowGenerateDialog(false);
     
     try {
-      const result = await labelArtService.generateLabelArt(bottle, style);
+      console.log('[WineDetailsModal] 🎨 Starting AI label generation...');
+      const result = await labelArtService.generateLabelArt(currentBottle, style);
+      
+      console.log('[WineDetailsModal] ✅ Generation successful:', result);
       
       if (result.cached) {
         toast.success(t('labelArt.cachedSuccess', 'Using existing generated label art'));
@@ -80,12 +95,20 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
         toast.success(t('labelArt.generateSuccess', 'Label art generated successfully!'));
       }
       
-      // Refresh to show new image
+      // Refresh the bottle data to show the new image
+      console.log('[WineDetailsModal] 🔄 Refreshing bottle data...');
+      const updatedBottle = await bottleService.getBottle(currentBottle.id);
+      if (updatedBottle) {
+        console.log('[WineDetailsModal] ✅ Bottle data refreshed, updating UI');
+        setCurrentBottle(updatedBottle);
+      }
+      
+      // Also refresh parent component
       if (onRefresh) {
         onRefresh();
       }
     } catch (error: any) {
-      console.error('Error generating label art:', error);
+      console.error('[WineDetailsModal] ❌ Error generating label art:', error);
       
       // Check if it's a deployment issue (Edge Function not found)
       if (error.message?.includes('Failed to send a request to the Edge Function') || 
