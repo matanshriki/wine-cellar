@@ -739,22 +739,14 @@ export function CellarPage() {
         onRefresh={loadBottles}
       />
       
-      {/* Responsive Grid Styles */}
+      {/* Grid Overflow Prevention */}
       <style>{`
-        /* Mobile: Natural card heights (no forced uniformity) */
         .cellar-grid {
           width: 100%;
         }
         
         .cellar-grid-item {
           min-width: 0;
-        }
-        
-        /* Desktop: Uniform heights within same row */
-        @media (min-width: 640px) {
-          .cellar-grid {
-            grid-auto-rows: 1fr;
-          }
         }
       `}</style>
     </div>

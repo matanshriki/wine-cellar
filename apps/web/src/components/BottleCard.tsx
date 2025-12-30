@@ -23,7 +23,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col h-full w-full">
+      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 w-full">
         {/* Header Section */}
         <div className="relative mb-4 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
@@ -282,8 +282,8 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         </button>
       )}
 
-      {/* Actions Section - Push to bottom */}
-      <div className="space-y-3 mt-auto">
+      {/* Actions Section */}
+      <div className="space-y-3">
         {/* Primary Action: Mark as Opened - Only show if quantity > 0 */}
         {onMarkOpened && bottle.quantity > 0 && (
           <button
