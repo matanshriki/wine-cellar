@@ -771,6 +771,8 @@ export function CellarPage() {
                     } as ExtractedWineData,
                   };
                   console.log('[CellarPage] Merged data:', mergedData);
+                  console.log('[CellarPage] ✓ Vintage in merged data:', mergedData.data.vintage);
+                  console.log('[CellarPage] ✓ Region in merged data:', mergedData.data.region);
                   
                   setExtractedData(mergedData);
                   console.log('[CellarPage] Set extracted data');

@@ -125,7 +125,7 @@ export async function parseLabelImage(
  * @returns Form-compatible data object
  */
 export function convertParsedDataToFormData(parsedData: ParsedWineData) {
-  return {
+  const formData = {
     wine_name: parsedData.name?.value || '',
     producer: parsedData.producer?.value || '',
     vintage: parsedData.vintage?.value?.toString() || '',
@@ -134,6 +134,16 @@ export function convertParsedDataToFormData(parsedData: ParsedWineData) {
     color: parsedData.style?.value || 'red',
     // Note: country, alcohol not currently in form but available if needed
   };
+  
+  console.log('[Label Parse Service] Converted form data:');
+  console.log('[Label Parse Service] - wine_name:', formData.wine_name);
+  console.log('[Label Parse Service] - producer:', formData.producer);
+  console.log('[Label Parse Service] - vintage:', formData.vintage, '(from', parsedData.vintage?.value, ')');
+  console.log('[Label Parse Service] - region:', formData.region, '(confidence:', parsedData.region?.confidence, ')');
+  console.log('[Label Parse Service] - grapes:', formData.grapes);
+  console.log('[Label Parse Service] - color:', formData.color);
+  
+  return formData;
 }
 
 /**
@@ -145,12 +155,32 @@ export function convertParsedDataToFormData(parsedData: ParsedWineData) {
 export function getExtractedFields(parsedData: ParsedWineData): string[] {
   const extracted: string[] = [];
   
-  if (parsedData.producer?.value) extracted.push('producer');
-  if (parsedData.name?.value) extracted.push('wine_name');
-  if (parsedData.vintage?.value) extracted.push('vintage');
-  if (parsedData.region?.value) extracted.push('region');
-  if (parsedData.grapes?.value) extracted.push('grapes');
-  if (parsedData.style?.value) extracted.push('color');
+  if (parsedData.producer?.value) {
+    extracted.push('producer');
+    console.log('[Label Parse Service] ✓ Extracted: producer =', parsedData.producer.value);
+  }
+  if (parsedData.name?.value) {
+    extracted.push('wine_name');
+    console.log('[Label Parse Service] ✓ Extracted: wine_name =', parsedData.name.value);
+  }
+  if (parsedData.vintage?.value) {
+    extracted.push('vintage');
+    console.log('[Label Parse Service] ✓ Extracted: vintage =', parsedData.vintage.value);
+  }
+  if (parsedData.region?.value) {
+    extracted.push('region');
+    console.log('[Label Parse Service] ✓ Extracted: region =', parsedData.region.value);
+  }
+  if (parsedData.grapes?.value) {
+    extracted.push('grapes');
+    console.log('[Label Parse Service] ✓ Extracted: grapes =', parsedData.grapes.value.join(', '));
+  }
+  if (parsedData.style?.value) {
+    extracted.push('color');
+    console.log('[Label Parse Service] ✓ Extracted: color =', parsedData.style.value);
+  }
+  
+  console.log('[Label Parse Service] Total extracted fields:', extracted.length, '-', extracted.join(', '));
   
   return extracted;
 }
