@@ -25,6 +25,7 @@
     /* Fix for iOS viewport height issues */
     height: 100%;
     overflow: hidden;
+    overflow-x: hidden;
   }
 
   body {
@@ -38,8 +39,16 @@
     /* iOS scrolling fixes */
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+  }
+  
+  /* Prevent horizontal overflow globally */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   /* Premium typography */

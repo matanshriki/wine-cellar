@@ -23,7 +23,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col" style={{ flex: '1' }}>
+      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col h-full w-full">
         {/* Header Section */}
         <div className="relative mb-4 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
