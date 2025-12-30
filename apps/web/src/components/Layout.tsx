@@ -86,9 +86,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/**
        * Top Navigation Bar - Light Luxury Design
+       * safe-area-top: Ensures proper spacing for iPhone notch/status bar in PWA mode
        */}
       <nav 
-        className="sticky top-0 z-40"
+        className="sticky top-0 z-40 safe-area-top"
         style={{ 
           background: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-light)',

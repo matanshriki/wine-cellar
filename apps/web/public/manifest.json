@@ -4,8 +4,8 @@
   "description": "Your personal wine collection manager with AI-powered recommendations",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a0f0a",
-  "theme_color": "#2d1810",
+  "background_color": "#faf8f5",
+  "theme_color": "#faf8f5",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
