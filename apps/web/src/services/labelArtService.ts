@@ -222,8 +222,12 @@ export async function generateLabelArt(
   });
 
   // Call backend Edge Function (Supabase Function)
-  // The supabase client automatically includes the Authorization header
-  console.log('[AI Label Client] 🚀 Invoking Edge Function...');
+  // Explicitly set Authorization header to work around Supabase gateway auth issues
+  console.log('[AI Label Client] 🚀 Invoking Edge Function with explicit auth...');
+  
+  const authHeader = `Bearer ${session.access_token}`;
+  console.log('[AI Label Client] 🔑 Auth header set, length:', authHeader.length);
+  
   const { data, error } = await supabase.functions.invoke('generate-label-art', {
     body: {
       wineId: bottle.wine.id,
@@ -231,6 +235,10 @@ export async function generateLabelArt(
       prompt,
       promptHash,
       style,
+    },
+    headers: {
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
     },
   });
 
