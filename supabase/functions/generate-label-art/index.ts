@@ -70,24 +70,16 @@ serve(async (req) => {
       }
     );
 
-    // User client (for auth verification)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
+    console.log('[AI Label] 🔐 Verifying user authentication with admin client...');
 
-    console.log('[AI Label] 🔐 Verifying user authentication...');
-
-    // Verify user is authenticated using the JWT token
+    // When using --no-verify-jwt, we need to manually verify the token
+    // Use the admin client to get the user from the JWT
+    const token = authHeader.replace('Bearer ', '');
+    
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser();
+    } = await supabaseAdmin.auth.getUser(token);
 
     if (authError) {
       console.error('[AI Label] ❌ Auth error:', authError.message);
@@ -113,9 +105,28 @@ serve(async (req) => {
 
     console.log('[AI Label] ✅ User authenticated:', user.id, '(' + user.email + ')');
 
-    // Parse request
-    const body: GenerateRequest = await req.json();
+    // Parse request body
+    console.log('[AI Label] 📦 Parsing request body...');
+    let body: GenerateRequest;
+    
+    try {
+      const rawBody = await req.text();
+      console.log('[AI Label] 📋 Raw body received, length:', rawBody.length);
+      body = JSON.parse(rawBody);
+      console.log('[AI Label] ✅ Body parsed successfully');
+    } catch (parseError) {
+      console.error('[AI Label] ❌ JSON parse error:', parseError.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body format' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+    
     const { wineId, bottleId, prompt, promptHash, style } = body;
+    console.log('[AI Label] 📋 Request params:', { wineId, bottleId, style, promptHashPreview: promptHash?.substring(0, 8) });
 
     if (!wineId || !prompt || !promptHash) {
       return new Response(

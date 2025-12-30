@@ -221,33 +221,47 @@ export async function generateLabelArt(
     style,
   });
 
-  // Call backend Edge Function (Supabase Function)
-  // Explicitly set Authorization header to work around Supabase gateway auth issues
-  console.log('[AI Label Client] 🚀 Invoking Edge Function with explicit auth...');
+  // Call backend Edge Function directly with fetch (Supabase client has issues with --no-verify-jwt)
+  console.log('[AI Label Client] 🚀 Calling Edge Function directly with fetch...');
   
-  const authHeader = `Bearer ${session.access_token}`;
-  console.log('[AI Label Client] 🔑 Auth header set, length:', authHeader.length);
+  const requestBody = {
+    wineId: bottle.wine.id,
+    bottleId: bottle.id,
+    prompt,
+    promptHash,
+    style,
+  };
   
-  const { data, error } = await supabase.functions.invoke('generate-label-art', {
-    body: {
-      wineId: bottle.wine.id,
-      bottleId: bottle.id,
-      prompt,
-      promptHash,
-      style,
-    },
+  console.log('[AI Label Client] 📤 Request body:', {
+    wineId: bottle.wine.id,
+    bottleId: bottle.id,
+    style,
+    promptLength: prompt.length,
+    promptHashPreview: promptHash.substring(0, 8),
+  });
+  
+  const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-label-art`;
+  console.log('[AI Label Client] 🌐 Function URL:', functionUrl);
+  
+  const response = await fetch(functionUrl, {
+    method: 'POST',
     headers: {
-      'Authorization': authHeader,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify(requestBody),
   });
-
-  console.log('[AI Label Client] Response received:', { hasData: !!data, hasError: !!error });
-
-  if (error) {
-    console.error('Error generating label art:', error);
-    throw new Error(error.message || 'Failed to generate label art');
+  
+  console.log('[AI Label Client] 📥 Response status:', response.status);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[AI Label Client] ❌ Error response:', errorText);
+    throw new Error(`Edge Function returned ${response.status}: ${errorText}`);
   }
+  
+  const data = await response.json();
+  console.log('[AI Label Client] ✅ Response data:', data);
 
   return data as GenerateLabelArtResponse;
 }
