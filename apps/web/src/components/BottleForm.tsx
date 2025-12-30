@@ -18,6 +18,7 @@ interface Props {
     grapes?: string;
     color?: string;
     label_image_url?: string;
+    vivino_url?: string;
   };
 }
 
@@ -34,6 +35,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     purchase_price: bottle?.purchase_price?.toString() || '',
     notes: bottle?.notes || '',
     label_image_url: prefillData?.label_image_url || '',
+    vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
   });
   const [loading, setLoading] = useState(false);
   
@@ -44,6 +46,22 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     !!prefillData.vintage || 
     !!prefillData.region
   );
+  
+  // Generate Vivino search URL from wine details
+  function generateVivinoSearchUrl(): string {
+    const searchTerms = [
+      formData.producer,
+      formData.wine_name,
+      formData.vintage,
+    ].filter(Boolean).join(' ');
+    
+    return `https://www.vivino.com/search/wines?q=${encodeURIComponent(searchTerms)}`;
+  }
+  
+  function handleSearchVivino() {
+    const searchUrl = generateVivinoSearchUrl();
+    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+  }
 
   function handleChange(field: string, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -84,6 +102,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           country: null,
           appellation: null,
           vivino_wine_id: null,
+          vivino_url: formData.vivino_url || null,
           wine_notes: null,
           
           // Bottle info
@@ -329,6 +348,46 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                 className="input-luxury w-full"
                 placeholder={t('bottleForm.grapesPlaceholder')}
               />
+            </div>
+
+            {/* Vivino Integration */}
+            <div className="md:col-span-2">
+              <label 
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {t('bottleForm.vivinoUrl')}
+                <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+                  ({t('bottleForm.optional')})
+                </span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={formData.vivino_url}
+                  onChange={(e) => handleChange('vivino_url', e.target.value)}
+                  className="input-luxury flex-1"
+                  placeholder={t('bottleForm.vivinoUrlPlaceholder')}
+                />
+                {(formData.wine_name || formData.producer) && (
+                  <button
+                    type="button"
+                    onClick={handleSearchVivino}
+                    className="btn-luxury-secondary whitespace-nowrap text-sm"
+                    style={{ minHeight: '44px' }}
+                  >
+                    🔍 {t('bottleForm.searchVivino')}
+                  </button>
+                )}
+              </div>
+              {isAIPrefilled && (
+                <p 
+                  className="text-xs mt-1"
+                  style={{ color: 'var(--color-amber-700)' }}
+                >
+                  💡 {t('bottleForm.vivinoHint')}
+                </p>
+              )}
             </div>
 
             <div>
