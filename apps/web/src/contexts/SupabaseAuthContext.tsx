@@ -229,6 +229,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       throw new Error(error.message);
     }
 
+    // Clear cookie consent from localStorage on logout
+    // This ensures each user gets their own consent prompt
+    localStorage.removeItem('cookie_consent');
+    localStorage.removeItem('analytics_enabled');
+    localStorage.removeItem('consent_user_id');
+
     setUser(null);
     setSession(null);
     setProfile(null);

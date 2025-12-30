@@ -2,10 +2,12 @@
  * Cookie Consent Banner
  * 
  * GDPR & CCPA compliant cookie consent
- * - Shows on first visit
+ * - Shows ONLY to logged-in users (after login)
+ * - Shows only once per user (if they haven't given/rejected consent)
+ * - Does NOT show to non-logged-in users
  * - Luxury design matching wine app aesthetic
  * - Mobile-first, responsive
- * - Stores consent in database + localStorage
+ * - Stores consent in database (primary) + localStorage (cache)
  */
 
 import { useState, useEffect } from 'react';
@@ -26,16 +28,14 @@ export function CookieConsent() {
   }, [user]);
 
   async function checkConsentStatus() {
+    // Only show banner to logged-in users
     if (!user) {
-      // For non-logged-in users, check localStorage
-      const localConsent = localStorage.getItem('cookie_consent');
-      if (!localConsent) {
-        setShowBanner(true);
-      }
+      console.log('[CookieConsent] User not logged in, skipping banner');
+      setShowBanner(false);
       return;
     }
 
-    // For logged-in users, check database
+    // For logged-in users, check database only (ignore localStorage)
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -45,16 +45,25 @@ export function CookieConsent() {
 
       // If consent hasn't been given/rejected yet (NULL), show banner
       if (profile && profile.cookie_consent_given === null) {
+        console.log('[CookieConsent] User has not given consent yet, showing banner');
         setShowBanner(true);
+      } else {
+        console.log('[CookieConsent] User consent status:', profile?.cookie_consent_given);
+        setShowBanner(false);
       }
     } catch (error) {
       console.error('[CookieConsent] Error checking consent:', error);
-      // Show banner if we can't determine status
-      setShowBanner(true);
+      // Don't show banner if there's an error
+      setShowBanner(false);
     }
   }
 
   async function handleAccept() {
+    if (!user) {
+      console.error('[CookieConsent] Cannot accept - user not logged in');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -64,21 +73,21 @@ export function CookieConsent() {
         analytics_enabled: true,
       };
 
+      // Save to database (primary source of truth)
+      await supabase
+        .from('profiles')
+        .update(consentData)
+        .eq('id', user.id);
+
       // Save to localStorage for quick access
       localStorage.setItem('cookie_consent', 'accepted');
       localStorage.setItem('analytics_enabled', 'true');
-
-      // Save to database if user is logged in
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update(consentData)
-          .eq('id', user.id);
-      }
+      localStorage.setItem('consent_user_id', user.id); // Link consent to user
 
       // Initialize analytics now that consent is given
       initializeAnalytics();
 
+      console.log('[CookieConsent] ✅ User accepted consent');
       setShowBanner(false);
     } catch (error) {
       console.error('[CookieConsent] Error saving consent:', error);
@@ -88,6 +97,11 @@ export function CookieConsent() {
   }
 
   async function handleReject() {
+    if (!user) {
+      console.error('[CookieConsent] Cannot reject - user not logged in');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -97,18 +111,18 @@ export function CookieConsent() {
         analytics_enabled: false,
       };
 
+      // Save to database (primary source of truth)
+      await supabase
+        .from('profiles')
+        .update(consentData)
+        .eq('id', user.id);
+
       // Save to localStorage
       localStorage.setItem('cookie_consent', 'rejected');
       localStorage.setItem('analytics_enabled', 'false');
+      localStorage.setItem('consent_user_id', user.id); // Link consent to user
 
-      // Save to database if user is logged in
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update(consentData)
-          .eq('id', user.id);
-      }
-
+      console.log('[CookieConsent] ✅ User rejected consent');
       setShowBanner(false);
     } catch (error) {
       console.error('[CookieConsent] Error saving rejection:', error);

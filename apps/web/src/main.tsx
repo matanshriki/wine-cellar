@@ -37,8 +37,9 @@ registerServiceWorker().catch(console.error);
 
 /**
  * Initialize Google Analytics 4
- * Only runs if VITE_ANALYTICS_ENABLED=true and measurement ID is provided
+ * Only runs if VITE_ANALYTICS_ENABLED=true, measurement ID is provided, AND user has given consent
  * Privacy-first: No PII is tracked
+ * Note: Analytics may initialize later after user logs in and accepts consent
  */
 initializeAnalytics();
 
