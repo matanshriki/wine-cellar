@@ -23,17 +23,19 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6">
+      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col bottle-card-uniform">
         {/* Header Section */}
         <div className="relative mb-4 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
           {displayImage.imageUrl && (
-            <div className="flex-shrink-0 wine-image-container">
+            <div className="flex-shrink-0 wine-image-container wine-image-size">
               <img 
                 src={displayImage.imageUrl} 
                 alt={bottle.wine.wine_name}
-                className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-28 object-cover rounded-md transition-transform duration-300"
+                className="object-cover rounded-md transition-transform duration-300"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   border: '1px solid var(--border-base)',
                   boxShadow: 'var(--shadow-sm)',
                 }}
@@ -60,6 +62,23 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
                   <span>AI</span>
                 </div>
               )}
+            </div>
+          )}
+          
+          {/* Placeholder for no image - consistent spacing */}
+          {!displayImage.imageUrl && (
+            <div className="flex-shrink-0 wine-image-container wine-image-size">
+              <div
+                className="rounded-md flex items-center justify-center transition-transform duration-300"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: '1px dashed var(--border-base)',
+                  background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
+                }}
+              >
+                <span className="text-3xl">🍷</span>
+              </div>
             </div>
           )}
 
@@ -155,7 +174,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       </div>
 
       {/* Details Section - Clean icon-based layout */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-4" style={{ minHeight: '80px' }}>
         {/* Vintage - Note: NOT translated, it's the actual year */}
         {bottle.wine.vintage && (
           <div className="flex items-center gap-2">
@@ -209,9 +228,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       {/* Divider */}
       <div className="divider-luxury my-4" />
 
-      {/* Sommelier Notes (AI Analysis) */}
-      {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
-        <div className="mb-4">
+      {/* Sommelier Notes (AI Analysis) - Fixed height section */}
+      <div className="flex-1 mb-4" style={{ minHeight: '120px' }}>
+        {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
           <SommelierNotes
             analysis={{
               analysis_summary: (bottle as any).analysis_summary,
@@ -227,15 +246,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             }}
             onRefresh={onAnalyze}
           />
-        </div>
-      ) : (
-        <button
+        ) : (
+          <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             onAnalyze();
           }}
-          className="w-full mb-4 py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
+          className="w-full py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
           style={{
             backgroundColor: 'var(--bg-subtle)',
             color: 'var(--wine-700)',
@@ -258,10 +276,11 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             <span>{t('cellar.sommelier.generate')}</span>
           </div>
         </button>
-      )}
+        )}
+      </div>
 
-      {/* Actions Section */}
-      <div className="space-y-3">
+      {/* Actions Section - Fixed at bottom */}
+      <div className="space-y-3 mt-auto">
         {/* Primary Action: Mark as Opened - Only show if quantity > 0 */}
         {onMarkOpened && bottle.quantity > 0 && (
           <button
@@ -356,8 +375,45 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       </div>
     </div>
       
-    {/* Desktop Hover Styles */}
+    {/* Card Uniform Height & Image Size & Desktop Hover Styles */}
     <style>{`
+        /* Uniform wine image size - responsive */
+        .wine-image-size {
+          width: 64px;
+          height: 80px;
+        }
+        
+        @media (min-width: 640px) {
+          .wine-image-size {
+            width: 80px;
+            height: 96px;
+          }
+        }
+        
+        @media (min-width: 768px) {
+          .wine-image-size {
+            width: 96px;
+            height: 112px;
+          }
+        }
+        
+        /* Uniform card height - responsive */
+        .bottle-card-uniform {
+          min-height: 480px;
+        }
+        
+        @media (min-width: 640px) {
+          .bottle-card-uniform {
+            min-height: 500px;
+          }
+        }
+        
+        @media (min-width: 768px) {
+          .bottle-card-uniform {
+            min-height: 520px;
+          }
+        }
+        
         @media (hover: hover) and (pointer: fine) {
           /* Card hover effect */
           .luxury-card-hover:hover {
