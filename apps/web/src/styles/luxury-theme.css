@@ -263,7 +263,7 @@
   border: 1px solid var(--wine-700);
   color: var(--text-inverse);
   font-weight: var(--font-semibold);
-  padding: var(--space-sm) var(--space-lg);
+  padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
@@ -271,6 +271,12 @@
   min-height: 44px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+@media (min-width: 768px) {
+  .btn-luxury-primary {
+    padding: 0.75rem 1.5rem;
+  }
 }
 
 /* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
@@ -300,7 +306,7 @@
   border: 1px solid var(--border-medium);
   color: var(--text-primary);
   font-weight: var(--font-medium);
-  padding: var(--space-sm) var(--space-lg);
+  padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   transition: all var(--transition-fast);
@@ -308,6 +314,12 @@
   min-height: 44px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+@media (min-width: 768px) {
+  .btn-luxury-secondary {
+    padding: 0.75rem 1.5rem;
+  }
 }
 
 /* Hover only on devices that support hover (desktop) - prevents iOS tap issues */
@@ -335,13 +347,19 @@
   border: none;
   color: var(--text-secondary);
   font-weight: var(--font-medium);
-  padding: var(--space-sm) var(--space-lg);
+  padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   cursor: pointer;
   min-height: 44px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+@media (min-width: 768px) {
+  .btn-luxury-ghost {
+    padding: 0.75rem 1.5rem;
+  }
 }
 
 /* Hover only on devices that support hover (desktop) - prevents iOS tap issues */

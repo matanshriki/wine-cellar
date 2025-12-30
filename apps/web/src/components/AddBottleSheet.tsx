@@ -111,7 +111,7 @@ export function AddBottleSheet({
                     e.stopPropagation();
                     onUploadPhoto();
                   }}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
+                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
                   style={{
                     background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                     border: '1px solid var(--wine-700)',
@@ -148,7 +148,7 @@ export function AddBottleSheet({
                     e.stopPropagation();
                     onManualEntry();
                   }}
-                  className="w-full p-5 rounded-xl transition-all flex items-center gap-4 min-h-[60px]"
+                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
                   style={{
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-medium)',
