@@ -109,18 +109,30 @@ export function AddWineImageDialog({
             style={{ backdropFilter: 'blur(4px)' }}
           />
 
-          {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Dialog Container */}
+          <div 
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            style={{
+              paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="luxury-card w-full max-w-lg max-h-[85vh] overflow-y-auto"
+              className="luxury-card w-full max-w-lg flex flex-col"
               onClick={(e) => e.stopPropagation()}
+              style={{
+                maxHeight: 'calc(100dvh - 2rem)',
+                minHeight: 0,
+              }}
             >
-              {/* Header */}
-              <div className="p-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+              {/* Header - Fixed */}
+              <div 
+                className="flex-shrink-0 p-6 pb-4 border-b" 
+                style={{ borderColor: 'var(--border-subtle)' }}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
@@ -136,7 +148,7 @@ export function AddWineImageDialog({
                   
                   <button
                     onClick={onClose}
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                    className="flex-shrink-0 w-10 h-10 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition-colors"
                     style={{
                       backgroundColor: 'var(--bg-muted)',
                       color: 'var(--text-secondary)',
@@ -149,8 +161,14 @@ export function AddWineImageDialog({
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="p-6 space-y-4">
+              {/* Content - Scrollable */}
+              <div 
+                className="flex-1 p-6 space-y-4 overflow-y-auto"
+                style={{
+                  minHeight: 0,
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
                 {/* Instructions */}
                 <div className="p-4 rounded-lg" style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
                   <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -226,14 +244,23 @@ export function AddWineImageDialog({
                 )}
               </div>
 
-              {/* Footer Actions */}
-              <div className="p-6 pt-4 border-t flex gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              {/* Footer Actions - Fixed */}
+              <div 
+                className="flex-shrink-0 p-6 pt-4 border-t flex gap-3" 
+                style={{ 
+                  borderColor: 'var(--border-subtle)',
+                  paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom) + 1rem)',
+                }}
+              >
                 {currentImageUrl && (
                   <button
                     onClick={handleRemove}
                     disabled={isLoading}
                     className="btn-ghost flex-1"
-                    style={{ minHeight: '44px' }}
+                    style={{ 
+                      minHeight: '44px',
+                      touchAction: 'manipulation',
+                    }}
                   >
                     {t('wineImage.remove', 'Remove Image')}
                   </button>
@@ -242,7 +269,10 @@ export function AddWineImageDialog({
                   onClick={handleSave}
                   disabled={isLoading || !imageUrl.trim() || imageError}
                   className="btn-luxury flex-1"
-                  style={{ minHeight: '44px' }}
+                  style={{ 
+                    minHeight: '44px',
+                    touchAction: 'manipulation',
+                  }}
                 >
                   {isLoading ? t('wineImage.saving', 'Saving...') : t('wineImage.save', 'Save Image')}
                 </button>
