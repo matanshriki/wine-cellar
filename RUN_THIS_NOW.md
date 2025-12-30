@@ -54,3 +54,4 @@ The storage buckets don't exist in your Supabase project yet. The SQL script cre
 
 🍷 Do this now, then try uploading again!
 
+

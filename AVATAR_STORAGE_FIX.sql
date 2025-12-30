@@ -62,3 +62,4 @@ WHERE id = 'avatars';
 -- file_size_limit: 5242880
 
 
+

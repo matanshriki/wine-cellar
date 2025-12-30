@@ -178,3 +178,4 @@ Once you see the gold **"Generate Label Art"** button, you're all set! 🍷
 
 **Note**: The button will only work if you also set up OpenAI API key in Supabase Edge Function secrets, but seeing the button means the per-user flag system is working correctly.
 
+

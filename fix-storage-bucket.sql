@@ -42,3 +42,4 @@ USING (bucket_id = 'generated-labels');
 -- Verify bucket was created
 SELECT * FROM storage.buckets WHERE id = 'generated-labels';
 
+

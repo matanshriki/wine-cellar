@@ -22,3 +22,4 @@ WHERE table_name = 'wines' AND column_name IN ('rating', 'vivino_url');
 -- rating      | numeric
 -- vivino_url  | text
 
+

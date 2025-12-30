@@ -19,3 +19,4 @@ COMMENT ON COLUMN public.profiles.ai_label_art_enabled IS
 -- SET ai_label_art_enabled = true 
 -- WHERE email = 'your-admin-email@example.com';
 
+

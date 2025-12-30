@@ -14,10 +14,12 @@ import type { BottleWithWineInfo } from './bottleService';
 
 // App-level feature flag check (master switch)
 export const isLabelArtFeatureAvailable = (): boolean => {
-  // Temporarily disabled due to Edge Function auth issues
-  // TODO: Fix Supabase Edge Function JWT authentication
-  return false;
-  // return import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART === 'true';
+  const enabled = import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART === 'true';
+  console.log('[AI Label Art] Feature flag check:', {
+    envVar: import.meta.env.VITE_FEATURE_GENERATED_LABEL_ART,
+    enabled,
+  });
+  return enabled;
 };
 
 /**

@@ -507,3 +507,4 @@ This feature provides a **legal, ethical, and production-ready** solution for AI
 
 Users can now have beautiful, premium label-style images for their wines while we maintain full legal compliance and avoid any copyright/trademark issues.
 
+

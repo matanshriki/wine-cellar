@@ -98,3 +98,4 @@ If you don't want to set up AI extraction right now, you can disable it temporar
 <function_calls>
 <invoke name="search_replace">
 <parameter name="file_path">/Users/matanshr/Desktop/Projects/Playground/wine/apps/web/src/services/labelScanService.ts
+

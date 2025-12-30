@@ -50,3 +50,4 @@ USING (bucket_id = 'generated-labels');
 -- Step 4: Verify bucket was created
 SELECT id, name, public FROM storage.buckets WHERE id = 'generated-labels';
 
+

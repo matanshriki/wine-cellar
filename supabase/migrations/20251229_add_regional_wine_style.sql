@@ -13,3 +13,4 @@ WHERE regional_wine_style IS NOT NULL;
 -- Add comment to explain the column
 COMMENT ON COLUMN public.wines.regional_wine_style IS 'Wine style classification (e.g., "Bordeaux Blend", "Super Tuscan", "Rioja Reserva") - distinct from geographic region';
 
+

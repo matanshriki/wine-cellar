@@ -12,3 +12,4 @@ CREATE INDEX IF NOT EXISTS wines_rating_idx ON public.wines(rating) WHERE rating
 COMMENT ON COLUMN public.wines.rating IS 'Vivino community rating (0-5 stars)';
 COMMENT ON COLUMN public.wines.vivino_url IS 'Link to wine page on Vivino.com';
 
+

@@ -272,3 +272,4 @@ VITE_SUPABASE_ANON_KEY=<your_anon_key>
 **🍷 Cheers to a successful deployment!**
 
 
+

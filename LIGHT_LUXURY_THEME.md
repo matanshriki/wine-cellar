@@ -591,3 +591,4 @@ Slow transitions can feel sluggish on mobile.
 **Version:** 1.0  
 **Theme:** Light Luxury (inspired by Apple/Rolex/Porsche/Airbnb)
 
+

@@ -218,3 +218,4 @@ These changes are CSS and component-level only, no database or backend changes r
 
 **Result**: All buttons now respond immediately on first tap across Safari, Chrome, and home screen app on iPhone. Desktop hover effects preserved. No regressions.
 
+

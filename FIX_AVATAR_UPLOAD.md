@@ -172,3 +172,4 @@ The photo will appear:
 3. Result of the verification SQL query
 
 
+

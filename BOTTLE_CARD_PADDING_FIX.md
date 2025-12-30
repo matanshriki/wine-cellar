@@ -116,3 +116,4 @@ Terra Uma                              │
 
 **Result:** All bottle card content now sits properly inside the card with generous, professional padding that matches the premium widget design! 🎯
 
+
