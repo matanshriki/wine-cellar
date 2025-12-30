@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
+import { trackAuth } from '../services/analytics';
 
 export function UserMenu() {
   const { t } = useTranslation();
@@ -58,6 +59,7 @@ export function UserMenu() {
   async function handleLogout() {
     try {
       await signOut();
+      trackAuth.logout(); // Track successful logout
       toast.success(t('auth.loggedOut'));
       navigate('/login');
     } catch (error: any) {

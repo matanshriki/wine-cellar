@@ -4,6 +4,7 @@ import { toast } from '../lib/toast';
 import { VivinoExportGuide } from './VivinoExportGuide';
 import { WineLoadingAnimation } from './WineLoadingAnimation';
 import * as bottleService from '../services/bottleService';
+import { trackCSV } from '../services/analytics';
 
 interface Props {
   onClose: () => void;
@@ -268,6 +269,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
     setImporting(true);
     setImportProgress(0);
     setImportMessage(t('csvImport.processing.preparing'));
+    trackCSV.start(); // Track CSV import start
     
     try {
       // Parse full CSV
@@ -427,13 +429,16 @@ export function CSVImport({ onClose, onSuccess }: Props) {
       await new Promise(resolve => setTimeout(resolve, 800)); // Show completion
       
       if (successCount > 0) {
+        trackCSV.success(successCount); // Track successful CSV import
         toast.success(`${t('csvImport.success')} (${successCount} ${t('csvImport.imported')}${failureCount > 0 ? `, ${failureCount} ${t('csvImport.failed')}` : ''})`);
         onSuccess();
       } else {
+        trackCSV.error('no_bottles_imported'); // Track CSV import failure
         throw new Error('No bottles were imported successfully');
       }
     } catch (error: any) {
       console.error('Import error:', error);
+      trackCSV.error(error.message || 'unknown_error'); // Track CSV import error
       toast.error(error.message || t('csvImport.importFailed'));
     } finally {
       setLoading(false);

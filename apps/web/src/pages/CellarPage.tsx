@@ -17,6 +17,7 @@ import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
+import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 
 export function CellarPage() {
   const { t } = useTranslation();
@@ -67,6 +68,7 @@ export function CellarPage() {
 
     try {
       await bottleService.deleteBottle(id);
+      trackBottle.delete(); // Track bottle deletion
       setBottles(bottles.filter((b) => b.id !== id));
       toast.success(t('cellar.bottle.deleted'));
     } catch (error: any) {
@@ -115,6 +117,7 @@ export function CellarPage() {
 
       // Generate AI analysis
       const analysis = await aiAnalysisService.generateAIAnalysis(bottle);
+      trackSommelier.success(); // Track successful analysis
       
       // Reload bottles to get fresh data
       await loadBottles();
@@ -122,6 +125,7 @@ export function CellarPage() {
       // ✅ No success toast - visual feedback is sufficient
     } catch (error: any) {
       console.error('Error analyzing bottle:', error);
+      trackSommelier.error('analysis_failed'); // Track analysis error
       // ❌ Only show toast for errors
       toast.error(error.message || t('cellar.sommelier.failed'));
       
@@ -144,6 +148,8 @@ export function CellarPage() {
         vibe: undefined,
       });
 
+      trackBottle.opened(bottle.wine.vintage || undefined); // Track bottle opened
+      
       // Store bottle name for celebration modal
       setOpenedBottleName(bottle.wine.wine_name);
       

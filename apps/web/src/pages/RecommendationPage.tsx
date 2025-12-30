@@ -20,6 +20,7 @@ import { ChoiceCard } from '../components/ui/ChoiceCard';
 import { Toggle } from '../components/ui/Toggle';
 import * as historyService from '../services/historyService';
 import * as recommendationService from '../services/recommendationService';
+import { trackRecommendation } from '../services/analytics';
 
 type Recommendation = recommendationService.Recommendation;
 
@@ -79,6 +80,7 @@ export function RecommendationPage() {
         },
       };
 
+      trackRecommendation.run(context.mealType, context.occasion); // Track recommendation request
       const recs = await recommendationService.getRecommendations(requestContext);
       
       if (recs.length === 0) {
@@ -86,6 +88,7 @@ export function RecommendationPage() {
         return;
       }
 
+      trackRecommendation.resultsShown(recs.length); // Track recommendation results
       setRecommendations(recs);
       setStep('results');
     } catch (error: any) {

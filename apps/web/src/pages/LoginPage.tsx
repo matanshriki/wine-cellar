@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { trackAuth } from '../services/analytics';
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,6 +23,7 @@ export function LoginPage() {
     try {
       if (isLogin) {
         await signIn(email, password);
+        trackAuth.login(); // Track successful login
         toast.success(t('auth.welcome'));
       } else {
         // Ensure name is provided for signup
@@ -31,6 +33,7 @@ export function LoginPage() {
           return;
         }
         await signUp(email, password, name.trim());
+        trackAuth.signUp(); // Track successful signup
         toast.success(t('auth.accountCreated'));
       }
       navigate('/cellar');
@@ -44,6 +47,7 @@ export function LoginPage() {
   async function handleGoogleSignIn() {
     try {
       await signInWithGoogle();
+      trackAuth.login(); // Track Google sign-in (treated as login)
       // User will be redirected to Google, then back to the app
     } catch (error: any) {
       toast.error(error.message || 'Google sign-in failed');

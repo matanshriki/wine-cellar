@@ -13,6 +13,7 @@ A production-grade web application for smart wine cellar management with intelli
 - **🌍 Internationalization**: Full support for English and Hebrew with RTL layout
 - **📱 Mobile-First**: Optimized for mobile devices with responsive design and touch-friendly interactions
 - **🎉 Delightful UX**: Confetti animations, smooth transitions, loading states, and polished interactions
+- **📈 Analytics**: Google Analytics 4 integration for product insights (privacy-first, no PII tracked)
 
 ---
 
@@ -75,13 +76,22 @@ npm install
 Create `/apps/web/.env`:
 
 ```bash
+# Supabase
 VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# Google Analytics 4 (optional)
+VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_ANALYTICS_ENABLED=true
+
+# Feature Flags
+VITE_FEATURE_GENERATED_LABEL_ART=true
 ```
 
 **Find these values:**
 - Supabase Dashboard > Project Settings > API
 - Use the **anon/public** key (NOT service_role)
+- GA4 Measurement ID: See [docs/ANALYTICS_SETUP.md](./docs/ANALYTICS_SETUP.md)
 
 ### 4. Start Development Server
 
@@ -352,6 +362,7 @@ npm run lint               # Run ESLint
 - **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Vercel deployment guide
 - **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - Initial Supabase configuration
 - **[SUPABASE_DATABASE_SETUP.md](./SUPABASE_DATABASE_SETUP.md)** - Database schema details
+- **[docs/ANALYTICS_SETUP.md](./docs/ANALYTICS_SETUP.md)** - Google Analytics 4 integration guide
 
 ### Feature Docs
 - **[PROFILE_SYSTEM_COMPLETE.md](./PROFILE_SYSTEM_COMPLETE.md)** - User profile implementation
@@ -395,6 +406,8 @@ MIT
    ```bash
    VITE_SUPABASE_URL=https://pktelrzyllbwrmcfgocx.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+   VITE_ANALYTICS_ENABLED=true
    ```
 
 2. **Supabase Auth URLs** (in Supabase dashboard → Auth → URL Configuration):

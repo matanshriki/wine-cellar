@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import { toast } from '../lib/toast';
+import { trackBottle } from '../services/analytics';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -54,6 +55,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         };
         
         await bottleService.updateBottle(bottle.id, bottleUpdates);
+        trackBottle.edit(); // Track bottle edit
         toast.success(t('bottleForm.bottleUpdated'));
       } else {
         // For creation, combine wine and bottle data into single object
@@ -84,6 +86,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         };
         
         await bottleService.createBottle(createInput);
+        trackBottle.addManual(); // Track manual bottle addition
         toast.success(t('bottleForm.bottleAdded'));
       }
 

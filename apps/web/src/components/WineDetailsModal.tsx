@@ -12,6 +12,7 @@ import * as bottleService from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { toast } from '../lib/toast';
+import { trackAILabel, trackUpload } from '../services/analytics';
 
 interface WineDetailsModalProps {
   isOpen: boolean;
@@ -57,6 +58,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const handleSaveImage = async (imageUrl: string) => {
     try {
       await bottleService.updateWineImage(wine.id, imageUrl || null);
+      
+      // Track image upload success
+      if (imageUrl) {
+        trackUpload.bottleImageSuccess();
+      }
+      
       toast.success(
         imageUrl 
           ? t('wineImage.updateSuccess', 'Wine image updated!')
@@ -75,6 +82,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
       }
     } catch (error: any) {
       console.error('Error updating wine image:', error);
+      trackUpload.bottleImageError(error.message || 'unknown_error'); // Track image upload error
       throw error; // Let dialog handle the error
     }
   };
@@ -82,12 +90,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const handleGenerateLabelArt = async (style: labelArtService.LabelArtStyle) => {
     setIsGenerating(true);
     setShowGenerateDialog(false);
+    trackAILabel.start(style); // Track AI label generation start
     
     try {
       console.log('[WineDetailsModal] 🎨 Starting AI label generation...');
       const result = await labelArtService.generateLabelArt(currentBottle, style);
       
       console.log('[WineDetailsModal] ✅ Generation successful:', result);
+      trackAILabel.success(style); // Track successful AI label generation
       
       if (result.cached) {
         toast.success(t('labelArt.cachedSuccess', 'Using existing generated label art'));
@@ -109,6 +119,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
       }
     } catch (error: any) {
       console.error('[WineDetailsModal] ❌ Error generating label art:', error);
+      trackAILabel.error(error.message || 'unknown_error'); // Track AI label generation error
       
       // Check if it's a deployment issue (Edge Function not found)
       if (error.message?.includes('Failed to send a request to the Edge Function') || 

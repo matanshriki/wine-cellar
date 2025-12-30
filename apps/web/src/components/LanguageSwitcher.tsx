@@ -17,6 +17,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { languages, changeLanguage, type LanguageCode } from '../i18n/config';
+import { trackLocalization } from '../services/analytics';
 
 export function LanguageSwitcher() {
   // Get i18n utilities
@@ -38,6 +39,7 @@ export function LanguageSwitcher() {
    */
   const handleLanguageChange = async (langCode: LanguageCode) => {
     await changeLanguage(langCode);
+    trackLocalization.changeLanguage(langCode); // Track language change
     setIsOpen(false);
   };
 
