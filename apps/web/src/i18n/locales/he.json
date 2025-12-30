@@ -164,6 +164,10 @@
       "title": "הוסף בקבוק",
       "uploadPhoto": "צלם או העלה תמונה",
       "uploadPhotoDescNew": "השתמש במצלמה או בחר מהגלריה • חילוץ תווית אוטומטי",
+      "takePhoto": "צלם תמונה",
+      "takePhotoDesc": "השתמש במצלמה • חילוץ תווית אוטומטי",
+      "chooseFromLibrary": "בחר מהגלריה",
+      "chooseFromLibraryDesc": "בחר תמונה קיימת • חילוץ תווית אוטומטי",
       "manualEntry": "הזן ידנית",
       "manualEntryDesc": "מלא את הפרטים בעצמך"
     },

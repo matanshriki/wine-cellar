@@ -15,6 +15,7 @@ interface AddBottleSheetProps {
   onClose: () => void;
   onUploadPhoto: () => void;
   onManualEntry: () => void;
+  onPhotoSelected?: (file: File) => void;
 }
 
 export function AddBottleSheet({
@@ -22,9 +23,21 @@ export function AddBottleSheet({
   onClose,
   onUploadPhoto,
   onManualEntry,
+  onPhotoSelected,
 }: AddBottleSheetProps) {
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
+  
+  // Handle direct photo selection (bypasses LabelCapture modal)
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, source: 'camera' | 'library') {
+    const file = e.target.files?.[0];
+    if (file && onPhotoSelected) {
+      onPhotoSelected(file);
+      onClose();
+    }
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  }
 
   // Prevent backdrop from closing sheet immediately after opening
   // (the opening click would otherwise propagate to backdrop)
@@ -104,14 +117,9 @@ export function AddBottleSheet({
 
               {/* Options */}
               <div className="space-y-3">
-                {/* PRIMARY: Take/Upload Photo (Camera + Gallery) */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onUploadPhoto();
-                  }}
-                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
+                {/* PRIMARY: Take Photo (Camera) - Direct camera access */}
+                <label
+                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
                   style={{
                     background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                     border: '1px solid var(--wine-700)',
@@ -121,25 +129,69 @@ export function AddBottleSheet({
                     touchAction: 'manipulation',
                   }}
                 >
-                  {/* Camera + Image Icon */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleFileSelect(e, 'camera')}
+                    className="hidden"
+                    aria-label={t('cellar.addBottle.takePhoto')}
+                  />
+                  {/* Camera Icon */}
                   <div className="relative w-8 h-8 flex-shrink-0">
-                    <svg className="w-8 h-8 absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <div className="flex-1 text-start">
                     <div className="font-semibold text-lg">
-                      {t('cellar.addBottle.uploadPhoto')}
+                      {t('cellar.addBottle.takePhoto')}
                     </div>
                     <div className="text-sm opacity-90 mt-0.5">
-                      {t('cellar.addBottle.uploadPhotoDescNew')}
+                      {t('cellar.addBottle.takePhotoDesc')}
                     </div>
                   </div>
                   <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </button>
+                </label>
+
+                {/* SECONDARY: Choose from Library */}
+                <label
+                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-xs)',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileSelect(e, 'library')}
+                    className="hidden"
+                    aria-label={t('cellar.addBottle.chooseFromLibrary')}
+                  />
+                  {/* Image Icon */}
+                  <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div className="flex-1 text-start">
+                    <div className="font-semibold">
+                      {t('cellar.addBottle.chooseFromLibrary')}
+                    </div>
+                    <div className="text-sm opacity-70 mt-0.5">
+                      {t('cellar.addBottle.chooseFromLibraryDesc')}
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </label>
 
                 {/* SECONDARY: Manual Entry */}
                 <button

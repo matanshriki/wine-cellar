@@ -361,19 +361,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   ({t('bottleForm.optional')})
                 </span>
               </label>
-              <div className="flex gap-2">
+              {/* Stack vertically on mobile, horizontal on desktop */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="url"
                   value={formData.vivino_url}
                   onChange={(e) => handleChange('vivino_url', e.target.value)}
-                  className="input-luxury flex-1"
+                  className="input-luxury w-full sm:flex-1"
                   placeholder={t('bottleForm.vivinoUrlPlaceholder')}
                 />
                 {(formData.wine_name || formData.producer) && (
                   <button
                     type="button"
                     onClick={handleSearchVivino}
-                    className="btn-luxury-secondary whitespace-nowrap text-sm"
+                    className="btn-luxury-secondary text-sm w-full sm:w-auto"
                     style={{ minHeight: '44px' }}
                   >
                     🔍 {t('bottleForm.searchVivino')}

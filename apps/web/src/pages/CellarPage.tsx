@@ -724,6 +724,64 @@ export function CellarPage() {
           setEditingBottle(null);
           setShowForm(true);
         }}
+        onPhotoSelected={async (file) => {
+          // Direct photo processing (bypasses LabelCapture modal for fewer taps)
+          setShowAddSheet(false);
+          setIsParsing(true);
+          toast.info(t('cellar.labelParse.reading'));
+          
+          try {
+            // Import scanLabelImage to upload and get URL
+            const { scanLabelImage } = await import('../services/labelScanService');
+            const result = await scanLabelImage(file);
+            
+            // Now process with AI
+            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            
+            if (parseResult.success && parseResult.data) {
+              const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
+              const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
+              setParsedFields(extractedFieldNames);
+              
+              const mergedData = {
+                imageUrl: result.imageUrl,
+                data: {
+                  wine_name: formData.wine_name || '',
+                  producer: formData.producer || '',
+                  vintage: formData.vintage,
+                  region: formData.region || '',
+                  country: '',
+                  grape: formData.grapes || '',
+                  wine_color: formData.color || 'red',
+                } as ExtractedWineData,
+              };
+              
+              setExtractedData(mergedData);
+              
+              if (extractedFieldNames.length > 0) {
+                toast.success(t('cellar.labelParse.success', { count: extractedFieldNames.length }));
+              } else {
+                toast.warning(t('cellar.labelParse.partial'));
+              }
+            } else {
+              const fallbackData = {
+                imageUrl: result.imageUrl,
+                data: {} as ExtractedWineData,
+              };
+              setExtractedData(fallbackData);
+              toast.warning(t('cellar.labelParse.failed'));
+            }
+          } catch (error: any) {
+            console.error('[CellarPage] Direct photo processing error:', error);
+            toast.error(t('cellar.labelParse.error'));
+          } finally {
+            setIsParsing(false);
+          }
+          
+          // Open form
+          setEditingBottle(null);
+          setShowForm(true);
+        }}
       />
 
       {/* AI Processing Overlay - Luxury Wine Glass Animation */}

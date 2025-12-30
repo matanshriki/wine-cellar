@@ -164,6 +164,10 @@
       "title": "Add Bottle",
       "uploadPhoto": "Take or Upload Photo",
       "uploadPhotoDescNew": "Use camera or choose from gallery • AI label extraction",
+      "takePhoto": "Take Photo",
+      "takePhotoDesc": "Use camera • AI label extraction",
+      "chooseFromLibrary": "Choose from Library",
+      "chooseFromLibraryDesc": "Select existing photo • AI label extraction",
       "manualEntry": "Enter Manually",
       "manualEntryDesc": "Fill in the details yourself"
     },
