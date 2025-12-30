@@ -666,13 +666,13 @@ export function CellarPage() {
             setExtractedData(null);
           }}
           prefillData={extractedData ? {
-            wine_name: extractedData.extractedData.wine_name,
-            producer: extractedData.extractedData.producer,
-            vintage: extractedData.extractedData.vintage,
-            region: extractedData.extractedData.region,
-            country: extractedData.extractedData.country,
-            grapes: extractedData.extractedData.grape,
-            color: extractedData.extractedData.wine_color,
+            wine_name: extractedData.data?.wine_name || '',
+            producer: extractedData.data?.producer || '',
+            vintage: extractedData.data?.vintage,
+            region: extractedData.data?.region || '',
+            country: extractedData.data?.country || '',
+            grapes: extractedData.data?.grape || '',
+            color: extractedData.data?.wine_color || 'red',
             label_image_url: extractedData.imageUrl,
           } : undefined}
         />
@@ -719,69 +719,122 @@ export function CellarPage() {
           <LabelCapture
             mode={labelCaptureMode}
             onSuccess={async (result) => {
+              console.log('[CellarPage] ========== LABEL CAPTURE SUCCESS ==========');
+              console.log('[CellarPage] Result:', result);
+              console.log('[CellarPage] Image URL:', result.imageUrl);
+              console.log('[CellarPage] Result data:', result.data);
+              
               setShowLabelCapture(false);
+              console.log('[CellarPage] Closed label capture modal');
               
               // Show parsing state
               setIsParsing(true);
+              console.log('[CellarPage] Set isParsing to true');
               toast.info(t('cellar.labelParse.reading'));
+              console.log('[CellarPage] Showed toast: reading label');
               
               try {
                 // Call AI parsing service
-                console.log('[CellarPage] Starting label parse for:', result.imageUrl);
+                console.log('[CellarPage] ========== STARTING AI PARSE ==========');
+                console.log('[CellarPage] Calling labelParseService.parseLabelImage...');
                 const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+                console.log('[CellarPage] ========== PARSE RESULT ==========');
+                console.log('[CellarPage] Parse result:', JSON.stringify(parseResult, null, 2));
                 
                 if (parseResult.success && parseResult.data) {
-                  console.log('[CellarPage] Parse successful!', parseResult);
+                  console.log('[CellarPage] ✅ Parse successful!');
+                  console.log('[CellarPage] Parsed data:', parseResult.data);
                   
                   // Convert parsed data to form format
+                  console.log('[CellarPage] Converting parsed data to form format...');
                   const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
+                  console.log('[CellarPage] Form data:', formData);
+                  
                   const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
+                  console.log('[CellarPage] Extracted field names:', extractedFieldNames);
                   
                   // Store parsed fields for highlighting
                   setParsedFields(extractedFieldNames);
+                  console.log('[CellarPage] Set parsed fields');
                   
                   // Merge with any existing extracted data from old label scan
-                  setExtractedData({
+                  const mergedData = {
                     imageUrl: result.imageUrl,
                     data: {
-                      ...result.data,
-                      ...formData,
+                      wine_name: formData.wine_name || result.data?.wine_name || '',
+                      producer: formData.producer || result.data?.producer || '',
+                      vintage: formData.vintage || result.data?.vintage,
+                      region: formData.region || result.data?.region || '',
+                      country: result.data?.country || '',
+                      grape: formData.grapes || result.data?.grape || '',
+                      wine_color: formData.color || result.data?.wine_color || 'red',
                     } as ExtractedWineData,
-                  });
+                  };
+                  console.log('[CellarPage] Merged data:', mergedData);
+                  
+                  setExtractedData(mergedData);
+                  console.log('[CellarPage] Set extracted data');
                   
                   // Show success message
                   const fieldsCount = extractedFieldNames.length;
+                  console.log('[CellarPage] Fields count:', fieldsCount);
                   if (fieldsCount > 0) {
                     toast.success(t('cellar.labelParse.success', { count: fieldsCount }));
+                    console.log('[CellarPage] Showed success toast');
                   } else {
                     toast.warning(t('cellar.labelParse.partial'));
+                    console.log('[CellarPage] Showed partial toast');
                   }
                 } else {
-                  console.warn('[CellarPage] Parse failed or no data:', parseResult);
+                  console.warn('[CellarPage] ⚠️ Parse failed or no data');
+                  console.warn('[CellarPage] Parse result:', parseResult);
+                  
                   // Still allow manual entry with the image
-                  setExtractedData({
+                  const fallbackData = {
                     imageUrl: result.imageUrl,
-                    data: result.data,
-                  });
+                    data: result.data || {} as ExtractedWineData,
+                  };
+                  console.log('[CellarPage] Fallback data:', fallbackData);
+                  
+                  setExtractedData(fallbackData);
+                  console.log('[CellarPage] Set fallback extracted data');
+                  
                   toast.warning(t('cellar.labelParse.failed'));
+                  console.log('[CellarPage] Showed failed toast');
                 }
               } catch (error: any) {
-                console.error('[CellarPage] Parse error:', error);
+                console.error('[CellarPage] ❌ Parse error:', error);
+                console.error('[CellarPage] Error message:', error.message);
+                console.error('[CellarPage] Error stack:', error.stack);
+                
                 // Fallback to manual entry with image
-                setExtractedData({
+                const errorFallbackData = {
                   imageUrl: result.imageUrl,
-                  data: result.data,
-                });
+                  data: result.data || {} as ExtractedWineData,
+                };
+                console.log('[CellarPage] Error fallback data:', errorFallbackData);
+                
+                setExtractedData(errorFallbackData);
+                console.log('[CellarPage] Set error fallback extracted data');
+                
                 toast.error(t('cellar.labelParse.error'));
+                console.log('[CellarPage] Showed error toast');
               } finally {
                 setIsParsing(false);
+                console.log('[CellarPage] Set isParsing to false');
               }
               
-              // Open form with prefilled data
+              // ALWAYS open form with prefilled data (or empty if parse failed)
+              console.log('[CellarPage] ========== OPENING FORM ==========');
               setEditingBottle(null);
+              console.log('[CellarPage] Set editing bottle to null');
               setShowForm(true);
+              console.log('[CellarPage] Set showForm to true - FORM SHOULD NOW BE VISIBLE');
             }}
-            onCancel={() => setShowLabelCapture(false)}
+            onCancel={() => {
+              console.log('[CellarPage] Label capture cancelled');
+              setShowLabelCapture(false);
+            }}
           />
         )}
       </AnimatePresence>
