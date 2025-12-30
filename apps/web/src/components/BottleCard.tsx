@@ -23,7 +23,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col bottle-card-uniform">
+      <div className="luxury-card luxury-card-hover p-4 sm:p-5 md:p-6 flex flex-col" style={{ flex: '1' }}>
         {/* Header Section */}
         <div className="relative mb-4 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
@@ -174,7 +174,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       </div>
 
       {/* Details Section - Clean icon-based layout */}
-      <div className="grid grid-cols-2 gap-3 mb-4" style={{ minHeight: '80px' }}>
+      <div className="flex items-center justify-between mb-3">
         {/* Vintage - Note: NOT translated, it's the actual year */}
         {bottle.wine.vintage && (
           <div className="flex items-center gap-2">
@@ -189,48 +189,51 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         )}
 
         {/* Quantity Badge */}
-        <div className="flex items-center gap-2 justify-end">
-          <span 
-            className="badge-luxury badge-luxury-neutral text-xs"
-            title={t('cellar.bottle.quantity')}
-          >
-            ×{bottle.quantity}
-          </span>
-        </div>
-
-        {/* Region - Note: NOT translated, it's actual geographic data */}
-        {bottle.wine.region && (
-          <div className="col-span-2 flex items-start gap-2">
-            <span className="text-base flex-shrink-0" aria-hidden="true">📍</span>
-            <span 
-              className="text-sm line-clamp-1"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {bottle.wine.region}
-            </span>
-          </div>
-        )}
-
-        {/* Grapes - Note: NOT translated, they're actual grape variety names */}
-        {bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0 && (
-          <div className="col-span-2 flex items-start gap-2">
-            <span className="text-base flex-shrink-0" aria-hidden="true">🍇</span>
-            <span 
-              className="text-sm line-clamp-1"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {bottle.wine.grapes.join(', ')}
-            </span>
-          </div>
-        )}
+        <span 
+          className="badge-luxury badge-luxury-neutral text-xs"
+          title={t('cellar.bottle.quantity')}
+        >
+          ×{bottle.quantity}
+        </span>
       </div>
 
-      {/* Divider */}
-      <div className="divider-luxury my-4" />
+      {/* Region & Grapes - Compact single line */}
+      {(bottle.wine.region || (bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0)) && (
+        <div className="mb-3 space-y-1">
+          {/* Region - Note: NOT translated, it's actual geographic data */}
+          {bottle.wine.region && (
+            <div className="flex items-center gap-2">
+              <span className="text-base flex-shrink-0" aria-hidden="true">📍</span>
+              <span 
+                className="text-sm line-clamp-1"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {bottle.wine.region}
+              </span>
+            </div>
+          )}
 
-      {/* Sommelier Notes (AI Analysis) - Fixed height section */}
-      <div className="flex-1 mb-4" style={{ minHeight: '120px' }}>
-        {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
+          {/* Grapes - Note: NOT translated, they're actual grape variety names */}
+          {bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-base flex-shrink-0" aria-hidden="true">🍇</span>
+              <span 
+                className="text-sm line-clamp-1"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {bottle.wine.grapes.join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Divider */}
+      <div className="divider-luxury my-3" />
+
+      {/* Sommelier Notes (AI Analysis) */}
+      {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
+        <div className="mb-3">
           <SommelierNotes
             analysis={{
               analysis_summary: (bottle as any).analysis_summary,
@@ -246,14 +249,15 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             }}
             onRefresh={onAnalyze}
           />
-        ) : (
-          <button
+        </div>
+      ) : (
+        <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             onAnalyze();
           }}
-          className="w-full py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
+          className="w-full mb-3 py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
           style={{
             backgroundColor: 'var(--bg-subtle)',
             color: 'var(--wine-700)',
@@ -276,10 +280,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
             <span>{t('cellar.sommelier.generate')}</span>
           </div>
         </button>
-        )}
-      </div>
+      )}
 
-      {/* Actions Section - Fixed at bottom */}
+      {/* Actions Section - Push to bottom */}
       <div className="space-y-3 mt-auto">
         {/* Primary Action: Mark as Opened - Only show if quantity > 0 */}
         {onMarkOpened && bottle.quantity > 0 && (
@@ -375,7 +378,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
       </div>
     </div>
       
-    {/* Card Uniform Height & Image Size & Desktop Hover Styles */}
+    {/* Image Size & Desktop Hover Styles */}
     <style>{`
         /* Uniform wine image size - responsive */
         .wine-image-size {
@@ -394,23 +397,6 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
           .wine-image-size {
             width: 96px;
             height: 112px;
-          }
-        }
-        
-        /* Uniform card height - responsive */
-        .bottle-card-uniform {
-          min-height: 480px;
-        }
-        
-        @media (min-width: 640px) {
-          .bottle-card-uniform {
-            min-height: 500px;
-          }
-        }
-        
-        @media (min-width: 768px) {
-          .bottle-card-uniform {
-            min-height: 520px;
           }
         }
         
