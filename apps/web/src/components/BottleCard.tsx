@@ -4,6 +4,7 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import { SommelierNotes } from './SommelierNotes';
 import { WineDetailsModal } from './WineDetailsModal';
 import type { AIAnalysis } from '../services/aiAnalysisService';
+import * as labelArtService from '../services/labelArtService';
 
 interface Props {
   bottle: BottleWithWineInfo;
@@ -16,6 +17,9 @@ interface Props {
 export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }: Props) {
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
+  
+  // Get display image using centralized logic (user image > AI generated > placeholder)
+  const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
 
   return (
     <>
@@ -23,10 +27,10 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         {/* Header Section */}
         <div className="relative mb-4 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
-          {bottle.wine.image_url && (
+          {displayImage.imageUrl && (
             <div className="flex-shrink-0 wine-image-container">
               <img 
-                src={bottle.wine.image_url} 
+                src={displayImage.imageUrl} 
                 alt={bottle.wine.wine_name}
                 className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-28 object-cover rounded-md transition-transform duration-300"
                 style={{
@@ -39,6 +43,23 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
                   e.currentTarget.style.display = 'none';
                 }}
               />
+              {/* AI Generated Badge */}
+              {displayImage.isGenerated && (
+                <div 
+                  className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                  title="AI-generated label art"
+                >
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                  </svg>
+                  <span>AI</span>
+                </div>
+              )}
             </div>
           )}
 

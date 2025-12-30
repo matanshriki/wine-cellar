@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/supabase';
+import * as labelArtService from './labelArtService';
 
 type Bottle = Database['public']['Tables']['bottles']['Row'];
 type Wine = Database['public']['Tables']['wines']['Row'];
@@ -183,6 +184,9 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     // Generate serving instructions
     let servingInstructions = generateServingInstructions(bottle, wine);
 
+    // Get display image using centralized logic (user image > AI generated > placeholder)
+    const displayImage = labelArtService.getWineDisplayImage(wine);
+    
     return {
       bottleId: bottle.id,
       bottle: {
@@ -195,7 +199,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
         quantity: bottle.quantity,
         rating: wine.rating || null,
         vivinoUrl: wine.vivino_url || null,
-        imageUrl: wine.image_url || null,
+        imageUrl: displayImage.imageUrl,
       },
       explanation,
       servingInstructions,
