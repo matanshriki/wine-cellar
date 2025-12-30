@@ -207,16 +207,23 @@ export async function generateLabelArt(
   const { data: { session } } = await supabase.auth.getSession();
   
   if (!session) {
-    console.error('[AI Label Client] No active session');
+    console.error('[AI Label Client] ❌ No active session');
     throw new Error('No active session. Please log in again.');
   }
 
-  console.log('[AI Label Client] Session found, user:', session.user?.id);
-  console.log('[AI Label Client] Token length:', session.access_token?.length);
+  console.log('[AI Label Client] ✅ Session found, user:', session.user?.id);
+  console.log('[AI Label Client] ✅ Token length:', session.access_token?.length);
+  console.log('[AI Label Client] 📤 Sending request to Edge Function...');
+  console.log('[AI Label Client] 📋 Body:', {
+    wineId: bottle.wine.id,
+    bottleId: bottle.id,
+    promptHash: promptHash.substring(0, 8),
+    style,
+  });
 
   // Call backend Edge Function (Supabase Function)
-  // Explicitly pass Authorization header to ensure auth works
-  console.log('[AI Label Client] Invoking Edge Function...');
+  // The supabase client automatically includes the Authorization header
+  console.log('[AI Label Client] 🚀 Invoking Edge Function...');
   const { data, error } = await supabase.functions.invoke('generate-label-art', {
     body: {
       wineId: bottle.wine.id,
@@ -224,9 +231,6 @@ export async function generateLabelArt(
       prompt,
       promptHash,
       style,
-    },
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
     },
   });
 
