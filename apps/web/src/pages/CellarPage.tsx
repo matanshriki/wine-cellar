@@ -726,6 +726,52 @@ export function CellarPage() {
         }}
       />
 
+      {/* AI Processing Overlay */}
+      <AnimatePresence>
+        {isParsing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{
+              background: 'rgba(250, 248, 245, 0.95)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <div className="flex flex-col items-center gap-6 px-6 text-center">
+              {/* Elegant Spinner */}
+              <div 
+                className="w-16 h-16 rounded-full animate-spin"
+                style={{
+                  border: '3px solid var(--border-light)',
+                  borderTopColor: 'var(--color-amber-600)',
+                }}
+              />
+              
+              {/* Message */}
+              <div className="space-y-2">
+                <h3 
+                  className="text-xl font-semibold"
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  {t('cellar.labelParse.analyzing')}
+                </h3>
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {t('cellar.labelParse.analyzingSubtitle')}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Label Capture */}
       <AnimatePresence>
         {showLabelCapture && (
@@ -737,14 +783,18 @@ export function CellarPage() {
               console.log('[CellarPage] Image URL:', result.imageUrl);
               console.log('[CellarPage] Result data:', result.data);
               
-              setShowLabelCapture(false);
-              console.log('[CellarPage] Closed label capture modal');
+              // Don't close label capture yet - keep user on same view
+              console.log('[CellarPage] Photo captured, starting AI processing...');
               
-              // Show parsing state
+              // Show parsing state FIRST (before closing anything)
               setIsParsing(true);
               console.log('[CellarPage] Set isParsing to true');
               toast.info(t('cellar.labelParse.reading'));
               console.log('[CellarPage] Showed toast: reading label');
+              
+              // Now close label capture (user will see loading spinner)
+              setShowLabelCapture(false);
+              console.log('[CellarPage] Closed label capture modal');
               
               try {
                 // Call AI parsing service

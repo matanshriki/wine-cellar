@@ -36,6 +36,14 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     label_image_url: prefillData?.label_image_url || '',
   });
   const [loading, setLoading] = useState(false);
+  
+  // Check if this is an AI-prefilled form
+  const isAIPrefilled = !!prefillData && (
+    !!prefillData.wine_name || 
+    !!prefillData.producer || 
+    !!prefillData.vintage || 
+    !!prefillData.region
+  );
 
   function handleChange(field: string, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -169,6 +177,38 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             minHeight: 0,
           }}
         >
+          {/* AI Confirmation Banner */}
+          {isAIPrefilled && (
+            <div 
+              className="p-4 rounded-lg mb-4"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%)',
+                border: '1px solid var(--color-amber-200)',
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">✨</span>
+                <div className="flex-1">
+                  <h4 
+                    className="text-sm font-semibold mb-1"
+                    style={{ 
+                      color: 'var(--color-amber-800)',
+                      fontFamily: 'var(--font-display)',
+                    }}
+                  >
+                    {t('bottleForm.aiConfirmTitle')}
+                  </h4>
+                  <p 
+                    className="text-xs"
+                    style={{ color: 'var(--color-amber-700)' }}
+                  >
+                    {t('bottleForm.aiConfirmMessage')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">
               <label 
@@ -356,6 +396,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                 ? t('bottleForm.saving')
                 : bottle
                 ? t('bottleForm.update')
+                : isAIPrefilled
+                ? t('bottleForm.confirmAndAdd')
                 : t('bottleForm.save')}
             </button>
           </div>

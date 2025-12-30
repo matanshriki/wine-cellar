@@ -152,6 +152,8 @@
     },
     "labelParse": {
       "reading": "Reading label with AI...",
+      "analyzing": "Reading your wine label...",
+      "analyzingSubtitle": "Our AI is extracting wine details from your photo",
       "success_one": "✨ Extracted {{count}} field from label",
       "success_other": "✨ Extracted {{count}} fields from label",
       "partial": "Label partially read - please review and complete",
@@ -260,6 +262,9 @@
     "save": "Save",
     "update": "Update",
     "saving": "Saving...",
+    "confirmAndAdd": "Confirm & Add to Cellar",
+    "aiConfirmTitle": "Please confirm this is your wine",
+    "aiConfirmMessage": "We've extracted details from your label photo. Review and edit if needed, then confirm to add to your cellar.",
     "required": "Required",
     "bottleAdded": "Bottle added!",
     "bottleUpdated": "Bottle updated!",
