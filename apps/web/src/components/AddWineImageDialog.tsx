@@ -124,7 +124,7 @@ export function AddWineImageDialog({
               className="luxury-card w-full max-w-lg flex flex-col"
               onClick={(e) => e.stopPropagation()}
               style={{
-                maxHeight: 'calc(100dvh - 2rem)',
+                maxHeight: 'min(90vh, calc(100dvh - 2rem))',
                 minHeight: 0,
               }}
             >
@@ -163,27 +163,28 @@ export function AddWineImageDialog({
 
               {/* Content - Scrollable */}
               <div 
-                className="flex-1 p-6 space-y-4 overflow-y-auto"
+                className="flex-1 px-4 py-4 sm:px-6 sm:py-6 space-y-3 sm:space-y-4 overflow-y-auto"
                 style={{
                   minHeight: 0,
                   WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
                 }}
               >
-                {/* Instructions */}
-                <div className="p-4 rounded-lg" style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                {/* Instructions - Collapsible on mobile */}
+                <div className="p-3 sm:p-4 rounded-lg" style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
+                  <h3 className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     {t('wineImage.howToTitle', 'How to add an image')}
                   </h3>
-                  <ol className="text-sm space-y-1.5 list-decimal list-inside" style={{ color: 'var(--text-secondary)' }}>
+                  <ol className="text-xs sm:text-sm space-y-1 list-decimal list-inside" style={{ color: 'var(--text-secondary)' }}>
                     <li>{t('wineImage.step1', 'Open the Vivino page for this wine')}</li>
                     <li>{t('wineImage.step2', 'Right-click on the wine bottle image')}</li>
                     <li>{t('wineImage.step3', 'Select "Copy image address" or "Copy image URL"')}</li>
                     <li>{t('wineImage.step4', 'Paste the URL below')}</li>
                   </ol>
-                  <p className="text-xs mt-3 italic" style={{ color: 'var(--text-tertiary)' }}>
+                  <p className="text-xs mt-2 italic" style={{ color: 'var(--text-tertiary)' }}>
                     {t('wineImage.disclaimer', 'Note: Images are user-provided. We do not scrape or store Vivino content.')}
                   </p>
                 </div>
@@ -218,19 +219,33 @@ export function AddWineImageDialog({
 
                 {/* Preview */}
                 {previewUrl && !imageError && (
-                  <div className="p-4 rounded-lg" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
+                  <div 
+                    className="p-4 rounded-lg" 
+                    style={{ 
+                      background: 'var(--bg-surface)', 
+                      border: '1px solid var(--border-base)',
+                      maxHeight: '240px',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>
                       {t('wineImage.previewLabel', 'Preview')}
                     </p>
-                    <img 
-                      src={previewUrl}
-                      alt="Preview"
-                      className="max-w-full h-auto max-h-64 mx-auto object-contain rounded"
-                      onError={() => {
-                        setImageError(true);
-                        setError(t('wineImage.previewFailed', 'Failed to load image. Please check the URL.'));
-                      }}
-                    />
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{ maxHeight: '200px', overflow: 'hidden' }}
+                    >
+                      <img 
+                        src={previewUrl}
+                        alt="Preview"
+                        className="max-w-full h-auto mx-auto object-contain rounded"
+                        style={{ maxHeight: '200px' }}
+                        onError={() => {
+                          setImageError(true);
+                          setError(t('wineImage.previewFailed', 'Failed to load image. Please check the URL.'));
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -242,6 +257,9 @@ export function AddWineImageDialog({
                     </p>
                   </div>
                 )}
+                
+                {/* Spacer to ensure content can scroll above footer */}
+                <div style={{ height: '1px', minHeight: '1px' }} />
               </div>
 
               {/* Footer Actions - Fixed */}
