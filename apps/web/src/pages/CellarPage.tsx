@@ -201,10 +201,16 @@ export function CellarPage() {
       });
     }
 
-    // Apply active filters
+    // Apply active filters with OR logic within categories
     if (activeFilters.length > 0) {
       result = result.filter((bottle) => {
-        return activeFilters.every((filter) => {
+        // Group filters by category
+        const colorFilters = activeFilters.filter(f => ['red', 'white', 'rose', 'sparkling'].includes(f));
+        const readinessFilters = activeFilters.filter(f => ['ready', 'aging'].includes(f));
+        const otherFilters = activeFilters.filter(f => !['red', 'white', 'rose', 'sparkling', 'ready', 'aging'].includes(f));
+        
+        // Check color filters (OR logic - wine matches ANY selected color)
+        const matchesColor = colorFilters.length === 0 || colorFilters.some((filter) => {
           switch (filter) {
             case 'red':
               return bottle.wine.color === 'red';
@@ -214,6 +220,14 @@ export function CellarPage() {
               return bottle.wine.color === 'rose';
             case 'sparkling':
               return bottle.wine.color === 'sparkling';
+            default:
+              return false;
+          }
+        });
+        
+        // Check readiness filters (OR logic - wine matches ANY selected readiness state)
+        const matchesReadiness = readinessFilters.length === 0 || readinessFilters.some((filter) => {
+          switch (filter) {
             case 'ready':
               return (
                 bottle.readiness_status === 'InWindow' ||
@@ -224,12 +238,23 @@ export function CellarPage() {
                 bottle.readiness_status === 'TooYoung' ||
                 bottle.readiness_status === 'Approaching'
               );
+            default:
+              return false;
+          }
+        });
+        
+        // Check other filters (AND logic - wine must match ALL other filters)
+        const matchesOther = otherFilters.every((filter) => {
+          switch (filter) {
             case 'analyzed':
               return bottle.readiness_status && bottle.readiness_status !== 'Unknown';
             default:
               return true;
           }
         });
+        
+        // Wine must match all categories (AND between categories, OR within categories)
+        return matchesColor && matchesReadiness && matchesOther;
       });
     }
 
