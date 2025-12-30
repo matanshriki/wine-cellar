@@ -111,11 +111,17 @@ export interface CreateBottleInput {
 }
 
 export async function createBottle(input: CreateBottleInput): Promise<BottleWithWineInfo> {
+  console.log('[bottleService] ========== CREATE BOTTLE ==========');
+  console.log('[bottleService] Input:', JSON.stringify(input, null, 2));
+  
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
+    console.error('[bottleService] ❌ Not authenticated');
     throw new Error('Not authenticated');
   }
+  
+  console.log('[bottleService] User ID:', user.id);
 
   // First, try to find or create the wine
   const wineData: WineInsert = {
@@ -135,8 +141,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     image_url: input.image_url || null,
     notes: input.wine_notes || null,
   };
+  
+  console.log('[bottleService] Wine data:', JSON.stringify(wineData, null, 2));
 
   // Try to insert wine, or get existing if conflict
+  console.log('[bottleService] Upserting wine...');
   const { data: wine, error: wineError } = await supabase
     .from('wines')
     .upsert(wineData as any, {
@@ -147,9 +156,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     .single();
 
   if (wineError) {
-    console.error('Error creating/finding wine:', wineError);
+    console.error('[bottleService] ❌ Error creating/finding wine:', wineError);
     throw new Error('Failed to create wine entry');
   }
+  
+  console.log('[bottleService] ✅ Wine created/found, ID:', wine.id);
 
   // Now create the bottle
   const bottleData: BottleInsert = {
@@ -165,7 +176,10 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     image_url: input.image_url || null,
     tags: input.tags ? input.tags : null,
   };
+  
+  console.log('[bottleService] Bottle data:', JSON.stringify(bottleData, null, 2));
 
+  console.log('[bottleService] Inserting bottle...');
   const { data: bottle, error: bottleError } = await supabase
     .from('bottles')
     .insert(bottleData as any)
@@ -173,14 +187,19 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     .single();
 
   if (bottleError) {
-    console.error('Error creating bottle:', bottleError);
+    console.error('[bottleService] ❌ Error creating bottle:', bottleError);
     throw new Error('Failed to create bottle');
   }
+  
+  console.log('[bottleService] ✅ Bottle created successfully, ID:', bottle.id);
 
-  return {
+  const result = {
     ...(bottle as any),
     wine,
   } as BottleWithWineInfo;
+  
+  console.log('[bottleService] Returning bottle with wine info');
+  return result;
 }
 
 /**

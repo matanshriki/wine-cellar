@@ -44,9 +44,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    
+    console.log('[BottleForm] ========== SUBMIT STARTED ==========');
+    console.log('[BottleForm] Form data:', formData);
 
     try {
       if (bottle) {
+        console.log('[BottleForm] Updating existing bottle:', bottle.id);
         // For updates, we only update bottle-level fields
         const bottleUpdates = {
           quantity: parseInt(formData.quantity),
@@ -57,7 +61,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         await bottleService.updateBottle(bottle.id, bottleUpdates);
         trackBottle.edit(); // Track bottle edit
         toast.success(t('bottleForm.bottleUpdated'));
+        console.log('[BottleForm] ✅ Bottle updated successfully');
       } else {
+        console.log('[BottleForm] Creating new bottle...');
         // For creation, combine wine and bottle data into single object
         const createInput: bottleService.CreateBottleInput = {
           // Wine info
@@ -85,17 +91,28 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           image_url: null,
         };
         
-        await bottleService.createBottle(createInput);
+        console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));
+        const result = await bottleService.createBottle(createInput);
+        console.log('[BottleForm] ✅ Bottle created successfully:', result);
         trackBottle.addManual(); // Track manual bottle addition
         toast.success(t('bottleForm.bottleAdded'));
       }
 
+      console.log('[BottleForm] Calling onSuccess callback...');
       onSuccess();
+      console.log('[BottleForm] ✅ onSuccess callback completed');
     } catch (error: any) {
-      console.error('Error saving bottle:', error);
+      console.error('[BottleForm] ❌ Error saving bottle:', error);
+      console.error('[BottleForm] Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       toast.error(error.message || t('bottleForm.saveFailed'));
     } finally {
       setLoading(false);
+      console.log('[BottleForm] ========== SUBMIT FINISHED ==========');
     }
   }
 

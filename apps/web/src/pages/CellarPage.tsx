@@ -55,11 +55,21 @@ export function CellarPage() {
   }, []);
 
   async function loadBottles() {
+    console.log('[CellarPage] ========== LOADING BOTTLES ==========');
     try {
+      console.log('[CellarPage] Fetching bottles from database...');
       const data = await bottleService.listBottles();
+      console.log('[CellarPage] ✅ Bottles loaded successfully');
+      console.log('[CellarPage] Number of bottles:', data.length);
+      console.log('[CellarPage] Bottles:', data.map(b => ({
+        id: b.id,
+        wine_name: b.wine.wine_name,
+        quantity: b.quantity
+      })));
       setBottles(data);
+      console.log('[CellarPage] Bottles state updated');
     } catch (error: any) {
-      console.error('Error loading bottles:', error);
+      console.error('[CellarPage] ❌ Error loading bottles:', error);
       toast.error(error.message || t('errors.generic'));
     } finally {
       setLoading(false);
@@ -168,9 +178,12 @@ export function CellarPage() {
   }
 
   function handleFormSuccess() {
+    console.log('[CellarPage] ========== FORM SUCCESS ==========');
+    console.log('[CellarPage] Closing form and reloading bottles...');
     setShowForm(false);
     setEditingBottle(null);
     loadBottles();
+    console.log('[CellarPage] Form closed, loadBottles() called');
   }
 
   function handleImportSuccess() {
