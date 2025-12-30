@@ -726,7 +726,7 @@ export function CellarPage() {
         }}
       />
 
-      {/* AI Processing Overlay */}
+      {/* AI Processing Overlay - Luxury Wine Glass Animation */}
       <AnimatePresence>
         {isParsing && (
           <motion.div
@@ -735,34 +735,36 @@ export function CellarPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center"
             style={{
-              background: 'rgba(250, 248, 245, 0.95)',
-              backdropFilter: 'blur(12px)',
+              background: 'rgba(250, 248, 245, 0.97)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
             }}
           >
-            <div className="flex flex-col items-center gap-6 px-6 text-center">
-              {/* Elegant Spinner */}
-              <div 
-                className="w-16 h-16 rounded-full animate-spin"
-                style={{
-                  border: '3px solid var(--border-light)',
-                  borderTopColor: 'var(--color-amber-600)',
-                }}
+            <div className="flex flex-col items-center gap-8 px-6 text-center max-w-md">
+              {/* Luxury Wine Glass Loader */}
+              <WineLoader 
+                size={80}
+                color="var(--color-amber-600)"
               />
               
               {/* Message */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 
-                  className="text-xl font-semibold"
+                  className="text-2xl font-semibold"
                   style={{
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-display)',
+                    fontWeight: 'var(--font-bold)',
                   }}
                 >
                   {t('cellar.labelParse.analyzing')}
                 </h3>
                 <p 
-                  className="text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
+                  className="text-base leading-relaxed"
+                  style={{ 
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-body)',
+                  }}
                 >
                   {t('cellar.labelParse.analyzingSubtitle')}
                 </p>

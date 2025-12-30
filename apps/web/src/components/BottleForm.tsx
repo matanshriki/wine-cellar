@@ -85,7 +85,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           appellation: null,
           vivino_wine_id: null,
           wine_notes: null,
-          label_image_url: formData.label_image_url || null,
           
           // Bottle info
           quantity: parseInt(formData.quantity) || 1,
@@ -96,7 +95,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           storage_location: null,
           bottle_size_ml: 750,
           tags: null,
-          image_url: null,
+          // Use the uploaded label image as the wine's image
+          image_url: formData.label_image_url || null,
         };
         
         console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));
