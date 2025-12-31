@@ -384,8 +384,8 @@
           "description": "Vivino does not provide a public API for third-party apps. Use the web export method below instead."
         }
       },
-      "downloadStandard": "Download Standard Template",
-      "downloadVivino": "Download Vivino Sample",
+      "downloadTemplate": "Download Vivino Template",
+      "templateDescription": "Official Vivino CSV export format - matches real Vivino cellar exports",
       "chooseFile": "Choose CSV File",
       "fileLoaded": "File loaded successfully",
       "next": "Next: Map Columns",

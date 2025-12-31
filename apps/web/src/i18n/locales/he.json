@@ -384,8 +384,8 @@
           "description": "Vivino לא מספק API ציבורי לאפליקציות צד שלישי. השתמש בשיטת הייצוא דרך האינטרנט במקום זאת."
         }
       },
-      "downloadStandard": "הורד תבנית רגילה",
-      "downloadVivino": "הורד דוגמה מ-Vivino",
+      "downloadTemplate": "הורד תבנית Vivino",
+      "templateDescription": "פורמט CSV רשמי של Vivino - תואם לייצוא מרתף Vivino אמיתי",
       "chooseFile": "בחר קובץ CSV",
       "fileLoaded": "הקובץ נטען בהצלחה",
       "next": "הבא: מיפוי עמודות",

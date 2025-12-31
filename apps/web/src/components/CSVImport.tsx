@@ -474,31 +474,17 @@ export function CSVImport({ onClose, onSuccess }: Props) {
   }
 
   function downloadTemplate() {
-    const template = `name,producer,vintage,region,grapes,style,rating,quantity,notes
-Château Margaux,Château Margaux,2015,"Bordeaux, France","Cabernet Sauvignon, Merlot",red,98,2,Premier Grand Cru
-Dom Pérignon,Moët & Chandon,2012,"Champagne, France","Chardonnay, Pinot Noir",sparkling,97,1,Vintage champagne
-Cloudy Bay,Cloudy Bay,2022,"Marlborough, NZ",Sauvignon Blanc,white,90,3,Crisp and refreshing`;
+    // Official Vivino CSV export format - matches real Vivino exports
+    const template = `Winery,Wine name,Vintage,Region,Country,Regional wine style,Average rating,Wine ratings count,Wine type,Link to wine,User cellar count,Image URL
+Château Margaux,Château Margaux,2015,Bordeaux,France,French Bordeaux Red,4.8,15234,Red Wine,https://www.vivino.com/wines/12345,1,https://images.vivino.com/example.png
+Moët & Chandon,Dom Pérignon,2012,Champagne,France,French Champagne Sparkling,4.7,8921,Sparkling Wine,https://www.vivino.com/wines/67890,1,https://images.vivino.com/example2.png
+Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12456,White Wine,https://www.vivino.com/wines/11111,2,https://images.vivino.com/example3.png`;
 
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'wine-import-template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadVivinoSample() {
-    const vivinoTemplate = `Wine,Producer,Vintage,Type,Region,Country,Rating,Quantity,Notes
-Sassicaia,Tenuta San Guido,2017,Red,Tuscany,Italy,4.6,2,Super Tuscan blend
-Sancerre Blanc,Domaine Vacheron,2021,White,Loire Valley,France,4.2,3,Classic Sauvignon Blanc
-Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France,4.5,1,Full-bodied Grenache blend`;
-
-    const blob = new Blob([vivinoTemplate], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'vivino-sample.csv';
+    a.download = 'vivino-template.csv';
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -568,20 +554,16 @@ Châteauneuf-du-Pape,Domaine du Vieux Télégraphe,2019,Red,Rhône Valley,France
                   </button>
                 </div>
                 
-                <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 mb-4">
+                <div className="mb-4">
                   <button
                     onClick={downloadTemplate}
-                    className="text-xs sm:text-sm text-primary-600 hover:text-primary-700"
+                    className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    📥 {t('csvImport.upload.downloadStandard')}
+                    📥 {t('csvImport.upload.downloadTemplate')}
                   </button>
-                  <span className="hidden xs:inline text-gray-300">|</span>
-                  <button
-                    onClick={downloadVivinoSample}
-                    className="text-xs sm:text-sm text-primary-600 hover:text-primary-700"
-                  >
-                    📥 {t('csvImport.upload.downloadVivino')}
-                  </button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t('csvImport.upload.templateDescription')}
+                  </p>
                 </div>
               </div>
 

@@ -1,0 +1,6 @@
+Winery,Wine name,Vintage,Region,Country,Regional wine style,Average rating,Wine ratings count,Wine type,Link to wine,User cellar count,Image URL
+Château Margaux,Château Margaux,2015,Bordeaux,France,French Bordeaux Red,4.8,15234,Red Wine,https://www.vivino.com/wines/12345,1,https://images.vivino.com/example.png
+Moët & Chandon,Dom Pérignon,2012,Champagne,France,French Champagne Sparkling,4.7,8921,Sparkling Wine,https://www.vivino.com/wines/67890,1,https://images.vivino.com/example2.png
+Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12456,White Wine,https://www.vivino.com/wines/11111,2,https://images.vivino.com/example3.png
+Sassicaia,Tenuta San Guido,2017,Tuscany,Italy,Italian Super Tuscan,4.6,8543,Red Wine,https://www.vivino.com/wines/22222,1,https://images.vivino.com/example4.png
+
