@@ -80,21 +80,24 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     // ALWAYS copy to clipboard (safest for mobile & PWA)
     try {
       await navigator.clipboard.writeText(searchUrl);
+      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard (PWA mode:', isPWA, '):', searchUrl);
       
       // PWA-specific instructions (more explicit about switching apps)
-      const message = isPWA
-        ? t('bottleForm.vivinoUrlCopiedPWA')
-        : t('bottleForm.vivinoUrlCopied');
+      // Use String() to ensure we always pass a string to toast (prevent React error #31)
+      const translationKey = isPWA ? 'bottleForm.vivinoUrlCopiedPWA' : 'bottleForm.vivinoUrlCopied';
+      const message = String(t(translationKey) || '✅ Vivino search link copied! Open Safari and paste to search.');
+      
+      console.log('[BottleForm] Toast message:', message);
       
       toast.success(message, {
         duration: 8000,
       });
-      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard (PWA mode:', isPWA, '):', searchUrl);
     } catch (err) {
       // Fallback: show URL for manual copy
       console.error('[BottleForm] ❌ Clipboard write failed:', err);
+      const fallbackMsg = String(t('bottleForm.vivinoCopyManually') || 'Copy this URL:');
       toast.info(
-        `${t('bottleForm.vivinoCopyManually')}\n${searchUrl}`,
+        `${fallbackMsg}\n${searchUrl}`,
         { duration: 10000 }
       );
     }
