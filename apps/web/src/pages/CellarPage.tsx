@@ -505,45 +505,94 @@ export function CellarPage() {
     }
 
     // Smooth scroll to bottles section (skip Tonight's Selection and Drink Window)
-    console.log('[CellarPage] Sort changed, preparing to scroll to bottles...');
+    console.log('[CellarPage] 📊 Sort changed, preparing to scroll to bottles...');
+    console.log('[CellarPage] 📏 BEFORE scroll - Current position:', {
+      pageYOffset: window.pageYOffset,
+      scrollY: window.scrollY,
+      documentHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight
+    });
+    
     requestAnimationFrame(() => {
       setTimeout(() => {
         console.log('[CellarPage] 🎯 Scroll timeout triggered (after sort)');
+        console.log('[CellarPage] 📏 Current scroll position in timeout:', window.pageYOffset);
         
         if (bottlesSectionRef.current) {
-          console.log('[CellarPage] 📍 Scrolling to bottles section after sort...');
+          console.log('[CellarPage] ✅ bottlesSectionRef.current exists');
           
           const element = bottlesSectionRef.current;
           const rect = element.getBoundingClientRect();
-          console.log('[CellarPage] Element rect:', {
-            top: rect.top,
-            bottom: rect.bottom,
+          console.log('[CellarPage] 📍 Bottles section position:', {
+            'rect.top': rect.top,
+            'rect.bottom': rect.bottom,
+            'rect.height': rect.height,
+            'window.pageYOffset': window.pageYOffset,
+            'window.scrollY': window.scrollY
           });
           
           // Check if bottles section is already visible at top
           const isVisible = rect.top >= 0 && rect.top <= 150;
-          console.log('[CellarPage] Bottles already visible:', isVisible);
+          console.log('[CellarPage] 👁️ Bottles already visible at top:', isVisible, '(rect.top:', rect.top, ')');
           
           // Calculate scroll position
           const headerOffset = 100;
           const elementPosition = rect.top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          const absolutePosition = elementPosition + window.pageYOffset;
+          const offsetPosition = absolutePosition - headerOffset;
+          const finalPosition = Math.max(0, offsetPosition);
           
-          console.log('[CellarPage] Calculated offset:', offsetPosition);
+          console.log('[CellarPage] 🧮 Scroll calculation:', {
+            headerOffset,
+            'elementPosition (rect.top)': elementPosition,
+            'absolutePosition (rect.top + pageYOffset)': absolutePosition,
+            'offsetPosition (absolute - headerOffset)': offsetPosition,
+            'finalPosition (Math.max(0, offset))': finalPosition,
+            'currentPosition': window.pageYOffset,
+            'scrollDistance': finalPosition - window.pageYOffset
+          });
+          
+          // Check if we need to scroll
+          const needsScroll = !isVisible || rect.top > 150;
+          console.log('[CellarPage] 🤔 Needs scroll:', needsScroll);
           
           // Scroll to bottles
-          if (!isVisible || rect.top > 150) {
-            console.log('[CellarPage] 🚀 Initiating scroll to bottles...');
-            window.scrollTo({
-              top: Math.max(0, offsetPosition),
+          if (needsScroll) {
+            console.log('[CellarPage] 🚀 CALLING window.scrollTo with:', {
+              top: finalPosition,
               behavior: 'smooth'
             });
-            console.log('[CellarPage] ✓ Scroll initiated');
+            
+            // Try scrolling
+            try {
+              window.scrollTo({
+                top: finalPosition,
+                behavior: 'smooth'
+              });
+              console.log('[CellarPage] ✓ window.scrollTo CALLED successfully');
+              
+              // Check if scroll happened immediately
+              setTimeout(() => {
+                const newPosition = window.pageYOffset;
+                console.log('[CellarPage] 📊 Position 100ms after scroll:', newPosition);
+                console.log('[CellarPage] 📊 Did scroll change?', newPosition !== window.pageYOffset);
+              }, 100);
+              
+              // Check final position after animation
+              setTimeout(() => {
+                const finalPos = window.pageYOffset;
+                console.log('[CellarPage] 📊 FINAL position after 1000ms:', finalPos);
+                console.log('[CellarPage] 📊 Expected:', finalPosition, 'Actual:', finalPos);
+                console.log('[CellarPage] 📊 Scroll successful:', Math.abs(finalPos - finalPosition) < 50);
+              }, 1000);
+            } catch (error) {
+              console.error('[CellarPage] ❌ Error calling window.scrollTo:', error);
+            }
           } else {
-            console.log('[CellarPage] ⏭️ Skipping scroll - already at bottles');
+            console.log('[CellarPage] ⏭️ SKIPPING scroll - bottles already visible at top');
           }
         } else {
-          console.warn('[CellarPage] ⚠️ bottlesSectionRef is null');
+          console.error('[CellarPage] ❌ bottlesSectionRef.current is NULL - cannot scroll');
         }
       }, 200);
     });
