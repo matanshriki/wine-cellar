@@ -136,18 +136,40 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
 
     try {
       if (bottle) {
-        console.log('[BottleForm] Updating existing bottle:', bottle.id);
-        // For updates, we only update bottle-level fields
+        console.log('[BottleForm] ========== UPDATING EXISTING BOTTLE ==========');
+        console.log('[BottleForm] Bottle ID:', bottle.id);
+        console.log('[BottleForm] Wine ID:', bottle.wine_id);
+        console.log('[BottleForm] Form data:', formData);
+        
+        // Update bottle-level fields
         const bottleUpdates = {
           quantity: parseInt(formData.quantity),
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
           notes: formData.notes || null,
         };
         
+        console.log('[BottleForm] Updating bottle fields:', bottleUpdates);
         await bottleService.updateBottle(bottle.id, bottleUpdates);
+        console.log('[BottleForm] ✅ Bottle fields updated');
+        
+        // Update wine-level fields (vintage, producer, etc.)
+        const wineUpdates: bottleService.UpdateWineInput = {
+          wine_name: formData.wine_name,
+          producer: formData.producer || 'Unknown',
+          vintage: formData.vintage ? parseInt(formData.vintage) : null,
+          region: formData.region || null,
+          color: formData.color as 'red' | 'white' | 'rose' | 'sparkling',
+          grapes: formData.grapes ? formData.grapes.split(',').map(g => g.trim()).filter(Boolean) : null,
+          vivino_url: formData.vivino_url || null,
+        };
+        
+        console.log('[BottleForm] Updating wine fields:', wineUpdates);
+        await bottleService.updateWineInfo(bottle.wine_id, wineUpdates);
+        console.log('[BottleForm] ✅ Wine fields updated');
+        
         trackBottle.edit(); // Track bottle edit
         toast.success(t('bottleForm.bottleUpdated'));
-        console.log('[BottleForm] ✅ Bottle updated successfully');
+        console.log('[BottleForm] ========== UPDATE COMPLETE ==========');
       } else {
         console.log('[BottleForm] Creating new bottle...');
         // For creation, combine wine and bottle data into single object

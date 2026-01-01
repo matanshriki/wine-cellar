@@ -185,14 +185,19 @@ export function CellarPage() {
     }
   }
 
-  function handleFormSuccess() {
+  async function handleFormSuccess() {
     console.log('[CellarPage] ========== FORM SUCCESS ==========');
-    console.log('[CellarPage] Closing form and reloading bottles...');
+    console.log('[CellarPage] Reloading bottles from database...');
+    
+    // CRITICAL: Reload bottles FIRST to get updated data
+    await loadBottles();
+    console.log('[CellarPage] ✅ Bottles reloaded with latest data');
+    
+    // Then close form and clear state
     setShowForm(false);
     setEditingBottle(null);
     setExtractedData(null); // Clear AI extraction data to prevent stale scans
-    loadBottles();
-    console.log('[CellarPage] Form closed, extractedData cleared, loadBottles() called');
+    console.log('[CellarPage] Form closed, state cleared');
   }
 
   function handleImportSuccess() {

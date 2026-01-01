@@ -276,6 +276,53 @@ export async function updateBottleAnalysis(
 }
 
 /**
+ * Update wine information
+ * Updates wine-level fields (vintage, producer, region, etc.)
+ */
+export interface UpdateWineInput {
+  wine_name?: string;
+  producer?: string;
+  vintage?: number | null;
+  region?: string | null;
+  country?: string | null;
+  color?: 'red' | 'white' | 'rose' | 'sparkling';
+  grapes?: string[] | null;
+  vivino_url?: string | null;
+}
+
+export async function updateWineInfo(
+  wineId: string,
+  updates: UpdateWineInput
+): Promise<Wine> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  console.log('[bottleService] Updating wine info:', { wineId, updates });
+
+  const { data, error } = await supabase
+    .from('wines')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', wineId)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[bottleService] Error updating wine:', error);
+    throw new Error('Failed to update wine information');
+  }
+
+  console.log('[bottleService] ✅ Wine updated successfully:', data);
+  return data as Wine;
+}
+
+/**
  * Update wine image URL
  * User-driven image management (ToS compliant)
  */
