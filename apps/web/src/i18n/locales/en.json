@@ -133,6 +133,14 @@
       "analyzed": "Analyzed",
       "clear": "Clear all"
     },
+    "sort": {
+      "label": "Sort",
+      "recentlyAddedNewest": "Recently Added (Newest)",
+      "recentlyAddedOldest": "Recently Added (Oldest)",
+      "vintageNewest": "Vintage (Newest)",
+      "vintageOldest": "Vintage (Oldest)",
+      "readiness": "Readiness (Ready First)"
+    },
     "labelScan": {
       "title": "Scan Label",
       "instruction": "Center the wine label",

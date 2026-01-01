@@ -38,6 +38,23 @@ export function CellarPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   
+  // Sort state - persist in localStorage
+  const [sortBy, setSortBy] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cellar-sort-by') || 'createdAt';
+    } catch {
+      return 'createdAt';
+    }
+  });
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(() => {
+    try {
+      return (localStorage.getItem('cellar-sort-dir') as 'asc' | 'desc') || 'desc';
+    } catch {
+      return 'desc';
+    }
+  });
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  
   // Wine Details Modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
@@ -64,6 +81,21 @@ export function CellarPage() {
       console.error('[CellarPage] Failed to clear form draft:', e);
     }
   }, []);
+
+  // Close sort menu when clicking outside
+  useEffect(() => {
+    if (!showSortMenu) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.sort-menu-container')) {
+        setShowSortMenu(false);
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showSortMenu]);
 
   async function loadBottles() {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
@@ -316,8 +348,52 @@ export function CellarPage() {
       });
     }
 
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      let compareValue = 0;
+
+      if (sortBy === 'createdAt') {
+        // Sort by creation date
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        compareValue = dateA - dateB;
+      } else if (sortBy === 'vintage') {
+        // Sort by vintage (handle nulls - put them last)
+        const vintageA = a.wine.vintage || 0;
+        const vintageB = b.wine.vintage || 0;
+        
+        if (vintageA === 0 && vintageB === 0) compareValue = 0;
+        else if (vintageA === 0) compareValue = 1; // nulls last
+        else if (vintageB === 0) compareValue = -1; // nulls last
+        else compareValue = vintageA - vintageB;
+      } else if (sortBy === 'readiness') {
+        // Sort by readiness rank (Ready first, then Peak Soon, then Hold, then Unknown)
+        const readinessRank: Record<string, number> = {
+          'InWindow': 1,
+          'Peak': 1,
+          'Approaching': 2,
+          'TooYoung': 3,
+          'Unknown': 4,
+        };
+        
+        const rankA = readinessRank[a.readiness_status || 'Unknown'] || 4;
+        const rankB = readinessRank[b.readiness_status || 'Unknown'] || 4;
+        compareValue = rankA - rankB;
+        
+        // Secondary sort by vintage if same readiness
+        if (compareValue === 0) {
+          const vintageA = a.wine.vintage || 0;
+          const vintageB = b.wine.vintage || 0;
+          compareValue = vintageB - vintageA; // Newer vintages first as secondary
+        }
+      }
+
+      // Apply sort direction
+      return sortDir === 'asc' ? compareValue : -compareValue;
+    });
+
     return result;
-  }, [bottles, searchQuery, activeFilters]);
+  }, [bottles, searchQuery, activeFilters, sortBy, sortDir]);
 
   /**
    * Toggle filter chip
@@ -337,6 +413,32 @@ export function CellarPage() {
     setSearchQuery('');
     setActiveFilters([]);
   }
+
+  function handleSortChange(newSortBy: string, newSortDir: 'asc' | 'desc') {
+    console.log('[CellarPage] Sort changed:', { newSortBy, newSortDir });
+    setSortBy(newSortBy);
+    setSortDir(newSortDir);
+    setShowSortMenu(false);
+    
+    // Persist to localStorage
+    try {
+      localStorage.setItem('cellar-sort-by', newSortBy);
+      localStorage.setItem('cellar-sort-dir', newSortDir);
+    } catch (e) {
+      console.error('[CellarPage] Failed to persist sort:', e);
+    }
+  }
+
+  // Sort options
+  const sortOptions = [
+    { key: 'createdAt-desc', label: t('cellar.sort.recentlyAddedNewest', 'Recently Added (Newest)'), by: 'createdAt', dir: 'desc' as const },
+    { key: 'createdAt-asc', label: t('cellar.sort.recentlyAddedOldest', 'Recently Added (Oldest)'), by: 'createdAt', dir: 'asc' as const },
+    { key: 'vintage-desc', label: t('cellar.sort.vintageNewest', 'Vintage (Newest)'), by: 'vintage', dir: 'desc' as const },
+    { key: 'vintage-asc', label: t('cellar.sort.vintageOldest', 'Vintage (Oldest)'), by: 'vintage', dir: 'asc' as const },
+    { key: 'readiness', label: t('cellar.sort.readiness', 'Readiness (Ready First)'), by: 'readiness', dir: 'desc' as const },
+  ];
+
+  const currentSortOption = sortOptions.find(opt => opt.by === sortBy && opt.dir === sortDir) || sortOptions[0];
 
   if (loading) {
     return <WineLoader variant="page" size="lg" message={t('cellar.loading')} />;
@@ -571,6 +673,63 @@ export function CellarPage() {
                 {t('cellar.filters.clear')}
               </button>
             )}
+
+            {/* Sort Dropdown - Compact */}
+            <div className="relative flex-shrink-0 ml-auto sort-menu-container">
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 min-h-[36px]"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--text-secondary)',
+                  border: '2px solid var(--border-base)',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+              >
+                <span>⬍⬍</span>
+                <span className="hidden sm:inline">{t('cellar.sort.label', 'Sort')}: </span>
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {currentSortOption.label}
+                </span>
+              </button>
+
+              {/* Sort Menu Dropdown */}
+              {showSortMenu && (
+                <div
+                  className="absolute right-0 top-full mt-2 z-50 min-w-[200px] sm:min-w-[280px]"
+                  style={{
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-base)',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  }}
+                >
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => handleSortChange(option.by, option.dir)}
+                      className="w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between first:rounded-t-xl last:rounded-b-xl"
+                      style={{
+                        backgroundColor: sortBy === option.by && sortDir === option.dir
+                          ? 'var(--wine-50)'
+                          : 'transparent',
+                        color: sortBy === option.by && sortDir === option.dir
+                          ? 'var(--wine-600)'
+                          : 'var(--text-primary)',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        fontWeight: sortBy === option.by && sortDir === option.dir ? 600 : 400,
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      {sortBy === option.by && sortDir === option.dir && (
+                        <span style={{ color: 'var(--wine-500)' }}>✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Bulk Analysis Button - Subtle */}
             {bottles.length > 0 && (
