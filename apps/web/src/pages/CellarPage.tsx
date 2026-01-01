@@ -458,12 +458,9 @@ export function CellarPage() {
 
           // Only scroll if not already in view or needs adjustment
           if (!isVisible || rect.top > 150) {
-            console.log('[CellarPage] 🚀 Initiating window.scrollTo...');
-            window.scrollTo({
-              top: Math.max(0, offsetPosition),
-              behavior: 'smooth'
-            });
-            console.log('[CellarPage] ✓ window.scrollTo called successfully');
+            console.log('[CellarPage] 🚀 Initiating LUXURY scroll...');
+            luxuryScrollTo(Math.max(0, offsetPosition), 1200);
+            console.log('[CellarPage] ✓ Luxury scroll animation started');
           } else {
             console.log('[CellarPage] ⏭️ Skipping scroll - bottles already visible at top');
           }
@@ -480,6 +477,51 @@ export function CellarPage() {
         }
       }, 300); // Wait for DOM to fully update (widgets to hide)
     });
+  }
+
+  /**
+   * Luxury smooth scroll with custom easing
+   * Slower, more elegant animation than browser default
+   */
+  function luxuryScrollTo(targetPosition: number, duration: number = 1200) {
+    const startPosition = window.pageYOffset;
+    const distance = targetPosition - startPosition;
+    let startTime: number | null = null;
+
+    console.log('[CellarPage] 🎨 Starting LUXURY scroll animation:', {
+      from: startPosition,
+      to: targetPosition,
+      distance,
+      duration
+    });
+
+    // Elegant easing function (ease-in-out-cubic)
+    function easeInOutCubic(t: number): number {
+      return t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function animation(currentTime: number) {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+      
+      // Apply easing
+      const easedProgress = easeInOutCubic(progress);
+      const currentPosition = startPosition + (distance * easedProgress);
+      
+      window.scrollTo(0, currentPosition);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animation);
+      } else {
+        console.log('[CellarPage] ✨ Luxury scroll animation COMPLETE');
+        console.log('[CellarPage] 📍 Final position:', window.pageYOffset);
+      }
+    }
+
+    requestAnimationFrame(animation);
   }
 
   /**
@@ -565,73 +607,31 @@ export function CellarPage() {
             
             const startPosition = window.pageYOffset;
             console.log('[CellarPage] 📍 Starting from position:', startPosition);
+            console.log('[CellarPage] 🎨 Using LUXURY scroll animation (1.2s duration)');
             
-            // METHOD 1: Try window.scrollTo with smooth behavior
+            // Use custom luxury scroll animation
             try {
-              window.scrollTo({
-                top: finalPosition,
-                behavior: 'smooth'
-              });
-              console.log('[CellarPage] ✓ Method 1: window.scrollTo CALLED');
+              luxuryScrollTo(finalPosition, 1200);
+              console.log('[CellarPage] ✨ Luxury scroll animation started');
               
-              // Check if scroll started working after 150ms
+              // Verify scroll is working after a moment
               setTimeout(() => {
                 const newPosition = window.pageYOffset;
-                console.log('[CellarPage] 📊 Position 150ms after scroll:', newPosition);
-                const scrollWorked = Math.abs(newPosition - startPosition) > 5;
-                console.log('[CellarPage] 📊 Did scroll START working?', scrollWorked, `(moved ${newPosition - startPosition}px)`);
-                
-                // If smooth scroll didn't work, try instant scroll
-                if (!scrollWorked) {
-                  console.log('[CellarPage] ⚠️ Smooth scroll didn\'t work, trying INSTANT scroll...');
-                  try {
-                    window.scrollTo(0, finalPosition);
-                    console.log('[CellarPage] ✓ Method 2: Instant window.scrollTo called');
-                    
-                    setTimeout(() => {
-                      const instantPosition = window.pageYOffset;
-                      const instantWorked = Math.abs(instantPosition - startPosition) > 5;
-                      console.log('[CellarPage] 📊 Position after instant scroll:', instantPosition);
-                      console.log('[CellarPage] 📊 Instant scroll worked:', instantWorked);
-                      
-                      // If that also didn't work, try scrollIntoView
-                      if (!instantWorked) {
-                        console.log('[CellarPage] ⚠️ Instant scroll ALSO didn\'t work, trying scrollIntoView...');
-                        try {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          console.log('[CellarPage] ✓ Method 3: scrollIntoView called');
-                        } catch (e) {
-                          console.error('[CellarPage] ❌ scrollIntoView error:', e);
-                        }
-                      }
-                    }, 50);
-                  } catch (error) {
-                    console.error('[CellarPage] ❌ Instant scroll error:', error);
-                  }
-                }
-              }, 150);
+                console.log('[CellarPage] 📊 Position 300ms into animation:', newPosition);
+                console.log('[CellarPage] 📊 Scroll in progress:', Math.abs(newPosition - startPosition) > 5);
+              }, 300);
               
-              // Check final position after animation should complete
+              // Check final position after animation completes
               setTimeout(() => {
                 const finalPos = window.pageYOffset;
-                console.log('[CellarPage] 📊 FINAL position after 1000ms:', finalPos);
+                console.log('[CellarPage] 📊 FINAL position after animation (1200ms):', finalPos);
                 console.log('[CellarPage] 📊 Expected:', finalPosition, 'Actual:', finalPos);
                 console.log('[CellarPage] 📊 Total scroll distance:', finalPos - startPosition, 'px');
-                const wasSuccessful = Math.abs(finalPos - finalPosition) < 50 || (finalPos - startPosition) > 300;
-                console.log('[CellarPage] 📊 Scroll successful:', wasSuccessful);
-                
-                if (!wasSuccessful) {
-                  console.error('[CellarPage] ❌ ALL SCROLL METHODS FAILED. Debug info:', {
-                    bodyOverflow: document.body.style.overflow,
-                    htmlOverflow: document.documentElement.style.overflow,
-                    bodyScrollHeight: document.body.scrollHeight,
-                    htmlScrollHeight: document.documentElement.scrollHeight,
-                    canScroll: document.documentElement.scrollHeight > window.innerHeight
-                  });
-                }
-              }, 1000);
+                const wasSuccessful = Math.abs(finalPos - finalPosition) < 50;
+                console.log('[CellarPage] ✨ Luxury scroll successful:', wasSuccessful);
+              }, 1300);
             } catch (error) {
-              console.error('[CellarPage] ❌ Error calling window.scrollTo:', error);
+              console.error('[CellarPage] ❌ Error in luxury scroll:', error);
             }
           } else {
             console.log('[CellarPage] ⏭️ SKIPPING scroll - bottles already visible at top');
