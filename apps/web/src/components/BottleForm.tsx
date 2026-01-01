@@ -25,8 +25,29 @@ interface Props {
 export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t } = useTranslation();
   
-  // SIMPLIFIED: Just use prefillData/bottle data directly (no localStorage restoration)
+  // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {
+    // Try to restore from sessionStorage (if user is returning from Vivino)
+    try {
+      const saved = sessionStorage.getItem('wine-form-vivino-flow');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Check if data is recent (within 10 minutes)
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
+          console.log('[BottleForm] 🔄 Restoring form data from sessionStorage (returning from Vivino)');
+          // Don't clear yet - user might go back to Vivino again
+          return parsed.data;
+        } else {
+          console.log('[BottleForm] Clearing expired sessionStorage data');
+          sessionStorage.removeItem('wine-form-vivino-flow');
+        }
+      }
+    } catch (e) {
+      console.error('[BottleForm] Failed to restore from sessionStorage:', e);
+      sessionStorage.removeItem('wine-form-vivino-flow');
+    }
+    
+    // Default: use prefillData or bottle data
     return {
       wine_name: prefillData?.wine_name || bottle?.wine.wine_name || '',
       producer: prefillData?.producer || bottle?.wine.producer || '',
@@ -64,32 +85,46 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     return `https://www.vivino.com/search/wines?q=${encodeURIComponent(searchTerms)}`;
   }
   
-  async function handleSearchVivino() {
+  function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    console.log('[BottleForm] Generating Vivino search URL:', searchUrl);
+    console.log('[BottleForm] 📝 Saving form data to sessionStorage before opening Vivino...');
+    console.log('[BottleForm] Current form data:', formData);
     
-    // ALWAYS copy to clipboard (safest for mobile & PWA)
+    // Save current form data to sessionStorage (survives page reload)
     try {
-      await navigator.clipboard.writeText(searchUrl);
-      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard successfully');
-      
-      // Skip the problematic toast entirely for now - just log success
-      // The clipboard copy already worked, which is the main goal
-      console.log('[BottleForm] ℹ️ URL is in clipboard. User can now open Safari and paste.');
-      
-      // Use alert as fallback (always works, no React rendering issues)
-      alert('✓ Vivino search link copied!\n\nNext steps:\n1. Open Safari\n2. Paste in address bar\n3. Find your wine\n4. Copy wine URL\n5. Return here and paste');
-      
-    } catch (err) {
-      // Fallback: show URL in alert if clipboard fails
-      console.error('[BottleForm] ❌ Clipboard write failed:', err);
-      alert(`Copy this Vivino search URL:\n\n${searchUrl}`);
+      sessionStorage.setItem('wine-form-vivino-flow', JSON.stringify({
+        data: formData,
+        timestamp: Date.now(),
+      }));
+      console.log('[BottleForm] ✅ Form data saved to sessionStorage');
+    } catch (e) {
+      console.error('[BottleForm] ⚠️ Failed to save to sessionStorage:', e);
     }
+    
+    console.log('[BottleForm] 🚀 Opening Vivino in new tab:', searchUrl);
+    
+    // Open Vivino in new tab (user's preferred UX)
+    // On iOS, this might cause app to pause/reload, but sessionStorage will restore data
+    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    
+    console.log('[BottleForm] ℹ️ Vivino opened. Form data is saved and will restore when you return.');
   }
 
   function handleChange(field: string, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleClose() {
+    console.log('[BottleForm] User closed form without submitting');
+    // Clear sessionStorage when user closes form (they're abandoning this wine)
+    try {
+      sessionStorage.removeItem('wine-form-vivino-flow');
+      console.log('[BottleForm] 🧹 Cleared sessionStorage (form closed)');
+    } catch (e) {
+      console.error('[BottleForm] Failed to clear sessionStorage:', e);
+    }
+    onClose();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,6 +186,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       }
 
       console.log('[BottleForm] Calling onSuccess callback...');
+      
+      // Clear sessionStorage on successful submit (no longer need saved data)
+      try {
+        sessionStorage.removeItem('wine-form-vivino-flow');
+        console.log('[BottleForm] 🧹 Cleared sessionStorage (form successfully submitted)');
+      } catch (e) {
+        console.error('[BottleForm] Failed to clear sessionStorage:', e);
+      }
+      
       onSuccess();
       console.log('[BottleForm] ✅ onSuccess callback completed');
     } catch (error: any) {
@@ -465,7 +509,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           <div className="flex gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 btn-luxury-secondary text-sm sm:text-base"
               disabled={loading}
             >
