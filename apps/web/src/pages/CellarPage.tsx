@@ -484,7 +484,8 @@ export function CellarPage() {
    * Slower, more elegant animation than browser default
    */
   function luxuryScrollTo(targetPosition: number, duration: number = 1200) {
-    const startPosition = window.pageYOffset;
+    // Get starting position from body (the actual scroll container)
+    const startPosition = document.body.scrollTop || document.documentElement.scrollTop || window.pageYOffset || 0;
     const distance = targetPosition - startPosition;
     let startTime: number | null = null;
 
@@ -493,6 +494,21 @@ export function CellarPage() {
       to: targetPosition,
       distance,
       duration
+    });
+
+    // Debug: Check if page is scrollable
+    console.log('[CellarPage] 🔍 Scroll container debug:', {
+      'window.pageYOffset': window.pageYOffset,
+      'document.documentElement.scrollTop': document.documentElement.scrollTop,
+      'document.body.scrollTop': document.body.scrollTop,
+      'body.scrollHeight': document.body.scrollHeight,
+      'html.scrollHeight': document.documentElement.scrollHeight,
+      'window.innerHeight': window.innerHeight,
+      'isScrollable': document.body.scrollHeight > window.innerHeight,
+      'body.overflow': window.getComputedStyle(document.body).overflow,
+      'html.overflow': window.getComputedStyle(document.documentElement).overflow,
+      'body.overflowY': window.getComputedStyle(document.body).overflowY,
+      'html.overflowY': window.getComputedStyle(document.documentElement).overflowY
     });
 
     // Elegant easing function (ease-in-out-cubic)
@@ -511,13 +527,16 @@ export function CellarPage() {
       const easedProgress = easeInOutCubic(progress);
       const currentPosition = startPosition + (distance * easedProgress);
       
+      // Scroll the body element (since html has overflow:hidden)
+      document.body.scrollTop = currentPosition;
+      document.documentElement.scrollTop = currentPosition;
       window.scrollTo(0, currentPosition);
       
       if (progress < 1) {
         requestAnimationFrame(animation);
       } else {
         console.log('[CellarPage] ✨ Luxury scroll animation COMPLETE');
-        console.log('[CellarPage] 📍 Final position:', window.pageYOffset);
+        console.log('[CellarPage] 📍 Final position:', window.pageYOffset || document.body.scrollTop);
       }
     }
 
