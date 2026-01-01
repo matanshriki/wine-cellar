@@ -669,7 +669,7 @@ export function CellarPage() {
     { key: 'vintage-desc', label: t('cellar.sort.vintageNewest', 'Vintage (Newest)'), by: 'vintage', dir: 'desc' as const, icon: '🍷' },
     { key: 'vintage-asc', label: t('cellar.sort.vintageOldest', 'Vintage (Oldest)'), by: 'vintage', dir: 'asc' as const, icon: '🕰️' },
     { key: 'rating-desc', label: t('cellar.sort.ratingHighest', 'Rating (Highest First)'), by: 'rating', dir: 'desc' as const, icon: '⭐' },
-    { key: 'readiness', label: t('cellar.sort.readiness', 'Readiness (Ready First)'), by: 'readiness', dir: 'desc' as const, icon: '✨' },
+    { key: 'readiness', label: t('cellar.sort.readiness', 'Readiness (Ready First)'), by: 'readiness', dir: 'asc' as const, icon: '✨' },
   ];
 
   const currentSortOption = sortOptions.find(opt => opt.by === sortBy && opt.dir === sortDir) || sortOptions[0];
