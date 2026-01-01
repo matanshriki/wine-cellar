@@ -205,7 +205,8 @@ export function CellarPage() {
    * Memoized for performance
    */
   const filteredBottles = useMemo(() => {
-    let result = [...bottles];
+    // CRITICAL: Filter out bottles with 0 quantity (already consumed)
+    let result = bottles.filter(bottle => bottle.quantity > 0);
 
     // Apply search query (debounced via input)
     if (searchQuery.trim()) {

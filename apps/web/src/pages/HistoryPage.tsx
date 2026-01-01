@@ -98,20 +98,39 @@ export function HistoryPage() {
   }
 
   async function handleQuickRating(eventId: string, isPositive: boolean) {
+    console.log('[HistoryPage] Updating rating for event:', eventId, 'isPositive:', isPositive);
     setRatingLoading(eventId);
     
     try {
       // Update rating: thumbs up = 5, thumbs down = 2
-      await historyService.updateConsumptionHistory(eventId, {
-        user_rating: isPositive ? 5 : 2,
+      const newRating = isPositive ? 5 : 2;
+      console.log('[HistoryPage] Setting user_rating to:', newRating);
+      
+      const updatedEvent = await historyService.updateConsumptionHistory(eventId, {
+        user_rating: newRating,
       });
+      
+      console.log('[HistoryPage] ✅ Rating updated successfully:', updatedEvent);
 
-      // Refresh data to show updated rating
+      // Optimistically update local state (instant feedback)
+      setEvents((prevEvents) => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { ...event, user_rating: newRating } 
+            : event
+        )
+      );
+      
+      console.log('[HistoryPage] Local state updated optimistically');
+      
+      // Also refresh from server to ensure consistency
       await loadData();
+      
+      console.log('[HistoryPage] Data reloaded from server');
       
       toast.success(t('history.ratingUpdated'));
     } catch (error: any) {
-      console.error('[HistoryPage] Error updating rating:', error);
+      console.error('[HistoryPage] ❌ Error updating rating:', error);
       toast.error(error.message || t('history.error.ratingFailed'));
     } finally {
       setRatingLoading(null);
