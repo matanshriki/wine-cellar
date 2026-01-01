@@ -628,6 +628,25 @@
     "privacyPolicy": "Privacy Policy",
     "accept": "Accept & Continue",
     "reject": "No Thanks"
+  },
+  "bulkAnalysis": {
+    "title": "Analyze Cellar",
+    "description": "Generate sommelier notes for multiple bottles at once. This will analyze wine characteristics, readiness, and serving recommendations.",
+    "totalBottles": "Total Bottles",
+    "unanalyzed": "Unanalyzed",
+    "modeLabel": "Analysis Mode",
+    "missingOnly": "Missing only",
+    "recommended": "Recommended",
+    "missingOnlyDesc": "Analyze only bottles without sommelier notes",
+    "reanalyzeAll": "Re-analyze all",
+    "reanalyzeAllDesc": "Regenerate notes for all bottles (up to 20 per session)",
+    "startAnalysis": "Start Analysis",
+    "analyzing": "Analyzing...",
+    "pleaseWait": "This may take a minute...",
+    "complete": "Analysis complete!",
+    "error": "Failed to analyze cellar",
+    "cooldownTooltip": "Please wait before running another analysis",
+    "buttonLabel": "Analyze Cellar"
   }
 }
 

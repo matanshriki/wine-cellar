@@ -9,6 +9,7 @@ import { CSVImport } from '../components/CSVImport';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { AddBottleSheet } from '../components/AddBottleSheet';
 import { LabelCapture } from '../components/LabelCapture';
+import { BulkAnalysisModal } from '../components/BulkAnalysisModal';
 import { WineLoader } from '../components/WineLoader';
 import { TonightsOrbit } from '../components/TonightsOrbit';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
@@ -30,6 +31,8 @@ export function CellarPage() {
   const [editingBottle, setEditingBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [openedBottleName, setOpenedBottleName] = useState('');
+  const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
+  const [bulkAnalysisCooldown, setBulkAnalysisCooldown] = useState(false);
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,6 +207,30 @@ export function CellarPage() {
     setShowImport(false);
     loadBottles();
   }
+
+  function handleBulkAnalysis() {
+    console.log('[CellarPage] Opening bulk analysis modal');
+    setShowBulkAnalysis(true);
+  }
+
+  async function handleBulkAnalysisComplete() {
+    console.log('[CellarPage] Bulk analysis complete, reloading bottles');
+    await loadBottles();
+    setShowBulkAnalysis(false);
+    
+    // Set cooldown (5 minutes)
+    setBulkAnalysisCooldown(true);
+    setTimeout(() => {
+      console.log('[CellarPage] Bulk analysis cooldown expired');
+      setBulkAnalysisCooldown(false);
+    }, 5 * 60 * 1000);
+  }
+
+  // Calculate unanalyzed bottles count
+  const unanalyzedCount = bottles.filter(bottle => {
+    const b = bottle as any;
+    return !b.analysis_summary || !b.readiness_label;
+  }).length;
 
   /**
    * Filter and search bottles
@@ -544,6 +571,38 @@ export function CellarPage() {
                 {t('cellar.filters.clear')}
               </button>
             )}
+
+            {/* Bulk Analysis Button - Subtle */}
+            {bottles.length > 0 && (
+              <button
+                onClick={handleBulkAnalysis}
+                disabled={bulkAnalysisCooldown}
+                title={bulkAnalysisCooldown ? t('bulkAnalysis.cooldownTooltip') : t('bulkAnalysis.buttonLabel')}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px] ml-auto"
+                style={{
+                  backgroundColor: bulkAnalysisCooldown ? 'var(--bg-muted)' : 'var(--wine-50)',
+                  color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--wine-600)',
+                  border: bulkAnalysisCooldown ? '2px solid var(--border-subtle)' : '2px solid var(--wine-200)',
+                  cursor: bulkAnalysisCooldown ? 'not-allowed' : 'pointer',
+                  opacity: bulkAnalysisCooldown ? 0.5 : 1,
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+              >
+                🧙‍♂️ {t('bulkAnalysis.buttonLabel')}
+                {unanalyzedCount > 0 && (
+                  <span
+                    className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold"
+                    style={{
+                      background: 'var(--wine-500)',
+                      color: 'white',
+                    }}
+                  >
+                    {unanalyzedCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </motion.div>
       )}
@@ -723,6 +782,15 @@ export function CellarPage() {
           setShowCelebration(false);
           navigate('/history');
         }}
+      />
+
+      {/* Bulk Analysis Modal */}
+      <BulkAnalysisModal
+        isOpen={showBulkAnalysis}
+        onClose={() => setShowBulkAnalysis(false)}
+        onComplete={handleBulkAnalysisComplete}
+        totalBottles={bottles.length}
+        unanalyzedCount={unanalyzedCount}
       />
 
       {/* Add Bottle Sheet */}

@@ -323,3 +323,69 @@ function mapReadinessToScore(label: string): number {
   }
 }
 
+/**
+ * Bulk cellar analysis types
+ */
+export type BulkAnalysisMode = 'missing_only' | 'stale_only' | 'all';
+
+export interface BulkAnalysisResult {
+  success: boolean;
+  processedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  results: Array<{
+    bottle_id: string;
+    wine_name: string;
+    status: 'success' | 'skipped' | 'failed';
+    error?: string;
+  }>;
+}
+
+/**
+ * Analyze entire cellar in bulk
+ * Generates sommelier notes for multiple bottles based on mode
+ */
+export async function analyzeCellarBulk(
+  mode: BulkAnalysisMode = 'missing_only',
+  limit?: number
+): Promise<BulkAnalysisResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Not authenticated');
+  }
+
+  console.log('[Bulk Analysis] Starting cellar analysis...', { mode, limit });
+
+  try {
+    const { data, error } = await supabase.functions.invoke('analyze-cellar', {
+      body: {
+        mode,
+        limit,
+      },
+    });
+
+    if (error) {
+      console.error('[Bulk Analysis] Edge function error:', error);
+      throw new Error(error.message || 'Failed to analyze cellar');
+    }
+
+    if (!data || !data.success) {
+      console.error('[Bulk Analysis] Invalid response:', data);
+      throw new Error(data?.error || 'Invalid response from server');
+    }
+
+    console.log('[Bulk Analysis] ✅ Complete:', {
+      processed: data.processedCount,
+      skipped: data.skippedCount,
+      failed: data.failedCount,
+    });
+
+    return data as BulkAnalysisResult;
+
+  } catch (error: any) {
+    console.error('[Bulk Analysis] Failed:', error);
+    throw error;
+  }
+}
+
