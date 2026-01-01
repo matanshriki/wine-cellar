@@ -396,29 +396,63 @@ export function CellarPage() {
    * Toggle filter chip
    */
   function toggleFilter(filter: string) {
+    console.log('[CellarPage] 🔍 Filter clicked:', filter);
+    console.log('[CellarPage] Current activeFilters:', activeFilters);
+    
     setActiveFilters((prev) =>
       prev.includes(filter)
         ? prev.filter((f) => f !== filter)
         : [...prev, filter]
     );
 
+    console.log('[CellarPage] Filter state updated, preparing to scroll...');
+
     // Smooth luxury scroll to bottles section (skip Tonight's Selection and Drink Window)
     setTimeout(() => {
+      console.log('[CellarPage] 🎯 Scroll timeout triggered');
+      console.log('[CellarPage] bottlesSectionRef.current exists:', !!bottlesSectionRef.current);
+      
       if (bottlesSectionRef.current) {
-        console.log('[CellarPage] Scrolling to bottles section...');
+        console.log('[CellarPage] 📍 Scrolling to bottles section...');
+        
+        // Get element position and viewport info
+        const element = bottlesSectionRef.current;
+        const rect = element.getBoundingClientRect();
+        console.log('[CellarPage] Element rect:', {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right
+        });
+        console.log('[CellarPage] Current window.pageYOffset:', window.pageYOffset);
+        console.log('[CellarPage] Current window.scrollY:', window.scrollY);
         
         // Calculate offset to account for fixed header
         const headerOffset = 80; // Adjust for top nav bar
-        const elementPosition = bottlesSectionRef.current.getBoundingClientRect().top;
+        const elementPosition = rect.top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        console.log('[CellarPage] Calculated scroll position:', {
+          headerOffset,
+          elementPosition,
+          offsetPosition
+        });
 
         // Smooth luxury scroll with easing
+        console.log('[CellarPage] 🚀 Initiating window.scrollTo...');
         window.scrollTo({
           top: offsetPosition,
           behavior: 'smooth'
         });
 
-        console.log('[CellarPage] ✓ Smooth scroll initiated');
+        console.log('[CellarPage] ✓ window.scrollTo called successfully');
+        
+        // Verify scroll after a moment
+        setTimeout(() => {
+          console.log('[CellarPage] 📊 Post-scroll position:', window.pageYOffset);
+        }, 600);
+      } else {
+        console.warn('[CellarPage] ⚠️ bottlesSectionRef.current is null - cannot scroll');
       }
     }, 150); // Small delay to ensure filter state updates first
   }
@@ -585,8 +619,16 @@ export function CellarPage() {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto touch-scroll no-scrollbar pb-2">
-            <span className="text-xs font-medium text-gray-600 flex-shrink-0">
-              {t('cellar.filters.label')}:
+            <span 
+              className="text-xs font-medium flex-shrink-0 hidden sm:inline"
+              style={{ 
+                color: 'var(--text-tertiary)',
+                fontSize: '0.625rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase'
+              }}
+            >
+              {t('cellar.filters.label')}
             </span>
             
             {/* Wine Type Filters */}
