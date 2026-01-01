@@ -397,64 +397,89 @@ export function CellarPage() {
    */
   function toggleFilter(filter: string) {
     console.log('[CellarPage] 🔍 Filter clicked:', filter);
-    console.log('[CellarPage] Current activeFilters:', activeFilters);
+    console.log('[CellarPage] Current activeFilters BEFORE:', activeFilters);
     
-    setActiveFilters((prev) =>
-      prev.includes(filter)
+    const willHaveFilters = !activeFilters.includes(filter) || activeFilters.length > 1;
+    console.log('[CellarPage] Will have active filters after toggle:', willHaveFilters);
+    
+    setActiveFilters((prev) => {
+      const newFilters = prev.includes(filter)
         ? prev.filter((f) => f !== filter)
-        : [...prev, filter]
-    );
+        : [...prev, filter];
+      console.log('[CellarPage] New activeFilters:', newFilters);
+      return newFilters;
+    });
 
     console.log('[CellarPage] Filter state updated, preparing to scroll...');
+    console.log('[CellarPage] Tonight/DrinkWindow will hide:', willHaveFilters);
 
-    // Smooth luxury scroll to bottles section (skip Tonight's Selection and Drink Window)
-    setTimeout(() => {
-      console.log('[CellarPage] 🎯 Scroll timeout triggered');
-      console.log('[CellarPage] bottlesSectionRef.current exists:', !!bottlesSectionRef.current);
-      
-      if (bottlesSectionRef.current) {
-        console.log('[CellarPage] 📍 Scrolling to bottles section...');
+    // Wait for React to re-render and DOM to update before scrolling
+    // Using requestAnimationFrame + setTimeout to ensure DOM is fully updated
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        console.log('[CellarPage] 🎯 Scroll timeout triggered (after DOM update)');
+        console.log('[CellarPage] bottlesSectionRef.current exists:', !!bottlesSectionRef.current);
         
-        // Get element position and viewport info
-        const element = bottlesSectionRef.current;
-        const rect = element.getBoundingClientRect();
-        console.log('[CellarPage] Element rect:', {
-          top: rect.top,
-          bottom: rect.bottom,
-          left: rect.left,
-          right: rect.right
-        });
-        console.log('[CellarPage] Current window.pageYOffset:', window.pageYOffset);
-        console.log('[CellarPage] Current window.scrollY:', window.scrollY);
-        
-        // Calculate offset to account for fixed header
-        const headerOffset = 80; // Adjust for top nav bar
-        const elementPosition = rect.top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        
-        console.log('[CellarPage] Calculated scroll position:', {
-          headerOffset,
-          elementPosition,
-          offsetPosition
-        });
+        if (bottlesSectionRef.current) {
+          console.log('[CellarPage] 📍 Scrolling to bottles section...');
+          
+          // Get element position and viewport info
+          const element = bottlesSectionRef.current;
+          const rect = element.getBoundingClientRect();
+          console.log('[CellarPage] Element rect:', {
+            top: rect.top,
+            bottom: rect.bottom,
+            left: rect.left,
+            right: rect.right,
+            height: rect.height,
+            width: rect.width
+          });
+          console.log('[CellarPage] Current scroll position:', {
+            pageYOffset: window.pageYOffset,
+            scrollY: window.scrollY,
+            innerHeight: window.innerHeight
+          });
+          
+          // Check if bottles section is already visible
+          const isVisible = rect.top >= 0 && rect.top <= window.innerHeight / 2;
+          console.log('[CellarPage] Bottles section already visible:', isVisible, '(top:', rect.top, ')');
+          
+          // Calculate offset to account for fixed header + some breathing room
+          const headerOffset = 100; // Top nav bar + padding
+          const elementPosition = rect.top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+          console.log('[CellarPage] Calculated scroll position:', {
+            headerOffset,
+            elementPosition,
+            offsetPosition,
+            willScrollBy: offsetPosition - window.pageYOffset
+          });
 
-        // Smooth luxury scroll with easing
-        console.log('[CellarPage] 🚀 Initiating window.scrollTo...');
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-
-        console.log('[CellarPage] ✓ window.scrollTo called successfully');
-        
-        // Verify scroll after a moment
-        setTimeout(() => {
-          console.log('[CellarPage] 📊 Post-scroll position:', window.pageYOffset);
-        }, 600);
-      } else {
-        console.warn('[CellarPage] ⚠️ bottlesSectionRef.current is null - cannot scroll');
-      }
-    }, 150); // Small delay to ensure filter state updates first
+          // Only scroll if not already in view or needs adjustment
+          if (!isVisible || rect.top > 150) {
+            console.log('[CellarPage] 🚀 Initiating window.scrollTo...');
+            window.scrollTo({
+              top: Math.max(0, offsetPosition),
+              behavior: 'smooth'
+            });
+            console.log('[CellarPage] ✓ window.scrollTo called successfully');
+          } else {
+            console.log('[CellarPage] ⏭️ Skipping scroll - bottles already visible at top');
+          }
+          
+          // Verify scroll after animation completes
+          setTimeout(() => {
+            console.log('[CellarPage] 📊 Post-scroll position:', {
+              pageYOffset: window.pageYOffset,
+              scrollY: window.scrollY
+            });
+          }, 800);
+        } else {
+          console.warn('[CellarPage] ⚠️ bottlesSectionRef.current is null - cannot scroll');
+        }
+      }, 300); // Wait for DOM to fully update (widgets to hide)
+    });
   }
 
   /**
@@ -619,17 +644,6 @@ export function CellarPage() {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto touch-scroll no-scrollbar pb-2">
-            <span 
-              className="text-xs font-medium flex-shrink-0 hidden sm:inline"
-              style={{ 
-                color: 'var(--text-tertiary)',
-                fontSize: '0.625rem',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase'
-              }}
-            >
-              {t('cellar.filters.label')}
-            </span>
             
             {/* Wine Type Filters */}
             {['red', 'white', 'rose', 'sparkling'].map((type) => (
