@@ -67,16 +67,32 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   async function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    // ALWAYS copy to clipboard (safest for mobile)
+    // Detect if running as PWA (standalone mode)
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  (window.navigator as any).standalone === true;
+    
+    console.log('[BottleForm] Environment:', {
+      isPWA,
+      userAgent: navigator.userAgent,
+      displayMode: window.matchMedia('(display-mode: standalone)').matches,
+    });
+    
+    // ALWAYS copy to clipboard (safest for mobile & PWA)
     try {
       await navigator.clipboard.writeText(searchUrl);
-      toast.success(t('bottleForm.vivinoUrlCopied'), {
-        duration: 6000,
+      
+      // PWA-specific instructions (more explicit about switching apps)
+      const message = isPWA
+        ? t('bottleForm.vivinoUrlCopiedPWA')
+        : t('bottleForm.vivinoUrlCopied');
+      
+      toast.success(message, {
+        duration: 8000,
       });
-      console.log('[BottleForm] Copied Vivino URL to clipboard:', searchUrl);
+      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard (PWA mode:', isPWA, '):', searchUrl);
     } catch (err) {
       // Fallback: show URL for manual copy
-      console.error('[BottleForm] Clipboard write failed:', err);
+      console.error('[BottleForm] ❌ Clipboard write failed:', err);
       toast.info(
         `${t('bottleForm.vivinoCopyManually')}\n${searchUrl}`,
         { duration: 10000 }

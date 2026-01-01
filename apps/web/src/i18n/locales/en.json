@@ -274,6 +274,7 @@
     "searchVivino": "Search on Vivino",
     "vivinoHint": "Click 'Search on Vivino' to find this wine, then paste the link here for ratings and reviews",
     "vivinoUrlCopied": "✅ Vivino search link copied! Open Safari, paste in address bar, find your wine, then copy its URL and return here to paste.",
+    "vivinoUrlCopiedPWA": "✅ Link copied! Press Home → Open Safari → Paste in address bar → Find wine → Copy wine URL → Return to Wine Cellar Brain app → Paste URL here.",
     "vivinoCopyManually": "Vivino search URL (copy this):",
     "optional": "optional",
     "required": "Required",
