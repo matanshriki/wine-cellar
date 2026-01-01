@@ -67,39 +67,24 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   async function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    // Detect if running as PWA (standalone mode)
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  (window.navigator as any).standalone === true;
-    
-    console.log('[BottleForm] Environment:', {
-      isPWA,
-      userAgent: navigator.userAgent,
-      displayMode: window.matchMedia('(display-mode: standalone)').matches,
-    });
+    console.log('[BottleForm] Generating Vivino search URL:', searchUrl);
     
     // ALWAYS copy to clipboard (safest for mobile & PWA)
     try {
       await navigator.clipboard.writeText(searchUrl);
-      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard (PWA mode:', isPWA, '):', searchUrl);
+      console.log('[BottleForm] ✅ Copied Vivino URL to clipboard successfully');
       
-      // PWA-specific instructions (more explicit about switching apps)
-      // Use String() to ensure we always pass a string to toast (prevent React error #31)
-      const translationKey = isPWA ? 'bottleForm.vivinoUrlCopiedPWA' : 'bottleForm.vivinoUrlCopied';
-      const message = String(t(translationKey) || '✅ Vivino search link copied! Open Safari and paste to search.');
+      // Skip the problematic toast entirely for now - just log success
+      // The clipboard copy already worked, which is the main goal
+      console.log('[BottleForm] ℹ️ URL is in clipboard. User can now open Safari and paste.');
       
-      console.log('[BottleForm] Toast message:', message);
+      // Use alert as fallback (always works, no React rendering issues)
+      alert('✓ Vivino search link copied!\n\nNext steps:\n1. Open Safari\n2. Paste in address bar\n3. Find your wine\n4. Copy wine URL\n5. Return here and paste');
       
-      toast.success(message, {
-        duration: 8000,
-      });
     } catch (err) {
-      // Fallback: show URL for manual copy
+      // Fallback: show URL in alert if clipboard fails
       console.error('[BottleForm] ❌ Clipboard write failed:', err);
-      const fallbackMsg = String(t('bottleForm.vivinoCopyManually') || 'Copy this URL:');
-      toast.info(
-        `${fallbackMsg}\n${searchUrl}`,
-        { duration: 10000 }
-      );
+      alert(`Copy this Vivino search URL:\n\n${searchUrl}`);
     }
   }
 
