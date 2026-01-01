@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -58,6 +58,9 @@ export function CellarPage() {
   // Wine Details Modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
+
+  // Ref for bottles section (for smooth scroll)
+  const bottlesSectionRef = useRef<HTMLDivElement>(null);
   
   // Label scan state
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -398,6 +401,26 @@ export function CellarPage() {
         ? prev.filter((f) => f !== filter)
         : [...prev, filter]
     );
+
+    // Smooth luxury scroll to bottles section (skip Tonight's Selection and Drink Window)
+    setTimeout(() => {
+      if (bottlesSectionRef.current) {
+        console.log('[CellarPage] Scrolling to bottles section...');
+        
+        // Calculate offset to account for fixed header
+        const headerOffset = 80; // Adjust for top nav bar
+        const elementPosition = bottlesSectionRef.current.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        // Smooth luxury scroll with easing
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+
+        console.log('[CellarPage] ✓ Smooth scroll initiated');
+      }
+    }, 150); // Small delay to ensure filter state updates first
   }
 
   /**
@@ -840,6 +863,7 @@ export function CellarPage() {
          * - Cards automatically adjust padding via .card class
          */
         <motion.div
+          ref={bottlesSectionRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 cellar-grid"
