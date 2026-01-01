@@ -69,7 +69,7 @@ export function BulkAnalysisModal({
           successMsg = '✓ Analysis Complete! Your cellar is fully analyzed.';
         }
         
-        toast.success(successMsg, { duration: 6000 });
+        toast.success(successMsg);
 
         // Refresh cellar data
         onComplete();
