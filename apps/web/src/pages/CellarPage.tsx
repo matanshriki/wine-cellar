@@ -491,7 +491,7 @@ export function CellarPage() {
   }
 
   function handleSortChange(newSortBy: string, newSortDir: 'asc' | 'desc') {
-    console.log('[CellarPage] Sort changed:', { newSortBy, newSortDir });
+    console.log('[CellarPage] 📊 Sort changed:', { newSortBy, newSortDir });
     setSortBy(newSortBy);
     setSortDir(newSortDir);
     setShowSortMenu(false);
@@ -503,6 +503,50 @@ export function CellarPage() {
     } catch (e) {
       console.error('[CellarPage] Failed to persist sort:', e);
     }
+
+    // Smooth scroll to bottles section (skip Tonight's Selection and Drink Window)
+    console.log('[CellarPage] Sort changed, preparing to scroll to bottles...');
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        console.log('[CellarPage] 🎯 Scroll timeout triggered (after sort)');
+        
+        if (bottlesSectionRef.current) {
+          console.log('[CellarPage] 📍 Scrolling to bottles section after sort...');
+          
+          const element = bottlesSectionRef.current;
+          const rect = element.getBoundingClientRect();
+          console.log('[CellarPage] Element rect:', {
+            top: rect.top,
+            bottom: rect.bottom,
+          });
+          
+          // Check if bottles section is already visible at top
+          const isVisible = rect.top >= 0 && rect.top <= 150;
+          console.log('[CellarPage] Bottles already visible:', isVisible);
+          
+          // Calculate scroll position
+          const headerOffset = 100;
+          const elementPosition = rect.top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+          console.log('[CellarPage] Calculated offset:', offsetPosition);
+          
+          // Scroll to bottles
+          if (!isVisible || rect.top > 150) {
+            console.log('[CellarPage] 🚀 Initiating scroll to bottles...');
+            window.scrollTo({
+              top: Math.max(0, offsetPosition),
+              behavior: 'smooth'
+            });
+            console.log('[CellarPage] ✓ Scroll initiated');
+          } else {
+            console.log('[CellarPage] ⏭️ Skipping scroll - already at bottles');
+          }
+        } else {
+          console.warn('[CellarPage] ⚠️ bottlesSectionRef is null');
+        }
+      }, 200);
+    });
   }
 
   // Sort options (6 total as requested)
@@ -793,22 +837,19 @@ export function CellarPage() {
         >
           <button
             onClick={() => setShowSortMenu(true)}
-            className="w-full px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-between min-h-[48px]"
+            className="px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
             style={{
               backgroundColor: 'var(--bg-surface)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-base)',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-base">{currentSortOption.icon}</span>
-              <span className="text-xs text-gray-500">{t('cellar.sort.label', 'Sort by')}:</span>
-              <span className="font-semibold">{currentSortOption.label}</span>
-            </div>
-            <span className="text-gray-400">›</span>
+            <span className="text-sm">{currentSortOption.icon}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{currentSortOption.label}</span>
+            <span className="ml-auto" style={{ color: 'var(--text-tertiary)' }}>›</span>
           </button>
         </motion.div>
       )}
