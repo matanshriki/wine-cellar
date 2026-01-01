@@ -134,11 +134,13 @@
       "clear": "Clear all"
     },
     "sort": {
-      "label": "Sort",
+      "label": "Sort by",
+      "title": "Sort Cellar",
       "recentlyAddedNewest": "Recently Added (Newest)",
       "recentlyAddedOldest": "Recently Added (Oldest)",
       "vintageNewest": "Vintage (Newest)",
       "vintageOldest": "Vintage (Oldest)",
+      "ratingHighest": "Rating (Highest First)",
       "readiness": "Readiness (Ready First)"
     },
     "labelScan": {

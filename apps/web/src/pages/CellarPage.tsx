@@ -82,21 +82,6 @@ export function CellarPage() {
     }
   }, []);
 
-  // Close sort menu when clicking outside
-  useEffect(() => {
-    if (!showSortMenu) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.sort-menu-container')) {
-        setShowSortMenu(false);
-      }
-    }
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showSortMenu]);
-
   async function loadBottles() {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
     try {
@@ -366,6 +351,15 @@ export function CellarPage() {
         else if (vintageA === 0) compareValue = 1; // nulls last
         else if (vintageB === 0) compareValue = -1; // nulls last
         else compareValue = vintageA - vintageB;
+      } else if (sortBy === 'rating') {
+        // Sort by rating (Vivino rating from wine table)
+        const ratingA = (a.wine as any).rating || 0;
+        const ratingB = (b.wine as any).rating || 0;
+        
+        if (ratingA === 0 && ratingB === 0) compareValue = 0;
+        else if (ratingA === 0) compareValue = 1; // nulls last
+        else if (ratingB === 0) compareValue = -1; // nulls last
+        else compareValue = ratingA - ratingB;
       } else if (sortBy === 'readiness') {
         // Sort by readiness rank (Ready first, then Peak Soon, then Hold, then Unknown)
         const readinessRank: Record<string, number> = {
@@ -429,13 +423,14 @@ export function CellarPage() {
     }
   }
 
-  // Sort options
+  // Sort options (6 total as requested)
   const sortOptions = [
-    { key: 'createdAt-desc', label: t('cellar.sort.recentlyAddedNewest', 'Recently Added (Newest)'), by: 'createdAt', dir: 'desc' as const },
-    { key: 'createdAt-asc', label: t('cellar.sort.recentlyAddedOldest', 'Recently Added (Oldest)'), by: 'createdAt', dir: 'asc' as const },
-    { key: 'vintage-desc', label: t('cellar.sort.vintageNewest', 'Vintage (Newest)'), by: 'vintage', dir: 'desc' as const },
-    { key: 'vintage-asc', label: t('cellar.sort.vintageOldest', 'Vintage (Oldest)'), by: 'vintage', dir: 'asc' as const },
-    { key: 'readiness', label: t('cellar.sort.readiness', 'Readiness (Ready First)'), by: 'readiness', dir: 'desc' as const },
+    { key: 'createdAt-desc', label: t('cellar.sort.recentlyAddedNewest', 'Recently Added (Newest)'), by: 'createdAt', dir: 'desc' as const, icon: '🆕' },
+    { key: 'createdAt-asc', label: t('cellar.sort.recentlyAddedOldest', 'Recently Added (Oldest)'), by: 'createdAt', dir: 'asc' as const, icon: '📅' },
+    { key: 'vintage-desc', label: t('cellar.sort.vintageNewest', 'Vintage (Newest)'), by: 'vintage', dir: 'desc' as const, icon: '🍷' },
+    { key: 'vintage-asc', label: t('cellar.sort.vintageOldest', 'Vintage (Oldest)'), by: 'vintage', dir: 'asc' as const, icon: '🕰️' },
+    { key: 'rating-desc', label: t('cellar.sort.ratingHighest', 'Rating (Highest First)'), by: 'rating', dir: 'desc' as const, icon: '⭐' },
+    { key: 'readiness', label: t('cellar.sort.readiness', 'Readiness (Ready First)'), by: 'readiness', dir: 'desc' as const, icon: '✨' },
   ];
 
   const currentSortOption = sortOptions.find(opt => opt.by === sortBy && opt.dir === sortDir) || sortOptions[0];
@@ -674,63 +669,6 @@ export function CellarPage() {
               </button>
             )}
 
-            {/* Sort Dropdown - Compact */}
-            <div className="relative flex-shrink-0 ml-auto sort-menu-container">
-              <button
-                onClick={() => setShowSortMenu(!showSortMenu)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 min-h-[36px]"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  color: 'var(--text-secondary)',
-                  border: '2px solid var(--border-base)',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-              >
-                <span>⬍⬍</span>
-                <span className="hidden sm:inline">{t('cellar.sort.label', 'Sort')}: </span>
-                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {currentSortOption.label}
-                </span>
-              </button>
-
-              {/* Sort Menu Dropdown */}
-              {showSortMenu && (
-                <div
-                  className="absolute right-0 top-full mt-2 z-50 min-w-[200px] sm:min-w-[280px]"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-base)',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-                  }}
-                >
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.key}
-                      onClick={() => handleSortChange(option.by, option.dir)}
-                      className="w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between first:rounded-t-xl last:rounded-b-xl"
-                      style={{
-                        backgroundColor: sortBy === option.by && sortDir === option.dir
-                          ? 'var(--wine-50)'
-                          : 'transparent',
-                        color: sortBy === option.by && sortDir === option.dir
-                          ? 'var(--wine-600)'
-                          : 'var(--text-primary)',
-                        borderBottom: '1px solid var(--border-subtle)',
-                        fontWeight: sortBy === option.by && sortDir === option.dir ? 600 : 400,
-                      }}
-                    >
-                      <span>{option.label}</span>
-                      {sortBy === option.by && sortDir === option.dir && (
-                        <span style={{ color: 'var(--wine-500)' }}>✓</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Bulk Analysis Button - Subtle */}
             {bottles.length > 0 && (
               <button
@@ -763,6 +701,36 @@ export function CellarPage() {
               </button>
             )}
           </div>
+        </motion.div>
+      )}
+
+      {/* Sort Button - Below Filters */}
+      {bottles.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="mb-4"
+        >
+          <button
+            onClick={() => setShowSortMenu(true)}
+            className="w-full px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-between min-h-[48px]"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-base)',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">{currentSortOption.icon}</span>
+              <span className="text-xs text-gray-500">{t('cellar.sort.label', 'Sort by')}:</span>
+              <span className="font-semibold">{currentSortOption.label}</span>
+            </div>
+            <span className="text-gray-400">›</span>
+          </button>
         </motion.div>
       )}
 
@@ -951,6 +919,110 @@ export function CellarPage() {
         totalBottles={bottles.length}
         unanalyzedCount={unanalyzedCount}
       />
+
+      {/* Sort Modal */}
+      <AnimatePresence>
+        {showSortMenu && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+            }}
+            onClick={() => setShowSortMenu(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="w-full max-w-lg mx-4 mb-4 sm:mb-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="luxury-card overflow-hidden"
+                style={{
+                  maxHeight: 'min(90vh, calc(100dvh - 4rem))',
+                }}
+              >
+                {/* Header */}
+                <div
+                  className="px-6 py-5 flex-shrink-0 flex items-center justify-between"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(164, 77, 90, 0.05), rgba(212, 175, 55, 0.05))',
+                    borderBottom: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <h2
+                    className="text-xl font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {t('cellar.sort.title', 'Sort Cellar')}
+                  </h2>
+                  <button
+                    onClick={() => setShowSortMenu(false)}
+                    className="text-2xl leading-none opacity-60 hover:opacity-100 transition-opacity"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Sort Options */}
+                <div className="p-6 space-y-2">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => handleSortChange(option.by, option.dir)}
+                      className="w-full px-4 py-4 rounded-lg text-left transition-all flex items-center gap-3 min-h-[56px]"
+                      style={{
+                        backgroundColor: sortBy === option.by && sortDir === option.dir
+                          ? 'var(--wine-50)'
+                          : 'var(--bg-surface)',
+                        border: sortBy === option.by && sortDir === option.dir
+                          ? '2px solid var(--wine-200)'
+                          : '1px solid var(--border-base)',
+                        color: 'var(--text-primary)',
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
+                      }}
+                    >
+                      <span className="text-2xl">{option.icon}</span>
+                      <span className="flex-1 font-medium">{option.label}</span>
+                      {sortBy === option.by && sortDir === option.dir && (
+                        <span
+                          className="text-xl font-bold"
+                          style={{ color: 'var(--wine-500)' }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="px-6 py-4 flex-shrink-0"
+                  style={{
+                    borderTop: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-surface)',
+                    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                  }}
+                >
+                  <button
+                    onClick={() => setShowSortMenu(false)}
+                    className="btn-luxury-secondary w-full"
+                    style={{ minHeight: '48px' }}
+                  >
+                    {t('common.close', 'Close')}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Bottle Sheet */}
       <AddBottleSheet
