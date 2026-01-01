@@ -77,10 +77,11 @@ export function BulkAnalysisModal({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(4px)',
+          paddingBottom: 'calc(80px + env(safe-area-inset-bottom) + 1rem)', // Space for bottom nav
         }}
         onClick={handleClose}
       >
@@ -89,14 +90,14 @@ export function BulkAnalysisModal({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 50, scale: 0.95 }}
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          className="w-full max-w-lg mx-4 mb-4 sm:mb-0"
+          className="w-full max-w-lg"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Card */}
           <div
             className="luxury-card overflow-hidden flex flex-col"
             style={{
-              maxHeight: 'min(90vh, calc(100dvh - 4rem))',
+              maxHeight: 'calc(100dvh - 180px - env(safe-area-inset-bottom))', // Account for bottom nav (80px) + safe area + margins (100px)
             }}
           >
             {/* Header - Fixed */}
@@ -142,6 +143,8 @@ export function BulkAnalysisModal({
               className="p-6 space-y-5 flex-1 overflow-y-auto"
               style={{
                 overscrollBehavior: 'contain',
+                minHeight: 0, // Allow flex child to shrink below content size
+                WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
               }}
             >
               {/* Description */}
@@ -318,9 +321,6 @@ export function BulkAnalysisModal({
                   </p>
                 </div>
               )}
-
-              {/* Bottom spacer for mobile scroll */}
-              <div className="h-4" />
             </div>
 
             {/* Footer - Fixed */}
