@@ -53,11 +53,23 @@ export function BulkAnalysisModal({
       // Small delay then show success message and refresh
       setTimeout(() => {
         // Show celebratory success toast with clear summary
-        const successMsg = result.processedCount > 0
-          ? `🎉 Analysis Complete!\n✓ ${result.processedCount} bottle${result.processedCount !== 1 ? 's' : ''} analyzed\n${result.skippedCount > 0 ? `⊘ ${result.skippedCount} skipped\n` : ''}${result.failedCount > 0 ? `⚠ ${result.failedCount} failed` : ''}`
-          : `✓ Analysis Complete!\nAll bottles already have sommelier notes.`;
+        let successMsg = '';
         
-        toast.success(successMsg, { duration: 7000 });
+        if (result.processedCount > 0) {
+          successMsg = `🎉 Analysis Complete! ${result.processedCount} bottle${result.processedCount !== 1 ? 's' : ''} analyzed`;
+          if (result.skippedCount > 0) {
+            successMsg += `, ${result.skippedCount} skipped`;
+          }
+          if (result.failedCount > 0) {
+            successMsg += `, ${result.failedCount} failed`;
+          }
+        } else if (result.skippedCount > 0) {
+          successMsg = `✓ Analysis Complete! All ${result.skippedCount} bottle${result.skippedCount !== 1 ? 's' : ''} already have sommelier notes.`;
+        } else {
+          successMsg = '✓ Analysis Complete! Your cellar is fully analyzed.';
+        }
+        
+        toast.success(successMsg, { duration: 6000 });
 
         // Refresh cellar data
         onComplete();
