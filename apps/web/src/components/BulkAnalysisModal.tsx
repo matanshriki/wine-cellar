@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import { toast } from '../lib/toast';
+import { WineLoader } from './WineLoader';
 
 interface BulkAnalysisModalProps {
   isOpen: boolean;
@@ -295,26 +296,22 @@ export function BulkAnalysisModal({
                 </label>
               </div>
 
-              {/* Progress */}
+              {/* Progress - Wine Glass Spinner */}
               {isAnalyzing && (
                 <div
-                  className="p-4 rounded-lg text-center"
+                  className="p-6 rounded-lg text-center"
                   style={{
                     background: 'var(--wine-50)',
                     border: '1px solid var(--wine-200)',
                   }}
                 >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-4 h-4 border-2 border-wine-400 border-t-transparent rounded-full animate-spin" />
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: 'var(--wine-600)' }}
-                    >
-                      {progress}
-                    </span>
-                  </div>
+                  <WineLoader 
+                    size={80}
+                    variant="inline"
+                    message={progress}
+                  />
                   <p
-                    className="text-xs"
+                    className="text-xs mt-3"
                     style={{ color: 'var(--text-secondary)' }}
                   >
                     {t('bulkAnalysis.pleaseWait', 'This may take a minute...')}
