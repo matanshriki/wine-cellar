@@ -25,22 +25,7 @@ export function CellarPage() {
   const navigate = useNavigate();
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(() => {
-    // Check if there's a pending form draft (user might be returning from Vivino)
-    try {
-      const draft = localStorage.getItem('wine-form-draft');
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
-          console.log('[CellarPage] Found pending form draft, auto-opening form');
-          return true; // Auto-open form if draft exists
-        }
-      }
-    } catch (e) {
-      console.error('[CellarPage] Failed to check form draft:', e);
-    }
-    return false;
-  });
+  const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingBottle, setEditingBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -67,6 +52,14 @@ export function CellarPage() {
 
   useEffect(() => {
     loadBottles();
+    
+    // Clear any stale form drafts on mount (prevent crashes from old data)
+    try {
+      localStorage.removeItem('wine-form-draft');
+      console.log('[CellarPage] Cleared stale form draft on mount');
+    } catch (e) {
+      console.error('[CellarPage] Failed to clear form draft:', e);
+    }
   }, []);
 
   async function loadBottles() {
@@ -197,8 +190,9 @@ export function CellarPage() {
     console.log('[CellarPage] Closing form and reloading bottles...');
     setShowForm(false);
     setEditingBottle(null);
+    setExtractedData(null); // Clear AI extraction data to prevent stale scans
     loadBottles();
-    console.log('[CellarPage] Form closed, loadBottles() called');
+    console.log('[CellarPage] Form closed, extractedData cleared, loadBottles() called');
   }
 
   function handleImportSuccess() {

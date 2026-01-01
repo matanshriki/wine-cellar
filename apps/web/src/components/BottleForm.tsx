@@ -25,23 +25,8 @@ interface Props {
 export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t } = useTranslation();
   
-  // Try to restore form data from localStorage first (in case user navigated away)
+  // SIMPLIFIED: Just use prefillData/bottle data directly (no localStorage restoration)
   const getInitialFormData = () => {
-    try {
-      const saved = localStorage.getItem('wine-form-draft');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Only use saved data if it's recent (within 10 minutes)
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
-          console.log('[BottleForm] Restoring form data from localStorage');
-          return parsed.data;
-        }
-      }
-    } catch (e) {
-      console.error('[BottleForm] Failed to restore form data:', e);
-    }
-    
-    // Default initial data
     return {
       wine_name: prefillData?.wine_name || bottle?.wine.wine_name || '',
       producer: prefillData?.producer || bottle?.wine.producer || '',
@@ -82,45 +67,25 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   async function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    // On mobile, copy URL to clipboard instead of opening new window
-    // This prevents iOS from freezing/crashing the app
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-      try {
-        await navigator.clipboard.writeText(searchUrl);
-        toast.success(t('bottleForm.vivinoUrlCopied'), {
-          duration: 6000,
-        });
-        console.log('[BottleForm] Copied Vivino URL to clipboard:', searchUrl);
-      } catch (err) {
-        // Fallback: show URL for manual copy
-        console.error('[BottleForm] Clipboard write failed:', err);
-        toast.info(
-          `${t('bottleForm.vivinoCopyManually')}\n${searchUrl}`,
-          { duration: 10000 }
-        );
-      }
-    } else {
-      // Desktop: safe to open in new tab
-      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    // ALWAYS copy to clipboard (safest for mobile)
+    try {
+      await navigator.clipboard.writeText(searchUrl);
+      toast.success(t('bottleForm.vivinoUrlCopied'), {
+        duration: 6000,
+      });
+      console.log('[BottleForm] Copied Vivino URL to clipboard:', searchUrl);
+    } catch (err) {
+      // Fallback: show URL for manual copy
+      console.error('[BottleForm] Clipboard write failed:', err);
+      toast.info(
+        `${t('bottleForm.vivinoCopyManually')}\n${searchUrl}`,
+        { duration: 10000 }
+      );
     }
   }
 
   function handleChange(field: string, value: string) {
-    setFormData((prev) => {
-      const updated = { ...prev, [field]: value };
-      // Save to localStorage for recovery if user navigates away
-      try {
-        localStorage.setItem('wine-form-draft', JSON.stringify({
-          data: updated,
-          timestamp: Date.now()
-        }));
-      } catch (e) {
-        console.error('[BottleForm] Failed to save form data:', e);
-      }
-      return updated;
-    });
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -182,15 +147,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       }
 
       console.log('[BottleForm] Calling onSuccess callback...');
-      
-      // Clear saved form data on successful submit
-      try {
-        localStorage.removeItem('wine-form-draft');
-        console.log('[BottleForm] Cleared form draft from localStorage');
-      } catch (e) {
-        console.error('[BottleForm] Failed to clear form draft:', e);
-      }
-      
       onSuccess();
       console.log('[BottleForm] ✅ onSuccess callback completed');
     } catch (error: any) {
