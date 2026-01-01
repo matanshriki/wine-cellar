@@ -25,7 +25,22 @@ export function CellarPage() {
   const navigate = useNavigate();
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(() => {
+    // Check if there's a pending form draft (user might be returning from Vivino)
+    try {
+      const draft = localStorage.getItem('wine-form-draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
+          console.log('[CellarPage] Found pending form draft, auto-opening form');
+          return true; // Auto-open form if draft exists
+        }
+      }
+    } catch (e) {
+      console.error('[CellarPage] Failed to check form draft:', e);
+    }
+    return false;
+  });
   const [showImport, setShowImport] = useState(false);
   const [editingBottle, setEditingBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);

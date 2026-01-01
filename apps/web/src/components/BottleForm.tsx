@@ -79,28 +79,32 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     return `https://www.vivino.com/search/wines?q=${encodeURIComponent(searchTerms)}`;
   }
   
-  function handleSearchVivino() {
-    // Save form data before opening Vivino (in case page reloads on iOS)
-    try {
-      localStorage.setItem('wine-form-draft', JSON.stringify({
-        data: formData,
-        timestamp: Date.now()
-      }));
-      console.log('[BottleForm] Saved form data before opening Vivino');
-    } catch (e) {
-      console.error('[BottleForm] Failed to save form data:', e);
-    }
-    
+  async function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    // Show helpful message for mobile users
-    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      toast.info(t('bottleForm.vivinoSearchTip'), {
-        duration: 5000,
-      });
-    }
+    // On mobile, copy URL to clipboard instead of opening new window
+    // This prevents iOS from freezing/crashing the app
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
-    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    if (isMobile) {
+      try {
+        await navigator.clipboard.writeText(searchUrl);
+        toast.success(t('bottleForm.vivinoUrlCopied'), {
+          duration: 6000,
+        });
+        console.log('[BottleForm] Copied Vivino URL to clipboard:', searchUrl);
+      } catch (err) {
+        // Fallback: show URL for manual copy
+        console.error('[BottleForm] Clipboard write failed:', err);
+        toast.info(
+          `${t('bottleForm.vivinoCopyManually')}\n${searchUrl}`,
+          { duration: 10000 }
+        );
+      }
+    } else {
+      // Desktop: safe to open in new tab
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    }
   }
 
   function handleChange(field: string, value: string) {
