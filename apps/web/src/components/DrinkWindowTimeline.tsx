@@ -70,7 +70,9 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
     },
   ];
 
-  const totalBottles = bottles.length;
+  // CRITICAL FIX: Count only analyzed bottles (those with readiness status)
+  // Not all bottles in the cellar, only those that have been analyzed
+  const totalBottles = categorized.HOLD.length + categorized.PEAK_SOON.length + categorized.READY.length;
 
   if (totalBottles === 0) {
     return null;
