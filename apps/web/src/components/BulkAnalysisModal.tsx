@@ -94,14 +94,14 @@ export function BulkAnalysisModal({
         >
           {/* Modal Card */}
           <div
-            className="luxury-card overflow-hidden"
+            className="luxury-card overflow-hidden flex flex-col"
             style={{
-              maxHeight: 'calc(100dvh - 2rem)',
+              maxHeight: 'min(90vh, calc(100dvh - 4rem))',
             }}
           >
-            {/* Header */}
+            {/* Header - Fixed */}
             <div
-              className="px-6 py-5"
+              className="px-6 py-5 flex-shrink-0"
               style={{
                 background: 'linear-gradient(135deg, rgba(164, 77, 90, 0.05), rgba(212, 175, 55, 0.05))',
                 borderBottom: '1px solid var(--border-subtle)',
@@ -137,8 +137,13 @@ export function BulkAnalysisModal({
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-5">
+            {/* Content - Scrollable */}
+            <div 
+              className="p-6 space-y-5 flex-1 overflow-y-auto"
+              style={{
+                overscrollBehavior: 'contain',
+              }}
+            >
               {/* Description */}
               <p
                 className="text-sm"
@@ -313,14 +318,18 @@ export function BulkAnalysisModal({
                   </p>
                 </div>
               )}
+
+              {/* Bottom spacer for mobile scroll */}
+              <div className="h-4" />
             </div>
 
-            {/* Footer */}
+            {/* Footer - Fixed */}
             <div
-              className="px-6 py-4 flex gap-3"
+              className="px-6 py-4 flex gap-3 flex-shrink-0"
               style={{
                 borderTop: '1px solid var(--border-subtle)',
                 background: 'var(--bg-surface)',
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
               }}
             >
               <button
