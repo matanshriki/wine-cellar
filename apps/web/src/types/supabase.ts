@@ -191,6 +191,7 @@ export interface Database {
           tasting_notes: string | null
           meal_notes: string | null
           vibe: string | null
+          notes: string | null
           created_at: string
         }
         Insert: {
@@ -205,6 +206,7 @@ export interface Database {
           tasting_notes?: string | null
           meal_notes?: string | null
           vibe?: string | null
+          notes?: string | null
           created_at?: string
         }
         Update: {
@@ -219,6 +221,7 @@ export interface Database {
           tasting_notes?: string | null
           meal_notes?: string | null
           vibe?: string | null
+          notes?: string | null
           created_at?: string
         }
       }

@@ -146,6 +146,7 @@ export interface UpdateConsumptionHistoryInput {
   user_rating?: number;
   tasting_notes?: string;
   meal_notes?: string;
+  notes?: string;
 }
 
 export async function updateConsumptionHistory(

@@ -15,6 +15,7 @@ interface HistoryEvent {
   vibe: string | null;
   user_rating: number | null;
   tasting_notes: string | null;
+  notes: string | null;
   bottle_id: string;
   bottle: {
     wine: {
@@ -36,6 +37,9 @@ export function HistoryPage() {
   const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ratingLoading, setRatingLoading] = useState<string | null>(null);
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [notesText, setNotesText] = useState<string>('');
+  const [notesSaving, setNotesSaving] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -134,6 +138,51 @@ export function HistoryPage() {
       toast.error(error.message || t('history.error.ratingFailed'));
     } finally {
       setRatingLoading(null);
+    }
+  }
+
+  function handleEditNotes(eventId: string, currentNotes: string | null) {
+    console.log('[HistoryPage] Editing notes for event:', eventId);
+    setEditingNotesId(eventId);
+    setNotesText(currentNotes || '');
+  }
+
+  function handleCancelNotes() {
+    console.log('[HistoryPage] Cancelled notes editing');
+    setEditingNotesId(null);
+    setNotesText('');
+  }
+
+  async function handleSaveNotes(eventId: string) {
+    console.log('[HistoryPage] Saving notes for event:', eventId);
+    setNotesSaving(eventId);
+    
+    try {
+      const updatedEvent = await historyService.updateConsumptionHistory(eventId, {
+        notes: notesText.trim() || null,
+      });
+      
+      console.log('[HistoryPage] ✅ Notes saved successfully:', updatedEvent);
+
+      // Optimistically update local state
+      setEvents((prevEvents) => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { ...event, notes: notesText.trim() || null } 
+            : event
+        )
+      );
+      
+      // Clear editing state
+      setEditingNotesId(null);
+      setNotesText('');
+      
+      toast.success(t('history.notesSaved'));
+    } catch (error: any) {
+      console.error('[HistoryPage] ❌ Error saving notes:', error);
+      toast.error(error.message || t('history.error.notesFailed'));
+    } finally {
+      setNotesSaving(null);
     }
   }
 
@@ -361,6 +410,93 @@ export function HistoryPage() {
                     <span className="ml-auto badge badge-yellow text-xs">
                       ⭐ {event.user_rating}/5
                     </span>
+                  )}
+                </div>
+
+                {/* Personal Notes Section */}
+                <div 
+                  className="mt-3 pt-3 border-t border-gray-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {editingNotesId === event.id ? (
+                    /* Editing Mode */
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                        <span>📝</span>
+                        <span>{t('history.personalNotes')}</span>
+                      </label>
+                      <textarea
+                        value={notesText}
+                        onChange={(e) => setNotesText(e.target.value)}
+                        placeholder={t('history.notesPlaceholder')}
+                        maxLength={1000}
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        style={{
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                        }}
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-gray-500">
+                          {notesText.length}/1000
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleCancelNotes()}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors min-h-[36px]"
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            onClick={() => handleSaveNotes(event.id)}
+                            disabled={notesSaving === event.id}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 rounded-md transition-colors min-h-[36px] flex items-center gap-1"
+                          >
+                            {notesSaving === event.id ? (
+                              <>
+                                <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                <span>{t('common.saving')}</span>
+                              </>
+                            ) : (
+                              t('common.save')
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Display Mode */
+                    <div>
+                      {event.notes ? (
+                        <div>
+                          <div className="text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                            <span>📝</span>
+                            <span>{t('history.personalNotes')}:</span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2 pl-4 whitespace-pre-wrap">
+                            {event.notes}
+                          </p>
+                          <button
+                            onClick={() => handleEditNotes(event.id, event.notes)}
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          >
+                            {t('common.edit')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleEditNotes(event.id, null)}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                        >
+                          <span>📝</span>
+                          <span>{t('history.addNote')}</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 

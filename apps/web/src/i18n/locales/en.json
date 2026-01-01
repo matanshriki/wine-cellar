@@ -359,6 +359,10 @@
     "liked": "Liked",
     "notLiked": "Not Liked",
     "ratingUpdated": "Rating updated successfully",
+    "personalNotes": "Personal Notes",
+    "addNote": "Add personal note",
+    "notesPlaceholder": "Add your thoughts, tasting impressions, or memories about this wine...",
+    "notesSaved": "Notes saved successfully",
     "stats": {
       "totalOpens": "Total Opens",
       "averageRating": "Average Rating",
@@ -379,7 +383,8 @@
       "loadFailed": "Failed to load history",
       "noBottleData": "No bottle data available",
       "loadBottleFailed": "Failed to load bottle details",
-      "ratingFailed": "Failed to update rating"
+      "ratingFailed": "Failed to update rating",
+      "notesFailed": "Failed to save notes"
     }
   },
   "csvImport": {
