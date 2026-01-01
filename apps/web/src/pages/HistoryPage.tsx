@@ -417,6 +417,7 @@ export function HistoryPage() {
                 <div 
                   className="mt-3 pt-3 border-t border-gray-200"
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   {editingNotesId === event.id ? (
                     /* Editing Mode */
