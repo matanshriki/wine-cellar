@@ -24,19 +24,40 @@ interface Props {
 
 export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    wine_name: prefillData?.wine_name || bottle?.wine.wine_name || '',
-    producer: prefillData?.producer || bottle?.wine.producer || '',
-    vintage: prefillData?.vintage?.toString() || bottle?.wine.vintage?.toString() || '',
-    region: prefillData?.region || bottle?.wine.region || '',
-    grapes: prefillData?.grapes || (bottle?.wine.grapes ? (Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : '') : ''),
-    color: prefillData?.color || bottle?.wine.color || 'red',
-    quantity: bottle?.quantity?.toString() || '1',
-    purchase_price: bottle?.purchase_price?.toString() || '',
-    notes: bottle?.notes || '',
-    label_image_url: prefillData?.label_image_url || '',
-    vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
-  });
+  
+  // Try to restore form data from localStorage first (in case user navigated away)
+  const getInitialFormData = () => {
+    try {
+      const saved = localStorage.getItem('wine-form-draft');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only use saved data if it's recent (within 10 minutes)
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
+          console.log('[BottleForm] Restoring form data from localStorage');
+          return parsed.data;
+        }
+      }
+    } catch (e) {
+      console.error('[BottleForm] Failed to restore form data:', e);
+    }
+    
+    // Default initial data
+    return {
+      wine_name: prefillData?.wine_name || bottle?.wine.wine_name || '',
+      producer: prefillData?.producer || bottle?.wine.producer || '',
+      vintage: prefillData?.vintage?.toString() || bottle?.wine.vintage?.toString() || '',
+      region: prefillData?.region || bottle?.wine.region || '',
+      grapes: prefillData?.grapes || (bottle?.wine.grapes ? (Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : '') : ''),
+      color: prefillData?.color || bottle?.wine.color || 'red',
+      quantity: bottle?.quantity?.toString() || '1',
+      purchase_price: bottle?.purchase_price?.toString() || '',
+      notes: bottle?.notes || '',
+      label_image_url: prefillData?.label_image_url || '',
+      vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
+    };
+  };
+  
+  const [formData, setFormData] = useState(getInitialFormData());
   const [loading, setLoading] = useState(false);
   
   // Check if this is an AI-prefilled form
@@ -59,12 +80,43 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   }
   
   function handleSearchVivino() {
+    // Save form data before opening Vivino (in case page reloads on iOS)
+    try {
+      localStorage.setItem('wine-form-draft', JSON.stringify({
+        data: formData,
+        timestamp: Date.now()
+      }));
+      console.log('[BottleForm] Saved form data before opening Vivino');
+    } catch (e) {
+      console.error('[BottleForm] Failed to save form data:', e);
+    }
+    
     const searchUrl = generateVivinoSearchUrl();
+    
+    // Show helpful message for mobile users
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      toast.info(t('bottleForm.vivinoSearchTip'), {
+        duration: 5000,
+      });
+    }
+    
     window.open(searchUrl, '_blank', 'noopener,noreferrer');
   }
 
   function handleChange(field: string, value: string) {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      // Save to localStorage for recovery if user navigates away
+      try {
+        localStorage.setItem('wine-form-draft', JSON.stringify({
+          data: updated,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('[BottleForm] Failed to save form data:', e);
+      }
+      return updated;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -126,6 +178,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       }
 
       console.log('[BottleForm] Calling onSuccess callback...');
+      
+      // Clear saved form data on successful submit
+      try {
+        localStorage.removeItem('wine-form-draft');
+        console.log('[BottleForm] Cleared form draft from localStorage');
+      } catch (e) {
+        console.error('[BottleForm] Failed to clear form draft:', e);
+      }
+      
       onSuccess();
       console.log('[BottleForm] ✅ onSuccess callback completed');
     } catch (error: any) {

@@ -273,6 +273,7 @@
     "vivinoUrlPlaceholder": "https://www.vivino.com/wines/...",
     "searchVivino": "Search on Vivino",
     "vivinoHint": "Click 'Search on Vivino' to find this wine, then paste the link here for ratings and reviews",
+    "vivinoSearchTip": "💡 Your form data is saved! Find your wine on Vivino, copy the URL, and come back to paste it here.",
     "optional": "optional",
     "required": "Required",
     "bottleAdded": "Bottle added!",
