@@ -32,6 +32,22 @@ interface BottleStatus {
   error?: string;
 }
 
+// Helper to create responses with CORS headers
+function corsResponse(body: any, status = 200) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      },
+    }
+  );
+}
+
 serve(async (req) => {
   // CORS headers
   if (req.method === 'OPTIONS') {
@@ -51,10 +67,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('[Analyze Cellar] No auth header');
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return corsResponse({ error: 'Missing authorization header' }, 401);
     }
 
     // Create service role client for database operations
@@ -67,10 +80,7 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error('[Analyze Cellar] Auth failed:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return corsResponse({ error: 'Unauthorized' }, 401);
     }
 
     console.log('[Analyze Cellar] User authenticated:', user.id);
@@ -105,25 +115,19 @@ serve(async (req) => {
 
     if (fetchError) {
       console.error('[Analyze Cellar] Fetch error:', fetchError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch bottles' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return corsResponse({ error: 'Failed to fetch bottles' }, 500);
     }
 
     console.log('[Analyze Cellar] Total bottles:', bottles?.length || 0);
 
     if (!bottles || bottles.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          processedCount: 0,
-          skippedCount: 0,
-          failedCount: 0,
-          results: [],
-        }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      return corsResponse({
+        success: true,
+        processedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+        results: [],
+      });
     }
 
     // Filter eligible bottles based on mode
@@ -145,16 +149,13 @@ serve(async (req) => {
     console.log('[Analyze Cellar] Eligible bottles:', eligibleBottles.length);
 
     if (eligibleBottles.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          processedCount: 0,
-          skippedCount: bottles.length,
-          failedCount: 0,
-          results: [],
-        }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      return corsResponse({
+        success: true,
+        processedCount: 0,
+        skippedCount: bottles.length,
+        failedCount: 0,
+        results: [],
+      });
     }
 
     // Process bottles with concurrency control
@@ -182,26 +183,20 @@ serve(async (req) => {
     console.log('[Analyze Cellar] ========== COMPLETE ==========');
     console.log('[Analyze Cellar] Success:', successCount, 'Failed:', failedCount, 'Skipped:', skippedCount);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processedCount: successCount,
-        skippedCount: skippedCount + (bottles.length - eligibleBottles.length),
-        failedCount: failedCount,
-        results: results,
-      }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    return corsResponse({
+      success: true,
+      processedCount: successCount,
+      skippedCount: skippedCount + (bottles.length - eligibleBottles.length),
+      failedCount: failedCount,
+      results: results,
+    });
 
   } catch (error: any) {
     console.error('[Analyze Cellar] Fatal error:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message || 'Internal server error' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return corsResponse({ 
+      success: false,
+      error: error.message || 'Internal server error' 
+    }, 500);
   }
 });
 

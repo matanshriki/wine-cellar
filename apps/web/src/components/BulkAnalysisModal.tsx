@@ -47,16 +47,21 @@ export function BulkAnalysisModal({
 
       console.log('[BulkAnalysisModal] Analysis complete:', result);
 
-      // Show success toast with summary
-      const successMsg = t(
-        'bulkAnalysis.complete',
-        `✓ Analysis complete! Processed: ${result.processedCount}, Skipped: ${result.skippedCount}, Failed: ${result.failedCount}`
-      );
-      toast.success(successMsg, { duration: 6000 });
-
-      // Close modal and refresh
-      onComplete();
+      // Close modal first
       onClose();
+
+      // Small delay then show success message and refresh
+      setTimeout(() => {
+        // Show celebratory success toast with clear summary
+        const successMsg = result.processedCount > 0
+          ? `🎉 Analysis Complete!\n✓ ${result.processedCount} bottle${result.processedCount !== 1 ? 's' : ''} analyzed\n${result.skippedCount > 0 ? `⊘ ${result.skippedCount} skipped\n` : ''}${result.failedCount > 0 ? `⚠ ${result.failedCount} failed` : ''}`
+          : `✓ Analysis Complete!\nAll bottles already have sommelier notes.`;
+        
+        toast.success(successMsg, { duration: 7000 });
+
+        // Refresh cellar data
+        onComplete();
+      }, 300);
 
     } catch (error: any) {
       console.error('[BulkAnalysisModal] Error:', error);
