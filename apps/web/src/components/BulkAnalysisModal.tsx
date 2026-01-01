@@ -81,7 +81,7 @@ export function BulkAnalysisModal({
         style={{
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(4px)',
-          paddingBottom: 'calc(80px + env(safe-area-inset-bottom) + 1rem)', // Space for bottom nav
+          paddingBottom: 'calc(80px + env(safe-area-inset-bottom) + 0.5rem)', // Space for bottom nav - reduced padding
         }}
         onClick={handleClose}
       >
@@ -97,7 +97,7 @@ export function BulkAnalysisModal({
           <div
             className="luxury-card overflow-hidden flex flex-col"
             style={{
-              maxHeight: 'calc(100dvh - 180px - env(safe-area-inset-bottom))', // Account for bottom nav (80px) + safe area + margins (100px)
+              maxHeight: 'calc(100dvh - 140px - env(safe-area-inset-bottom))', // Account for bottom nav (80px) + safe area + smaller margins (60px)
             }}
           >
             {/* Header - Fixed */}
