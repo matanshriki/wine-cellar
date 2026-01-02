@@ -22,7 +22,7 @@ import * as labelParseService from '../services/labelParseService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 
 export function CellarPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
