@@ -62,6 +62,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (result) {
         setProfile(result.profile);
         setProfileComplete(result.isComplete);
+        
+        // Load user's preferred language from database
+        if (result.profile.preferred_language) {
+          const { changeLanguage } = await import('../i18n/config');
+          // Don't save back to database (avoid infinite loop)
+          await changeLanguage(result.profile.preferred_language as any, false);
+          console.log('[Auth] Loaded preferred language from database:', result.profile.preferred_language);
+        }
       } else {
         console.warn('Profile loading timed out');
         setProfile(null);

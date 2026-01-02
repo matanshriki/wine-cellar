@@ -127,8 +127,9 @@ i18n
  * Helper function to change language and update document direction
  * 
  * @param languageCode - The language code to switch to (en | he)
+ * @param saveToDatabase - Whether to save to database (default: true)
  */
-export const changeLanguage = async (languageCode: LanguageCode) => {
+export const changeLanguage = async (languageCode: LanguageCode, saveToDatabase: boolean = true) => {
   // Change i18n language (also saves to localStorage)
   await i18n.changeLanguage(languageCode);
   
@@ -136,6 +137,17 @@ export const changeLanguage = async (languageCode: LanguageCode) => {
   const direction = languages[languageCode].dir;
   document.documentElement.dir = direction;
   document.documentElement.lang = languageCode;
+  
+  // Save to database if user is authenticated
+  if (saveToDatabase) {
+    try {
+      const { updatePreferredLanguage } = await import('../services/profileService');
+      await updatePreferredLanguage(languageCode);
+    } catch (error) {
+      console.error('Failed to save language preference to database:', error);
+      // Continue - localStorage will be used as fallback
+    }
+  }
 };
 
 /**

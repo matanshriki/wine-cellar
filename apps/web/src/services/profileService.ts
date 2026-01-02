@@ -278,3 +278,25 @@ export async function completeProfile(displayName: string): Promise<Profile> {
   return updateMyProfile({ display_name: displayName.trim() });
 }
 
+/**
+ * Update the user's preferred language
+ */
+export async function updatePreferredLanguage(language: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    console.warn('Cannot update language - user not authenticated');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ preferred_language: language })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error('Error updating preferred language:', error);
+    // Don't throw - fallback to localStorage only
+  }
+}
+
