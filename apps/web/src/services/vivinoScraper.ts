@@ -54,6 +54,8 @@ function isVivinoScraperEnabled(): boolean {
  * - https://www.vivino.com/wines/123456
  * - https://www.vivino.com/US/en/wines/123456
  * - https://www.vivino.com/wines/123456/some-wine-name
+ * - https://www.vivino.com/en/wine-name/w/123456 (user-facing format)
+ * - https://www.vivino.com/wine-name/w/123456 (short user-facing format)
  * 
  * @param url - Vivino wine page URL
  * @returns wine_id or null if invalid
@@ -64,11 +66,21 @@ export function extractVivinoWineId(url: string): string | null {
   }
 
   try {
-    // Match /wines/{id} pattern
-    const match = url.match(/\/wines\/(\d+)/);
+    // Try user-facing format first: /w/{id}
+    let match = url.match(/\/w\/(\d+)/);
     if (match && match[1]) {
+      console.log('[Vivino Scraper] Extracted ID from /w/ format:', match[1]);
       return match[1];
     }
+    
+    // Fallback to API format: /wines/{id}
+    match = url.match(/\/wines\/(\d+)/);
+    if (match && match[1]) {
+      console.log('[Vivino Scraper] Extracted ID from /wines/ format:', match[1]);
+      return match[1];
+    }
+    
+    console.warn('[Vivino Scraper] No wine ID found in URL:', url);
     return null;
   } catch (error) {
     console.error('[Vivino Scraper] URL parse error:', error);
@@ -78,6 +90,7 @@ export function extractVivinoWineId(url: string): string | null {
 
 /**
  * Validate if a URL is a Vivino wine page
+ * Accepts both API format (/wines/) and user-facing format (/w/)
  */
 export function isVivinoWineUrl(url: string): boolean {
   if (!url || typeof url !== 'string') {
@@ -86,8 +99,19 @@ export function isVivinoWineUrl(url: string): boolean {
   
   try {
     const urlObj = new URL(url);
-    return urlObj.hostname.includes('vivino.com') && url.includes('/wines/');
+    const isVivino = urlObj.hostname.includes('vivino.com');
+    const hasWineId = url.includes('/wines/') || url.includes('/w/');
+    
+    console.log('[Vivino Scraper] URL validation:', {
+      url,
+      isVivino,
+      hasWineId,
+      result: isVivino && hasWineId,
+    });
+    
+    return isVivino && hasWineId;
   } catch {
+    console.error('[Vivino Scraper] Invalid URL format:', url);
     return false;
   }
 }
