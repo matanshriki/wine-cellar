@@ -91,13 +91,30 @@ serve(async (req) => {
               
               // Extract from JSON-LD (Product schema)
               if (structuredData['@type'] === 'Product' || structuredData['@type'] === 'http://schema.org/Product') {
+                // Parse rating (might be string or number)
+                let rating = null;
+                if (structuredData.aggregateRating?.ratingValue) {
+                  const parsed = parseFloat(structuredData.aggregateRating.ratingValue);
+                  if (!isNaN(parsed)) {
+                    rating = Math.round(parsed * 10) / 10; // Round to 1 decimal
+                  }
+                }
+                
+                // Parse rating count (might be string or number)
+                let ratingCount = null;
+                const rawCount = structuredData.aggregateRating?.ratingCount || structuredData.aggregateRating?.reviewCount;
+                if (rawCount) {
+                  const parsed = parseInt(String(rawCount).replace(/,/g, ''), 10);
+                  if (!isNaN(parsed)) {
+                    ratingCount = parsed;
+                  }
+                }
+                
                 extractedData = {
                   name: structuredData.name || '',
                   winery: structuredData.brand?.name || structuredData.manufacturer?.name || '',
-                  rating: structuredData.aggregateRating?.ratingValue 
-                    ? parseFloat(structuredData.aggregateRating.ratingValue.toFixed(1)) 
-                    : null,
-                  rating_count: structuredData.aggregateRating?.ratingCount || structuredData.aggregateRating?.reviewCount || null,
+                  rating: rating,
+                  rating_count: ratingCount,
                   image_url: structuredData.image || structuredData.image?.[0] || null,
                 };
                 console.log('[Fetch Vivino Data] Extracted from JSON-LD:', extractedData);
@@ -117,13 +134,20 @@ serve(async (req) => {
               // Try to extract wine data from preloaded state
               const wineData = preloadedState.winePageInformation?.wine;
               if (wineData) {
+                // Parse rating safely
+                let rating = extractedData.rating;
+                if (wineData.statistics?.ratings_average) {
+                  const parsed = parseFloat(wineData.statistics.ratings_average);
+                  if (!isNaN(parsed)) {
+                    rating = Math.round(parsed * 10) / 10; // Round to 1 decimal
+                  }
+                }
+                
                 extractedData = {
                   ...extractedData,
                   name: wineData.name || extractedData.name,
                   winery: wineData.winery?.name || extractedData.winery,
-                  rating: wineData.statistics?.ratings_average 
-                    ? parseFloat(wineData.statistics.ratings_average.toFixed(1))
-                    : extractedData.rating,
+                  rating: rating,
                   rating_count: wineData.statistics?.ratings_count || extractedData.rating_count,
                   vintage: wineData.vintage?.year || null,
                   region: wineData.region?.name || null,
