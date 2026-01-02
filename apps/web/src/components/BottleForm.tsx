@@ -73,6 +73,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       notes: bottle?.notes || '',
       label_image_url: prefillData?.label_image_url || '',
       vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
+      rating: bottle?.wine.rating?.toString() || '', // Vivino rating (0-5 scale)
     };
   };
   
@@ -167,17 +168,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       
       console.log('[BottleForm] ✅ Fetched Vivino data:', vivinoData);
       
-      // Auto-populate fields with Vivino data (only if empty)
+      // Auto-populate fields with Vivino data (UPDATE all fields with fetched data)
       setFormData(prev => ({
         ...prev,
-        wine_name: prev.wine_name || vivinoData.name || '',
-        producer: prev.producer || vivinoData.winery || '',
-        vintage: prev.vintage || (vivinoData.vintage ? vivinoData.vintage.toString() : ''),
-        region: prev.region || vivinoData.region || '',
-        grapes: prev.grapes || vivinoData.grape || '',
-        // Note: Rating is shown in the toast but not stored in the form
-        // The database has a `rating` field (DECIMAL(2,1), 0-5 scale)
-        // If you want to store it, add a `rating` field to CreateBottleInput/UpdateBottleInput
+        // Update with fetched data (or keep existing if fetch returned empty)
+        wine_name: vivinoData.name || prev.wine_name,
+        producer: vivinoData.winery || prev.producer,
+        vintage: vivinoData.vintage ? vivinoData.vintage.toString() : prev.vintage,
+        region: vivinoData.region || prev.region,
+        grapes: vivinoData.grape || prev.grapes,
+        // Store rating from Vivino (0-5 scale)
+        rating: vivinoData.rating ? vivinoData.rating.toString() : prev.rating,
       }));
       
       // Show success message with rating if available
@@ -256,6 +257,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           color: formData.color as 'red' | 'white' | 'rose' | 'sparkling',
           grapes: formData.grapes ? formData.grapes.split(',').map(g => g.trim()).filter(Boolean) : null,
           vivino_url: formData.vivino_url || null,
+          rating: formData.rating ? parseFloat(formData.rating) : null, // Save Vivino rating
         };
         
         console.log('[BottleForm] Updating wine fields:', wineUpdates);
@@ -280,6 +282,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           appellation: null,
           vivino_wine_id: null,
           vivino_url: formData.vivino_url || null,
+          rating: formData.rating ? parseFloat(formData.rating) : null, // Save Vivino rating (0-5 scale)
           wine_notes: null,
           
           // Bottle info
@@ -610,6 +613,23 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                 >
                   ✨ {t('bottleForm.vivinoFetchHint', 'Click "Fetch Data" to auto-fill wine details and rating from Vivino')} {window.location.hostname === 'localhost' ? '(localhost only)' : ''}
                 </p>
+              )}
+              
+              {/* Show rating if available (from Vivino or manual entry) */}
+              {formData.rating && parseFloat(formData.rating) > 0 && (
+                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-amber-50)', border: '1px solid var(--color-amber-200)' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">⭐</span>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: 'var(--color-amber-900)' }}>
+                        Vivino Rating: {parseFloat(formData.rating).toFixed(1)}/5.0
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-amber-700)' }}>
+                        This rating will be saved with the wine
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

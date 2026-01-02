@@ -288,6 +288,7 @@ export interface UpdateWineInput {
   color?: 'red' | 'white' | 'rose' | 'sparkling';
   grapes?: string[] | null;
   vivino_url?: string | null;
+  rating?: number | null; // Vivino rating (0-5 scale)
 }
 
 export async function updateWineInfo(
