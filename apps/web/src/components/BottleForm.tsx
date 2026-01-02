@@ -169,9 +169,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       // Auto-populate fields with Vivino data (only if empty)
       setFormData(prev => ({
         ...prev,
-        wine_name: prev.wine_name || vivinoData.name,
-        producer: prev.producer || vivinoData.winery,
-        vintage: prev.vintage || vivinoData.vintage?.toString() || '',
+        wine_name: prev.wine_name || vivinoData.name || '',
+        producer: prev.producer || vivinoData.winery || '',
+        vintage: prev.vintage || (vivinoData.vintage ? vivinoData.vintage.toString() : ''),
         region: prev.region || vivinoData.region || '',
         grapes: prev.grapes || vivinoData.grape || '',
         // Note: Rating is shown in the toast but not stored in the form
@@ -179,13 +179,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         // If you want to store it, add a `rating` field to CreateBottleInput/UpdateBottleInput
       }));
       
-      toast.success(
-        t('bottleForm.vivinoFetchSuccess', {
-          defaultValue: '✅ Fetched from Vivino! Rating: {{rating}}/100 ({{count}} ratings)',
-          rating: vivinoData.rating,
-          count: vivinoData.rating_count.toLocaleString(),
-        })
-      );
+      // Show success message with rating if available
+      if (vivinoData.rating && vivinoData.rating_count) {
+        toast.success(
+          `✅ Fetched from Vivino! Rating: ${vivinoData.rating}/5 ⭐ (${vivinoData.rating_count.toLocaleString()} ratings)`
+        );
+      } else if (vivinoData.name || vivinoData.winery) {
+        toast.success(
+          `✅ Fetched wine details from Vivino!`
+        );
+      } else {
+        toast.warning(
+          `⚠️ Fetched from Vivino but could not extract all details. Please verify the information.`
+        );
+      }
       
       console.log('[BottleForm] 📝 Updated form with Vivino data');
       

@@ -20,15 +20,16 @@
 
 export interface VivinoWineData {
   wine_id: string;
-  name: string;
-  winery: string;
-  rating: number; // 0-5 scale (Vivino's native scale, matches database)
-  rating_count: number;
-  image_url: string | null;
+  name?: string | null;
+  winery?: string | null;
+  rating?: number | null; // 0-5 scale (Vivino's native scale, matches database)
+  rating_count?: number | null;
+  image_url?: string | null;
   vintage?: number | null;
   region?: string | null;
   country?: string | null;
   grape?: string | null;
+  source?: 'api' | 'html'; // Track where data came from
 }
 
 /**
