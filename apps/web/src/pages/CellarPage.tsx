@@ -754,7 +754,7 @@ export function CellarPage() {
       </div>
 
       {/* Search and Filters - Only show when cellar has bottles */}
-      {bottles.length > 0 && (
+      {bottlesInCellar.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -915,7 +915,7 @@ export function CellarPage() {
             )}
 
             {/* Bulk Analysis Button - Subtle */}
-            {bottles.length > 0 && (
+            {bottlesInCellar.length > 0 && (
               <button
                 onClick={handleBulkAnalysis}
                 disabled={bulkAnalysisCooldown}
@@ -950,7 +950,7 @@ export function CellarPage() {
       )}
 
       {/* Sort Button - Below Filters */}
-      {bottles.length > 0 && (
+      {bottlesInCellar.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -977,7 +977,7 @@ export function CellarPage() {
       )}
 
       {/* Innovation Widgets - Tonight's Orbit and Drink Window */}
-      {bottles.length > 0 && !searchQuery && activeFilters.length === 0 && (
+      {bottlesInCellar.length > 0 && !searchQuery && activeFilters.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -995,7 +995,7 @@ export function CellarPage() {
         </motion.div>
       )}
 
-      {bottles.length === 0 ? (
+      {bottlesInCellar.length === 0 ? (
         /**
          * Empty State - Mobile Optimized
          * 
