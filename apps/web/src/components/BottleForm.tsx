@@ -158,9 +158,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     try {
       const vivinoData = await fetchVivinoWineData(formData.vivino_url);
       
-      if (!vivinoData) {
-        console.error('[BottleForm] ❌ Failed to fetch from Vivino');
-        toast.error(t('bottleForm.vivinoFetchFailed', 'Could not fetch wine data from Vivino. Please try again or enter details manually.'));
+      if (!vivinoData || (vivinoData as any).success === false || (vivinoData as any).error) {
+        console.error('[BottleForm] ❌ Failed to fetch from Vivino:', vivinoData);
+        const errorMsg = (vivinoData as any)?.error || 'Could not fetch wine data from Vivino';
+        toast.error(`⚠️ ${errorMsg}. Please enter details manually or try a different Vivino URL.`);
         return;
       }
       

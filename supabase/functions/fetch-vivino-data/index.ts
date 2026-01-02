@@ -83,26 +83,27 @@ serve(async (req) => {
           let extractedData: any = {};
           
           // Strategy 1: Try JSON-LD structured data
-          const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s);
-          if (jsonLdMatch) {
+          const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs);
+          for (const jsonLdMatch of jsonLdMatches) {
             try {
               const structuredData = JSON.parse(jsonLdMatch[1]);
-              console.log('[Fetch Vivino Data] Found structured data in HTML');
+              console.log('[Fetch Vivino Data] Found JSON-LD type:', structuredData['@type']);
               
               // Extract from JSON-LD (Product schema)
-              if (structuredData['@type'] === 'Product') {
+              if (structuredData['@type'] === 'Product' || structuredData['@type'] === 'http://schema.org/Product') {
                 extractedData = {
                   name: structuredData.name || '',
-                  winery: structuredData.brand?.name || '',
+                  winery: structuredData.brand?.name || structuredData.manufacturer?.name || '',
                   rating: structuredData.aggregateRating?.ratingValue 
                     ? parseFloat(structuredData.aggregateRating.ratingValue.toFixed(1)) 
                     : null,
-                  rating_count: structuredData.aggregateRating?.ratingCount || null,
-                  image_url: structuredData.image || null,
+                  rating_count: structuredData.aggregateRating?.ratingCount || structuredData.aggregateRating?.reviewCount || null,
+                  image_url: structuredData.image || structuredData.image?.[0] || null,
                 };
+                console.log('[Fetch Vivino Data] Extracted from JSON-LD:', extractedData);
               }
             } catch (e) {
-              console.log('[Fetch Vivino Data] Failed to parse structured data:', e);
+              console.log('[Fetch Vivino Data] Failed to parse JSON-LD:', e);
             }
           }
           
@@ -136,19 +137,70 @@ serve(async (req) => {
             }
           }
           
+          // Strategy 3: Try meta tags and page title
+          if (!extractedData.name) {
+            // Try og:title
+            const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+            if (ogTitleMatch) {
+              extractedData.name = ogTitleMatch[1];
+              console.log('[Fetch Vivino Data] Found name from og:title:', extractedData.name);
+            }
+          }
+          
+          if (!extractedData.image_url) {
+            // Try og:image
+            const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+            if (ogImageMatch) {
+              extractedData.image_url = ogImageMatch[1];
+              console.log('[Fetch Vivino Data] Found image from og:image:', extractedData.image_url);
+            }
+          }
+          
+          // Strategy 4: Try to extract from any JSON in script tags
+          const allScripts = html.matchAll(/<script[^>]*>(.*?)<\/script>/gs);
+          for (const scriptMatch of allScripts) {
+            const scriptContent = scriptMatch[1];
+            
+            // Skip if already got data
+            if (Object.keys(extractedData).length > 3) break;
+            
+            // Look for wine data patterns
+            if (scriptContent.includes('wine') && scriptContent.includes('rating')) {
+              try {
+                // Try to find JSON objects with wine data
+                const jsonObjectMatches = scriptContent.matchAll(/\{[^{}]*"wine"[^{}]*\}/g);
+                for (const jsonMatch of jsonObjectMatches) {
+                  try {
+                    const wineObj = JSON.parse(jsonMatch[0]);
+                    if (wineObj.wine?.name) {
+                      extractedData.name = extractedData.name || wineObj.wine.name;
+                      extractedData.winery = extractedData.winery || wineObj.wine.winery?.name;
+                      console.log('[Fetch Vivino Data] Found data in script tag');
+                    }
+                  } catch (e) {
+                    // Skip invalid JSON
+                  }
+                }
+              } catch (e) {
+                // Skip
+              }
+            }
+          }
+          
           // If we got some data, use it
-          if (Object.keys(extractedData).length > 0) {
-            console.log('[Fetch Vivino Data] Successfully extracted data from HTML');
+          if (extractedData.name || extractedData.winery || extractedData.rating) {
+            console.log('[Fetch Vivino Data] Successfully extracted data from HTML:', extractedData);
             vivinoData = { fromHtml: true, ...extractedData };
             break;
           }
           
           // Fallback: couldn't extract structured data
           console.log('[Fetch Vivino Data] Could not extract structured data from HTML');
+          console.log('[Fetch Vivino Data] HTML preview (first 2000 chars):', html.substring(0, 2000));
           vivinoData = { 
             fromHtml: true, 
             error: 'Could not parse wine data from page',
-            html_snippet: html.substring(0, 1000) 
+            html_snippet: html.substring(0, 2000) 
           };
           break;
         }
