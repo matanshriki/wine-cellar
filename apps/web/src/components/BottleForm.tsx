@@ -5,6 +5,7 @@ import * as bottleService from '../services/bottleService';
 import { toast } from '../lib/toast';
 import { trackBottle } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, getDisplayPrice } from '../utils/currency';
+import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -77,6 +78,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   
   const [formData, setFormData] = useState(getInitialFormData());
   const [loading, setLoading] = useState(false);
+  const [fetchingVivino, setFetchingVivino] = useState(false);
 
   // Update displayed price when language changes
   useEffect(() => {
@@ -136,6 +138,62 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     window.open(searchUrl, '_blank', 'noopener,noreferrer');
     
     console.log('[BottleForm] ℹ️ Vivino opened. Form data is saved and will restore when you return.');
+  }
+  
+  // Vivino data fetcher (dev only) - Auto-populate rating and details from Vivino URL
+  async function handleFetchFromVivino() {
+    if (!formData.vivino_url) {
+      toast.error(t('bottleForm.vivinoUrlRequired', 'Please enter a Vivino wine page URL first'));
+      return;
+    }
+    
+    if (!isVivinoWineUrl(formData.vivino_url)) {
+      toast.error(t('bottleForm.invalidVivinoUrl', 'Invalid Vivino URL. Please use a wine page URL like: https://www.vivino.com/wines/123456'));
+      return;
+    }
+    
+    setFetchingVivino(true);
+    console.log('[BottleForm] 🍷 Fetching wine data from Vivino:', formData.vivino_url);
+    
+    try {
+      const vivinoData = await fetchVivinoWineData(formData.vivino_url);
+      
+      if (!vivinoData) {
+        console.error('[BottleForm] ❌ Failed to fetch from Vivino');
+        toast.error(t('bottleForm.vivinoFetchFailed', 'Could not fetch wine data from Vivino. Please try again or enter details manually.'));
+        return;
+      }
+      
+      console.log('[BottleForm] ✅ Fetched Vivino data:', vivinoData);
+      
+      // Auto-populate fields with Vivino data (only if empty)
+      setFormData(prev => ({
+        ...prev,
+        wine_name: prev.wine_name || vivinoData.name,
+        producer: prev.producer || vivinoData.winery,
+        vintage: prev.vintage || vivinoData.vintage?.toString() || '',
+        region: prev.region || vivinoData.region || '',
+        grapes: prev.grapes || vivinoData.grape || '',
+        // Note: Rating is not stored in formData - we don't have a rating field in the form
+        // If you want to store the Vivino rating, you'd need to add a `vivino_rating` field
+      }));
+      
+      toast.success(
+        t('bottleForm.vivinoFetchSuccess', {
+          defaultValue: '✅ Fetched from Vivino! Rating: {{rating}}/100 ({{count}} ratings)',
+          rating: vivinoData.rating,
+          count: vivinoData.rating_count.toLocaleString(),
+        })
+      );
+      
+      console.log('[BottleForm] 📝 Updated form with Vivino data');
+      
+    } catch (error: any) {
+      console.error('[BottleForm] ❌ Vivino fetch error:', error);
+      toast.error(t('bottleForm.vivinoFetchError', 'Error fetching from Vivino: {{error}}', { error: error.message }));
+    } finally {
+      setFetchingVivino(false);
+    }
   }
 
   function handleChange(field: string, value: string) {
@@ -490,16 +548,30 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   className="input-luxury w-full sm:flex-1"
                   placeholder={t('bottleForm.vivinoUrlPlaceholder')}
                 />
-                {(formData.wine_name || formData.producer) && (
-                  <button
-                    type="button"
-                    onClick={handleSearchVivino}
-                    className="btn-luxury-secondary text-sm w-full sm:w-auto"
-                    style={{ minHeight: '44px' }}
-                  >
-                    🔍 {t('bottleForm.searchVivino')}
-                  </button>
-                )}
+                <div className="flex gap-2 w-full sm:w-auto">
+                  {(formData.wine_name || formData.producer) && (
+                    <button
+                      type="button"
+                      onClick={handleSearchVivino}
+                      className="btn-luxury-secondary text-sm flex-1 sm:flex-initial"
+                      style={{ minHeight: '44px' }}
+                    >
+                      🔍 {t('bottleForm.searchVivino')}
+                    </button>
+                  )}
+                  {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
+                    <button
+                      type="button"
+                      onClick={handleFetchFromVivino}
+                      disabled={fetchingVivino}
+                      className="btn-luxury-primary text-sm flex-1 sm:flex-initial"
+                      style={{ minHeight: '44px' }}
+                      title={t('bottleForm.fetchFromVivino', 'Fetch wine data and rating from Vivino')}
+                    >
+                      {fetchingVivino ? '⏳' : '⬇️'} {fetchingVivino ? t('common.loading') : t('bottleForm.fetchFromVivino', 'Fetch Data')}
+                    </button>
+                  )}
+                </div>
               </div>
               {isAIPrefilled && (
                 <p 
@@ -507,6 +579,14 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   style={{ color: 'var(--color-amber-700)' }}
                 >
                   💡 {t('bottleForm.vivinoHint')}
+                </p>
+              )}
+              {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
+                <p 
+                  className="text-xs mt-1"
+                  style={{ color: 'var(--color-emerald-700)' }}
+                >
+                  ✨ {t('bottleForm.vivinoFetchHint', 'Click "Fetch Data" to auto-fill wine details and rating from Vivino')} {window.location.hostname === 'localhost' ? '(localhost only)' : ''}
                 </p>
               )}
             </div>
