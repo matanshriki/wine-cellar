@@ -31,63 +31,124 @@ serve(async (req) => {
 
     console.log('[Fetch Vivino Data] Fetching wine ID:', wine_id);
 
-    // Try multiple Vivino API endpoints
+    // Try multiple Vivino endpoints (API + HTML page)
     const endpoints = [
-      `https://www.vivino.com/api/wines/${wine_id}`,
-      `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`,
-      `https://www.vivino.com/wines/${wine_id}`,
+      { url: `https://www.vivino.com/api/wines/${wine_id}`, type: 'api' },
+      { url: `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`, type: 'api' },
+      { url: `https://www.vivino.com/wines/${wine_id}`, type: 'page' },
+      { url: `https://www.vivino.com/w/${wine_id}`, type: 'page' },
     ];
 
-    let vivinoResponse: Response | null = null;
+    let vivinoData: any = null;
     let successUrl = '';
+    let responseType = '';
 
     for (const endpoint of endpoints) {
-      console.log('[Fetch Vivino Data] Trying endpoint:', endpoint);
+      console.log('[Fetch Vivino Data] Trying:', endpoint.url, `(${endpoint.type})`);
       
-      const response = await fetch(endpoint, {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.vivino.com/',
+      };
+
+      // For API endpoints, request JSON
+      if (endpoint.type === 'api') {
+        headers['Accept'] = 'application/json';
+      } else {
+        headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8';
+      }
+      
+      const response = await fetch(endpoint.url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
+        headers,
       });
 
       if (response.ok) {
-        vivinoResponse = response;
-        successUrl = endpoint;
-        console.log('[Fetch Vivino Data] ✅ Success with:', endpoint);
-        break;
+        successUrl = endpoint.url;
+        responseType = endpoint.type;
+        console.log('[Fetch Vivino Data] ✅ Success with:', endpoint.url);
+        
+        if (endpoint.type === 'api') {
+          // Parse as JSON
+          vivinoData = await response.json();
+          console.log('[Fetch Vivino Data] Parsed JSON data');
+          break;
+        } else {
+          // Parse HTML page
+          const html = await response.text();
+          console.log('[Fetch Vivino Data] Got HTML page, length:', html.length);
+          
+          // Try to extract JSON-LD data from HTML
+          const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s);
+          if (jsonLdMatch) {
+            try {
+              const structuredData = JSON.parse(jsonLdMatch[1]);
+              console.log('[Fetch Vivino Data] Found structured data in HTML');
+              vivinoData = { fromHtml: true, structuredData, html: html.substring(0, 1000) };
+              break;
+            } catch (e) {
+              console.log('[Fetch Vivino Data] Failed to parse structured data');
+            }
+          }
+          
+          // If no structured data, store HTML for manual parsing
+          console.log('[Fetch Vivino Data] No structured data found, storing HTML snippet');
+          vivinoData = { fromHtml: true, html: html.substring(0, 2000) };
+          break;
+        }
       } else {
-        console.log('[Fetch Vivino Data] ❌ Failed with:', endpoint, response.status);
+        const errorText = await response.text();
+        console.log('[Fetch Vivino Data] ❌ Failed:', endpoint.url, response.status);
+        console.log('[Fetch Vivino Data] Error snippet:', errorText.substring(0, 200));
       }
     }
 
-    if (!vivinoResponse) {
+    if (!vivinoData) {
       console.error('[Fetch Vivino Data] All endpoints failed');
-      throw new Error(`All Vivino API endpoints returned errors for wine ID: ${wine_id}`);
+      throw new Error(`All Vivino endpoints returned errors for wine ID: ${wine_id}`);
     }
 
-    const vivinoData = await vivinoResponse.json();
-    console.log('[Fetch Vivino Data] Success, wine name:', vivinoData.wine?.name);
+    console.log('[Fetch Vivino Data] Success! Response type:', responseType);
+    console.log('[Fetch Vivino Data] Data preview:', JSON.stringify(vivinoData).substring(0, 300));
 
     // Parse and return clean data
-    const wine = vivinoData.wine || vivinoData;
-    
-    const cleanData = {
-      wine_id: wine_id,
-      name: wine.name || '',
-      winery: wine.winery?.name || '',
-      rating: wine.statistics?.ratings_average 
-        ? parseFloat(wine.statistics.ratings_average.toFixed(1))
-        : 0,
-      rating_count: wine.statistics?.ratings_count || 0,
-      image_url: wine.image?.location || null,
-      vintage: wine.vintage?.year || null,
-      region: wine.region?.name || null,
-      country: wine.region?.country?.name || null,
-      grape: wine.primary_varietal?.name || wine.varietal?.name || null,
-    };
+    let cleanData: any;
+
+    if (vivinoData.fromHtml) {
+      // Data from HTML page
+      console.log('[Fetch Vivino Data] Parsing HTML response...');
+      
+      // For now, return raw HTML so we can see what we got
+      cleanData = {
+        wine_id: wine_id,
+        source: 'html',
+        success: true,
+        message: 'Fetched HTML page successfully. API endpoints may be unavailable.',
+        html_preview: vivinoData.html,
+        structured_data: vivinoData.structuredData || null,
+      };
+    } else {
+      // Data from API
+      console.log('[Fetch Vivino Data] Parsing API response...');
+      const wine = vivinoData.wine || vivinoData;
+      
+      cleanData = {
+        wine_id: wine_id,
+        source: 'api',
+        name: wine.name || '',
+        winery: wine.winery?.name || '',
+        rating: wine.statistics?.ratings_average 
+          ? parseFloat(wine.statistics.ratings_average.toFixed(1))
+          : 0,
+        rating_count: wine.statistics?.ratings_count || 0,
+        image_url: wine.image?.location || null,
+        vintage: wine.vintage?.year || null,
+        region: wine.region?.name || null,
+        country: wine.region?.country?.name || null,
+        grape: wine.primary_varietal?.name || wine.varietal?.name || null,
+      };
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: cleanData }),
