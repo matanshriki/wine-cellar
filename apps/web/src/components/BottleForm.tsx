@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import { toast } from '../lib/toast';
 import { trackBottle } from '../services/analytics';
-import { getCurrencySymbol } from '../utils/currency';
+import { getCurrencySymbol, getCurrencyCode, getDisplayPrice } from '../utils/currency';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -26,6 +26,7 @@ interface Props {
 export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t, i18n } = useTranslation();
   const currencySymbol = getCurrencySymbol(i18n.language);
+  const currentCurrency = getCurrencyCode(i18n.language);
   
   // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {

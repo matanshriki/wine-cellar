@@ -107,3 +107,70 @@ export function parseCurrencyInput(value: string): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+/**
+ * Currency conversion rate
+ * 1 USD = 3.2 ILS (static rate)
+ */
+const USD_TO_ILS_RATE = 3.2;
+
+/**
+ * Convert an amount from one currency to another
+ * 
+ * @param amount - The amount to convert
+ * @param fromCurrency - Source currency code ('USD' or 'ILS')
+ * @param toCurrency - Target currency code ('USD' or 'ILS')
+ * @returns Converted amount
+ */
+export function convertCurrency(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string
+): number {
+  // If same currency, no conversion needed
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+
+  // Convert USD to ILS
+  if (fromCurrency === 'USD' && toCurrency === 'ILS') {
+    return amount * USD_TO_ILS_RATE;
+  }
+
+  // Convert ILS to USD
+  if (fromCurrency === 'ILS' && toCurrency === 'USD') {
+    return amount / USD_TO_ILS_RATE;
+  }
+
+  // Unknown currency pair, return as-is
+  return amount;
+}
+
+/**
+ * Get the display price in the user's current currency
+ * Converts if necessary based on stored currency
+ * 
+ * @param amount - The stored amount
+ * @param storedCurrency - The currency the amount was stored in ('USD' or 'ILS')
+ * @param displayLocale - The current display locale ('en' or 'he')
+ * @returns Object with converted amount and display currency
+ */
+export function getDisplayPrice(
+  amount: number | null | undefined,
+  storedCurrency: string | null | undefined,
+  displayLocale: string
+): { amount: number | null; currency: string } {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return { amount: null, currency: getCurrencyCode(displayLocale) };
+  }
+
+  const displayCurrency = getCurrencyCode(displayLocale);
+  const sourceCurrency = storedCurrency || 'USD'; // Default to USD if not specified
+
+  const convertedAmount = convertCurrency(amount, sourceCurrency, displayCurrency);
+
+  return {
+    amount: convertedAmount,
+    currency: displayCurrency,
+  };
+}
+
