@@ -20,6 +20,7 @@ import * as aiAnalysisService from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
 import * as labelParseService from '../services/labelParseService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
+import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
@@ -1130,6 +1131,7 @@ export function CellarPage() {
             grapes: extractedData.data?.grape || '',
             color: extractedData.data?.wine_color || 'red',
             label_image_url: extractedData.imageUrl,
+            vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
           } : undefined}
         />
       )}
@@ -1312,6 +1314,20 @@ export function CellarPage() {
                 } as ExtractedWineData,
               };
               
+              // Vivino auto-link (dev only) - Auto-generate Vivino search URL from extracted data
+              const vivinoUrl = generateVivinoSearchUrl({
+                producer: mergedData.data.producer,
+                wine_name: mergedData.data.wine_name,
+                vintage: mergedData.data.vintage,
+                region: mergedData.data.region,
+                grape: mergedData.data.grape,
+              });
+              
+              if (vivinoUrl) {
+                console.log('[CellarPage] 🍷 Auto-generated Vivino URL (direct photo):', vivinoUrl);
+                (mergedData.data as any).vivino_url = vivinoUrl;
+              }
+              
               setExtractedData(mergedData);
               
               if (extractedFieldNames.length > 0) {
@@ -1454,6 +1470,20 @@ export function CellarPage() {
                   console.log('[CellarPage] Merged data:', mergedData);
                   console.log('[CellarPage] ✓ Vintage in merged data:', mergedData.data.vintage);
                   console.log('[CellarPage] ✓ Region in merged data:', mergedData.data.region);
+                  
+                  // Vivino auto-link (dev only) - Auto-generate Vivino search URL from extracted data
+                  const vivinoUrl = generateVivinoSearchUrl({
+                    producer: mergedData.data.producer,
+                    wine_name: mergedData.data.wine_name,
+                    vintage: mergedData.data.vintage,
+                    region: mergedData.data.region,
+                    grape: mergedData.data.grape,
+                  });
+                  
+                  if (vivinoUrl) {
+                    console.log('[CellarPage] 🍷 Auto-generated Vivino URL:', vivinoUrl);
+                    (mergedData.data as any).vivino_url = vivinoUrl;
+                  }
                   
                   setExtractedData(mergedData);
                   console.log('[CellarPage] Set extracted data');
