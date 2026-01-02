@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
@@ -6,6 +6,7 @@ import { toast } from '../lib/toast';
 import { trackBottle } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, getDisplayPrice } from '../utils/currency';
 import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper';
+import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -80,6 +81,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const [formData, setFormData] = useState(getInitialFormData());
   const [loading, setLoading] = useState(false);
   const [fetchingVivino, setFetchingVivino] = useState(false);
+  const [autoFetchingVivino, setAutoFetchingVivino] = useState(false); // Background auto-fetch indicator
+  const autoFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer
 
   // Update displayed price when language changes
   useEffect(() => {
@@ -95,6 +98,101 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       }));
     }
   }, [i18n.language, bottle?.purchase_price, (bottle as any)?.purchase_price_currency]);
+  
+  // **AUTO-FETCH FROM VIVINO (Background - Dev Only)**
+  // When user manually types wine name + producer, automatically fetch from Vivino
+  // to fill missing fields (vintage, region, grapes, rating)
+  useEffect(() => {
+    // Only on localhost (dev environment)
+    if (!isLocalDevEnvironment()) return;
+    
+    // Only if we're adding a new bottle (not editing)
+    if (bottle) return;
+    
+    // Only if we have name + producer
+    if (!formData.wine_name || !formData.producer) return;
+    
+    // Don't trigger if this is AI-prefilled (already has Vivino data)
+    if (prefillData) return;
+    
+    // Don't trigger if already fetching
+    if (autoFetchingVivino || fetchingVivino) return;
+    
+    // Clear any pending timeout
+    if (autoFetchTimeoutRef.current) {
+      clearTimeout(autoFetchTimeoutRef.current);
+    }
+    
+    // Debounce: wait 2 seconds after user stops typing
+    autoFetchTimeoutRef.current = setTimeout(async () => {
+      console.log('[BottleForm] 🔍 Auto-fetching from Vivino (background)...');
+      console.log('[BottleForm] Trigger: wine_name + producer both filled');
+      
+      // Generate Vivino search URL from current form data
+      const vivinoUrl = generateVivinoSearchUrl();
+      if (!vivinoUrl) {
+        console.log('[BottleForm] ⚠️ Could not generate Vivino search URL');
+        return;
+      }
+      
+      setAutoFetchingVivino(true);
+      
+      try {
+        // Import Vivino fetcher dynamically
+        const { fetchVivinoWineData } = await import('../services/vivinoScraper');
+        
+        // Fetch from Vivino
+        const vivinoData = await fetchVivinoWineData(vivinoUrl);
+        
+        if (vivinoData && (vivinoData.name || vivinoData.winery)) {
+          console.log('[BottleForm] ✅ Auto-fetched Vivino data:', vivinoData);
+          
+          // **SMART MERGE: Only fill EMPTY fields** (user's typing takes priority)
+          setFormData(prev => {
+            const merged = {
+              ...prev,
+              // Only fill if empty
+              vintage: prev.vintage || (vivinoData.vintage ? vivinoData.vintage.toString() : ''),
+              region: prev.region || vivinoData.region || '',
+              grapes: prev.grapes || vivinoData.grape || '',
+              rating: prev.rating || (vivinoData.rating ? vivinoData.rating.toString() : ''),
+            };
+            
+            // Count how many fields were filled
+            const filledCount = [
+              !prev.vintage && merged.vintage,
+              !prev.region && merged.region,
+              !prev.grapes && merged.grapes,
+              !prev.rating && merged.rating,
+            ].filter(Boolean).length;
+            
+            if (filledCount > 0) {
+              console.log('[BottleForm] 🎯 Auto-filled', filledCount, 'fields from Vivino');
+              toast.success(`🍷 Auto-enriched with Vivino data (${filledCount} fields)`, {
+                duration: 3000,
+              });
+            }
+            
+            return merged;
+          });
+        } else {
+          console.log('[BottleForm] ⚠️ Vivino auto-fetch returned no data');
+        }
+      } catch (error) {
+        console.error('[BottleForm] ❌ Vivino auto-fetch failed:', error);
+        // Silent failure - don't interrupt user
+      } finally {
+        setAutoFetchingVivino(false);
+      }
+    }, 2000); // 2 second debounce
+    
+    // Cleanup
+    return () => {
+      if (autoFetchTimeoutRef.current) {
+        clearTimeout(autoFetchTimeoutRef.current);
+      }
+    };
+  }, [formData.wine_name, formData.producer, bottle, prefillData, autoFetchingVivino, fetchingVivino]);
   
   // Check if this is an AI-prefilled form
   const isAIPrefilled = !!prefillData && (
@@ -540,19 +638,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
               />
             </div>
 
-            {/* Vivino Integration */}
-            <div className="md:col-span-2">
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.vivinoUrl')}
-                <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
-                  ({t('bottleForm.optional')})
-                </span>
-              </label>
-              {/* Stack vertically on mobile, horizontal on desktop */}
-              <div className="flex flex-col sm:flex-row gap-2">
+            {/* Vivino Integration - Hidden on localhost for new bottles (auto-fetch instead) */}
+            {(!isLocalDevEnvironment() || bottle) && (
+              <div className="md:col-span-2">
+                <label 
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {t('bottleForm.vivinoUrl')}
+                  <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+                    ({t('bottleForm.optional')})
+                  </span>
+                </label>
+                {/* Stack vertically on mobile, horizontal on desktop */}
+                <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="url"
                   value={formData.vivino_url}
@@ -631,7 +730,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            )}
+            
+            {/* Auto-fetch indicator (localhost only, new bottles only) */}
+            {isLocalDevEnvironment() && !bottle && autoFetchingVivino && (
+              <div className="md:col-span-2">
+                <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'var(--color-blue-50)', border: '1px solid var(--color-blue-200)' }}>
+                  <div className="animate-spin" style={{ fontSize: '16px' }}>🔍</div>
+                  <span className="text-sm" style={{ color: 'var(--color-blue-700)' }}>
+                    Auto-enriching from Vivino...
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div>
               <label 
