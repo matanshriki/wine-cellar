@@ -117,7 +117,7 @@ export function AddBottleSheet({
 
               {/* Options */}
               <div className="space-y-3">
-                {/* PRIMARY: Take Photo (Camera) - Direct camera access */}
+                {/* PRIMARY: Add Photo (Camera or Gallery) - Single unified option */}
                 <label
                   className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
                   style={{
@@ -132,10 +132,9 @@ export function AddBottleSheet({
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
-                    onChange={(e) => handleFileSelect(e, 'camera')}
+                    onChange={(e) => handleFileSelect(e, 'library')}
                     className="hidden"
-                    aria-label={t('cellar.addBottle.takePhoto')}
+                    aria-label={t('cellar.addBottle.uploadPhoto')}
                   />
                   {/* Camera Icon */}
                   <div className="relative w-8 h-8 flex-shrink-0">
@@ -146,46 +145,10 @@ export function AddBottleSheet({
                   </div>
                   <div className="flex-1 text-start">
                     <div className="font-semibold text-lg">
-                      {t('cellar.addBottle.takePhoto')}
+                      {t('cellar.addBottle.uploadPhoto')}
                     </div>
                     <div className="text-sm opacity-90 mt-0.5">
-                      {t('cellar.addBottle.takePhotoDesc')}
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </label>
-
-                {/* SECONDARY: Choose from Library */}
-                <label
-                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-medium)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow-xs)',
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileSelect(e, 'library')}
-                    className="hidden"
-                    aria-label={t('cellar.addBottle.chooseFromLibrary')}
-                  />
-                  {/* Image Icon */}
-                  <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <div className="flex-1 text-start">
-                    <div className="font-semibold">
-                      {t('cellar.addBottle.chooseFromLibrary')}
-                    </div>
-                    <div className="text-sm opacity-70 mt-0.5">
-                      {t('cellar.addBottle.chooseFromLibraryDesc')}
+                      {t('cellar.addBottle.uploadPhotoDescNew')}
                     </div>
                   </div>
                   <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
