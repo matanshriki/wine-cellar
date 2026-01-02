@@ -185,27 +185,13 @@ export function WineLoader({
           />
         </g>
 
-        {/* Wine Fill - Using CSS animation via requestAnimationFrame for mobile compatibility */}
+        {/* Wine Fill - Using React state with transform for mobile compatibility */}
         <defs>
-          <clipPath id="wine-glass-clip">
+          <clipPath id={`wine-glass-clip-${sizeInPixels}`}>
             <path d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z" />
           </clipPath>
           
-          {/* Animated mask for fill level - controlled by React state */}
-          <mask id="wine-fill-mask">
-            <rect
-              x="0"
-              y={fillLevel}
-              width="100"
-              height="100"
-              fill="white"
-              style={{
-                transition: prefersReducedMotion ? 'none' : 'y 0.05s ease-out',
-              }}
-            />
-          </mask>
-          
-          <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`wine-gradient-${sizeInPixels}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
             <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
           </linearGradient>
@@ -213,11 +199,20 @@ export function WineLoader({
         
         {!prefersReducedMotion ? (
           <>
-            {/* Wine fill with gradient - animated */}
-            <g clipPath="url(#wine-glass-clip)" mask="url(#wine-fill-mask)">
-              <path
-                d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z"
-                fill="url(#wine-gradient)"
+            {/* Animated wine fill using clipPath and transform */}
+            <g clipPath={`url(#wine-glass-clip-${sizeInPixels})`}>
+              {/* Wine liquid - positioned and transformed */}
+              <rect
+                x="20"
+                y="0"
+                width="60"
+                height="100"
+                fill={`url(#wine-gradient-${sizeInPixels})`}
+                style={{
+                  transform: `translateY(${fillLevel}%)`,
+                  transformOrigin: 'center',
+                  willChange: 'transform',
+                }}
               />
               
               {/* Shine effect */}
@@ -228,19 +223,23 @@ export function WineLoader({
                 ry="12"
                 fill="white"
                 opacity="0.15"
+                style={{
+                  transform: `translateY(${fillLevel * 0.5}%)`,
+                  willChange: 'transform',
+                }}
               />
             </g>
           </>
         ) : (
           // Static fill for reduced motion
-          <g clipPath="url(#wine-glass-clip)">
+          <g clipPath={`url(#wine-glass-clip-${sizeInPixels})`}>
             {/* Static 50% fill */}
             <rect
               x="20"
               y="30"
               width="60"
               height="25"
-              fill="url(#wine-gradient)"
+              fill={`url(#wine-gradient-${sizeInPixels})`}
               opacity="0.7"
             />
           </g>

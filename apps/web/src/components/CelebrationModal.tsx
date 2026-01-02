@@ -159,15 +159,19 @@ export function CelebrationModal({
       canvasExists: !!canvasRef.current,
     });
 
-    if (isOpen && !confettiTriggered.current) {
-      console.log('[CelebrationModal] 🎬 Modal opened, scheduling confetti in 100ms...');
+    if (isOpen && !confettiTriggered.current && canvasRef.current) {
+      console.log('[CelebrationModal] 🎬 Modal opened, scheduling confetti in 200ms...');
       
-      // Small delay to let modal render first
+      // Longer delay to ensure canvas is fully rendered on iOS
       const timeoutId = setTimeout(() => {
         console.log('[CelebrationModal] ⏰ Timeout fired, triggering confetti now');
-        triggerConfetti();
-        confettiTriggered.current = true;
-      }, 100);
+        if (canvasRef.current) {
+          triggerConfetti();
+          confettiTriggered.current = true;
+        } else {
+          console.error('[CelebrationModal] ❌ Canvas disappeared before timeout');
+        }
+      }, 200);
 
       return () => {
         console.log('[CelebrationModal] 🧹 Cleaning up timeout');
