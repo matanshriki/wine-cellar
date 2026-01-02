@@ -168,34 +168,67 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
   let drinkStart: number | null = null;
   let drinkEnd: number | null = null;
   
+  // Translations helper
+  const t = (en: string, he: string) => language === 'he' ? he : en;
+  
   // Basic analysis based on type and age
   if (wineType === 'sparkling') {
     servingTemp = 6;
     decantMinutes = 0;
     if (age < 3) {
       readinessLabel = 'READY';
-      summary = `This ${bottle.wine.wine_name} is fresh and ready to enjoy. Sparkling wines are best consumed young.`;
-      reasons = ['Sparkling wines are typically best enjoyed within 2-3 years', 'Maintains vibrant bubbles and fresh fruit character'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is fresh and ready to enjoy. Sparkling wines are best consumed young.`,
+        `${bottle.wine.wine_name} רענן ומוכן ליהנות. יינות מבעבעים מומלץ לצרוך צעירים.`
+      );
+      reasons = [
+        t('Sparkling wines are typically best enjoyed within 2-3 years', 'יינות מבעבעים מומלץ לשתות תוך 2-3 שנים'),
+        t('Maintains vibrant bubbles and fresh fruit character', 'שומר על בועות חיות ואופי פירותי רענן')
+      ];
     } else {
       readinessLabel = 'READY';
-      summary = `This ${bottle.wine.wine_name} is mature. Drink soon to enjoy remaining freshness.`;
-      reasons = ['Older sparkling wine may lose some effervescence', 'Still enjoyable but past peak freshness'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is mature. Drink soon to enjoy remaining freshness.`,
+        `${bottle.wine.wine_name} בשל. מומלץ לשתות בקרוב כדי ליהנות מהרעננות הנותרת.`
+      );
+      reasons = [
+        t('Older sparkling wine may lose some effervescence', 'יין מבעבע מבוגר עלול לאבד חלק מהתוססות'),
+        t('Still enjoyable but past peak freshness', 'עדיין נעים אך עבר את שיא הרעננות')
+      ];
     }
   } else if (wineType === 'white' || wineType === 'rose') {
     servingTemp = wineType === 'white' ? 10 : 12;
     decantMinutes = 0;
     if (age < 2) {
       readinessLabel = 'READY';
-      summary = `This ${bottle.wine.wine_name} is in its prime drinking window with bright, fresh characteristics.`;
-      reasons = [`${age} year${age !== 1 ? 's' : ''} old - ideal for ${wineType} wines`, 'Maintains crisp acidity and fruit flavors'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is in its prime drinking window with bright, fresh characteristics.`,
+        `${bottle.wine.wine_name} בחלון השתייה המושלם שלו עם מאפיינים רעננים ובהירים.`
+      );
+      reasons = [
+        t(`${age} year${age !== 1 ? 's' : ''} old - ideal for ${wineType} wines`, `בן ${age} שנ${age !== 1 ? 'ים' : 'ה'} - אידיאלי ליינות ${wineType === 'white' ? 'לבנים' : 'רוזה'}`),
+        t('Maintains crisp acidity and fruit flavors', 'שומר על חומציות חדה וטעמי פירות')
+      ];
     } else if (age < 5) {
       readinessLabel = 'READY';
-      summary = `This ${bottle.wine.wine_name} is mature and ready to drink.`;
-      reasons = ['Developing complexity while maintaining freshness', 'Drink within the next year for best quality'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is mature and ready to drink.`,
+        `${bottle.wine.wine_name} בשל ומוכן לשתייה.`
+      );
+      reasons = [
+        t('Developing complexity while maintaining freshness', 'מפתח מורכבות תוך שמירה על רעננות'),
+        t('Drink within the next year for best quality', 'מומלץ לשתות תוך שנה לאיכות מיטבית')
+      ];
     } else {
       readinessLabel = 'READY';
-      summary = `This ${bottle.wine.wine_name} is quite mature. Drink soon.`;
-      reasons = ['May be losing freshness', 'Best consumed promptly'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is quite mature. Drink soon.`,
+        `${bottle.wine.wine_name} די בשל. מומלץ לשתות בקרוב.`
+      );
+      reasons = [
+        t('May be losing freshness', 'עלול לאבד רעננות'),
+        t('Best consumed promptly', 'מומלץ לצרוך במהירות')
+      ];
       confidence = 'LOW';
     }
   } else { // red wine
@@ -203,29 +236,57 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
     if (age < 3) {
       readinessLabel = 'HOLD';
       decantMinutes = 60;
-      summary = `This ${bottle.wine.wine_name} is still young. Consider holding for better development.`;
-      reasons = [`Only ${age} year${age !== 1 ? 's' : ''} old`, 'Red wines often benefit from aging', 'Tannins are still settling'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is still young. Consider holding for better development.`,
+        `${bottle.wine.wine_name} עדיין צעיר. כדאי להמתין להתפתחות טובה יותר.`
+      );
+      reasons = [
+        t(`Only ${age} year${age !== 1 ? 's' : ''} old`, `רק בן ${age} שנ${age !== 1 ? 'ים' : 'ה'}`),
+        t('Red wines often benefit from aging', 'יינות אדומים נהנים מהתיישנות'),
+        t('Tannins are still settling', 'הטאנינים עדיין מתיישבים')
+      ];
       drinkStart = currentYear + 2;
       drinkEnd = currentYear + 10;
     } else if (age < 8) {
       readinessLabel = 'READY';
       decantMinutes = 45;
-      summary = `This ${bottle.wine.wine_name} is entering its drinking window. Well-balanced and developing nicely.`;
-      reasons = [`At ${age} years, showing good maturity`, 'Tannins have softened', 'Fruit and structure in harmony'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is entering its drinking window. Well-balanced and developing nicely.`,
+        `${bottle.wine.wine_name} נכנס לחלון השתייה שלו. מאוזן היטב ומתפתח יפה.`
+      );
+      reasons = [
+        t(`At ${age} years, showing good maturity`, `בן ${age} שנים, מראה בשלות טובה`),
+        t('Tannins have softened', 'הטאנינים התרככו'),
+        t('Fruit and structure in harmony', 'פרי ומבנה בהרמוניה')
+      ];
       drinkStart = currentYear;
       drinkEnd = currentYear + 8;
     } else if (age < 15) {
       readinessLabel = 'READY';
       decantMinutes = 30;
-      summary = `This ${bottle.wine.wine_name} is at peak maturity. Excellent time to enjoy.`;
-      reasons = [`${age} years of age - prime drinking window`, 'Developed complex tertiary aromas', 'Well-integrated tannins'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is at peak maturity. Excellent time to enjoy.`,
+        `${bottle.wine.wine_name} בשיא הבשלות. זמן מצוין ליהנות.`
+      );
+      reasons = [
+        t(`${age} years of age - prime drinking window`, `בן ${age} שנים - חלון שתייה מושלם`),
+        t('Developed complex tertiary aromas', 'פיתח ארומות שלישוניות מורכבות'),
+        t('Well-integrated tannins', 'טאנינים משולבים היטב')
+      ];
       drinkStart = currentYear;
       drinkEnd = currentYear + 5;
     } else {
       readinessLabel = 'READY';
       decantMinutes = 15;
-      summary = `This ${bottle.wine.wine_name} is fully mature. Drink soon while it's still showing well.`;
-      reasons = [`At ${age} years, this wine is fully evolved`, 'May be past peak depending on storage', 'Best consumed promptly'];
+      summary = t(
+        `This ${bottle.wine.wine_name} is fully mature. Drink soon while it's still showing well.`,
+        `${bottle.wine.wine_name} בשל לחלוטין. מומלץ לשתות בקרוב בעודו מראה טוב.`
+      );
+      reasons = [
+        t(`At ${age} years, this wine is fully evolved`, `בן ${age} שנים, יין זה התפתח לחלוטין`),
+        t('May be past peak depending on storage', 'עלול להיות עבר שיא תלוי באחסון'),
+        t('Best consumed promptly', 'מומלץ לצרוך במהירות')
+      ];
       confidence = 'LOW';
       drinkStart = currentYear;
       drinkEnd = currentYear + 2;
@@ -234,11 +295,18 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
   
   // Add region/producer context if available
   if (bottle.wine.region) {
-    reasons.push(`From ${bottle.wine.region}`);
+    reasons.push(t(`From ${bottle.wine.region}`, `מאזור ${bottle.wine.region}`));
   }
   if (bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0) {
-    reasons.push(`${bottle.wine.grapes.join(', ')} blend`);
+    reasons.push(t(`${bottle.wine.grapes.join(', ')} blend`, `תערובת ${bottle.wine.grapes.join(', ')}`));
   }
+  
+  const assumptions = confidence === 'LOW' 
+    ? t(
+        'Analysis based on general wine aging principles. Actual condition depends on storage.',
+        'ניתוח מבוסס על עקרונות כלליים של התיישנות יין. המצב בפועל תלוי באחסון.'
+      )
+    : null;
   
   return {
     analysis_summary: summary,
@@ -249,7 +317,7 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
     drink_window_start: drinkStart,
     drink_window_end: drinkEnd,
     confidence: confidence,
-    assumptions: confidence === 'LOW' ? 'Analysis based on general wine aging principles. Actual condition depends on storage.' : null,
+    assumptions,
     analyzed_at: new Date().toISOString(),
   };
 }
