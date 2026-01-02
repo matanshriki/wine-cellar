@@ -31,18 +31,41 @@ serve(async (req) => {
 
     console.log('[Fetch Vivino Data] Fetching wine ID:', wine_id);
 
-    // Fetch from Vivino's API (server-to-server, no CORS)
-    const vivinoResponse = await fetch(`https://www.vivino.com/api/wines/${wine_id}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; WineCellarBrain/1.0)',
-      },
-    });
+    // Try multiple Vivino API endpoints
+    const endpoints = [
+      `https://www.vivino.com/api/wines/${wine_id}`,
+      `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`,
+      `https://www.vivino.com/wines/${wine_id}`,
+    ];
 
-    if (!vivinoResponse.ok) {
-      console.error('[Fetch Vivino Data] Vivino API error:', vivinoResponse.status);
-      throw new Error(`Vivino API returned ${vivinoResponse.status}`);
+    let vivinoResponse: Response | null = null;
+    let successUrl = '';
+
+    for (const endpoint of endpoints) {
+      console.log('[Fetch Vivino Data] Trying endpoint:', endpoint);
+      
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+
+      if (response.ok) {
+        vivinoResponse = response;
+        successUrl = endpoint;
+        console.log('[Fetch Vivino Data] ✅ Success with:', endpoint);
+        break;
+      } else {
+        console.log('[Fetch Vivino Data] ❌ Failed with:', endpoint, response.status);
+      }
+    }
+
+    if (!vivinoResponse) {
+      console.error('[Fetch Vivino Data] All endpoints failed');
+      throw new Error(`All Vivino API endpoints returned errors for wine ID: ${wine_id}`);
     }
 
     const vivinoData = await vivinoResponse.json();
