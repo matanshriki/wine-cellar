@@ -246,12 +246,6 @@ export function CellarPage() {
     }, 5 * 60 * 1000);
   }
 
-  // Calculate unanalyzed bottles count (only for bottles in cellar)
-  const unanalyzedCount = bottlesInCellar.filter(bottle => {
-    const b = bottle as any;
-    return !b.analysis_summary || !b.readiness_label;
-  }).length;
-
   /**
    * Bottles in cellar (excluding consumed bottles)
    * Memoized for performance
@@ -259,6 +253,12 @@ export function CellarPage() {
   const bottlesInCellar = useMemo(() => {
     return bottles.filter(bottle => bottle.quantity > 0);
   }, [bottles]);
+
+  // Calculate unanalyzed bottles count (only for bottles in cellar)
+  const unanalyzedCount = bottlesInCellar.filter(bottle => {
+    const b = bottle as any;
+    return !b.analysis_summary || !b.readiness_label;
+  }).length;
 
   /**
    * Filter and search bottles
