@@ -560,10 +560,23 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                       🔍 {t('bottleForm.searchVivino')}
                     </button>
                   )}
-                  {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
+                  {(() => {
+                    const hasUrl = !!formData.vivino_url;
+                    const isValidUrl = hasUrl && isVivinoWineUrl(formData.vivino_url);
+                    console.log('[BottleForm] Vivino URL check:', {
+                      hasUrl,
+                      url: formData.vivino_url,
+                      isValidUrl,
+                      hostname: window.location.hostname,
+                    });
+                    return isValidUrl;
+                  })() && (
                     <button
                       type="button"
-                      onClick={handleFetchFromVivino}
+                      onClick={() => {
+                        console.log('[BottleForm] 🔘 Fetch Data button clicked!');
+                        handleFetchFromVivino();
+                      }}
                       disabled={fetchingVivino}
                       className="btn-luxury-primary text-sm flex-1 sm:flex-initial"
                       style={{ minHeight: '44px' }}
