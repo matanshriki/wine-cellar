@@ -50,7 +50,8 @@ const vibes = [
 ];
 
 export function RecommendationPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currencySymbol = getCurrencySymbol(i18n.language);
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState({

@@ -4,6 +4,7 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import { toast } from '../lib/toast';
 import { trackBottle } from '../services/analytics';
+import { getCurrencySymbol } from '../utils/currency';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -23,7 +24,8 @@ interface Props {
 }
 
 export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currencySymbol = getCurrencySymbol(i18n.language);
   
   // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {
@@ -489,15 +491,24 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
               >
                 {t('bottleForm.purchasePrice')}
               </label>
-              <input
-                type="number"
-                value={formData.purchase_price}
-                onChange={(e) => handleChange('purchase_price', e.target.value)}
-                className="input-luxury w-full"
-                placeholder={t('bottleForm.purchasePricePlaceholder')}
-                min="0"
-                step="0.01"
-              />
+              <div className="relative">
+                <span 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-10"
+                  style={{ fontSize: '1rem' }}
+                >
+                  {currencySymbol}
+                </span>
+                <input
+                  type="number"
+                  value={formData.purchase_price}
+                  onChange={(e) => handleChange('purchase_price', e.target.value)}
+                  className="input-luxury w-full"
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder={t('bottleForm.purchasePricePlaceholder')}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
             </div>
 
             <div className="md:col-span-2">
