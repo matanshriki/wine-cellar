@@ -135,6 +135,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         return;
       }
       
+      // Only auto-fetch if we already have a direct wine page URL (not a search URL)
+      // The fetcher requires a wine page like /w/12345 or /wines/12345
+      if (!isVivinoWineUrl(vivinoUrl)) {
+        console.log('[BottleForm] ⏩ Skipping auto-fetch: generated URL is a search page, not a wine page');
+        return;
+      }
+      
       setAutoFetchingVivino(true);
       
       try {
