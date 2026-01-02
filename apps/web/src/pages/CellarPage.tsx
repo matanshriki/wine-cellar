@@ -1328,6 +1328,63 @@ export function CellarPage() {
                 (mergedData.data as any).vivino_url = vivinoUrl;
               }
               
+              // **AUTO-FILL MISSING DATA FROM VIVINO** (Smart Merge)
+              // If AI extraction is incomplete AND we have enough data to search Vivino,
+              // automatically fetch missing fields from Vivino
+              const hasEnoughDataToSearch = mergedData.data.producer && mergedData.data.wine_name;
+              const hasMissingFields = !mergedData.data.vintage || !mergedData.data.region || !mergedData.data.grape;
+              
+              if (hasEnoughDataToSearch && hasMissingFields && vivinoUrl) {
+                console.log('[CellarPage] 🔍 AI extraction incomplete. Auto-fetching from Vivino to fill gaps...');
+                console.log('[CellarPage] Missing fields:', {
+                  vintage: !mergedData.data.vintage,
+                  region: !mergedData.data.region,
+                  grape: !mergedData.data.grape,
+                });
+                
+                try {
+                  // Import Vivino fetcher
+                  const { fetchVivinoWineData } = await import('../services/vivinoScraper');
+                  
+                  // Fetch from Vivino (uses short URL format internally)
+                  const vivinoData = await fetchVivinoWineData(vivinoUrl);
+                  
+                  if (vivinoData && (vivinoData.name || vivinoData.winery)) {
+                    console.log('[CellarPage] ✅ Vivino data fetched:', vivinoData);
+                    
+                    // **SMART MERGE: AI data takes priority, Vivino fills gaps only**
+                    mergedData.data = {
+                      wine_name: mergedData.data.wine_name || vivinoData.name || '',
+                      producer: mergedData.data.producer || vivinoData.winery || '',
+                      vintage: mergedData.data.vintage || vivinoData.vintage || undefined,
+                      region: mergedData.data.region || vivinoData.region || '',
+                      country: mergedData.data.country || vivinoData.country || '',
+                      grape: mergedData.data.grape || vivinoData.grape || '',
+                      wine_color: mergedData.data.wine_color || 'red',
+                    };
+                    
+                    // Add rating from Vivino if available
+                    if (vivinoData.rating) {
+                      (mergedData.data as any).rating = vivinoData.rating;
+                    }
+                    
+                    console.log('[CellarPage] 🎯 Smart merge complete. AI + Vivino data combined.');
+                    toast.success(`🍷 ${t('cellar.labelParse.vivinoEnhanced', 'Enriched with Vivino data!')}`, {
+                      duration: 4000,
+                    });
+                  } else {
+                    console.log('[CellarPage] ⚠️ Vivino fetch returned no data or error');
+                  }
+                } catch (error) {
+                  console.error('[CellarPage] ❌ Vivino auto-fetch failed:', error);
+                  // Don't show error to user - AI data is still valid, just not enhanced
+                }
+              } else if (!hasEnoughDataToSearch) {
+                console.log('[CellarPage] ⚠️ Not enough data to search Vivino (need producer + wine_name)');
+              } else {
+                console.log('[CellarPage] ✅ AI extraction complete. No Vivino fetch needed.');
+              }
+              
               setExtractedData(mergedData);
               
               if (extractedFieldNames.length > 0) {
