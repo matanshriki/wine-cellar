@@ -235,6 +235,10 @@
       }
     }
   },
+  "wineDetails": {
+    "country": "מדינה",
+    "regionalWineStyle": "סגנון יין אזורי"
+  },
   "bottleForm": {
     "addTitle": "הוסף בקבוק",
     "editTitle": "ערוך בקבוק",
@@ -258,8 +262,12 @@
     "grapesPlaceholder": "למשל, קברנה סוביניון, מרלו",
     "rating": "דירוג (0-100)",
     "ratingPlaceholder": "למשל, 95",
-    "purchasePrice": "מחיר רכישה (₪)",
-    "purchasePricePlaceholder": "למשל, ₪50.00",
+    "purchasePrice": "מחיר רכישה",
+    "purchasePricePlaceholder": "למשל, {{currencySymbol}}50.00",
+    "purchasePriceWithCurrency": "מחיר רכישה ({{currencyCode}})",
+    "storageLocation": "מיקום אחסון",
+    "storageLocationPlaceholder": "למשל, מרתף, מקרר",
+    "purchaseDate": "תאריך רכישה",
     "notes": "הערות",
     "notesPlaceholder": "הערות טעימה, מיקום אחסון, וכו׳",
     "cancel": "ביטול",

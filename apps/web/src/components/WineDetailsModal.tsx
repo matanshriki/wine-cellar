@@ -431,19 +431,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {wine.region && (
                         <div>
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Region</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('form.region', 'Region')}
+                          </div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{wine.region}</div>
                         </div>
                       )}
                       {wine.country && (
                         <div>
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Country</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('wineDetails.country', 'Country')}
+                          </div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{wine.country}</div>
                         </div>
                       )}
                       {(wine as any).regional_wine_style && (
                         <div className="col-span-1 sm:col-span-2">
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Regional Wine Style</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('wineDetails.regionalWineStyle', 'Regional Wine Style')}
+                          </div>
                           <div className="text-sm font-medium" style={{ color: 'var(--wine-600)' }}>
                             {(wine as any).regional_wine_style}
                           </div>
@@ -494,13 +500,17 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     <div className="grid grid-cols-2 gap-3">
                       {bottle.storage_location && (
                         <div>
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Location</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('form.storageLocation', 'Location')}
+                          </div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bottle.storage_location}</div>
                         </div>
                       )}
                       {bottle.purchase_date && (
                         <div>
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Purchased</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('form.purchaseDate', 'Purchased')}
+                          </div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                             {new Date(bottle.purchase_date).toLocaleDateString()}
                           </div>

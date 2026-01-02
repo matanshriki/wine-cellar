@@ -245,6 +245,10 @@
       }
     }
   },
+  "wineDetails": {
+    "country": "Country",
+    "regionalWineStyle": "Regional Wine Style"
+  },
   "bottleForm": {
     "addTitle": "Add Bottle",
     "editTitle": "Edit Bottle",
@@ -268,8 +272,12 @@
     "grapesPlaceholder": "e.g., Cabernet Sauvignon, Merlot",
     "rating": "Rating (0-100)",
     "ratingPlaceholder": "e.g., 95",
-    "purchasePrice": "Purchase Price (USD)",
-    "purchasePricePlaceholder": "e.g., $50.00",
+    "purchasePrice": "Purchase Price",
+    "purchasePricePlaceholder": "e.g., {{currencySymbol}}50.00",
+    "purchasePriceWithCurrency": "Purchase Price ({{currencyCode}})",
+    "storageLocation": "Storage Location",
+    "storageLocationPlaceholder": "e.g., cellar, fridge",
+    "purchaseDate": "Purchase Date",
     "notes": "Notes",
     "notesPlaceholder": "Tasting notes, storage location, etc.",
     "cancel": "Cancel",
