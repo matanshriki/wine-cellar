@@ -296,7 +296,7 @@
     "vivinoUrlRequired": "Please enter a Vivino wine page URL first",
     "invalidVivinoUrl": "Invalid Vivino URL. Please use a wine page URL like: https://www.vivino.com/wines/123456",
     "vivinoFetchFailed": "Could not fetch wine data from Vivino. Please try again or enter details manually.",
-    "vivinoFetchSuccess": "✅ Fetched from Vivino! Rating: {{rating}}/100 ({{count}} ratings)",
+    "vivinoFetchSuccess": "✅ Fetched from Vivino! Rating: {{rating}}/5 ⭐ ({{count}} ratings)",
     "vivinoFetchError": "Error fetching from Vivino: {{error}}",
     "vivinoUrlCopied": "✅ Vivino search link copied! Open Safari, paste in address bar, find your wine, then copy its URL and return here to paste.",
     "vivinoUrlCopiedPWA": "✅ Link copied! Press Home → Open Safari → Paste in address bar → Find wine → Copy wine URL → Return to Wine Cellar Brain app → Paste URL here.",

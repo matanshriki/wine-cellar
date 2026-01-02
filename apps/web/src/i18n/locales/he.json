@@ -286,7 +286,7 @@
     "vivinoUrlRequired": "אנא הזן קישור לדף יין ב-Vivino תחילה",
     "invalidVivinoUrl": "כתובת Vivino לא חוקית. השתמש בכתובת דף יין כמו: https://www.vivino.com/wines/123456",
     "vivinoFetchFailed": "לא ניתן למשוך נתוני יין מ-Vivino. נסה שוב או הזן את הפרטים ידנית.",
-    "vivinoFetchSuccess": "✅ נמשך מ-Vivino! דירוג: {{rating}}/100 ({{count}} דירוגים)",
+    "vivinoFetchSuccess": "✅ נמשך מ-Vivino! דירוג: {{rating}}/5 ⭐ ({{count}} דירוגים)",
     "vivinoFetchError": "שגיאה במשיכת נתונים מ-Vivino: {{error}}",
     "vivinoUrlCopied": "✅ קישור החיפוש הועתק! פתח Safari, הדבק בשורת הכתובת, מצא את היין שלך, העתק את הכתובת שלו וחזור לכאן להדביק.",
     "vivinoUrlCopiedPWA": "✅ הקישור הועתק! לחץ Home → פתח Safari → הדבק בשורת הכתובת → מצא את היין → העתק כתובת היין → חזור לאפליקציה → הדבק את הכתובת כאן.",

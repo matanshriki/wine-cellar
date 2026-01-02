@@ -174,8 +174,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         vintage: prev.vintage || vivinoData.vintage?.toString() || '',
         region: prev.region || vivinoData.region || '',
         grapes: prev.grapes || vivinoData.grape || '',
-        // Note: Rating is not stored in formData - we don't have a rating field in the form
-        // If you want to store the Vivino rating, you'd need to add a `vivino_rating` field
+        // Note: Rating is shown in the toast but not stored in the form
+        // The database has a `rating` field (DECIMAL(2,1), 0-5 scale)
+        // If you want to store it, add a `rating` field to CreateBottleInput/UpdateBottleInput
       }));
       
       toast.success(

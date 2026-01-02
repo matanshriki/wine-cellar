@@ -22,7 +22,7 @@ export interface VivinoWineData {
   wine_id: string;
   name: string;
   winery: string;
-  rating: number; // 0-100 scale (converted from 1-5)
+  rating: number; // 0-5 scale (Vivino's native scale, matches database)
   rating_count: number;
   image_url: string | null;
   vintage?: number | null;
@@ -146,9 +146,9 @@ export async function fetchVivinoWineData(vivinoUrl: string): Promise<VivinoWine
       wine_id: wineId,
       name: wine.name || '',
       winery: wine.winery?.name || '',
-      // Vivino uses 1-5 scale, convert to 0-100
+      // Keep Vivino's native 0-5 scale (matches database DECIMAL(2,1))
       rating: wine.statistics?.ratings_average 
-        ? Math.round((wine.statistics.ratings_average / 5) * 100)
+        ? parseFloat(wine.statistics.ratings_average.toFixed(1))
         : 0,
       rating_count: wine.statistics?.ratings_count || 0,
       image_url: wine.image?.location || null,
