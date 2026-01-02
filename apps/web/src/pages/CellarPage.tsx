@@ -246,19 +246,27 @@ export function CellarPage() {
     }, 5 * 60 * 1000);
   }
 
-  // Calculate unanalyzed bottles count
-  const unanalyzedCount = bottles.filter(bottle => {
+  // Calculate unanalyzed bottles count (only for bottles in cellar)
+  const unanalyzedCount = bottlesInCellar.filter(bottle => {
     const b = bottle as any;
     return !b.analysis_summary || !b.readiness_label;
   }).length;
+
+  /**
+   * Bottles in cellar (excluding consumed bottles)
+   * Memoized for performance
+   */
+  const bottlesInCellar = useMemo(() => {
+    return bottles.filter(bottle => bottle.quantity > 0);
+  }, [bottles]);
 
   /**
    * Filter and search bottles
    * Memoized for performance
    */
   const filteredBottles = useMemo(() => {
-    // CRITICAL: Filter out bottles with 0 quantity (already consumed)
-    let result = bottles.filter(bottle => bottle.quantity > 0);
+    // Start with bottles in cellar (quantity > 0)
+    let result = bottlesInCellar;
 
     // Apply search query (debounced via input)
     if (searchQuery.trim()) {
@@ -390,7 +398,7 @@ export function CellarPage() {
     });
 
     return result;
-  }, [bottles, searchQuery, activeFilters, sortBy, sortDir]);
+  }, [bottlesInCellar, searchQuery, activeFilters, sortBy, sortDir]);
 
   /**
    * Toggle filter chip
@@ -708,14 +716,14 @@ export function CellarPage() {
               className="text-sm sm:text-base mt-1"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {filteredBottles.length === bottles.length
-                ? t('cellar.bottleCount', { count: bottles.length })
-                : t('cellar.filteredCount', { count: filteredBottles.length, total: bottles.length })}
+              {filteredBottles.length === bottlesInCellar.length
+                ? t('cellar.bottleCount', { count: bottlesInCellar.length })
+                : t('cellar.filteredCount', { count: filteredBottles.length, total: bottlesInCellar.length })}
             </p>
           </div>
 
           {/* Action Buttons - Only show when cellar has bottles */}
-          {bottles.length > 0 && (
+          {bottlesInCellar.length > 0 && (
             <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
               <button
                 onClick={(e) => {
