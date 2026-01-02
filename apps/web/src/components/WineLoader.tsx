@@ -6,6 +6,7 @@
  * 
  * Features:
  * - SVG-based (lightweight, scalable)
+ * - CSS animations for mobile compatibility (no SMIL)
  * - Smooth fill animation with premium easing
  * - Respects prefers-reduced-motion (shows static icon instead)
  * - Accessible (aria-label)
@@ -27,7 +28,7 @@
  * <WineLoader size={64} message="Processing..." />
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 type LoaderVariant = 'page' | 'inline' | 'default';
 type LoaderSize = 'sm' | 'md' | 'lg' | number;
@@ -64,6 +65,8 @@ export function WineLoader({
   className = '' 
 }: WineLoaderProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [fillLevel, setFillLevel] = useState(100);
+  const animationRef = useRef<number>();
 
   useEffect(() => {
     // Check for prefers-reduced-motion
@@ -75,6 +78,43 @@ export function WineLoader({
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
+
+  // CSS-based animation using requestAnimationFrame for mobile compatibility
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+
+    const duration = 2500; // 2.5 seconds per cycle
+    let startTime: number | null = null;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = (elapsed % duration) / duration;
+
+      // Ease in-out cubic function
+      const easeInOutCubic = (t: number): number => {
+        return t < 0.5
+          ? 4 * t * t * t
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      };
+
+      // Animate from 100 (bottom) to 20 (top) and back
+      const easedProgress = easeInOutCubic(progress < 0.5 ? progress * 2 : (1 - progress) * 2);
+      const newFillLevel = 100 - (easedProgress * 80); // 100 to 20
+
+      setFillLevel(newFillLevel);
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [prefersReducedMotion]);
 
   // Convert size to pixels
   const sizeInPixels = typeof size === 'number' 
@@ -145,46 +185,36 @@ export function WineLoader({
           />
         </g>
 
-        {/* Animated Wine Fill */}
+        {/* Wine Fill - Using CSS animation via requestAnimationFrame for mobile compatibility */}
+        <defs>
+          <clipPath id="wine-glass-clip">
+            <path d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z" />
+          </clipPath>
+          
+          {/* Animated mask for fill level - controlled by React state */}
+          <mask id="wine-fill-mask">
+            <rect
+              x="0"
+              y={fillLevel}
+              width="100"
+              height="100"
+              fill="white"
+              style={{
+                transition: prefersReducedMotion ? 'none' : 'y 0.05s ease-out',
+              }}
+            />
+          </mask>
+          
+          <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        
         {!prefersReducedMotion ? (
           <>
-            {/* Wine liquid with animated clip-path */}
-            <defs>
-              <clipPath id="wine-glass-clip">
-                <path d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z" />
-              </clipPath>
-              
-              {/* Animated mask for fill level */}
-              <mask id="wine-fill-mask">
-                <rect
-                  x="0"
-                  y="0"
-                  width="100"
-                  height="100"
-                  fill="white"
-                >
-                  {/* Animate the fill level */}
-                  <animate
-                    attributeName="y"
-                    values="100;20;100"
-                    dur="2.5s"
-                    repeatCount="indefinite"
-                    calcMode="spline"
-                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
-                  />
-                </rect>
-              </mask>
-            </defs>
-            
-            {/* Wine fill with gradient */}
+            {/* Wine fill with gradient - animated */}
             <g clipPath="url(#wine-glass-clip)" mask="url(#wine-fill-mask)">
-              <defs>
-                <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
-                  <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
-                </linearGradient>
-              </defs>
-              
               <path
                 d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z"
                 fill="url(#wine-gradient)"
@@ -204,44 +234,15 @@ export function WineLoader({
         ) : (
           // Static fill for reduced motion
           <g clipPath="url(#wine-glass-clip)">
-            <defs>
-              <clipPath id="wine-glass-clip-static">
-                <path d="M 25 15 Q 20 35, 25 50 L 75 50 Q 80 35, 75 15 Z" />
-              </clipPath>
-              <linearGradient id="wine-gradient-static" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor={color || 'var(--wine-400)'} stopOpacity="0.9" />
-                <stop offset="100%" stopColor={color || 'var(--wine-600)'} stopOpacity="1" />
-              </linearGradient>
-            </defs>
-            
             {/* Static 50% fill */}
             <rect
               x="20"
               y="30"
               width="60"
               height="25"
-              fill="url(#wine-gradient-static)"
-              clipPath="url(#wine-glass-clip-static)"
-              opacity="0.8"
+              fill="url(#wine-gradient)"
+              opacity="0.7"
             />
-            
-            {/* Gentle pulse */}
-            <rect
-              x="20"
-              y="30"
-              width="60"
-              height="25"
-              fill="url(#wine-gradient-static)"
-              clipPath="url(#wine-glass-clip-static)"
-              opacity="0.3"
-            >
-              <animate
-                attributeName="opacity"
-                values="0.3;0.6;0.3"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-            </rect>
           </g>
         )}
       </svg>

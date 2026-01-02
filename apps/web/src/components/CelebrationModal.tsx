@@ -67,10 +67,26 @@ export function CelebrationModal({
     console.log('[CelebrationModal] 🚀 Creating confetti instance...');
 
     try {
+      // Ensure canvas has proper dimensions for mobile
+      const canvas = canvasRef.current;
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      
+      console.log('[CelebrationModal] 📐 Canvas sized:', {
+        width: canvas.width,
+        height: canvas.height,
+        styleWidth: canvas.style.width,
+        styleHeight: canvas.style.height,
+        devicePixelRatio: window.devicePixelRatio,
+      });
+
       // Create confetti instance bound to our canvas
-      const myConfetti = confetti.create(canvasRef.current, {
+      // useWorker: false for better iOS compatibility
+      const myConfetti = confetti.create(canvas, {
         resize: true,
-        useWorker: true,
+        useWorker: false, // Disable worker for iOS compatibility
       });
 
       console.log('[CelebrationModal] ✅ Confetti instance created successfully');
@@ -81,18 +97,18 @@ export function CelebrationModal({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'], // Bright test colors
+        colors: ['#a24c68', '#883d56', '#e0b7c5', '#cd8ca1', '#d4af37'], // Wine colors
       });
 
       // Fire confetti from multiple angles for better effect
-      const duration = 2500; // Longer duration for testing
+      const duration = 2000;
       const animationEnd = Date.now() + duration;
       const defaults = { 
         startVelocity: 30, 
         spread: 360, 
-        ticks: 90, // More ticks = longer visible
-        gravity: 0.8,
-        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#a24c68', '#883d56', '#e0b7c5', '#cd8ca1'], // Bright + wine colors
+        ticks: 60,
+        gravity: 1,
+        colors: ['#a24c68', '#883d56', '#e0b7c5', '#cd8ca1', '#d4af37'], // Wine colors
         disableForReducedMotion: true,
       };
 
@@ -109,7 +125,7 @@ export function CelebrationModal({
           return clearInterval(interval);
         }
 
-        const particleCount = 80 * (timeLeft / duration); // More particles
+        const particleCount = 50 * (timeLeft / duration);
         
         burstCount++;
         console.log(`[CelebrationModal] 💥 Burst #${burstCount}, particles: ${Math.round(particleCount)}`);
