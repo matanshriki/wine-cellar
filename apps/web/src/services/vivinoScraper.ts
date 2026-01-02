@@ -117,9 +117,9 @@ export function isVivinoWineUrl(url: string): boolean {
 }
 
 /**
- * Fetch wine data from Vivino (DEV ONLY)
+ * Fetch wine data from Vivino via Supabase Edge Function (DEV ONLY)
  * 
- * LEGAL WARNING: This uses undocumented Vivino endpoints.
+ * Uses a backend proxy to bypass CORS restrictions.
  * Only enabled on localhost for development/testing.
  * 
  * @param vivinoUrl - Full Vivino wine page URL
@@ -141,49 +141,28 @@ export async function fetchVivinoWineData(vivinoUrl: string): Promise<VivinoWine
   console.log('[Vivino Scraper] 🔍 Fetching data for wine ID:', wineId);
 
   try {
-    // Vivino's undocumented API endpoint (may change/break at any time)
-    // This is used by their website/app for fetching wine details
-    const apiUrl = `https://www.vivino.com/api/wines/${wineId}`;
+    // Import Supabase client
+    const { supabase } = await import('../lib/supabase');
     
-    console.log('[Vivino Scraper] API URL:', apiUrl);
+    console.log('[Vivino Scraper] Calling Edge Function: fetch-vivino-data');
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; WineCellarBrain/1.0; +dev)',
-      },
+    // Call our Edge Function (acts as proxy to Vivino)
+    const { data, error } = await supabase.functions.invoke('fetch-vivino-data', {
+      body: { wine_id: wineId },
     });
 
-    if (!response.ok) {
-      console.error('[Vivino Scraper] ❌ API error:', response.status, response.statusText);
+    if (error) {
+      console.error('[Vivino Scraper] ❌ Edge Function error:', error);
       return null;
     }
 
-    const data = await response.json();
-    console.log('[Vivino Scraper] 📦 Raw API response:', data);
+    if (!data.success) {
+      console.error('[Vivino Scraper] ❌ Vivino fetch failed:', data.error);
+      return null;
+    }
 
-    // Parse response (structure may vary)
-    const wine = data.wine || data;
-    
-    const wineData: VivinoWineData = {
-      wine_id: wineId,
-      name: wine.name || '',
-      winery: wine.winery?.name || '',
-      // Keep Vivino's native 0-5 scale (matches database DECIMAL(2,1))
-      rating: wine.statistics?.ratings_average 
-        ? parseFloat(wine.statistics.ratings_average.toFixed(1))
-        : 0,
-      rating_count: wine.statistics?.ratings_count || 0,
-      image_url: wine.image?.location || null,
-      vintage: wine.vintage?.year || null,
-      region: wine.region?.name || null,
-      country: wine.region?.country?.name || null,
-      grape: wine.primary_varietal?.name || wine.varietal?.name || null,
-    };
-
-    console.log('[Vivino Scraper] ✅ Parsed wine data:', wineData);
-    return wineData;
+    console.log('[Vivino Scraper] ✅ Parsed wine data:', data.data);
+    return data.data as VivinoWineData;
 
   } catch (error: any) {
     console.error('[Vivino Scraper] ❌ Fetch error:', error);
