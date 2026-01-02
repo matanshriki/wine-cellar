@@ -27,7 +27,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t, i18n } = useTranslation();
   const currencySymbol = getCurrencySymbol(i18n.language);
   const currentCurrency = getCurrencyCode(i18n.language);
-  const currentCurrency = getCurrencyCode(i18n.language);
   
   // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {
