@@ -531,7 +531,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   onChange={(e) => handleChange('purchase_price', e.target.value)}
                   className="input-luxury w-full"
                   style={{ paddingLeft: '2.5rem' }}
-                  placeholder={t('bottleForm.purchasePricePlaceholder')}
+                  placeholder={t('bottleForm.purchasePricePlaceholder', { currencySymbol })}
                   min="0"
                   step="0.01"
                 />
