@@ -135,8 +135,8 @@ export async function generateAIAnalysis(
   } catch (error) {
     console.warn('AI analysis failed, using deterministic fallback:', error);
     
-    // Fallback to deterministic analysis
-    const fallbackAnalysis = generateDeterministicAnalysis(bottle);
+    // Fallback to deterministic analysis with language support
+    const fallbackAnalysis = generateDeterministicAnalysis(bottle, language);
     
     // Store in database
     await storeAnalysis(bottle.id, fallbackAnalysis);
@@ -150,8 +150,11 @@ export async function generateAIAnalysis(
 
 /**
  * Deterministic fallback analysis (when AI is unavailable)
+ * 
+ * @param bottle - The bottle to analyze
+ * @param language - Language code ('en' or 'he')
  */
-function generateDeterministicAnalysis(bottle: BottleWithWineInfo): AIAnalysis {
+function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: string = 'en'): AIAnalysis {
   const currentYear = new Date().getFullYear();
   const age = bottle.wine.vintage ? currentYear - bottle.wine.vintage : 0;
   const wineType = bottle.wine.color || 'red';
