@@ -318,8 +318,8 @@
       "avoidTooYoungHelp": "דלג על בקבוקים שצריכים עוד זמן התבגרות",
       "preferReadyToDrink": "העדף יינות מוכנים לשתייה",
       "preferReadyToDrinkHelp": "תן עדיפות ליינות בשיא חלון השתייה",
-      "maxPrice": "מחיר מקסימלי (₪, אופציונלי)",
-      "maxPricePlaceholder": "למשל, ₪100",
+      "maxPrice": "מחיר מקסימלי ({{currencyCode}}, אופציונלי)",
+      "maxPricePlaceholder": "למשל, {{currencySymbol}}100",
       "getRecommendations": "קבל המלצות",
       "finding": "מחפש המלצות..."
     },

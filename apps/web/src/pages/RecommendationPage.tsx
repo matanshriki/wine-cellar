@@ -23,6 +23,7 @@ import * as historyService from '../services/historyService';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
 import { trackRecommendation } from '../services/analytics';
+import { getCurrencySymbol, getCurrencyCode, convertCurrency } from '../utils/currency';
 
 type Recommendation = recommendationService.Recommendation;
 
@@ -75,6 +76,16 @@ export function RecommendationPage() {
     setLoading(true);
 
     try {
+      // Convert maxPrice from display currency to USD for consistent filtering
+      let maxPriceInUSD: number | undefined = undefined;
+      if (context.maxPrice) {
+        const enteredPrice = parseFloat(context.maxPrice);
+        const displayCurrency = getCurrencyCode(i18n.language);
+        
+        // Convert to USD for backend filtering (bottles stored in various currencies)
+        maxPriceInUSD = convertCurrency(enteredPrice, displayCurrency, 'USD');
+      }
+      
       const requestContext: recommendationService.RecommendationInput = {
         mealType: context.mealType || undefined,
         occasion: context.occasion || undefined,
@@ -82,7 +93,7 @@ export function RecommendationPage() {
         constraints: {
           avoidTooYoung: context.avoidTooYoung,
           preferReadyToDrink: context.preferReadyToDrink,
-          maxPrice: context.maxPrice ? parseFloat(context.maxPrice) : undefined,
+          maxPrice: maxPriceInUSD,
         },
       };
 
@@ -588,14 +599,20 @@ export function RecommendationPage() {
               className="block text-base font-semibold mb-2"
               style={{ color: 'var(--color-stone-900)' }}
             >
-              {t('recommendation.form.maxPrice')}
+              {t('recommendation.form.maxPrice', { 
+                currencyCode: getCurrencyCode(i18n.language),
+                defaultValue: `Maximum price (${getCurrencyCode(i18n.language)}, optional)` 
+              })}
             </label>
             <input
               type="number"
               value={context.maxPrice}
               onChange={(e) => setContext({ ...context, maxPrice: e.target.value })}
               className="input"
-              placeholder={t('recommendation.form.maxPricePlaceholder')}
+              placeholder={`${t('recommendation.form.maxPricePlaceholder', { 
+                currencySymbol: currencySymbol,
+                defaultValue: `e.g., ${currencySymbol}100` 
+              })}`}
               min="0"
             />
           </div>

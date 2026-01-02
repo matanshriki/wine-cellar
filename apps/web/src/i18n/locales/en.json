@@ -328,8 +328,8 @@
       "avoidTooYoungHelp": "Skip bottles that need more aging time",
       "preferReadyToDrink": "Prefer ready-to-drink wines",
       "preferReadyToDrinkHelp": "Prioritize wines at their peak drinking window",
-      "maxPrice": "Maximum price (USD, optional)",
-      "maxPricePlaceholder": "e.g., $100",
+      "maxPrice": "Maximum price ({{currencyCode}}, optional)",
+      "maxPricePlaceholder": "e.g., {{currencySymbol}}100",
       "getRecommendations": "Get Recommendations",
       "finding": "Finding recommendations..."
     },
