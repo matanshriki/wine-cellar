@@ -27,6 +27,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   const { t, i18n } = useTranslation();
   const currencySymbol = getCurrencySymbol(i18n.language);
   const currentCurrency = getCurrencyCode(i18n.language);
+  const currentCurrency = getCurrencyCode(i18n.language);
   
   // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {
@@ -59,7 +60,16 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       grapes: prefillData?.grapes || (bottle?.wine.grapes ? (Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : '') : ''),
       color: prefillData?.color || bottle?.wine.color || 'red',
       quantity: bottle?.quantity?.toString() || '1',
-      purchase_price: bottle?.purchase_price?.toString() || '',
+      purchase_price: (() => {
+        if (!bottle?.purchase_price) return '';
+        // Convert price to current currency for display
+        const displayPrice = getDisplayPrice(
+          bottle.purchase_price,
+          (bottle as any).purchase_price_currency || 'USD',
+          i18n.language
+        );
+        return displayPrice.amount?.toFixed(2) || '';
+      })(),
       notes: bottle?.notes || '',
       label_image_url: prefillData?.label_image_url || '',
       vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
@@ -68,6 +78,21 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
   
   const [formData, setFormData] = useState(getInitialFormData());
   const [loading, setLoading] = useState(false);
+
+  // Update displayed price when language changes
+  useEffect(() => {
+    if (bottle?.purchase_price) {
+      const displayPrice = getDisplayPrice(
+        bottle.purchase_price,
+        (bottle as any).purchase_price_currency || 'USD',
+        i18n.language
+      );
+      setFormData(prev => ({
+        ...prev,
+        purchase_price: displayPrice.amount?.toFixed(2) || '',
+      }));
+    }
+  }, [i18n.language, bottle?.purchase_price, (bottle as any)?.purchase_price_currency]);
   
   // Check if this is an AI-prefilled form
   const isAIPrefilled = !!prefillData && (
@@ -148,6 +173,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         const bottleUpdates = {
           quantity: parseInt(formData.quantity),
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+          purchase_price_currency: currentCurrency, // Store current currency
           notes: formData.notes || null,
         };
         
@@ -193,6 +219,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           // Bottle info
           quantity: parseInt(formData.quantity) || 1,
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+          purchase_price_currency: currentCurrency, // Store current currency
           notes: formData.notes || null,
           purchase_date: null,
           purchase_location: null,
