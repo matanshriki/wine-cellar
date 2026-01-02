@@ -18,6 +18,7 @@ interface WineData {
   grapes?: string[]
   color: string
   notes?: string
+  language?: string // 'en' or 'he'
 }
 
 interface AnalysisResult {
@@ -80,10 +81,18 @@ serve(async (req) => {
     }
 
     const wineData = wine_data as WineData
+    const language = wineData.language || 'en' // Default to English
+
+    console.log('[Analyze Wine] Generating analysis in language:', language)
 
     // Build ChatGPT prompt
     const currentYear = new Date().getFullYear()
     const age = wineData.vintage ? currentYear - wineData.vintage : null
+    
+    // Language-specific instructions
+    const languageInstruction = language === 'he' 
+      ? 'CRITICAL: You MUST write ALL text fields in HEBREW (עברית). The analysis_summary, analysis_reasons, and assumptions must be in Hebrew.'
+      : 'Write all text fields in English.'
     
     const systemPrompt = `You are an expert sommelier analyzing wines. You MUST respond with valid JSON only, using this exact structure:
 
@@ -103,9 +112,25 @@ IMPORTANT:
 - Reference the SPECIFIC wine details (producer, region, vintage) in your analysis
 - Do NOT use generic template language
 - If data is missing, lower confidence and mention assumptions
-- Analysis must be unique per bottle`
+- Analysis must be unique per bottle
+- ${languageInstruction}`
 
-    const userPrompt = `Analyze this wine and provide sommelier notes:
+    const userPrompt = language === 'he'
+      ? `נתח את היין הזה וספק הערות סומלייה:
+
+שם היין: ${wineData.wine_name}
+יצרן: ${wineData.producer || 'לא ידוע'}
+בציר: ${wineData.vintage || 'ללא בציר'}
+גיל: ${age ? `${age} שנים` : 'לא ידוע'}
+אזור: ${wineData.region || 'לא ידוע'}
+ענבים: ${wineData.grapes?.join(', ') || 'לא ידוע'}
+סגנון: ${wineData.color}
+הערות משתמש: ${wineData.notes || 'אין'}
+
+שנה נוכחית: ${currentYear}
+
+ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. כתוב הכל בעברית.`
+      : `Analyze this wine and provide sommelier notes:
 
 Wine Name: ${wineData.wine_name}
 Producer: ${wineData.producer || 'Unknown'}

@@ -160,7 +160,7 @@ export function CellarPage() {
       );
 
       // Generate AI analysis
-      const analysis = await aiAnalysisService.generateAIAnalysis(bottle);
+      const analysis = await aiAnalysisService.generateAIAnalysis(bottle, i18n.language);
       trackSommelier.success(); // Track successful analysis
       
       // Reload bottles to get fresh data

@@ -74,13 +74,21 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
 /**
  * Generate AI analysis using ChatGPT via Supabase Edge Function
  * Falls back to deterministic analysis if Edge Function fails
+ * 
+ * @param bottle - The bottle to analyze
+ * @param language - Optional language code for generating notes ('en' or 'he'). Defaults to 'en'.
  */
-export async function generateAIAnalysis(bottle: BottleWithWineInfo): Promise<AIAnalysis> {
+export async function generateAIAnalysis(
+  bottle: BottleWithWineInfo,
+  language: string = 'en'
+): Promise<AIAnalysis> {
   const { data: { session } } = await supabase.auth.getSession();
   
   if (!session) {
     throw new Error('Not authenticated');
   }
+
+  console.log('[AI Analysis] Generating analysis in language:', language);
 
   // Try AI analysis first
   try {
@@ -93,6 +101,7 @@ export async function generateAIAnalysis(bottle: BottleWithWineInfo): Promise<AI
       grapes: bottle.wine.grapes,
       color: bottle.wine.color,
       notes: bottle.notes,
+      language: language, // Pass language preference
     };
 
     // Call Supabase Edge Function
