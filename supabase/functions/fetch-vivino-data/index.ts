@@ -31,12 +31,22 @@ serve(async (req) => {
 
     console.log('[Fetch Vivino Data] Fetching wine ID:', wine_id);
 
-    // Try multiple Vivino endpoints (API + HTML page)
+    // Try multiple Vivino endpoints (prioritize short URL format)
+    // 
+    // IMPORTANT: Use short URL format (just wine ID, no slug)
+    // ✅ Good: https://www.vivino.com/w/61104
+    // ❌ Bad:  https://www.vivino.com/en/prunotto-pian-romualdo-barbera-d-alba/w/61104
+    // 
+    // Why? The wine name slug can change, but the wine ID is permanent.
+    // Short URLs are more stable and work across all languages.
     const endpoints = [
-      { url: `https://www.vivino.com/api/wines/${wine_id}`, type: 'api' },
-      { url: `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`, type: 'api' },
-      { url: `https://www.vivino.com/wines/${wine_id}`, type: 'page' },
-      { url: `https://www.vivino.com/w/${wine_id}`, type: 'page' },
+      // Short URL format (most reliable - wine ID only, no language prefix)
+      { url: `https://www.vivino.com/w/${wine_id}`, type: 'page', priority: 1 },
+      // Alternative short format with /wines/ prefix
+      { url: `https://www.vivino.com/wines/${wine_id}`, type: 'page', priority: 2 },
+      // API endpoints (often blocked/404, but try anyway)
+      { url: `https://www.vivino.com/api/wines/${wine_id}`, type: 'api', priority: 3 },
+      { url: `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`, type: 'api', priority: 4 },
     ];
 
     let vivinoData: any = null;
