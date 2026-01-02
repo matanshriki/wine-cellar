@@ -13,6 +13,7 @@ import * as labelArtService from '../services/labelArtService';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload } from '../services/analytics';
+import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
 
 interface WineDetailsModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ interface WineDetailsModalProps {
 }
 
 export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh }: WineDetailsModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -507,9 +508,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       )}
                       {bottle.purchase_price && (
                         <div>
-                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Price Paid</div>
+                          <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                            {t('form.purchasePrice', 'Purchase Price')}
+                          </div>
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            ${bottle.purchase_price.toFixed(2)}
+                            {(() => {
+                              const locale = i18n.language;
+                              const displayCurrencyCode = getCurrencyCode(locale);
+                              const displayCurrencySymbol = getCurrencySymbol(locale);
+                              const storedCurrency = bottle.purchase_price_currency || 'USD';
+                              
+                              // Convert if needed
+                              const convertedAmount = convertCurrency(
+                                bottle.purchase_price,
+                                storedCurrency,
+                                displayCurrencyCode
+                              );
+                              
+                              return formatCurrency(convertedAmount, locale, displayCurrencyCode);
+                            })()}
                           </div>
                         </div>
                       )}
