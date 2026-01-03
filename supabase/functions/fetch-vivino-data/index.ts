@@ -153,6 +153,7 @@ serve(async (req) => {
                   }
                 }
                 
+                // **EXTRACT ALL AVAILABLE FIELDS** from Vivino
                 extractedData = {
                   ...extractedData,
                   name: wineData.name || extractedData.name,
@@ -162,9 +163,45 @@ serve(async (req) => {
                   vintage: wineData.vintage?.year || null,
                   region: wineData.region?.name || null,
                   country: wineData.region?.country?.name || null,
+                  
+                  // Primary grape
                   grape: wineData.primary_varietal?.name || null,
+                  
+                  // **ALL grapes** (comma-separated)
+                  grapes: wineData.style?.grapes?.map((g: any) => g.name).join(', ') || null,
+                  
+                  // Wine style (e.g., "Bold & Rich")
+                  wine_style: wineData.style?.name || null,
+                  
+                  // Alcohol percentage
+                  alcohol: wineData.alcohol ? `${wineData.alcohol}%` : null,
+                  
+                  // Price (if available - might be null)
+                  price: wineData.price?.amount || null,
+                  price_currency: wineData.price?.currency?.code || 'USD',
+                  
+                  // Full region info
+                  region_class: wineData.region?.class || null,
+                  region_background: wineData.region?.background || null,
+                  
+                  // Acidity, Fizziness, Intensity, Sweetness (Vivino taste profile)
+                  acidity: wineData.taste?.structure?.acidity || null,
+                  fizziness: wineData.taste?.structure?.fizziness || null,
+                  intensity: wineData.taste?.structure?.intensity || null,
+                  sweetness: wineData.taste?.structure?.sweetness || null,
+                  
+                  // Food pairings
+                  food_pairings: wineData.food_pairings?.map((f: any) => f.name).join(', ') || null,
+                  
+                  // Winery info
+                  winery_id: wineData.winery?.id || null,
+                  winery_description: wineData.winery?.background || null,
+                  
+                  // Image
                   image_url: wineData.image?.location || extractedData.image_url,
                 };
+                
+                console.log('[Fetch Vivino Data] 📦 Extracted comprehensive data:', Object.keys(extractedData));
               }
             } catch (e) {
               console.log('[Fetch Vivino Data] Failed to parse preloaded state:', e);
@@ -269,20 +306,54 @@ serve(async (req) => {
           error: vivinoData.error,
         };
       } else {
-        // Successfully extracted data
+        // Successfully extracted data - **RETURN ALL FIELDS**
         cleanData = {
           wine_id: wine_id,
           source: 'html',
+          
+          // Core wine info
           name: vivinoData.name || '',
           winery: vivinoData.winery || '',
-          rating: vivinoData.rating || null,
-          rating_count: vivinoData.rating_count || null,
-          image_url: vivinoData.image_url || null,
           vintage: vivinoData.vintage || null,
+          
+          // Location
           region: vivinoData.region || null,
           country: vivinoData.country || null,
-          grape: vivinoData.grape || null,
+          
+          // Grapes
+          grape: vivinoData.grape || null, // Primary grape
+          grapes: vivinoData.grapes || null, // All grapes (comma-separated)
+          
+          // Rating
+          rating: vivinoData.rating || null,
+          rating_count: vivinoData.rating_count || null,
+          
+          // Style & characteristics
+          wine_style: vivinoData.wine_style || null,
+          alcohol: vivinoData.alcohol || null,
+          
+          // Price
+          price: vivinoData.price || null,
+          price_currency: vivinoData.price_currency || 'USD',
+          
+          // Taste profile
+          acidity: vivinoData.acidity || null,
+          fizziness: vivinoData.fizziness || null,
+          intensity: vivinoData.intensity || null,
+          sweetness: vivinoData.sweetness || null,
+          
+          // Food pairings
+          food_pairings: vivinoData.food_pairings || null,
+          
+          // Media
+          image_url: vivinoData.image_url || null,
+          
+          // Additional metadata
+          region_class: vivinoData.region_class || null,
+          winery_id: vivinoData.winery_id || null,
         };
+        
+        console.log('[Fetch Vivino Data] ✅ Returning', Object.keys(cleanData).length, 'fields');
       }
     } else {
       // Data from API (if we ever get this working)

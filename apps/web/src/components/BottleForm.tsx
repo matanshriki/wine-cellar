@@ -158,10 +158,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
           setFormData(prev => {
             const merged = {
               ...prev,
-              // Only fill if empty
+              // Only fill if empty - use ALL grapes if available
               vintage: prev.vintage || (vivinoData.vintage ? vivinoData.vintage.toString() : ''),
               region: prev.region || vivinoData.region || '',
-              grapes: prev.grapes || vivinoData.grape || '',
+              grapes: prev.grapes || vivinoData.grapes || vivinoData.grape || '',
               rating: prev.rating || (vivinoData.rating ? vivinoData.rating.toString() : ''),
             };
             
@@ -281,7 +281,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
         producer: vivinoData.winery || prev.producer,
         vintage: vivinoData.vintage ? vivinoData.vintage.toString() : prev.vintage,
         region: vivinoData.region || prev.region,
-        grapes: vivinoData.grape || prev.grapes,
+        // Use ALL grapes if available, fallback to primary grape
+        grapes: vivinoData.grapes || vivinoData.grape || prev.grapes,
         // Store rating from Vivino (0-5 scale)
         rating: vivinoData.rating ? vivinoData.rating.toString() : prev.rating,
       }));

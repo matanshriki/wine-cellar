@@ -20,16 +20,48 @@
 
 export interface VivinoWineData {
   wine_id: string;
+  
+  // Core info
   name?: string | null;
   winery?: string | null;
-  rating?: number | null; // 0-5 scale (Vivino's native scale, matches database)
-  rating_count?: number | null;
-  image_url?: string | null;
   vintage?: number | null;
+  
+  // Location
   region?: string | null;
   country?: string | null;
-  grape?: string | null;
+  
+  // Grapes
+  grape?: string | null; // Primary grape
+  grapes?: string | null; // All grapes (comma-separated)
+  
+  // Rating
+  rating?: number | null; // 0-5 scale (Vivino's native scale, matches database)
+  rating_count?: number | null;
+  
+  // Style & characteristics
+  wine_style?: string | null;
+  alcohol?: string | null; // e.g., "14.5%"
+  
+  // Price
+  price?: number | null;
+  price_currency?: string | null;
+  
+  // Taste profile (Vivino's taste structure)
+  acidity?: number | null;
+  fizziness?: number | null;
+  intensity?: number | null;
+  sweetness?: number | null;
+  
+  // Food pairings
+  food_pairings?: string | null; // Comma-separated
+  
+  // Media
+  image_url?: string | null;
+  
+  // Metadata
   source?: 'api' | 'html'; // Track where data came from
+  region_class?: string | null;
+  winery_id?: number | null;
 }
 
 /**
