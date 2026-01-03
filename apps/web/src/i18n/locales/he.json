@@ -133,6 +133,16 @@
       "analyzed": "נותח",
       "clear": "נקה הכל"
     },
+    "sort": {
+      "label": "מיין לפי",
+      "title": "מיין מרתף",
+      "recentlyAddedNewest": "נוספו לאחרונה (חדש ביותר)",
+      "recentlyAddedOldest": "נוספו לאחרונה (ישן ביותר)",
+      "vintageNewest": "בציר (חדש ביותר)",
+      "vintageOldest": "בציר (ישן ביותר)",
+      "ratingHighest": "דירוג (גבוה ביותר)",
+      "readiness": "מוכנות (מוכן ראשון)"
+    },
     "labelScan": {
       "title": "סרוק תווית",
       "instruction": "מרכז את התווית",
