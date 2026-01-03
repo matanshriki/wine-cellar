@@ -1,10 +1,8 @@
 /**
- * Vivino Auto-Link Utility (DEV ONLY)
+ * Vivino Auto-Link Utility
  * 
  * Auto-generates Vivino search URLs from AI-extracted wine data.
- * 
- * IMPORTANT: This feature is ONLY enabled on localhost for development/testing.
- * Do NOT enable in production without thorough testing and user consent.
+ * Enabled in production for all users.
  * 
  * @see https://www.vivino.com/search/wines
  */
@@ -20,20 +18,12 @@ export interface WineDataForVivino {
 /**
  * Check if we're running in local development environment
  * 
- * @returns true if localhost, false otherwise
+ * @returns true (always enabled in production now)
+ * @deprecated This function now always returns true. Kept for backwards compatibility.
  */
 export function isLocalDevEnvironment(): boolean {
-  // Check multiple conditions for localhost
-  const hostname = window.location.hostname;
-  const isLocalhost = 
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '[::1]' ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
-    hostname.endsWith('.local');
-  
-  return isLocalhost;
+  // Feature is now enabled in production for all users
+  return true;
 }
 
 /**
@@ -55,12 +45,6 @@ export function isLocalDevEnvironment(): boolean {
  * @returns Vivino search URL or null if insufficient data
  */
 export function generateVivinoSearchUrl(data: WineDataForVivino): string | null {
-  // Vivino auto-link (dev only) - Check if feature should be enabled
-  if (!isLocalDevEnvironment()) {
-    console.log('[Vivino Auto-Link] Skipped - not in localhost environment');
-    return null;
-  }
-  
   // Minimum requirement: wine name
   const wineName = data.wine_name?.trim();
   if (!wineName) {
@@ -128,40 +112,23 @@ export function generateVivinoSearchUrl(data: WineDataForVivino): string | null 
 }
 
 /**
- * TODO (for production):
+ * PRODUCTION NOTES:
+ * 
+ * This feature is now ENABLED in production.
  * 
  * LIMITATION: This generates SEARCH URLs, not direct wine pages.
- * To get exact wine page URLs (/wines/123456), we would need:
+ * The backend Edge Function (fetch-vivino-data) handles fetching actual wine data.
  * 
- * Option A: Official Vivino API Integration (RECOMMENDED)
- * - Apply for Vivino API partnership
- * - Use official wine lookup endpoint
- * - Get wine_id directly from Vivino
- * - Pro: Legal, stable, accurate
- * - Con: Requires business partnership
+ * Current workflow:
+ * 1. User adds bottle → AI extracts wine info
+ * 2. System generates Vivino search URL
+ * 3. User can click "Fetch Data" to get full details (rating, region, grapes)
+ * 4. Backend scrapes Vivino (via Edge Function to bypass CORS)
  * 
- * Option B: Hybrid Approach (CURRENT)
- * - Generate precise search URL
- * - User clicks → finds wine → copies actual URL
- * - Add helper text explaining workflow
- * - Pro: Simple, no API needed
- * - Con: Extra user step
- * 
- * Option C: Vivino Database Integration
- * - Build local database of wine_id mappings
- * - Map (producer + wine + vintage) → vivino_id
- * - Requires large dataset and maintenance
- * - Pro: Fast, no API calls
- * - Con: Outdated data, huge effort
- * 
- * Before enabling in production:
- * 1. User privacy: Add opt-in preference
- * 2. Rate limiting: Throttle URL generation
- * 3. Analytics: Track success rate of search URLs
- * 4. Fallback: Handle Vivino search changes/deprecation
- * 5. Localization: Support Vivino regional domains (.com, .fr, .de, etc.)
- * 6. Legal: Review Vivino ToS for deep-linking and search automation
- * 7. UX: Add clear helper text explaining this is a search URL
- * 8. Workflow: Provide "Copy wine page URL" helper after Vivino search
+ * Future improvements:
+ * - Official Vivino API partnership for stable integration
+ * - Rate limiting on Edge Function to prevent abuse
+ * - Caching of fetched wine data to reduce API calls
+ * - Analytics to track fetch success rates
  */
 

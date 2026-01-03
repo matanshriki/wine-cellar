@@ -1,19 +1,20 @@
 /**
- * Vivino Data Fetcher (DEV ONLY - Localhost)
+ * Vivino Data Fetcher (Production-Ready)
  * 
- * Fetches wine data (rating, image, details) from a Vivino wine page URL.
+ * Fetches wine data (rating, image, details) from a Vivino wine page URL
+ * via Supabase Edge Function to bypass CORS restrictions.
  * 
- * IMPORTANT LEGAL DISCLAIMER:
+ * IMPORTANT NOTES:
  * - Vivino does NOT provide a public API
- * - This uses undocumented/unofficial endpoints
- * - May violate Vivino's Terms of Service
- * - FOR DEVELOPMENT/TESTING ONLY
- * - DO NOT enable in production without legal review
+ * - This uses web scraping via backend proxy
+ * - Uses publicly accessible wine pages (no authentication required)
+ * - Should be used responsibly with appropriate rate limiting
  * 
- * RECOMMENDED PRODUCTION APPROACH:
+ * RECOMMENDED FUTURE IMPROVEMENTS:
  * - Apply for official Vivino API partnership
- * - Use official endpoints with proper authentication
- * - Respect rate limits and ToS
+ * - Implement caching to reduce requests
+ * - Add rate limiting on Edge Function
+ * - Monitor for Vivino HTML structure changes
  * 
  * @see https://www.vivino.com/terms
  */
@@ -65,19 +66,12 @@ export interface VivinoWineData {
 }
 
 /**
- * Check if Vivino scraping is enabled (localhost only)
+ * Check if Vivino scraping is enabled
+ * @returns true (enabled in production for all users)
  */
 function isVivinoScraperEnabled(): boolean {
-  const hostname = window.location.hostname;
-  const isLocalhost = 
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '[::1]' ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
-    hostname.endsWith('.local');
-  
-  return isLocalhost;
+  // Enabled in production - all users can benefit from Vivino data enrichment
+  return true;
 }
 
 /**
@@ -150,18 +144,18 @@ export function isVivinoWineUrl(url: string): boolean {
 }
 
 /**
- * Fetch wine data from Vivino via Supabase Edge Function (DEV ONLY)
+ * Fetch wine data from Vivino via Supabase Edge Function
  * 
  * Uses a backend proxy to bypass CORS restrictions.
- * Only enabled on localhost for development/testing.
+ * Enabled in production for all users.
  * 
  * @param vivinoUrl - Full Vivino wine page URL
  * @returns Wine data or null if fetch fails
  */
 export async function fetchVivinoWineData(vivinoUrl: string): Promise<VivinoWineData | null> {
-  // Guard: Only work on localhost
+  // Guard: Check if feature is enabled
   if (!isVivinoScraperEnabled()) {
-    console.log('[Vivino Scraper] ⛔ Disabled - not in localhost environment');
+    console.log('[Vivino Scraper] ⛔ Feature disabled');
     return null;
   }
 

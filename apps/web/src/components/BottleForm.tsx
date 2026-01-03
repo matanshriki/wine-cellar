@@ -99,13 +99,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     }
   }, [i18n.language, bottle?.purchase_price, (bottle as any)?.purchase_price_currency]);
   
-  // **AUTO-FETCH FROM VIVINO (Background - Dev Only)**
+  // **AUTO-FETCH FROM VIVINO (Background)**
   // When user manually types wine name + producer, automatically fetch from Vivino
   // to fill missing fields (vintage, region, grapes, rating)
   useEffect(() => {
-    // Only on localhost (dev environment)
-    if (!isLocalDevEnvironment()) return;
-    
     // Only if we're adding a new bottle (not editing)
     if (bottle) return;
     
@@ -644,9 +641,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
               />
             </div>
 
-            {/* Vivino Integration - Hidden on localhost for new bottles (auto-fetch instead) */}
-            {(!isLocalDevEnvironment() || bottle) && (
-              <div className="md:col-span-2">
+            {/* Vivino Integration */}
+            <div className="md:col-span-2">
                 <label 
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'var(--text-primary)' }}
@@ -716,7 +712,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   className="text-xs mt-1"
                   style={{ color: 'var(--color-emerald-700)' }}
                 >
-                  ✨ {t('bottleForm.vivinoFetchHint', 'Click "Fetch Data" to auto-fill wine details and rating from Vivino')} {window.location.hostname === 'localhost' ? '(localhost only)' : ''}
+                  ✨ {t('bottleForm.vivinoFetchHint', 'Click "Fetch Data" to auto-fill wine details and rating from Vivino')}
                 </p>
               )}
               
@@ -736,11 +732,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   </div>
                 </div>
               )}
-              </div>
-            )}
+            </div>
             
-            {/* Auto-fetch indicator (localhost only, new bottles only) */}
-            {isLocalDevEnvironment() && !bottle && autoFetchingVivino && (
+            {/* Auto-fetch indicator (new bottles only) */}
+            {!bottle && autoFetchingVivino && (
               <div className="md:col-span-2">
                 <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'var(--color-blue-50)', border: '1px solid var(--color-blue-200)' }}>
                   <div className="animate-spin" style={{ fontSize: '16px' }}>🔍</div>
