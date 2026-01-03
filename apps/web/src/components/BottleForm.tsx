@@ -73,8 +73,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
       })(),
       notes: bottle?.notes || '',
       label_image_url: prefillData?.label_image_url || '',
-      vivino_url: prefillData?.vivino_url || bottle?.wine.vivino_url || '',
-      rating: bottle?.wine.rating?.toString() || '', // Vivino rating (0-5 scale)
+      vivino_url: prefillData?.vivino_url || (bottle?.wine as any)?.vivino_url || '',
+      rating: (bottle?.wine as any)?.rating?.toString() || '', // Vivino rating (0-5 scale)
     };
   };
   
@@ -175,9 +175,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             
             if (filledCount > 0) {
               console.log('[BottleForm] 🎯 Auto-filled', filledCount, 'fields from Vivino');
-              toast.success(`🍷 Auto-enriched with Vivino data (${filledCount} fields)`, {
-                duration: 3000,
-              });
+              toast.success(`🍷 Auto-enriched with Vivino data (${filledCount} fields)`);
             }
             
             return merged;

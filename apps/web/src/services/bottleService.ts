@@ -102,6 +102,7 @@ export interface CreateBottleInput {
   quantity?: number;
   purchase_date?: string | null;
   purchase_price?: number | null;
+  purchase_price_currency?: string | null;
   purchase_location?: string | null;
   storage_location?: string | null;
   bottle_size_ml?: number;
@@ -169,6 +170,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     quantity: input.quantity || 1,
     purchase_date: input.purchase_date || null,
     purchase_price: input.purchase_price || null,
+    purchase_price_currency: input.purchase_price_currency || null,
     purchase_location: input.purchase_location || null,
     storage_location: input.storage_location || null,
     bottle_size_ml: input.bottle_size_ml || 750,
@@ -316,7 +318,16 @@ export async function updateWineInfo(
 
   if (error) {
     console.error('[bottleService] Error updating wine:', error);
-    throw new Error('Failed to update wine information');
+    console.error('[bottleService] Error code:', error.code);
+    console.error('[bottleService] Error details:', error.details);
+    console.error('[bottleService] Error hint:', error.hint);
+    
+    // If it's a unique constraint violation, provide a more helpful message
+    if (error.code === '23505') {
+      throw new Error('A wine with these details already exists in your cellar. Please check the wine name, producer, and vintage.');
+    }
+    
+    throw new Error(`Failed to update wine information: ${error.message}`);
   }
 
   console.log('[bottleService] ✅ Wine updated successfully:', data);

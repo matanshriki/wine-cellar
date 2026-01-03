@@ -1334,7 +1334,11 @@ export function CellarPage() {
               const hasEnoughDataToSearch = mergedData.data.producer && mergedData.data.wine_name;
               const hasMissingFields = !mergedData.data.vintage || !mergedData.data.region || !mergedData.data.grape;
               
-              if (hasEnoughDataToSearch && hasMissingFields && vivinoUrl) {
+              // IMPORTANT: Only auto-fetch if we have a DIRECT wine page URL, not a search URL
+              // Search URLs won't work with the Vivino scraper (it needs /w/12345 format)
+              const isDirectWineUrl = vivinoUrl && (vivinoUrl.includes('/w/') || vivinoUrl.includes('/wines/'));
+              
+              if (hasEnoughDataToSearch && hasMissingFields && isDirectWineUrl) {
                 console.log('[CellarPage] 🔍 AI extraction incomplete. Auto-fetching from Vivino to fill gaps...');
                 console.log('[CellarPage] Missing fields:', {
                   vintage: !mergedData.data.vintage,
@@ -1369,9 +1373,7 @@ export function CellarPage() {
                     }
                     
                     console.log('[CellarPage] 🎯 Smart merge complete. AI + Vivino data combined.');
-                    toast.success(`🍷 ${t('cellar.labelParse.vivinoEnhanced', 'Enriched with Vivino data!')}`, {
-                      duration: 4000,
-                    });
+                    toast.success(`🍷 ${t('cellar.labelParse.vivinoEnhanced', 'Enriched with Vivino data!')}`);
                   } else {
                     console.log('[CellarPage] ⚠️ Vivino fetch returned no data or error');
                   }
@@ -1381,6 +1383,9 @@ export function CellarPage() {
                 }
               } else if (!hasEnoughDataToSearch) {
                 console.log('[CellarPage] ⚠️ Not enough data to search Vivino (need producer + wine_name)');
+              } else if (!isDirectWineUrl) {
+                console.log('[CellarPage] ⚠️ Skipping auto-fetch: Generated URL is a search page, not a direct wine page');
+                console.log('[CellarPage] 💡 TIP: User can manually click "Search on Vivino" button to find the exact wine');
               } else {
                 console.log('[CellarPage] ✅ AI extraction complete. No Vivino fetch needed.');
               }

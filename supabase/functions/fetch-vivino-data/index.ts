@@ -1,7 +1,7 @@
 /**
  * Supabase Edge Function: Fetch Vivino Wine Data
  * 
- * Acts as a proxy to fetch wine data from Vivino's API.
+ * Acts as a proxy to fetch wine data from Vivino's pages.
  * Bypasses CORS restrictions by making server-to-server requests.
  * 
  * Endpoint: POST /functions/v1/fetch-vivino-data
@@ -31,353 +31,189 @@ serve(async (req) => {
 
     console.log('[Fetch Vivino Data] Fetching wine ID:', wine_id);
 
-    // Try multiple Vivino endpoints (prioritize short URL format)
-    // 
-    // IMPORTANT: Use short URL format (just wine ID, no slug)
-    // ✅ Good: https://www.vivino.com/w/61104
-    // ❌ Bad:  https://www.vivino.com/en/prunotto-pian-romualdo-barbera-d-alba/w/61104
-    // 
-    // Why? The wine name slug can change, but the wine ID is permanent.
-    // Short URLs are more stable and work across all languages.
-    const endpoints = [
-      // Short URL format (most reliable - wine ID only, no language prefix)
-      { url: `https://www.vivino.com/w/${wine_id}`, type: 'page', priority: 1 },
-      // Alternative short format with /wines/ prefix
-      { url: `https://www.vivino.com/wines/${wine_id}`, type: 'page', priority: 2 },
-      // API endpoints (often blocked/404, but try anyway)
-      { url: `https://www.vivino.com/api/wines/${wine_id}`, type: 'api', priority: 3 },
-      { url: `https://www.vivino.com/api/wines/${wine_id}?currency_code=USD&language=en`, type: 'api', priority: 4 },
-    ];
-
-    let vivinoData: any = null;
-    let successUrl = '';
-    let responseType = '';
-
-    for (const endpoint of endpoints) {
-      console.log('[Fetch Vivino Data] Trying:', endpoint.url, `(${endpoint.type})`);
-      
-      const headers: Record<string, string> = {
+    // Try short URL format first
+    let url = `https://www.vivino.com/w/${wine_id}`;
+    console.log('[Fetch Vivino Data] Fetching:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Referer': 'https://www.vivino.com/',
-      };
+        'Cache-Control': 'no-cache',
+      },
+      redirect: 'follow', // Follow redirects
+    });
 
-      // For API endpoints, request JSON
-      if (endpoint.type === 'api') {
-        headers['Accept'] = 'application/json';
-      } else {
-        headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8';
-      }
-      
-      const response = await fetch(endpoint.url, {
-        method: 'GET',
-        headers,
-      });
+    if (!response.ok) {
+      throw new Error(`Vivino returned ${response.status}`);
+    }
 
-      if (response.ok) {
-        successUrl = endpoint.url;
-        responseType = endpoint.type;
-        console.log('[Fetch Vivino Data] ✅ Success with:', endpoint.url);
-        
-        if (endpoint.type === 'api') {
-          // Parse as JSON
-          vivinoData = await response.json();
-          console.log('[Fetch Vivino Data] Parsed JSON data');
-          break;
-        } else {
-          // Parse HTML page
-          const html = await response.text();
-          console.log('[Fetch Vivino Data] Got HTML page, length:', html.length);
-          
-          // Extract data from the page using multiple strategies
-          let extractedData: any = {};
-          
-          // Strategy 1: Try JSON-LD structured data
-          const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs);
-          for (const jsonLdMatch of jsonLdMatches) {
-            try {
-              const structuredData = JSON.parse(jsonLdMatch[1]);
-              console.log('[Fetch Vivino Data] Found JSON-LD type:', structuredData['@type']);
-              
-              // Extract from JSON-LD (Product schema)
-              if (structuredData['@type'] === 'Product' || structuredData['@type'] === 'http://schema.org/Product') {
-                // Parse rating (might be string or number)
-                let rating = null;
-                if (structuredData.aggregateRating?.ratingValue) {
-                  const parsed = parseFloat(structuredData.aggregateRating.ratingValue);
-                  if (!isNaN(parsed)) {
-                    rating = Math.round(parsed * 10) / 10; // Round to 1 decimal
-                  }
-                }
-                
-                // Parse rating count (might be string or number)
-                let ratingCount = null;
-                const rawCount = structuredData.aggregateRating?.ratingCount || structuredData.aggregateRating?.reviewCount;
-                if (rawCount) {
-                  const parsed = parseInt(String(rawCount).replace(/,/g, ''), 10);
-                  if (!isNaN(parsed)) {
-                    ratingCount = parsed;
-                  }
-                }
-                
-                extractedData = {
-                  name: structuredData.name || '',
-                  winery: structuredData.brand?.name || structuredData.manufacturer?.name || '',
-                  rating: rating,
-                  rating_count: ratingCount,
-                  image_url: structuredData.image || structuredData.image?.[0] || null,
-                };
-                console.log('[Fetch Vivino Data] Extracted from JSON-LD:', extractedData);
-              }
-            } catch (e) {
-              console.log('[Fetch Vivino Data] Failed to parse JSON-LD:', e);
-            }
+    // Log the final URL after redirects
+    const finalUrl = response.url;
+    if (finalUrl !== url) {
+      console.log('[Fetch Vivino Data] 🔄 Redirected to:', finalUrl);
+    }
+
+    const html = await response.text();
+    console.log('[Fetch Vivino Data] ✅ Got HTML, length:', html.length);
+
+    // Extract data from HTML
+    const extractedData: any = {};
+
+    // Strategy 1: JSON-LD (for rating + basic info)
+    const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs);
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1]);
+        if (data['@type'] === 'Product' || data['@type'] === 'http://schema.org/Product') {
+          if (data.aggregateRating?.ratingValue) {
+            extractedData.rating = Math.round(parseFloat(data.aggregateRating.ratingValue) * 10) / 10;
           }
-          
-          // Strategy 2: Try to find __PRELOADED_STATE__ (React initial state)
-          const preloadedStateMatch = html.match(/window\.__PRELOADED_STATE__\s*=\s*({.+?});/s);
-          if (preloadedStateMatch) {
-            try {
-              const preloadedState = JSON.parse(preloadedStateMatch[1]);
-              console.log('[Fetch Vivino Data] Found preloaded state');
-              
-              // Try to extract wine data from preloaded state
-              const wineData = preloadedState.winePageInformation?.wine;
-              if (wineData) {
-                // Parse rating safely
-                let rating = extractedData.rating;
-                if (wineData.statistics?.ratings_average) {
-                  const parsed = parseFloat(wineData.statistics.ratings_average);
-                  if (!isNaN(parsed)) {
-                    rating = Math.round(parsed * 10) / 10; // Round to 1 decimal
-                  }
-                }
-                
-                // **EXTRACT ALL AVAILABLE FIELDS** from Vivino
-                extractedData = {
-                  ...extractedData,
-                  name: wineData.name || extractedData.name,
-                  winery: wineData.winery?.name || extractedData.winery,
-                  rating: rating,
-                  rating_count: wineData.statistics?.ratings_count || extractedData.rating_count,
-                  vintage: wineData.vintage?.year || null,
-                  region: wineData.region?.name || null,
-                  country: wineData.region?.country?.name || null,
-                  
-                  // Primary grape
-                  grape: wineData.primary_varietal?.name || null,
-                  
-                  // **ALL grapes** (comma-separated)
-                  grapes: wineData.style?.grapes?.map((g: any) => g.name).join(', ') || null,
-                  
-                  // Wine style (e.g., "Bold & Rich")
-                  wine_style: wineData.style?.name || null,
-                  
-                  // Alcohol percentage
-                  alcohol: wineData.alcohol ? `${wineData.alcohol}%` : null,
-                  
-                  // Price (if available - might be null)
-                  price: wineData.price?.amount || null,
-                  price_currency: wineData.price?.currency?.code || 'USD',
-                  
-                  // Full region info
-                  region_class: wineData.region?.class || null,
-                  region_background: wineData.region?.background || null,
-                  
-                  // Acidity, Fizziness, Intensity, Sweetness (Vivino taste profile)
-                  acidity: wineData.taste?.structure?.acidity || null,
-                  fizziness: wineData.taste?.structure?.fizziness || null,
-                  intensity: wineData.taste?.structure?.intensity || null,
-                  sweetness: wineData.taste?.structure?.sweetness || null,
-                  
-                  // Food pairings
-                  food_pairings: wineData.food_pairings?.map((f: any) => f.name).join(', ') || null,
-                  
-                  // Winery info
-                  winery_id: wineData.winery?.id || null,
-                  winery_description: wineData.winery?.background || null,
-                  
-                  // Image
-                  image_url: wineData.image?.location || extractedData.image_url,
-                };
-                
-                console.log('[Fetch Vivino Data] 📦 Extracted comprehensive data:', Object.keys(extractedData));
-              }
-            } catch (e) {
-              console.log('[Fetch Vivino Data] Failed to parse preloaded state:', e);
-            }
+          if (data.aggregateRating?.ratingCount) {
+            extractedData.rating_count = parseInt(String(data.aggregateRating.ratingCount).replace(/,/g, ''));
           }
-          
-          // Strategy 3: Try meta tags and page title
-          if (!extractedData.name) {
-            // Try og:title
-            const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
-            if (ogTitleMatch) {
-              extractedData.name = ogTitleMatch[1];
-              console.log('[Fetch Vivino Data] Found name from og:title:', extractedData.name);
-            }
-          }
-          
-          if (!extractedData.image_url) {
-            // Try og:image
-            const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
-            if (ogImageMatch) {
-              extractedData.image_url = ogImageMatch[1];
-              console.log('[Fetch Vivino Data] Found image from og:image:', extractedData.image_url);
-            }
-          }
-          
-          // Strategy 4: Try to extract from any JSON in script tags
-          const allScripts = html.matchAll(/<script[^>]*>(.*?)<\/script>/gs);
-          for (const scriptMatch of allScripts) {
-            const scriptContent = scriptMatch[1];
-            
-            // Skip if already got data
-            if (Object.keys(extractedData).length > 3) break;
-            
-            // Look for wine data patterns
-            if (scriptContent.includes('wine') && scriptContent.includes('rating')) {
-              try {
-                // Try to find JSON objects with wine data
-                const jsonObjectMatches = scriptContent.matchAll(/\{[^{}]*"wine"[^{}]*\}/g);
-                for (const jsonMatch of jsonObjectMatches) {
-                  try {
-                    const wineObj = JSON.parse(jsonMatch[0]);
-                    if (wineObj.wine?.name) {
-                      extractedData.name = extractedData.name || wineObj.wine.name;
-                      extractedData.winery = extractedData.winery || wineObj.wine.winery?.name;
-                      console.log('[Fetch Vivino Data] Found data in script tag');
-                    }
-                  } catch (e) {
-                    // Skip invalid JSON
-                  }
-                }
-              } catch (e) {
-                // Skip
-              }
-            }
-          }
-          
-          // If we got some data, use it
-          if (extractedData.name || extractedData.winery || extractedData.rating) {
-            console.log('[Fetch Vivino Data] Successfully extracted data from HTML:', extractedData);
-            vivinoData = { fromHtml: true, ...extractedData };
-            break;
-          }
-          
-          // Fallback: couldn't extract structured data
-          console.log('[Fetch Vivino Data] Could not extract structured data from HTML');
-          console.log('[Fetch Vivino Data] HTML preview (first 2000 chars):', html.substring(0, 2000));
-          vivinoData = { 
-            fromHtml: true, 
-            error: 'Could not parse wine data from page',
-            html_snippet: html.substring(0, 2000) 
-          };
-          break;
+          extractedData.name = data.name || extractedData.name;
+          extractedData.winery = data.brand?.name || extractedData.winery;
+          extractedData.image_url = data.image || extractedData.image_url;
+          console.log('[Fetch Vivino Data] ✅ Extracted from JSON-LD');
         }
-      } else {
-        const errorText = await response.text();
-        console.log('[Fetch Vivino Data] ❌ Failed:', endpoint.url, response.status);
-        console.log('[Fetch Vivino Data] Error snippet:', errorText.substring(0, 200));
+      } catch (e) {
+        // Skip
       }
     }
 
-    if (!vivinoData) {
-      console.error('[Fetch Vivino Data] All endpoints failed');
-      throw new Error(`All Vivino endpoints returned errors for wine ID: ${wine_id}`);
-    }
-
-    console.log('[Fetch Vivino Data] Success! Response type:', responseType);
-    console.log('[Fetch Vivino Data] Data preview:', JSON.stringify(vivinoData).substring(0, 300));
-
-    // Parse and return clean data
-    let cleanData: any;
-
-    if (vivinoData.fromHtml) {
-      // Data extracted from HTML page
-      console.log('[Fetch Vivino Data] Returning HTML-extracted data...');
-      
-      if (vivinoData.error) {
-        // Failed to extract data
-        cleanData = {
-          wine_id: wine_id,
-          source: 'html',
-          success: false,
-          error: vivinoData.error,
-        };
-      } else {
-        // Successfully extracted data - **RETURN ALL FIELDS**
-        cleanData = {
-          wine_id: wine_id,
-          source: 'html',
-          
-          // Core wine info
-          name: vivinoData.name || '',
-          winery: vivinoData.winery || '',
-          vintage: vivinoData.vintage || null,
-          
-          // Location
-          region: vivinoData.region || null,
-          country: vivinoData.country || null,
-          
-          // Grapes
-          grape: vivinoData.grape || null, // Primary grape
-          grapes: vivinoData.grapes || null, // All grapes (comma-separated)
-          
-          // Rating
-          rating: vivinoData.rating || null,
-          rating_count: vivinoData.rating_count || null,
-          
-          // Style & characteristics
-          wine_style: vivinoData.wine_style || null,
-          alcohol: vivinoData.alcohol || null,
-          
-          // Price
-          price: vivinoData.price || null,
-          price_currency: vivinoData.price_currency || 'USD',
-          
-          // Taste profile
-          acidity: vivinoData.acidity || null,
-          fizziness: vivinoData.fizziness || null,
-          intensity: vivinoData.intensity || null,
-          sweetness: vivinoData.sweetness || null,
-          
-          // Food pairings
-          food_pairings: vivinoData.food_pairings || null,
-          
-          // Media
-          image_url: vivinoData.image_url || null,
-          
-          // Additional metadata
-          region_class: vivinoData.region_class || null,
-          winery_id: vivinoData.winery_id || null,
-        };
-        
-        console.log('[Fetch Vivino Data] ✅ Returning', Object.keys(cleanData).length, 'fields');
-      }
-    } else {
-      // Data from API (if we ever get this working)
-      console.log('[Fetch Vivino Data] Parsing API response...');
-      const wine = vivinoData.wine || vivinoData;
-      
-      cleanData = {
-        wine_id: wine_id,
-        source: 'api',
-        name: wine.name || '',
-        winery: wine.winery?.name || '',
-        rating: wine.statistics?.ratings_average 
-          ? parseFloat(wine.statistics.ratings_average.toFixed(1))
-          : null,
-        rating_count: wine.statistics?.ratings_count || null,
-        image_url: wine.image?.location || null,
-        vintage: wine.vintage?.year || null,
-        region: wine.region?.name || null,
-        country: wine.region?.country?.name || null,
-        grape: wine.primary_varietal?.name || wine.varietal?.name || null,
-      };
-    }
+    // Strategy 2: Search for large JSON objects in scripts (Vivino's data structure)
+    console.log('[Fetch Vivino Data] Searching for wine data in script tags...');
+    const scriptMatches = html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g);
     
-    console.log('[Fetch Vivino Data] Final clean data:', JSON.stringify(cleanData));
+    for (const scriptMatch of scriptMatches) {
+      const script = scriptMatch[1];
+      
+      // Skip small scripts (< 2000 chars)
+      if (script.length < 2000) continue;
+      
+      // Look for JSON objects that contain wine-related data
+      // Pattern: Look for objects with "region" AND ("grapes" OR "grape")
+      if (script.includes('"region"') && (script.includes('"grapes"') || script.includes('"grape"'))) {
+        console.log('[Fetch Vivino Data] 🔍 Found potential wine data script, length:', script.length);
+        
+        // Try to extract JSON objects
+        let depth = 0;
+        let startIdx = -1;
+        let jsonObjects = [];
+        
+        for (let i = 0; i < script.length; i++) {
+          if (script[i] === '{') {
+            if (depth === 0) startIdx = i;
+            depth++;
+          } else if (script[i] === '}') {
+            depth--;
+            if (depth === 0 && startIdx !== -1) {
+              const jsonStr = script.substring(startIdx, i + 1);
+              // Only keep large JSON objects (> 500 chars) that look like wine data
+              if (jsonStr.length > 500 && jsonStr.includes('"region"')) {
+                jsonObjects.push(jsonStr);
+              }
+              startIdx = -1;
+            }
+          }
+        }
+        
+        console.log('[Fetch Vivino Data] 🔍 Found', jsonObjects.length, 'potential JSON objects');
+        
+        // Try parsing each object
+        for (const jsonStr of jsonObjects) {
+          try {
+            const obj = JSON.parse(jsonStr);
+            
+            // Log the first few keys to debug
+            const objKeys = Object.keys(obj);
+            console.log('[Fetch Vivino Data] 🔍 JSON object keys:', objKeys.slice(0, 15).join(', '));
+            
+            // Check both top-level and nested wine data
+            let wineData = null;
+            
+            // Case 1: Wine data is directly in this object
+            if ((obj.region || obj.grapes || obj.style) && obj.name) {
+              wineData = obj;
+              console.log('[Fetch Vivino Data] ✅ Found wine data at top level!');
+            }
+            // Case 2: Wine data is nested in a "wine" property
+            else if (obj.wine && typeof obj.wine === 'object') {
+              const wine = obj.wine;
+              if ((wine.region || wine.grapes || wine.style) && wine.name) {
+                wineData = wine;
+                console.log('[Fetch Vivino Data] ✅ Found wine data in nested "wine" object!');
+              }
+            }
+            // Case 3: This might be a "vintage" object that contains wine data
+            else if (obj.vintage && typeof obj.vintage === 'object' && obj.vintage.wine) {
+              const wine = obj.vintage.wine;
+              if ((wine.region || wine.grapes || wine.style) && wine.name) {
+                wineData = wine;
+                console.log('[Fetch Vivino Data] ✅ Found wine data in vintage.wine!');
+              }
+            }
+            
+            if (wineData) {
+              console.log('[Fetch Vivino Data] 🔍 Wine data keys:', Object.keys(wineData).join(', '));
+              
+              // Extract all available data
+              extractedData.name = wineData.name || extractedData.name;
+              extractedData.winery = wineData.winery?.name || extractedData.winery;
+              extractedData.vintage = wineData.vintage?.year || wineData.year || null;
+              extractedData.region = wineData.region?.name || wineData.region || null;
+              extractedData.country = wineData.region?.country?.name || wineData.country?.name || null;
+              extractedData.grape = wineData.style?.varietal_name || wineData.primary_varietal?.name || wineData.grape || null;
+              
+              // Handle grapes array (can be objects or strings)
+              if (wineData.grapes && Array.isArray(wineData.grapes)) {
+                extractedData.grapes = wineData.grapes.map((g: any) => 
+                  typeof g === 'string' ? g : (g.name || g.varietal_name || '')
+                ).filter(Boolean).join(', ') || null;
+              } else if (wineData.style?.grapes) {
+                extractedData.grapes = wineData.style.grapes.map((g: any) => g.name || g).filter(Boolean).join(', ') || null;
+              }
+              
+              extractedData.alcohol = wineData.alcohol ? `${wineData.alcohol}%` : null;
+              extractedData.wine_style = wineData.style?.name || wineData.wine_style?.name || null;
+              extractedData.image_url = wineData.image?.location || wineData.image || extractedData.image_url;
+              
+              console.log('[Fetch Vivino Data] ✅ Extracted:', Object.keys(extractedData).filter(k => extractedData[k]).join(', '));
+              break;
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+        
+        // If we found data, stop searching
+        if (extractedData.region || extractedData.grapes) break;
+      }
+    }
+
+    // Return data
+    const cleanData = {
+      wine_id,
+      source: 'html',
+      name: extractedData.name || '',
+      winery: extractedData.winery || '',
+      vintage: extractedData.vintage || null,
+      region: extractedData.region || null,
+      country: extractedData.country || null,
+      grape: extractedData.grape || null,
+      grapes: extractedData.grapes || null,
+      rating: extractedData.rating || null,
+      rating_count: extractedData.rating_count || null,
+      alcohol: extractedData.alcohol || null,
+      wine_style: extractedData.wine_style || null,
+      image_url: extractedData.image_url || null,
+    };
+
+    console.log('[Fetch Vivino Data] ✅ Returning data');
 
     return new Response(
       JSON.stringify({ success: true, data: cleanData }),
@@ -388,7 +224,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[Fetch Vivino Data] Error:', error.message);
+    console.error('[Fetch Vivino Data] ❌ Error:', error.message);
     
     return new Response(
       JSON.stringify({
@@ -397,10 +233,8 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 with error in body for better client handling
+        status: 200,
       }
     );
   }
 });
-
-
