@@ -139,9 +139,10 @@ export function CookieConsent() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
+          className="fixed left-0 right-0 z-[100] p-4"
           style={{
-            paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))',
+            bottom: 0,
+            paddingBottom: 'max(5.5rem, calc(env(safe-area-inset-bottom) + 5rem))',
           }}
         >
           <div
@@ -227,32 +228,44 @@ export function CookieConsent() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={handleReject}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReject();
+                }}
                 disabled={isLoading}
                 className="flex-1 px-4 py-3 rounded-lg font-medium text-sm sm:text-base transition-all"
                 style={{
                   background: 'white',
                   color: 'var(--color-stone-700)',
                   border: '1px solid var(--color-stone-300)',
-                  minHeight: '44px',
+                  minHeight: '48px',
                   touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                  cursor: isLoading ? 'wait' : 'pointer',
                 }}
               >
                 {t('cookieConsent.reject', 'No Thanks')}
               </button>
               <button
-                onClick={handleAccept}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleAccept();
+                }}
                 disabled={isLoading}
                 className="flex-1 px-4 py-3 rounded-lg font-medium text-sm sm:text-base transition-all"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-wine-500) 0%, var(--color-wine-600) 100%)',
                   color: 'white',
                   border: 'none',
-                  minHeight: '44px',
+                  minHeight: '48px',
                   touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
                   boxShadow: '0 4px 6px -1px rgba(139, 58, 71, 0.3)',
+                  cursor: isLoading ? 'wait' : 'pointer',
                 }}
               >
                 {isLoading ? (
