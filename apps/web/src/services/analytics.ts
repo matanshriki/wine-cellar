@@ -272,6 +272,24 @@ export const trackAILabel = {
 };
 
 /**
+ * Track AI label parsing/scanning events (OCR)
+ */
+export const trackLabelParse = {
+  start: (source: 'camera' | 'library') => trackEvent('label_parse_start', { source }),
+  success: (fieldsExtracted: number, source: 'camera' | 'library') => 
+    trackEvent('label_parse_success', { 
+      fields_extracted: fieldsExtracted,
+      source,
+    }),
+  error: (errorType: string, source: 'camera' | 'library', errorMessage?: string) => 
+    trackEvent('label_parse_error', { 
+      error_type: errorType,
+      source,
+      error_message: errorMessage ? errorMessage.substring(0, 100) : undefined, // Truncate to 100 chars
+    }),
+};
+
+/**
  * Track upload events
  */
 export const trackUpload = {

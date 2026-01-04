@@ -1407,7 +1407,19 @@ export function CellarPage() {
             }
           } catch (error: any) {
             console.error('[CellarPage] Direct photo processing error:', error);
-            toast.error(t('cellar.labelParse.error'));
+            console.error('[CellarPage] Error message:', error.message);
+            console.error('[CellarPage] Error name:', error.name);
+            console.error('[CellarPage] User agent:', navigator.userAgent);
+            
+            // Track error
+            analytics.trackLabelParse.error(
+              error.name || 'UnknownError',
+              'camera',
+              error.message
+            );
+            
+            const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
+            toast.error(t('cellar.labelParse.error') + errorDetails);
           } finally {
             setIsParsing(false);
           }
@@ -1482,6 +1494,10 @@ export function CellarPage() {
               // Don't close label capture yet - keep user on same view
               console.log('[CellarPage] Photo captured, starting AI processing...');
               
+              // Track label parse start
+              const parseSource = result.source || 'library';
+              analytics.trackLabelParse.start(parseSource as 'camera' | 'library');
+              
               // Show parsing state FIRST (before closing anything)
               setIsParsing(true);
               console.log('[CellarPage] Set isParsing to true');
@@ -1511,6 +1527,9 @@ export function CellarPage() {
                   
                   const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
                   console.log('[CellarPage] Extracted field names:', extractedFieldNames);
+                  
+                  // Track success
+                  analytics.trackLabelParse.success(extractedFieldNames.length, parseSource as 'camera' | 'library');
                   
                   // Store parsed fields for highlighting
                   setParsedFields(extractedFieldNames);
@@ -1581,6 +1600,17 @@ export function CellarPage() {
                 console.error('[CellarPage] ❌ Parse error:', error);
                 console.error('[CellarPage] Error message:', error.message);
                 console.error('[CellarPage] Error stack:', error.stack);
+                console.error('[CellarPage] Error name:', error.name);
+                console.error('[CellarPage] User agent:', navigator.userAgent);
+                console.error('[CellarPage] Browser:', navigator.vendor);
+                console.error('[CellarPage] Platform:', navigator.platform);
+                
+                // Track error with details
+                analytics.trackLabelParse.error(
+                  error.name || 'UnknownError',
+                  parseSource as 'camera' | 'library',
+                  error.message
+                );
                 
                 // Fallback to manual entry with image
                 const errorFallbackData = {
@@ -1592,7 +1622,9 @@ export function CellarPage() {
                 setExtractedData(errorFallbackData);
                 console.log('[CellarPage] Set error fallback extracted data');
                 
-                toast.error(t('cellar.labelParse.error'));
+                // Show error toast with more details for debugging
+                const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
+                toast.error(t('cellar.labelParse.error') + errorDetails);
                 console.log('[CellarPage] Showed error toast');
               } finally {
                 setIsParsing(false);
