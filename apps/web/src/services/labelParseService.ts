@@ -51,14 +51,28 @@ export async function parseLabelImage(
       throw new Error('Either imageUrl or imagePath is required');
     }
 
-    // Get auth token
+    // Get auth token - try to refresh session if expired
     console.log('[Label Parse Service] Getting auth session...');
-    const { data: { session } } = await supabase.auth.getSession();
+    let { data: { session } } = await supabase.auth.getSession();
     console.log('[Label Parse Service] Session:', session ? 'Found' : 'Not found');
     
+    // If no session, try to refresh it (PWA session persistence)
     if (!session) {
-      console.error('[Label Parse Service] ❌ Not authenticated');
-      throw new Error('Not authenticated');
+      console.log('[Label Parse Service] No session found, attempting refresh...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('[Label Parse Service] ❌ Session refresh failed:', refreshError);
+        throw new Error('Session expired. Please log in again.');
+      }
+      
+      session = refreshData.session;
+      console.log('[Label Parse Service] Session refreshed:', session ? 'Success' : 'Failed');
+    }
+    
+    if (!session) {
+      console.error('[Label Parse Service] ❌ Not authenticated after refresh attempt');
+      throw new Error('Authentication required. Please log out and log in again.');
     }
 
     console.log('[Label Parse Service] User ID:', session.user.id);
