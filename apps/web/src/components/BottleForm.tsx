@@ -665,9 +665,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   {(formData.wine_name || formData.producer) && (
                     <button
                       type="button"
-                      onClick={handleSearchVivino}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSearchVivino();
+                      }}
                       className="btn-luxury-secondary text-sm flex-1 sm:flex-initial"
-                      style={{ minHeight: '44px' }}
+                      style={{ 
+                        minHeight: '48px',
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
                     >
                       🔍 {t('bottleForm.searchVivino')}
                     </button>
@@ -685,13 +693,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
                   })() && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         console.log('[BottleForm] 🔘 Fetch Data button clicked!');
                         handleFetchFromVivino();
                       }}
                       disabled={fetchingVivino}
                       className="btn-luxury-primary text-sm flex-1 sm:flex-initial"
-                      style={{ minHeight: '44px' }}
+                      style={{ 
+                        minHeight: '48px',
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                        cursor: fetchingVivino ? 'wait' : 'pointer',
+                      }}
                       title={t('bottleForm.fetchFromVivino', 'Fetch wine data and rating from Vivino')}
                     >
                       {fetchingVivino ? '⏳' : '⬇️'} {fetchingVivino ? t('common.loading') : t('bottleForm.fetchFromVivino', 'Fetch Data')}
@@ -799,6 +814,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             flexShrink: 0,
             borderTop: '1px solid var(--border-light)',
             boxShadow: 'var(--shadow-sm)',
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+            backgroundColor: 'var(--bg-surface)',
           }}
         >
           <div className="flex gap-2 sm:gap-3">
@@ -807,6 +824,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
               onClick={handleClose}
               className="flex-1 btn-luxury-secondary text-sm sm:text-base"
               disabled={loading}
+              style={{ 
+                minHeight: '48px',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
             >
               {t('bottleForm.cancel')}
             </button>
@@ -815,6 +837,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
               form="bottle-form"
               className="flex-1 btn-luxury-primary text-sm sm:text-base"
               disabled={loading}
+              style={{ 
+                minHeight: '48px',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
             >
               {loading
                 ? t('bottleForm.saving')
