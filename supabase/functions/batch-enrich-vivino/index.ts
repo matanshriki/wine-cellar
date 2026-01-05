@@ -10,6 +10,7 @@ interface Wine {
   rating?: number;
   region?: string;
   grapes?: string[];
+  regional_wine_style?: string;
   user_id: string;
 }
 
@@ -67,12 +68,12 @@ Deno.serve(async (req) => {
     const { dryRun = false, limit = 1000 } = await req.json().catch(() => ({}));
 
     // Fetch all wines that need enrichment
-    // Criteria: Have vivino_url but missing other data (rating, region, or grapes)
+    // Criteria: Have vivino_url but missing other data (rating, region, grapes, or regional_wine_style)
     const { data: wines, error: fetchError } = await supabaseClient
       .from("wines")
-      .select("id, wine_name, producer, vintage, vivino_url, rating, region, grapes, user_id")
+      .select("id, wine_name, producer, vintage, vivino_url, rating, region, grapes, regional_wine_style, user_id")
       .not("vivino_url", "is", null)
-      .or("rating.is.null,region.is.null,grapes.is.null")
+      .or("rating.is.null,region.is.null,grapes.is.null,regional_wine_style.is.null")
       .limit(limit);
 
     if (fetchError) {
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
           progress.processed++;
 
           console.log(`[Batch Enrich] [${progress.processed}/${progress.total}] Processing: ${wine.wine_name} (ID: ${wine.id})`);
-          console.log(`[Batch Enrich] Current data - Rating: ${wine.rating}, Region: ${wine.region}, Grapes: ${JSON.stringify(wine.grapes)}`);
+          console.log(`[Batch Enrich] Current data - Rating: ${wine.rating}, Region: ${wine.region}, Grapes: ${JSON.stringify(wine.grapes)}, Style: ${wine.regional_wine_style}`);
           console.log(`[Batch Enrich] Vivino URL: ${wine.vivino_url}`);
 
           // Extract wine_id from vivino_url
@@ -162,7 +163,7 @@ Deno.serve(async (req) => {
           console.log(`[Batch Enrich] Wine data extracted:`, JSON.stringify(wineData, null, 2));
 
           // Check if we got valid data
-          if (!wineData.rating && !wineData.region && !wineData.grapes) {
+          if (!wineData.rating && !wineData.region && !wineData.grapes && !wineData.wine_style) {
             console.log(`[Batch Enrich] ⏭️ SKIP REASON: No enrichable data from Vivino`);
             progress.skipped++;
             continue;
@@ -175,9 +176,11 @@ Deno.serve(async (req) => {
           if (wineData.grapes && (!wine.grapes || wine.grapes.length === 0)) {
             updateData.grapes = wineData.grapes;
           }
-          // Additional fields
-          if (wineData.wine_type && !wine.wine_type) updateData.wine_type = wineData.wine_type;
-          if (wineData.price && !wine.price) updateData.price = wineData.price;
+          // Map wine_style to regional_wine_style
+          if (wineData.wine_style && !wine.regional_wine_style) {
+            updateData.regional_wine_style = wineData.wine_style;
+          }
+          // Additional fields (if you add them to the wines table later)
           if (wineData.alcohol_content && !wine.alcohol_content) {
             updateData.alcohol_content = wineData.alcohol_content;
           }
@@ -187,7 +190,7 @@ Deno.serve(async (req) => {
           // Only update if we have new data
           if (Object.keys(updateData).length === 0) {
             console.log(`[Batch Enrich] ⏭️ SKIP REASON: Wine already has all available data`);
-            console.log(`[Batch Enrich] Wine has - Rating: ${!!wine.rating}, Region: ${!!wine.region}, Grapes: ${wine.grapes?.length || 0}`);
+            console.log(`[Batch Enrich] Wine has - Rating: ${!!wine.rating}, Region: ${!!wine.region}, Grapes: ${wine.grapes?.length || 0}, Style: ${!!wine.regional_wine_style}`);
             progress.skipped++;
             continue;
           }
