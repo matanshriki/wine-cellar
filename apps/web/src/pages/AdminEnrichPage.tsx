@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 
 interface BatchProgress {
   total: number;
@@ -18,6 +18,30 @@ export const AdminEnrichPage: React.FC = () => {
   const [limit, setLimit] = useState(100);
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  // Check if user is admin
+  React.useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('is_admin', { check_user_id: user.id });
+        if (error) throw error;
+        setIsAdmin(data);
+        if (!data) {
+          setAdminError('You do not have admin privileges to access this page.');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setAdminError('Unable to verify admin status. Please contact support.');
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [user]);
 
   const runBatchEnrich = async () => {
     if (!user) {
@@ -70,6 +94,54 @@ export const AdminEnrichPage: React.FC = () => {
     }
   };
 
+  // Loading state
+  if (isAdmin === null) {
+    return (
+      <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        <h1>🍷 Batch Vivino Enrichment</h1>
+        <p style={{ color: '#666', marginTop: '2rem' }}>Checking admin privileges...</p>
+      </div>
+    );
+  }
+
+  // Not admin - show error
+  if (isAdmin === false) {
+    return (
+      <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+        <h1>🍷 Batch Vivino Enrichment</h1>
+        <div style={{
+          backgroundColor: '#f8d7da',
+          border: '1px solid #f5c6cb',
+          borderRadius: '8px',
+          padding: '1.5rem',
+          marginTop: '2rem',
+          color: '#721c24'
+        }}>
+          <h3 style={{ marginTop: 0 }}>🚫 Access Denied</h3>
+          <p>{adminError}</p>
+          <p style={{ fontSize: '0.875rem', marginBottom: 0 }}>
+            <strong>Your User ID:</strong> <code style={{ backgroundColor: '#fff', padding: '2px 6px', borderRadius: '3px' }}>{user?.id}</code>
+          </p>
+          <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '1rem' }}>
+            To become an admin, run this SQL in Supabase:
+          </p>
+          <pre style={{
+            backgroundColor: '#2d2d2d',
+            color: '#fff',
+            padding: '1rem',
+            borderRadius: '6px',
+            fontSize: '0.75rem',
+            overflow: 'auto'
+          }}>
+{`INSERT INTO public.admins (user_id) 
+VALUES ('${user?.id}');`}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin user - show full interface
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h1>🍷 Batch Vivino Enrichment</h1>

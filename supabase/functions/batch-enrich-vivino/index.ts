@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Verify admin access (optional - you can add admin check here)
+    // Verify admin access
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -57,7 +57,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[Batch Enrich] Started by user: ${user.id}`);
+    // Check if user is admin
+    const { data: isAdminData, error: adminCheckError } = await supabaseClient
+      .rpc("is_admin", { check_user_id: user.id });
+
+    if (adminCheckError) {
+      console.error("[Batch Enrich] Admin check error:", adminCheckError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify admin status" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isAdminData) {
+      console.log(`[Batch Enrich] Access denied for non-admin user: ${user.id}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Admin access required",
+          message: "Only admin users can run batch enrichment" 
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[Batch Enrich] Started by admin user: ${user.id}`);
 
     // Parse request options
     const { dryRun = false, limit = 1000 } = await req.json().catch(() => ({}));
