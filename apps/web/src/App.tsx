@@ -11,6 +11,7 @@ import { CellarPage } from './pages/CellarPage';
 import { RecommendationPage } from './pages/RecommendationPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { AdminEnrichPage } from './pages/AdminEnrichPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,16 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <ProfilePage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/enrich"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <AdminEnrichPage />
             </Layout>
           </PrivateRoute>
         }

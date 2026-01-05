@@ -17,3 +17,4 @@ WHERE table_name = 'wines'
   AND column_name IN ('generated_image_path', 'generated_image_prompt_hash', 'generated_at');
 
 
+

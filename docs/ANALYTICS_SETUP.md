@@ -257,3 +257,4 @@ If you're deploying this app publicly, ensure your privacy policy mentions:
   - Debug mode for development
   - Comprehensive documentation
 
+

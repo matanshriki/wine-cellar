@@ -29,3 +29,4 @@ COMMENT ON TABLE public.wines IS 'Wine catalog. Images: image_url (user-provided
 
 
 
+

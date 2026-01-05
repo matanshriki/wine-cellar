@@ -21,3 +21,4 @@ COMMENT ON COLUMN public.profiles.ai_label_art_enabled IS
 
 
 
+
