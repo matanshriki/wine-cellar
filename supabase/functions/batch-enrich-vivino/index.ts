@@ -27,15 +27,23 @@ const DELAY_BETWEEN_REQUESTS = 2000;
 const BATCH_SIZE = 50; // Process 50 wines at a time
 
 Deno.serve(async (req) => {
+  console.log("[Batch Enrich] ========== NEW REQUEST ==========");
+  console.log("[Batch Enrich] Method:", req.method);
+  console.log("[Batch Enrich] URL:", req.url);
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
+    console.log("[Batch Enrich] CORS preflight request");
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
+    console.log("[Batch Enrich] Authorization header present:", !!authHeader);
+    
     if (!authHeader) {
+      console.error("[Batch Enrich] ❌ Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Missing authorization" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -43,63 +51,90 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    console.log("[Batch Enrich] Token length:", token.length);
+    console.log("[Batch Enrich] Token prefix:", token.substring(0, 30) + "...");
     
-    // Create client with user's JWT to verify auth
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+    // Create service role client for database operations
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    console.log("[Batch Enrich] Supabase URL:", supabaseUrl);
+    console.log("[Batch Enrich] Service Role Key present:", !!serviceRoleKey);
+    console.log("[Batch Enrich] Service Role Key length:", serviceRoleKey?.length);
+    
+    const supabaseClient = createClient(
+      supabaseUrl ?? "",
+      serviceRoleKey ?? ""
     );
 
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    console.log("[Batch Enrich] Attempting to verify JWT token...");
+    
+    // Verify the JWT token using service role client
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    console.log("[Batch Enrich] Auth result - User:", user ? `${user.id} (${user.email})` : "null");
+    console.log("[Batch Enrich] Auth result - Error:", authError ? JSON.stringify(authError) : "null");
 
     if (authError || !user) {
-      console.error("[Batch Enrich] Auth error:", authError);
+      console.error("[Batch Enrich] ❌ Auth failed");
+      console.error("[Batch Enrich] Error details:", JSON.stringify(authError, null, 2));
       return new Response(
         JSON.stringify({ 
           error: "Unauthorized",
-          details: authError?.message || "Invalid or expired session"
+          details: authError?.message || "Invalid or expired session",
+          debug: {
+            hasAuthHeader: !!authHeader,
+            tokenLength: token.length,
+            errorCode: authError?.status,
+            errorMessage: authError?.message,
+          }
         }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[Batch Enrich] User authenticated: ${user.id}`);
-
-    // Create service role client for database operations
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    console.log(`[Batch Enrich] ✅ User authenticated: ${user.id}`);
 
     // Check if user is admin
+    console.log("[Batch Enrich] Checking admin status for user:", user.id);
+    
     const { data: isAdminData, error: adminCheckError } = await supabaseClient
       .rpc("is_admin", { check_user_id: user.id });
 
+    console.log("[Batch Enrich] Admin check result - Data:", isAdminData);
+    console.log("[Batch Enrich] Admin check result - Error:", adminCheckError ? JSON.stringify(adminCheckError) : "null");
+
     if (adminCheckError) {
-      console.error("[Batch Enrich] Admin check error:", adminCheckError);
+      console.error("[Batch Enrich] ❌ Admin check failed:", adminCheckError);
       return new Response(
-        JSON.stringify({ error: "Failed to verify admin status", details: adminCheckError.message }),
+        JSON.stringify({ 
+          error: "Failed to verify admin status", 
+          details: adminCheckError.message,
+          debug: {
+            userId: user.id,
+            errorCode: adminCheckError.code,
+          }
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!isAdminData) {
-      console.log(`[Batch Enrich] Access denied for non-admin user: ${user.id}`);
+      console.log(`[Batch Enrich] ❌ Access denied for non-admin user: ${user.id}`);
       return new Response(
         JSON.stringify({ 
           error: "Admin access required",
-          message: "Only admin users can run batch enrichment" 
+          message: "Only admin users can run batch enrichment",
+          debug: {
+            userId: user.id,
+            isAdmin: isAdminData,
+          }
         }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[Batch Enrich] Started by admin user: ${user.id}`);
+    console.log(`[Batch Enrich] ✅ Admin verified! Starting batch by user: ${user.id}`);
 
     // Parse request options
     const { dryRun = false, limit = 1000 } = await req.json().catch(() => ({}));

@@ -62,22 +62,35 @@ export const AdminEnrichPage: React.FC = () => {
     setResult(null);
 
     try {
+      console.log('[Admin Enrich] ========== STARTING REQUEST ==========');
+      console.log('[Admin Enrich] User:', user?.id);
+      console.log('[Admin Enrich] Dry run:', isDryRun);
+      console.log('[Admin Enrich] Limit:', limit);
+      
       // Get session and refresh if needed
+      console.log('[Admin Enrich] Step 1: Getting session...');
       let { data: { session } } = await supabase.auth.getSession();
+      
+      console.log('[Admin Enrich] Session present:', !!session);
+      console.log('[Admin Enrich] Session expires at:', session?.expires_at);
       
       if (!session) {
         console.log('[Admin Enrich] No session found, attempting to refresh...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
+          console.error('[Admin Enrich] ❌ Refresh failed:', refreshError);
           throw new Error('Session expired. Please refresh the page and try again.');
         }
         
         session = refreshData.session;
-        console.log('[Admin Enrich] Session refreshed successfully');
+        console.log('[Admin Enrich] ✅ Session refreshed successfully');
       }
 
-      console.log('[Admin Enrich] Calling Edge Function with token:', session.access_token.substring(0, 20) + '...');
+      console.log('[Admin Enrich] Step 2: Calling Edge Function...');
+      console.log('[Admin Enrich] Token length:', session.access_token.length);
+      console.log('[Admin Enrich] Token prefix:', session.access_token.substring(0, 30) + '...');
+      console.log('[Admin Enrich] URL:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
@@ -90,6 +103,10 @@ export const AdminEnrichPage: React.FC = () => {
           body: JSON.stringify({ dryRun: isDryRun, limit }),
         }
       );
+
+      console.log('[Admin Enrich] Step 3: Response received');
+      console.log('[Admin Enrich] Status:', response.status);
+      console.log('[Admin Enrich] OK:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
