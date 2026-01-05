@@ -12,7 +12,7 @@ interface BatchProgress {
 }
 
 export const AdminEnrichPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session: contextSession } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
   const [limit, setLimit] = useState(100);
@@ -67,29 +67,50 @@ export const AdminEnrichPage: React.FC = () => {
       console.log('[Admin Enrich] Dry run:', isDryRun);
       console.log('[Admin Enrich] Limit:', limit);
       
-      // Get session and refresh if needed
-      console.log('[Admin Enrich] Step 1: Getting session...');
-      let { data: { session } } = await supabase.auth.getSession();
+      // Use session from context (more reliable than getSession)
+      console.log('[Admin Enrich] Step 1: Checking session from context...');
+      let session = contextSession;
       
-      console.log('[Admin Enrich] Session present:', !!session);
+      console.log('[Admin Enrich] Session from context:', !!session);
       console.log('[Admin Enrich] Session expires at:', session?.expires_at);
       
       if (!session) {
-        console.log('[Admin Enrich] No session found, attempting to refresh...');
+        console.log('[Admin Enrich] No session in context, fetching fresh...');
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !sessionData.session) {
+          console.error('[Admin Enrich] ❌ Failed to get session:', sessionError);
+          throw new Error('Session expired. Please refresh the page and try again.');
+        }
+        
+        session = sessionData.session;
+        console.log('[Admin Enrich] ✅ Got fresh session');
+      }
+
+      // Check if session is expired or about to expire
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt = session.expires_at || 0;
+      const timeUntilExpiry = expiresAt - now;
+      
+      console.log('[Admin Enrich] Time until token expiry:', timeUntilExpiry, 'seconds');
+      
+      if (timeUntilExpiry < 60) {
+        console.log('[Admin Enrich] Token expiring soon, refreshing...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
           console.error('[Admin Enrich] ❌ Refresh failed:', refreshError);
-          throw new Error('Session expired. Please refresh the page and try again.');
+          throw new Error('Failed to refresh session. Please refresh the page and try again.');
         }
         
         session = refreshData.session;
-        console.log('[Admin Enrich] ✅ Session refreshed successfully');
+        console.log('[Admin Enrich] ✅ Session refreshed');
       }
 
       console.log('[Admin Enrich] Step 2: Calling Edge Function...');
       console.log('[Admin Enrich] Token length:', session.access_token.length);
       console.log('[Admin Enrich] Token prefix:', session.access_token.substring(0, 30) + '...');
+      console.log('[Admin Enrich] Token suffix:', '...' + session.access_token.substring(session.access_token.length - 30));
       console.log('[Admin Enrich] URL:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`);
 
       const response = await fetch(
