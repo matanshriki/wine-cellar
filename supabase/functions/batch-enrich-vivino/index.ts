@@ -33,11 +33,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -48,14 +43,38 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    // Create client with user's JWT to verify auth
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
+      console.error("[Batch Enrich] Auth error:", authError);
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ 
+          error: "Unauthorized",
+          details: authError?.message || "Invalid or expired session"
+        }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`[Batch Enrich] User authenticated: ${user.id}`);
+
+    // Create service role client for database operations
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
     // Check if user is admin
     const { data: isAdminData, error: adminCheckError } = await supabaseClient
@@ -64,7 +83,7 @@ Deno.serve(async (req) => {
     if (adminCheckError) {
       console.error("[Batch Enrich] Admin check error:", adminCheckError);
       return new Response(
-        JSON.stringify({ error: "Failed to verify admin status" }),
+        JSON.stringify({ error: "Failed to verify admin status", details: adminCheckError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

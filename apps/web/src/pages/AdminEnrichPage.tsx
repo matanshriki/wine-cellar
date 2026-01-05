@@ -62,10 +62,22 @@ export const AdminEnrichPage: React.FC = () => {
     setResult(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get session and refresh if needed
+      let { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
-        throw new Error('No active session');
+        console.log('[Admin Enrich] No session found, attempting to refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          throw new Error('Session expired. Please refresh the page and try again.');
+        }
+        
+        session = refreshData.session;
+        console.log('[Admin Enrich] Session refreshed successfully');
       }
+
+      console.log('[Admin Enrich] Calling Edge Function with token:', session.access_token.substring(0, 20) + '...');
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
@@ -80,14 +92,24 @@ export const AdminEnrichPage: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        const errorText = await response.text();
+        console.error('[Admin Enrich] Error response:', errorText);
+        
+        // Try to parse JSON error
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.error || errorJson.message || `HTTP ${response.status}`);
+        } catch {
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
       }
 
       const data = await response.json();
+      console.log('[Admin Enrich] Success:', data);
       setResult(data);
       setProgress(data.progress);
     } catch (error) {
-      console.error('Batch enrich error:', error);
+      console.error('[Admin Enrich] Error:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
