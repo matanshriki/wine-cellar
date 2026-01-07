@@ -35,7 +35,14 @@ export interface MultiBottleExtractionResult {
 export async function extractMultipleBottlesFromImage(
   imageUrl: string
 ): Promise<MultiBottleExtractionResult> {
-  const { data: { session } } = await supabase.auth.getSession();
+  // Get auth session with refresh if needed
+  let { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    console.log('[multiBottleService] No session, attempting refresh...');
+    const { data: refreshData } = await supabase.auth.refreshSession();
+    session = refreshData.session;
+  }
   
   if (!session) {
     throw new Error('Not authenticated');
@@ -44,18 +51,28 @@ export async function extractMultipleBottlesFromImage(
   console.log('[multiBottleService] Extracting multiple bottles from:', imageUrl);
 
   try {
-    // Use the existing parse-label-image function with a multi-bottle prompt
-    const { data, error } = await supabase.functions.invoke('parse-label-image', {
-      body: {
-        imageUrl: imageUrl,
-        mode: 'multi-bottle', // Tell it to look for multiple bottles
+    // Use direct fetch with explicit auth headers (same as labelParseService)
+    const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-label-image`;
+    
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
+      body: JSON.stringify({
+        imageUrl: imageUrl,
+        mode: 'multi-bottle',
+      }),
     });
 
-    if (error) {
-      console.error('[multiBottleService] Edge function error:', error);
-      throw new Error(`AI extraction failed: ${error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[multiBottleService] Edge function error:', response.status, errorText);
+      throw new Error(`AI extraction failed: ${response.status} ${errorText}`);
     }
+
+    const data = await response.json();
 
     if (!data || !data.success) {
       console.warn('[multiBottleService] Extraction failed');
