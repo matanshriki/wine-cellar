@@ -255,7 +255,6 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                   ref={galleryInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileSelect(file);
@@ -266,7 +265,12 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                 {/* Single Action Button */}
                 <div className="flex flex-col gap-3 max-w-sm mx-auto">
                   <button
-                    onClick={() => galleryInputRef.current?.click()}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      galleryInputRef.current?.click();
+                    }}
                     className="btn-luxury-primary px-8 py-4 w-full text-lg"
                   >
                     📸 {t('cellar.multiBottle.uploadPhoto')}
