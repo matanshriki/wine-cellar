@@ -47,12 +47,21 @@ export function SharedCellarPage() {
   }, [searchParams, navigate]);
 
   // Apply sorting to bottles - moved here so useMemo is always called
+  // Note: Bottles array from shareService is already in the user's preferred order.
+  // We only re-sort for fields that exist in SimplifiedBottle (vintage, rating, producer, wineName).
+  // For other sorts (createdAt, readiness), we trust the original order from shareService.
   const sortedBottles = useMemo(() => {
     if (!shareData || !shareData.bottles) return [];
     
-    const sorted = [...shareData.bottles];
     const sortBy = shareData.sortBy || 'createdAt';
     const sortDir = shareData.sortDir || 'desc';
+    
+    // If sorting by a field not in SimplifiedBottle, return original order
+    if (sortBy === 'createdAt' || sortBy === 'readiness') {
+      return shareData.bottles; // Already sorted by user's preference
+    }
+    
+    const sorted = [...shareData.bottles];
 
     if (sortBy === 'vintage') {
       sorted.sort((a, b) => {
@@ -63,7 +72,7 @@ export function SharedCellarPage() {
     } else if (sortBy === 'rating') {
       sorted.sort((a, b) => {
         const ratingA = a.rating || 0;
-        const ratingB = a.rating || 0;
+        const ratingB = b.rating || 0; // Fixed typo: was a.rating
         return sortDir === 'asc' ? ratingA - ratingB : ratingB - ratingA;
       });
     } else if (sortBy === 'producer') {
@@ -83,7 +92,6 @@ export function SharedCellarPage() {
           : nameB.localeCompare(nameA);
       });
     }
-    // Default: createdAt (order from share service)
 
     return sorted;
   }, [shareData]);
