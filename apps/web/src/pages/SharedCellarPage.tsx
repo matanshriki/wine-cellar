@@ -10,7 +10,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { parseShareLink, type ShareData } from '../services/shareService';
 import { WineLoader } from '../components/WineLoader';
-import { isDevEnvironment } from '../utils/devOnly';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
 export function SharedCellarPage() {
   const [searchParams] = useSearchParams();
@@ -20,12 +20,6 @@ export function SharedCellarPage() {
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    // Guard: Dev only
-    if (!isDevEnvironment()) {
-      navigate('/cellar');
-      return;
-    }
-
     const encodedData = searchParams.get('data');
     
     if (!encodedData) {
