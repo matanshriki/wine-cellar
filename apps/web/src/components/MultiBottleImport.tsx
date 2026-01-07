@@ -15,6 +15,7 @@ import type { ExtractedBottleData } from '../services/multiBottleService';
 import { scanMultipleBottles, checkForDuplicate } from '../services/multiBottleService';
 import * as bottleService from '../services/bottleService';
 import { trackBottle } from '../services/analytics';
+import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 
 interface Props {
   isOpen: boolean;
@@ -379,31 +380,61 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                             </select>
                           </div>
                           
-                          <div className="flex items-center gap-2 text-xs">
-                            <span 
-                              className="px-2 py-1 rounded"
-                              style={{
-                                background: bottle.confidence >= 0.7 
-                                  ? 'var(--color-emerald-100)' 
-                                  : 'var(--color-amber-100)',
-                                color: bottle.confidence >= 0.7 
-                                  ? 'var(--color-emerald-700)' 
-                                  : 'var(--color-amber-700)',
-                              }}
-                            >
-                              {t('cellar.multiBottle.confidence', { percent: Math.round(bottle.confidence * 100) })}
-                            </span>
-                            
-                            {bottle.isDuplicate && (
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 text-xs">
                               <span 
                                 className="px-2 py-1 rounded"
                                 style={{
-                                  background: 'var(--color-orange-100)',
-                                  color: 'var(--color-orange-700)',
+                                  background: bottle.confidence >= 0.7 
+                                    ? 'var(--color-emerald-100)' 
+                                    : 'var(--color-amber-100)',
+                                  color: bottle.confidence >= 0.7 
+                                    ? 'var(--color-emerald-700)' 
+                                    : 'var(--color-amber-700)',
                                 }}
                               >
-                                ⚠️ {t('cellar.multiBottle.duplicate')}
+                                {t('cellar.multiBottle.confidence', { percent: Math.round(bottle.confidence * 100) })}
                               </span>
+                              
+                              {bottle.isDuplicate && (
+                                <span 
+                                  className="px-2 py-1 rounded"
+                                  style={{
+                                    background: 'var(--color-orange-100)',
+                                    color: 'var(--color-orange-700)',
+                                  }}
+                                >
+                                  ⚠️ {t('cellar.multiBottle.duplicate')}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Vivino Search Button */}
+                            {(bottle.producer || bottle.wineName) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const vivinoUrl = generateVivinoSearchUrl({
+                                    producer: bottle.producer,
+                                    wine_name: bottle.wineName,
+                                    vintage: bottle.vintage,
+                                    region: bottle.region,
+                                  });
+                                  if (vivinoUrl) {
+                                    window.open(vivinoUrl, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                className="text-xs px-3 py-1 rounded transition-colors"
+                                style={{
+                                  background: 'var(--color-wine-100)',
+                                  color: 'var(--color-wine-700)',
+                                  border: '1px solid var(--color-wine-300)',
+                                }}
+                              >
+                                🔍 {t('bottleForm.searchVivino')}
+                              </button>
                             )}
                           </div>
                         </div>

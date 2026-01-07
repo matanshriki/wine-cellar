@@ -1,0 +1,31 @@
+# FINAL FIX FOR EDGE FUNCTION AUTH
+# Replace lines 35-61 in Supabase Dashboard with this:
+
+    // Create Supabase client (uses Authorization header automatically)
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    // Extract token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the JWT token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[Parse Label] Auth error:', authError?.message || 'No user');
+      throw new Error('Unauthorized');
+    }
+
+    console.log('[Parse Label] ✅ User authenticated:', user.id);
+
+# This is the correct Supabase Edge Function auth pattern
+# The key is to pass the token directly to getUser(token)
+
