@@ -209,15 +209,6 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('cellar.multiBottle.title')}
-                <span 
-                  className="ml-2 px-2 py-0.5 text-xs font-semibold rounded"
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    color: 'white',
-                  }}
-                >
-                  DEV
-                </span>
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('cellar.multiBottle.subtitle')}

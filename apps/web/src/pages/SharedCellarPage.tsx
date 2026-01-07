@@ -1,9 +1,8 @@
-// Feedback iteration (dev only)
 /**
- * Shared Cellar View Page (DEV ONLY)
+ * Shared Cellar View Page
  * 
  * Read-only view of a shared cellar from a share link.
- * Community-lite feature for testing UX.
+ * Feature flag controlled in production.
  */
 
 import { useState, useEffect } from 'react';
@@ -129,17 +128,6 @@ export function SharedCellarPage() {
                   <span>🍷 {bottles.length} wine{bottles.length !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-
-              {/* Dev Badge */}
-              <span 
-                className="px-2 py-1 text-xs font-semibold rounded flex-shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: 'white',
-                }}
-              >
-                DEV
-              </span>
             </div>
           </div>
         </div>

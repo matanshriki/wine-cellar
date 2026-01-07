@@ -103,15 +103,6 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('cellar.shareCellar.title')}
-                <span 
-                  className="ml-2 px-2 py-0.5 text-xs font-semibold rounded"
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    color: 'white',
-                  }}
-                >
-                  DEV
-                </span>
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('cellar.shareCellar.subtitle')}
@@ -140,14 +131,14 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
             <div className="flex items-start gap-3">
               <span className="text-2xl">ℹ️</span>
               <div className="flex-1 space-y-2">
-                <p className="text-sm" style={{ color: 'var(--color-blue-800)' }}>
-                  <strong>Dev-only sharing</strong> - This feature is for localhost testing only.
+                <p className="text-sm font-medium" style={{ color: 'var(--color-blue-800)' }}>
+                  Share your wine collection
                 </p>
                 <ul className="text-xs space-y-1" style={{ color: 'var(--color-blue-700)' }}>
                   <li>• Read-only view of your cellar</li>
                   <li>• No price or purchase info shared</li>
                   <li>• Link expires in 7 days</li>
-                  <li>• No backend changes required</li>
+                  <li>• Secure and private</li>
                 </ul>
               </div>
             </div>
