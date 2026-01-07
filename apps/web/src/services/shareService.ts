@@ -51,12 +51,16 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
   try {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('display_name, full_name')
-      .eq('user_id', user.id)
+      .select('display_name, full_name, first_name, last_name')
+      .eq('id', user.id)
       .single();
 
     if (!error && profile) {
-      userName = profile.display_name || profile.full_name || 'Wine Enthusiast';
+      // Priority: display_name > full_name > first_name + last_name > email username
+      userName = profile.display_name 
+        || profile.full_name 
+        || (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : null)
+        || 'Wine Enthusiast';
     } else {
       // Fallback to email username if profile doesn't exist or has no name
       const emailUsername = user.email?.split('@')[0] || 'Wine Enthusiast';
