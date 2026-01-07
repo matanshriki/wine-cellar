@@ -39,18 +39,22 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Create client for auth verification
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+    // Create client with ANON key for JWT verification (not service role)
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
       auth: {
         persistSession: false,
       },
     });
 
-    // Verify user
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    // Verify user with their JWT
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
     if (authError || !user) {
       console.error('[Parse Label] Auth error:', authError);
@@ -73,7 +77,10 @@ serve(async (req) => {
     // Get image URL (if path provided, get public URL)
     let finalImageUrl = imageUrl;
     if (imagePath && !imageUrl) {
-      const { data } = supabaseClient.storage
+      // Use service role for storage access if needed
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const storageClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data } = storageClient.storage
         .from('wine-labels')
         .getPublicUrl(imagePath);
       finalImageUrl = data.publicUrl;
