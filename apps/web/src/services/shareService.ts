@@ -12,6 +12,7 @@ import type { BottleWithWineInfo } from './bottleService';
 export interface ShareData {
   userId: string;
   userName: string;
+  avatarUrl?: string;
   bottles: SimplifiedBottle[];
   stats: {
     totalBottles: number;
@@ -48,10 +49,12 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
 
   // Get user profile for display name (with error handling)
   let userName = 'Wine Enthusiast';
+  let avatarUrl: string | undefined = undefined;
+  
   try {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('display_name, first_name, last_name')
+      .select('display_name, first_name, last_name, avatar_url')
       .eq('id', user.id)
       .single();
 
@@ -61,6 +64,9 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
         || (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : null)
         || profile.first_name
         || 'Wine Enthusiast';
+      
+      // Get avatar URL if available
+      avatarUrl = profile.avatar_url || undefined;
     } else {
       console.error('[shareService] Profile query error:', error);
       // Fallback to email username if profile doesn't exist or has no name
@@ -101,6 +107,7 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
   const shareData: ShareData = {
     userId: user.id,
     userName,
+    avatarUrl,
     bottles: simplifiedBottles,
     stats,
     createdAt: Date.now(),

@@ -93,15 +93,26 @@ export function SharedCellarPage() {
           >
             <div className="flex items-center gap-4">
               {/* Avatar */}
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, var(--wine-400) 0%, var(--wine-600) 100%)',
-                  color: 'white',
-                }}
-              >
-                {userName.charAt(0).toUpperCase()}
-              </div>
+              {shareData.avatarUrl ? (
+                <img
+                  src={shareData.avatarUrl}
+                  alt={userName}
+                  className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                  style={{
+                    border: '3px solid var(--wine-400)',
+                  }}
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-400) 0%, var(--wine-600) 100%)',
+                    color: 'white',
+                  }}
+                >
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+              )}
               
               {/* Name and Stats */}
               <div className="flex-1">
