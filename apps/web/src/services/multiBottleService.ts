@@ -44,47 +44,77 @@ export async function extractMultipleBottlesFromImage(
   console.log('[multiBottleService] Extracting multiple bottles from:', imageUrl);
 
   try {
-    // Call Supabase Edge Function for multi-bottle extraction
-    const { data, error } = await supabase.functions.invoke('extract-multi-bottles', {
+    // Use the existing parse-label-image function with a multi-bottle prompt
+    const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
         image_url: imageUrl,
+        mode: 'multi-bottle', // Tell it to look for multiple bottles
       },
     });
 
     if (error) {
       console.error('[multiBottleService] Edge function error:', error);
-      
-      // Fallback: Return mock data for dev testing
-      return createMockMultiBottleResult(imageUrl);
+      throw new Error(`AI extraction failed: ${error.message}`);
     }
 
     if (!data || !data.success) {
-      console.warn('[multiBottleService] Extraction failed, using mock data');
-      return createMockMultiBottleResult(imageUrl);
+      console.warn('[multiBottleService] Extraction failed');
+      throw new Error('AI extraction returned no data');
     }
 
-    console.log('[multiBottleService] ✅ Extracted bottles:', data.bottles);
+    // Check if we got multiple bottles from AI
+    const bottles = data.bottles && Array.isArray(data.bottles) ? data.bottles : [];
+    
+    if (bottles.length === 0) {
+      console.warn('[multiBottleService] No bottles detected in image');
+      throw new Error('No bottles detected in the photo. Please ensure wine labels are clearly visible.');
+    }
+    
+    console.log('[multiBottleService] ✅ Extracted', bottles.length, 'bottle(s):', bottles);
+    
+    // Map the bottles to our format
+    const mappedBottles = bottles.map((b: any, index: number) => {
+      // Calculate numeric confidence from field confidence levels
+      const getFieldValue = (field: any) => field?.value || null;
+      const getFieldConfidence = (field: any) => {
+        if (!field || !field.confidence) return 0.5;
+        const conf = field.confidence;
+        return conf === 'high' ? 0.9 : conf === 'medium' ? 0.7 : 0.5;
+      };
+      
+      const allConfidences = [
+        getFieldConfidence(b.producer),
+        getFieldConfidence(b.name),
+        getFieldConfidence(b.vintage),
+        getFieldConfidence(b.region),
+        getFieldConfidence(b.style),
+      ].filter(c => c > 0);
+      
+      const avgConfidence = allConfidences.length > 0
+        ? allConfidences.reduce((sum, c) => sum + c, 0) / allConfidences.length
+        : 0.5;
+      
+      return {
+        producer: getFieldValue(b.producer) || `Unknown Producer ${index + 1}`,
+        wineName: getFieldValue(b.name) || `Wine ${index + 1}`,
+        vintage: getFieldValue(b.vintage),
+        region: getFieldValue(b.region),
+        grapes: getFieldValue(b.grapes) ? (Array.isArray(getFieldValue(b.grapes)) ? getFieldValue(b.grapes).join(', ') : getFieldValue(b.grapes)) : undefined,
+        color: getFieldValue(b.style) || 'red',
+        confidence: avgConfidence,
+        notes: undefined,
+        source: 'multi-photo' as const,
+      };
+    });
     
     return {
       success: true,
-      bottles: data.bottles.map((b: any) => ({
-        producer: b.producer || '',
-        wineName: b.wine_name || b.wineName || '',
-        vintage: b.vintage,
-        region: b.region,
-        grapes: b.grapes || b.grape,
-        color: b.color || b.wine_color || 'red',
-        confidence: b.confidence || 0.5,
-        notes: b.notes,
-        source: 'multi-photo',
-      })),
+      bottles: mappedBottles,
       imageUrl,
     };
   } catch (error: any) {
     console.error('[multiBottleService] Error:', error);
-    
-    // Return mock data for dev testing
-    return createMockMultiBottleResult(imageUrl);
+    throw error; // Don't fall back to mock data in production
   }
 }
 

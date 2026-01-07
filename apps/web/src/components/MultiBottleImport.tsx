@@ -32,7 +32,6 @@ interface ReviewBottle extends ExtractedBottleData {
 
 export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles }: Props) {
   const { t } = useTranslation();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving'>('upload');
@@ -251,9 +250,9 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                   {t('cellar.multiBottle.uploadSubtitle')}
                 </p>
                 
-                {/* Hidden file inputs for camera and gallery */}
+                {/* Hidden file input - iOS will show camera/gallery picker */}
                 <input
-                  ref={cameraInputRef}
+                  ref={galleryInputRef}
                   type="file"
                   accept="image/*"
                   capture="environment"
@@ -264,31 +263,13 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
                   className="hidden"
                 />
                 
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileSelect(file);
-                  }}
-                  className="hidden"
-                />
-                
-                {/* Action Buttons */}
+                {/* Single Action Button */}
                 <div className="flex flex-col gap-3 max-w-sm mx-auto">
                   <button
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="btn-luxury-primary px-8 py-4 w-full"
-                  >
-                    {t('cellar.multiBottle.takePhoto')}
-                  </button>
-                  
-                  <button
                     onClick={() => galleryInputRef.current?.click()}
-                    className="btn-luxury-secondary px-8 py-4 w-full"
+                    className="btn-luxury-primary px-8 py-4 w-full text-lg"
                   >
-                    {t('cellar.multiBottle.chooseGallery')}
+                    📸 {t('cellar.multiBottle.uploadPhoto')}
                   </button>
                 </div>
                 
