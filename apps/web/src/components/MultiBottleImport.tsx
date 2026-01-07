@@ -102,6 +102,14 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
       setProgress({ current: i + 1, total: selectedBottles.length });
 
       try {
+        // Generate Vivino search URL for this bottle
+        const vivinoUrl = generateVivinoSearchUrl({
+          producer: bottle.producer,
+          wine_name: bottle.wineName,
+          vintage: bottle.vintage,
+          region: bottle.region,
+        });
+
         await bottleService.createBottle({
           producer: bottle.producer,
           wine_name: bottle.wineName,
@@ -113,7 +121,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles 
           appellation: null,
           vivino_wine_id: null,
           rating: null,
-          vivino_url: null,
+          vivino_url: vivinoUrl, // Save the generated Vivino search URL
           wine_notes: bottle.notes || null,
           quantity: 1,
           purchase_date: null,
