@@ -105,6 +105,12 @@ function AppRoutes() {
         }
       />
       {/* Feedback iteration (dev only) - Share and Community routes */}
+      {/* New format: /share/:shareId (database-backed short links) */}
+      <Route
+        path="/share/:shareId"
+        element={<SharedCellarPage />}
+      />
+      {/* Old format: /share?data=... (backwards compatibility) */}
       <Route
         path="/share"
         element={<SharedCellarPage />}

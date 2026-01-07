@@ -1,9 +1,9 @@
 // Feedback iteration (dev only)
 /**
- * Share Service (DEV ONLY)
+ * Share Service
  * 
- * Handles cellar sharing functionality for community-lite features.
- * Uses URL-based sharing without backend schema changes.
+ * Handles cellar sharing functionality with database-backed short links.
+ * Stores share data in Supabase for reliable, short URLs.
  */
 
 import { supabase } from '../lib/supabase';
@@ -39,8 +39,21 @@ export interface SimplifiedBottle {
 }
 
 /**
+ * Generate a short, random ID for share links
+ * Uses URL-safe characters (a-z, A-Z, 0-9)
+ */
+function generateShareId(length: number = 7): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
  * Generate a shareable link for current user's cellar
- * Uses base64-encoded data in URL (dev-only, not secure)
+ * Stores data in database and returns a short link
  */
 export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<{ link: string; userName: string }> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -127,19 +140,55 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
     createdAt: Date.now(),
   };
 
-  // Compress and encode data
-  const jsonString = JSON.stringify(shareData);
-  const base64Data = btoa(jsonString);
-  
-  // Generate share URL
+  // Generate a unique short ID (retry if collision)
+  let shareId: string;
+  let attempts = 0;
+  const maxAttempts = 5;
+
+  while (attempts < maxAttempts) {
+    shareId = generateShareId(7); // 7 characters
+    
+    // Check if ID already exists
+    const { data: existing } = await supabase
+      .from('shared_cellars')
+      .select('id')
+      .eq('id', shareId)
+      .single();
+    
+    if (!existing) {
+      break; // ID is unique, use it
+    }
+    
+    attempts++;
+  }
+
+  if (attempts === maxAttempts) {
+    throw new Error('Failed to generate unique share ID');
+  }
+
+  // Store share data in database
+  const { error: insertError } = await supabase
+    .from('shared_cellars')
+    .insert({
+      id: shareId!,
+      user_id: user.id,
+      share_data: shareData,
+    });
+
+  if (insertError) {
+    console.error('[shareService] Failed to store share data:', insertError);
+    throw new Error('Failed to create share link');
+  }
+
+  // Generate short share URL
   const baseUrl = window.location.origin;
-  const shareUrl = `${baseUrl}/share?data=${encodeURIComponent(base64Data)}`;
+  const shareUrl = `${baseUrl}/share/${shareId}`;
   
-  console.log('[shareService] Generated share link:', {
+  console.log('[shareService] Generated short share link:', {
+    shareId,
     userName,
     bottleCount: simplifiedBottles.length,
-    dataSize: jsonString.length,
-    encodedSize: base64Data.length,
+    linkLength: shareUrl.length,
   });
   
   return {
@@ -149,7 +198,67 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
 }
 
 /**
- * Parse shared cellar data from URL
+ * Fetch shared cellar data by share ID
+ */
+export async function getSharedCellar(shareId: string): Promise<ShareData | null> {
+  try {
+    console.log('[shareService] Fetching shared cellar:', shareId);
+
+    // Fetch from database
+    const { data, error } = await supabase
+      .from('shared_cellars')
+      .select('share_data, expires_at, view_count')
+      .eq('id', shareId)
+      .single();
+
+    if (error) {
+      console.error('[shareService] Failed to fetch shared cellar:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.error('[shareService] Shared cellar not found');
+      return null;
+    }
+
+    // Check if expired
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      console.warn('[shareService] Shared cellar expired');
+      return null;
+    }
+
+    // Increment view count (fire and forget, don't wait)
+    supabase
+      .from('shared_cellars')
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq('id', shareId)
+      .then(() => console.log('[shareService] View count incremented'))
+      .catch((err) => console.warn('[shareService] Failed to increment view count:', err));
+
+    const shareData = data.share_data as ShareData;
+    
+    // Validate data structure
+    if (!shareData.userId || !shareData.userName || !Array.isArray(shareData.bottles)) {
+      console.error('[shareService] Invalid share data structure');
+      return null;
+    }
+
+    console.log('[shareService] Successfully fetched shared cellar:', {
+      userName: shareData.userName,
+      bottleCount: shareData.bottles.length,
+      viewCount: data.view_count || 0,
+    });
+
+    return shareData;
+  } catch (error) {
+    console.error('[shareService] Failed to get shared cellar:', error);
+    return null;
+  }
+}
+
+/**
+ * Parse shared cellar data from URL (DEPRECATED - kept for backwards compatibility)
+ * Old links with ?data=... will still work
  */
 export function parseShareLink(encodedData: string): ShareData | null {
   try {

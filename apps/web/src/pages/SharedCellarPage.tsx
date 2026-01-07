@@ -6,45 +6,71 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { parseShareLink, type ShareData } from '../services/shareService';
+import { getSharedCellar, parseShareLink, type ShareData } from '../services/shareService';
 import { WineLoader } from '../components/WineLoader';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
 export function SharedCellarPage() {
-  const [searchParams] = useSearchParams();
+  const { shareId } = useParams<{ shareId: string }>(); // New: /share/:shareId
+  const [searchParams] = useSearchParams(); // Old: /share?data=...
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [shareData, setShareData] = useState<ShareData | null>(null);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const encodedData = searchParams.get('data');
-    
-    if (!encodedData) {
-      setError('Invalid share link - missing data');
-      setLoading(false);
-      return;
-    }
+    async function loadSharedCellar() {
+      setLoading(true);
+      setError('');
 
-    try {
-      const data = parseShareLink(encodedData);
-      
-      if (!data) {
-        setError('Invalid or expired share link');
+      try {
+        // New format: /share/:shareId (database-backed)
+        if (shareId) {
+          console.log('[SharedCellarPage] Loading from database, ID:', shareId);
+          const data = await getSharedCellar(shareId);
+          
+          if (!data) {
+            setError('Invalid or expired share link');
+            setLoading(false);
+            return;
+          }
+
+          setShareData(data);
+          setLoading(false);
+          return;
+        }
+
+        // Old format: /share?data=... (backwards compatibility)
+        const encodedData = searchParams.get('data');
+        if (encodedData) {
+          console.log('[SharedCellarPage] Loading from URL data (legacy)');
+          const data = parseShareLink(encodedData);
+          
+          if (!data) {
+            setError('Invalid or expired share link');
+            setLoading(false);
+            return;
+          }
+
+          setShareData(data);
+          setLoading(false);
+          return;
+        }
+
+        // No share ID or data found
+        setError('Invalid share link - missing data');
         setLoading(false);
-        return;
+      } catch (err: any) {
+        console.error('[SharedCellarPage] Error loading shared cellar:', err);
+        setError('Failed to load shared cellar');
+        setLoading(false);
       }
-
-      setShareData(data);
-    } catch (err: any) {
-      console.error('[SharedCellarPage] Error parsing share link:', err);
-      setError('Failed to load shared cellar');
-    } finally {
-      setLoading(false);
     }
-  }, [searchParams, navigate]);
+
+    loadSharedCellar();
+  }, [shareId, searchParams]);
 
   // Apply sorting to bottles - moved here so useMemo is always called
   // Note: Bottles array from shareService is already in the user's preferred order.
