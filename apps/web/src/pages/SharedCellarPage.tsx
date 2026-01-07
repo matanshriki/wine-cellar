@@ -5,7 +5,7 @@
  * Feature flag controlled in production.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { parseShareLink, type ShareData } from '../services/shareService';
@@ -76,7 +76,45 @@ export function SharedCellarPage() {
     );
   }
 
-  const { userName, bottles, stats } = shareData;
+  const { userName, bottles: rawBottles, stats, sortBy = 'createdAt', sortDir = 'desc' } = shareData;
+
+  // Apply sorting to bottles
+  const bottles = useMemo(() => {
+    const sorted = [...rawBottles];
+
+    if (sortBy === 'vintage') {
+      sorted.sort((a, b) => {
+        const vintageA = a.vintage || 0;
+        const vintageB = b.vintage || 0;
+        return sortDir === 'asc' ? vintageA - vintageB : vintageB - vintageA;
+      });
+    } else if (sortBy === 'rating') {
+      sorted.sort((a, b) => {
+        const ratingA = a.rating || 0;
+        const ratingB = b.rating || 0;
+        return sortDir === 'asc' ? ratingA - ratingB : ratingB - ratingA;
+      });
+    } else if (sortBy === 'producer') {
+      sorted.sort((a, b) => {
+        const producerA = a.producer.toLowerCase();
+        const producerB = b.producer.toLowerCase();
+        return sortDir === 'asc' 
+          ? producerA.localeCompare(producerB)
+          : producerB.localeCompare(producerA);
+      });
+    } else if (sortBy === 'wineName') {
+      sorted.sort((a, b) => {
+        const nameA = a.wineName.toLowerCase();
+        const nameB = b.wineName.toLowerCase();
+        return sortDir === 'asc'
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      });
+    }
+    // Default: createdAt (order from share service)
+
+    return sorted;
+  }, [rawBottles, sortBy, sortDir]);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>

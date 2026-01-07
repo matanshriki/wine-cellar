@@ -14,6 +14,8 @@ export interface ShareData {
   userName: string;
   avatarUrl?: string;
   bottles: SimplifiedBottle[];
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
   stats: {
     totalBottles: number;
     redCount: number;
@@ -45,6 +47,16 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
   
   if (!user) {
     throw new Error('Not authenticated');
+  }
+
+  // Get user's current sort preference from localStorage
+  let sortBy = 'createdAt';
+  let sortDir: 'asc' | 'desc' = 'desc';
+  try {
+    sortBy = localStorage.getItem('cellar-sort-by') || 'createdAt';
+    sortDir = (localStorage.getItem('cellar-sort-dir') as 'asc' | 'desc') || 'desc';
+  } catch (error) {
+    console.log('[shareService] Could not read sort preferences from localStorage');
   }
 
   // Get user profile for display name (with error handling)
@@ -109,6 +121,8 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
     userName,
     avatarUrl,
     bottles: simplifiedBottles,
+    sortBy,
+    sortDir,
     stats,
     createdAt: Date.now(),
   };
