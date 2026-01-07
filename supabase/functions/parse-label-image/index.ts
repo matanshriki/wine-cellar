@@ -32,36 +32,29 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    // Create client with ANON key for JWT verification (not service role)
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
+    // Create Supabase client from the request (automatically handles auth)
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
         },
-      },
-      auth: {
-        persistSession: false,
-      },
-    });
+      }
+    );
 
-    // Verify user with their JWT
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
+    // Verify user authentication
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
+
     if (authError || !user) {
-      console.error('[Parse Label] Auth error:', authError);
+      console.error('[Parse Label] Auth error:', authError?.message || 'No user');
       throw new Error('Unauthorized');
     }
 
-    console.log('[Parse Label] User authenticated:', user.id);
+    console.log('[Parse Label] ✅ User authenticated:', user.id);
 
     // Parse request body
     const { imageUrl, imagePath, mode } = await req.json();
@@ -77,10 +70,7 @@ serve(async (req) => {
     // Get image URL (if path provided, get public URL)
     let finalImageUrl = imageUrl;
     if (imagePath && !imageUrl) {
-      // Use service role for storage access if needed
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const storageClient = createClient(supabaseUrl, supabaseServiceKey);
-      const { data } = storageClient.storage
+      const { data } = supabaseClient.storage
         .from('wine-labels')
         .getPublicUrl(imagePath);
       finalImageUrl = data.publicUrl;
