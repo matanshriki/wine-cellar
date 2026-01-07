@@ -46,6 +46,48 @@ export function SharedCellarPage() {
     }
   }, [searchParams, navigate]);
 
+  // Apply sorting to bottles - moved here so useMemo is always called
+  const sortedBottles = useMemo(() => {
+    if (!shareData || !shareData.bottles) return [];
+    
+    const sorted = [...shareData.bottles];
+    const sortBy = shareData.sortBy || 'createdAt';
+    const sortDir = shareData.sortDir || 'desc';
+
+    if (sortBy === 'vintage') {
+      sorted.sort((a, b) => {
+        const vintageA = a.vintage || 0;
+        const vintageB = b.vintage || 0;
+        return sortDir === 'asc' ? vintageA - vintageB : vintageB - vintageA;
+      });
+    } else if (sortBy === 'rating') {
+      sorted.sort((a, b) => {
+        const ratingA = a.rating || 0;
+        const ratingB = a.rating || 0;
+        return sortDir === 'asc' ? ratingA - ratingB : ratingB - ratingA;
+      });
+    } else if (sortBy === 'producer') {
+      sorted.sort((a, b) => {
+        const producerA = a.producer.toLowerCase();
+        const producerB = b.producer.toLowerCase();
+        return sortDir === 'asc' 
+          ? producerA.localeCompare(producerB)
+          : producerB.localeCompare(producerA);
+      });
+    } else if (sortBy === 'wineName') {
+      sorted.sort((a, b) => {
+        const nameA = a.wineName.toLowerCase();
+        const nameB = b.wineName.toLowerCase();
+        return sortDir === 'asc'
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      });
+    }
+    // Default: createdAt (order from share service)
+
+    return sorted;
+  }, [shareData]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -76,45 +118,8 @@ export function SharedCellarPage() {
     );
   }
 
-  const { userName, bottles: rawBottles, stats, sortBy = 'createdAt', sortDir = 'desc' } = shareData;
-
-  // Apply sorting to bottles
-  const bottles = useMemo(() => {
-    const sorted = [...rawBottles];
-
-    if (sortBy === 'vintage') {
-      sorted.sort((a, b) => {
-        const vintageA = a.vintage || 0;
-        const vintageB = b.vintage || 0;
-        return sortDir === 'asc' ? vintageA - vintageB : vintageB - vintageA;
-      });
-    } else if (sortBy === 'rating') {
-      sorted.sort((a, b) => {
-        const ratingA = a.rating || 0;
-        const ratingB = b.rating || 0;
-        return sortDir === 'asc' ? ratingA - ratingB : ratingB - ratingA;
-      });
-    } else if (sortBy === 'producer') {
-      sorted.sort((a, b) => {
-        const producerA = a.producer.toLowerCase();
-        const producerB = b.producer.toLowerCase();
-        return sortDir === 'asc' 
-          ? producerA.localeCompare(producerB)
-          : producerB.localeCompare(producerA);
-      });
-    } else if (sortBy === 'wineName') {
-      sorted.sort((a, b) => {
-        const nameA = a.wineName.toLowerCase();
-        const nameB = b.wineName.toLowerCase();
-        return sortDir === 'asc'
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
-      });
-    }
-    // Default: createdAt (order from share service)
-
-    return sorted;
-  }, [rawBottles, sortBy, sortDir]);
+  const { userName, stats } = shareData;
+  const bottles = sortedBottles;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
