@@ -47,7 +47,7 @@ export async function extractMultipleBottlesFromImage(
     // Use the existing parse-label-image function with a multi-bottle prompt
     const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
-        image_url: imageUrl,
+        imageUrl: imageUrl,
         mode: 'multi-bottle', // Tell it to look for multiple bottles
       },
     });
