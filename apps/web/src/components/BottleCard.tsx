@@ -85,10 +85,36 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
         {/* Text Content */}
         <div className="flex-1 min-w-0">
           {/* Wine Style Badge - Top Right */}
-          <div className="absolute top-0 end-0">
+          <div className="absolute top-0 end-0 flex flex-col gap-1 items-end">
             <span className="badge-luxury badge-luxury-wine text-xs">
               {t(`cellar.wineStyles.${bottle.wine.color}`)}
             </span>
+            {/* Feedback iteration (dev only) - Readiness Badge */}
+            {bottle.readiness_status && bottle.readiness_status !== 'Unknown' && (
+              <span 
+                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{
+                  background: 
+                    bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
+                      ? 'var(--color-emerald-100)'
+                      : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                      ? 'var(--color-amber-100)'
+                      : 'var(--color-orange-100)',
+                  color:
+                    bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
+                      ? 'var(--color-emerald-700)'
+                      : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                      ? 'var(--color-amber-700)'
+                      : 'var(--color-orange-700)',
+                }}
+              >
+                {bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
+                  ? '✓ Ready'
+                  : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                  ? '⏳ Hold'
+                  : '🍷 Drink Soon'}
+              </span>
+            )}
           </div>
 
           {/* Wine Name - Note: NOT translated, it's actual wine data */}

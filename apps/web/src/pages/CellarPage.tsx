@@ -14,6 +14,8 @@ import { WineLoader } from '../components/WineLoader';
 import { TonightsOrbit } from '../components/TonightsOrbit';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
 import { WineDetailsModal } from '../components/WineDetailsModal';
+import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
+import { ShareCellarModal } from '../components/ShareCellarModal'; // Feedback iteration (dev only)
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -21,10 +23,13 @@ import type { ExtractedWineData } from '../services/labelScanService';
 import * as labelParseService from '../services/labelParseService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
+import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
+import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const featureFlags = useFeatureFlags(); // Load user's feature flags
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -34,6 +39,12 @@ export function CellarPage() {
   const [openedBottleName, setOpenedBottleName] = useState('');
   const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
   const [bulkAnalysisCooldown, setBulkAnalysisCooldown] = useState(false);
+  
+  // Feedback iteration (dev only) - Multi-bottle import state
+  const [showMultiBottleImport, setShowMultiBottleImport] = useState(false);
+  
+  // Feedback iteration (dev only) - Share cellar state
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -293,8 +304,8 @@ export function CellarPage() {
       result = result.filter((bottle) => {
         // Group filters by category
         const colorFilters = activeFilters.filter(f => ['red', 'white', 'rose', 'sparkling'].includes(f));
-        const readinessFilters = activeFilters.filter(f => ['ready', 'aging'].includes(f));
-        const otherFilters = activeFilters.filter(f => !['red', 'white', 'rose', 'sparkling', 'ready', 'aging'].includes(f));
+        const readinessFilters = activeFilters.filter(f => ['ready', 'aging', 'pastPeak'].includes(f)); // Feedback iteration (dev only) - added pastPeak
+        const otherFilters = activeFilters.filter(f => !['red', 'white', 'rose', 'sparkling', 'ready', 'aging', 'pastPeak'].includes(f));
         
         // Check color filters (OR logic - wine matches ANY selected color)
         const matchesColor = colorFilters.length === 0 || colorFilters.some((filter) => {
@@ -325,6 +336,8 @@ export function CellarPage() {
                 bottle.readiness_status === 'TooYoung' ||
                 bottle.readiness_status === 'Approaching'
               );
+            case 'pastPeak': // Feedback iteration (dev only)
+              return bottle.readiness_status === 'PastPeak';
             default:
               return false;
           }
@@ -726,6 +739,37 @@ export function CellarPage() {
           {/* Action Buttons - Only show when cellar has bottles */}
           {bottlesInCellar.length > 0 && (
             <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
+              {/* Beta feature: Share button - Enabled in dev OR if user has flag */}
+              {featureFlags.canShareCellar && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowShareModal(true);
+                  }}
+                  className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
+                  title={t('cellar.shareCellar.button')}
+                >
+                  {t('cellar.shareCellar.button')}
+                </button>
+              )}
+              {/* Beta feature: Multi-bottle import - Enabled in dev OR if user has flag */}
+              {featureFlags.canMultiBottleImport && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowMultiBottleImport(true);
+                  }}
+                  className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                    borderColor: 'var(--color-amber-300)',
+                  }}
+                >
+                  {t('cellar.multiBottle.button')}
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -904,6 +948,29 @@ export function CellarPage() {
               🔍 {t('cellar.filters.analyzed')}
             </button>
 
+            {/* Feedback iteration (dev only) - "Past Peak" filter */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFilter('pastPeak');
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
+              style={{
+                backgroundColor: activeFilters.includes('pastPeak')
+                  ? 'var(--color-wine-500)'
+                  : 'var(--color-stone-100)',
+                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--color-stone-700)',
+                border: `2px solid ${
+                  activeFilters.includes('pastPeak') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                }`,
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
+            >
+              🍷 {t('cellar.filters.pastPeak')}
+            </button>
+
             {/* Clear Filters */}
             {(searchQuery || activeFilters.length > 0) && (
               <button
@@ -1017,7 +1084,7 @@ export function CellarPage() {
           >
             {t('cellar.empty.subtitle')}
           </p>
-          <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-sm mx-auto px-4">
+          <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto px-4">
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -1028,6 +1095,23 @@ export function CellarPage() {
             >
               + {t('cellar.empty.addButton')}
             </button>
+            {/* Beta feature: Multi-bottle import in empty state - Enabled in dev OR if user has flag */}
+            {featureFlags.canMultiBottleImport && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMultiBottleImport(true);
+                }}
+                className="btn-luxury-secondary w-full xs:w-auto"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                  borderColor: 'var(--color-amber-300)',
+                }}
+              >
+                {t('cellar.multiBottle.button')}
+              </button>
+            )}
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -1657,6 +1741,28 @@ export function CellarPage() {
         onMarkAsOpened={handleMarkOpened}
         onRefresh={loadBottles}
       />
+
+      {/* Beta feature: Multi-Bottle Import Modal - Enabled in dev OR if user has flag */}
+      {featureFlags.canMultiBottleImport && (
+        <MultiBottleImport
+          isOpen={showMultiBottleImport}
+          onClose={() => setShowMultiBottleImport(false)}
+          onSuccess={async () => {
+            await loadBottles();
+            setShowMultiBottleImport(false);
+          }}
+          existingBottles={bottles}
+        />
+      )}
+
+      {/* Beta feature: Share Cellar Modal - Enabled in dev OR if user has flag */}
+      {featureFlags.canShareCellar && (
+        <ShareCellarModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          bottles={bottles}
+        />
+      )}
       
       {/* Grid Overflow Prevention */}
       <style>{`

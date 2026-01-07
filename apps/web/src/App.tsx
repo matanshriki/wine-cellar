@@ -12,6 +12,8 @@ import { RecommendationPage } from './pages/RecommendationPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminEnrichPage } from './pages/AdminEnrichPage';
+import { SharedCellarPage } from './pages/SharedCellarPage'; // Feedback iteration (dev only)
+import { CommunityPage } from './pages/CommunityPage'; // Feedback iteration (dev only)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,6 +100,21 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <AdminEnrichPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      {/* Feedback iteration (dev only) - Share and Community routes */}
+      <Route
+        path="/share"
+        element={<SharedCellarPage />}
+      />
+      <Route
+        path="/community"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <CommunityPage />
             </Layout>
           </PrivateRoute>
         }
