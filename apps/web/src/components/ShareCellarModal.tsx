@@ -132,13 +132,13 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
               <span className="text-2xl">ℹ️</span>
               <div className="flex-1 space-y-2">
                 <p className="text-sm font-medium" style={{ color: 'var(--color-blue-800)' }}>
-                  Share your wine collection
+                  {t('cellar.shareCellar.infoTitle')}
                 </p>
                 <ul className="text-xs space-y-1" style={{ color: 'var(--color-blue-700)' }}>
-                  <li>• Read-only view of your cellar</li>
-                  <li>• No price or purchase info shared</li>
-                  <li>• Link expires in 7 days</li>
-                  <li>• Secure and private</li>
+                  <li>• {t('cellar.shareCellar.infoReadOnly')}</li>
+                  <li>• {t('cellar.shareCellar.infoNoPrice')}</li>
+                  <li>• {t('cellar.shareCellar.infoExpires')}</li>
+                  <li>• {t('cellar.shareCellar.infoSecure')}</li>
                 </ul>
               </div>
             </div>
