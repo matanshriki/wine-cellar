@@ -114,8 +114,9 @@
     "addBottleButton": "הוסף בקבוק",
     "importCsv": "ייבוא מ-CSV",
     "empty": {
-      "title": "המרתף שלך ריק",
-      "subtitle": "הוסף את הבקבוק הראשון שלך או ייבא מ-CSV",
+      "title": "המרתף שלך ממתין לאוצר הראשון",
+      "subtitle": "כדי לפתוח את מלוא הפוטנציאל של Wine Cellar Brain, התחל לבנות את האוסף שלך.",
+      "hint": "התחל בהוספת בקבוקים שיש לך, או ייבא את האוסף הקיים שלך לתובנות מיידיות.",
       "addButton": "הוסף בקבוק",
       "importButton": "ייבוא מ-CSV"
     },
@@ -416,7 +417,14 @@
       "marked": "הבקבוק סומן כנפתח! תהנה! 🍷",
       "markFailed": "הסימון כנפתח נכשל",
       "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך."
-    }
+    },
+    "emptyCellar": {
+      "title": "המרתף שלך ריק",
+      "message": "כדי לקבל המלצות מותאמות אישית, תצטרך להוסיף כמה בקבוקים למרתף שלך תחילה.",
+      "hint": "בנה את האוסף שלך ואנחנו נעזור לך לגלות את הבקבוק המושלם לכל אירוע.",
+      "goToCellar": "עבור למרתף שלי"
+    },
+    "checkingCellar": "בודק את המרתף שלך..."
   },
   "history": {
     "title": "היסטוריה וסטטיסטיקות",

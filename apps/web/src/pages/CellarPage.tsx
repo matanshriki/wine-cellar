@@ -1064,27 +1064,72 @@ export function CellarPage() {
 
       {bottlesInCellar.length === 0 ? (
         /**
-         * Empty State - Mobile Optimized
+         * Empty State - Enhanced UX
          * 
-         * - Responsive text sizes
-         * - Stacked buttons on small mobile
-         * - Adequate padding for touch
-         * - Buttons ONLY show here when empty (not in header)
+         * - Sophisticated messaging
+         * - Visual element (wine glass illustration)
+         * - Clear call-to-action
+         * - Mobile optimized
          */
-        <div className="luxury-card text-center py-8 sm:py-12">
-          <p 
-            className="text-lg sm:text-xl mb-3 sm:mb-4"
-            style={{ color: 'var(--text-primary)', fontWeight: 'var(--font-semibold)' }}
+        <div className="luxury-card text-center py-8 sm:py-12 px-4">
+          {/* Elegant wine glass visual */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="text-7xl sm:text-8xl mb-6"
+          >
+            🍷
+          </motion.div>
+
+          {/* Sophisticated heading */}
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="text-2xl sm:text-3xl mb-3"
+            style={{ 
+              color: 'var(--text-primary)', 
+              fontFamily: 'var(--font-display)',
+              fontWeight: 'var(--font-bold)',
+              letterSpacing: '-0.02em',
+            }}
           >
             {t('cellar.empty.title')}
-          </p>
-          <p 
-            className="text-sm sm:text-base mb-4 sm:mb-6 px-4"
+          </motion.h2>
+
+          {/* Refined explanation */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="text-base sm:text-lg mb-2 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
             {t('cellar.empty.subtitle')}
-          </p>
-          <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto px-4">
+          </motion.p>
+
+          {/* Additional helpful hint */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="text-sm mb-8 max-w-md mx-auto"
+            style={{ 
+              color: 'var(--text-tertiary)',
+              fontStyle: 'italic'
+            }}
+          >
+            {t('cellar.empty.hint')}
+          </motion.p>
+
+          {/* Action buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto"
+          >
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -1122,7 +1167,7 @@ export function CellarPage() {
             >
               {t('cellar.empty.importButton')}
             </button>
-          </div>
+          </motion.div>
         </div>
       ) : filteredBottles.length === 0 ? (
         /**

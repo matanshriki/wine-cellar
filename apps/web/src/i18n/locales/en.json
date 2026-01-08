@@ -114,8 +114,9 @@
     "addBottleButton": "Add Bottle",
     "importCsv": "Import CSV",
     "empty": {
-      "title": "Your cellar is empty",
-      "subtitle": "Add your first bottle or import from CSV",
+      "title": "Your Cellar Awaits Its First Treasure",
+      "subtitle": "To unlock the full potential of Wine Cellar Brain, begin curating your collection.",
+      "hint": "Start by adding bottles you own, or import your existing collection for instant insights.",
       "addButton": "Add Bottle",
       "importButton": "Import CSV"
     },
@@ -416,7 +417,14 @@
       "marked": "Bottle marked as opened! Enjoy! 🍷",
       "markFailed": "Failed to mark as opened",
       "noResults": "No matching bottles found. Try adjusting your preferences."
-    }
+    },
+    "emptyCellar": {
+      "title": "Your Cellar is Empty",
+      "message": "To receive personalized recommendations, you'll need to add some bottles to your cellar first.",
+      "hint": "Build your collection and we'll help you discover the perfect bottle for any occasion.",
+      "goToCellar": "Go to My Cellar"
+    },
+    "checkingCellar": "Checking your cellar..."
   },
   "history": {
     "title": "History & Stats",
