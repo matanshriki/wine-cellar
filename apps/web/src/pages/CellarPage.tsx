@@ -1062,6 +1062,13 @@ export function CellarPage() {
         </motion.div>
       )}
 
+      {(() => {
+        console.log('[CellarPage] Rendering bottles check:', {
+          bottlesInCellar: bottlesInCellar.length,
+          isEmpty: bottlesInCellar.length === 0
+        });
+        return null;
+      })()}
       {bottlesInCellar.length === 0 ? (
         /**
          * Empty State - Enhanced UX
@@ -1072,26 +1079,29 @@ export function CellarPage() {
          * - Mobile optimized
          */
         <motion.div
+          key="empty-cellar-state"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
           className="luxury-card text-center py-8 sm:py-12 px-4"
         >
-          {/* Elegant wine glass visual with bouncy animation */}
+          {/* Elegant wine glass visual with dramatic bouncy animation */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.3, y: -50 }}
+            key="wine-glass-animation"
+            initial={{ opacity: 0, scale: 0, y: -100, rotate: -180 }}
             animate={{ 
               opacity: 1, 
-              scale: 1,
-              y: 0
+              scale: [0, 1.2, 0.9, 1.05, 1],
+              y: 0,
+              rotate: [0, 10, -10, 5, 0]
             }}
             transition={{ 
-              duration: 0.8,
-              delay: 0.1,
+              duration: 1.2,
               ease: "easeOut",
+              times: [0, 0.3, 0.6, 0.8, 1],
               type: "spring",
-              stiffness: 150,
-              damping: 12
+              stiffness: 200,
+              damping: 15
             }}
             className="text-7xl sm:text-8xl mb-6"
           >

@@ -78,9 +78,14 @@ export function RecommendationPage() {
   useEffect(() => {
     async function checkCellar() {
       try {
-        const bottles = await bottleService.getMyBottles();
+        const bottles = await bottleService.listBottles();
         const activeBottles = bottles.filter(b => b.quantity > 0);
         setHasCellarBottles(activeBottles.length > 0);
+        console.log('[RecommendationPage] Cellar check:', {
+          totalBottles: bottles.length,
+          activeBottles: activeBottles.length,
+          hasCellarBottles: activeBottles.length > 0
+        });
       } catch (error) {
         console.error('[RecommendationPage] Error checking cellar:', error);
         // Assume they have bottles if check fails (don't block functionality)
