@@ -434,7 +434,7 @@ export function RecommendationPage() {
   // Show loading state while checking cellar
   if (checkingCellar) {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto px-4">
         <WineLoader variant="page" size="lg" message={t('recommendation.checkingCellar', 'Checking your cellar...')} />
       </div>
     );
@@ -443,24 +443,34 @@ export function RecommendationPage() {
   // Show empty cellar message if no bottles
   if (!hasCellarBottles) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl mx-auto"
-      >
-        <div className="luxury-card text-center py-12 px-6">
+      <div className="max-w-2xl mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="luxury-card text-center py-12 px-6"
+        >
           {/* Elegant visual */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+            initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ 
+              duration: 0.8, 
+              ease: "easeOut",
+              delay: 0.2,
+              type: "spring",
+              stiffness: 100
+            }}
             className="text-8xl mb-6"
           >
             🍾
           </motion.div>
 
           {/* Heading */}
-          <h2
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
             className="text-2xl sm:text-3xl mb-3"
             style={{ 
               color: 'var(--text-primary)', 
@@ -470,18 +480,24 @@ export function RecommendationPage() {
             }}
           >
             {t('recommendation.emptyCellar.title')}
-          </h2>
+          </motion.h2>
 
           {/* Explanation */}
-          <p
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
             className="text-base sm:text-lg mb-2 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
             {t('recommendation.emptyCellar.message')}
-          </p>
+          </motion.p>
 
           {/* Helpful hint */}
-          <p
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
             className="text-sm mb-8 max-w-md mx-auto"
             style={{ 
               color: 'var(--text-tertiary)',
@@ -489,17 +505,20 @@ export function RecommendationPage() {
             }}
           >
             {t('recommendation.emptyCellar.hint')}
-          </p>
+          </motion.p>
 
           {/* Action button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7, duration: 0.3 }}
             onClick={() => navigate('/cellar')}
             className="btn-luxury-primary"
           >
             {t('recommendation.emptyCellar.goToCellar')}
-          </button>
-        </div>
-      </motion.div>
+          </motion.button>
+        </motion.div>
+      </div>
     );
   }
 
@@ -507,7 +526,7 @@ export function RecommendationPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-3xl"
+      className="max-w-3xl mx-auto px-4"
     >
       <div className="mb-8">
         <h1 

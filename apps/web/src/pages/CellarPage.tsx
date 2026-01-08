@@ -1071,12 +1071,28 @@ export function CellarPage() {
          * - Clear call-to-action
          * - Mobile optimized
          */
-        <div className="luxury-card text-center py-8 sm:py-12 px-4">
-          {/* Elegant wine glass visual */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="luxury-card text-center py-8 sm:py-12 px-4"
+        >
+          {/* Elegant wine glass visual with bouncy animation */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 0.3, y: -50 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              y: 0
+            }}
+            transition={{ 
+              duration: 0.8,
+              delay: 0.1,
+              ease: "easeOut",
+              type: "spring",
+              stiffness: 150,
+              damping: 12
+            }}
             className="text-7xl sm:text-8xl mb-6"
           >
             🍷
@@ -1084,9 +1100,9 @@ export function CellarPage() {
 
           {/* Sophisticated heading */}
           <motion.h2
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
             className="text-2xl sm:text-3xl mb-3"
             style={{ 
               color: 'var(--text-primary)', 
@@ -1100,9 +1116,9 @@ export function CellarPage() {
 
           {/* Refined explanation */}
           <motion.p
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
             className="text-base sm:text-lg mb-2 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
@@ -1111,9 +1127,9 @@ export function CellarPage() {
 
           {/* Additional helpful hint */}
           <motion.p
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
             className="text-sm mb-8 max-w-md mx-auto"
             style={{ 
               color: 'var(--text-tertiary)',
@@ -1125,9 +1141,9 @@ export function CellarPage() {
 
           {/* Action buttons */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
             className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto"
           >
             <button 
@@ -1168,7 +1184,7 @@ export function CellarPage() {
               {t('cellar.empty.importButton')}
             </button>
           </motion.div>
-        </div>
+        </motion.div>
       ) : filteredBottles.length === 0 ? (
         /**
          * No Results State - When search/filters return empty
