@@ -452,15 +452,16 @@ export function WishlistPage() {
         ))}
       </AnimatePresence>
 
-      {/* Wishlist feature (dev only) - Add Bottle Sheet */}
+      {/* Wishlist feature - Add Bottle Sheet */}
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         onUploadPhoto={() => {}} // Not used (direct file input)
         onManualEntry={() => {
           setShowAddSheet(false);
-          // Could open a manual entry form for wishlist
-          toast.info('Manual wishlist entry - coming soon!');
+          // Open wishlist form for manual entry (no photo)
+          setWishlistExtractedData(null); // No extracted data
+          setShowWishlistForm(true);
         }}
         onPhotoSelected={async (file) => {
           // Wishlist feature (dev only) - Primary button: Add photo to wishlist
