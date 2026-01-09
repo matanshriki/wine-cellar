@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
-import { FeatureFlagsProvider, useFeatureFlag } from './contexts/FeatureFlagsContext'; // Feature flags
+import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -59,10 +59,11 @@ function FeatureFlagRoute({
   featureName: string;
 }) {
   const isEnabled = useFeatureFlag(feature);
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { loading: flagsLoading } = useFeatureFlags(); // FIX: Check if flags are loading
 
-  // Wait for auth to load
-  if (loading) {
+  // Wait for auth AND feature flags to load
+  if (authLoading || flagsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen luxury-background">
         <WineLoader variant="default" size="lg" message="Loading..." />
