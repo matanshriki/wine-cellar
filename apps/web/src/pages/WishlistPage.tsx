@@ -161,9 +161,18 @@ export function WishlistPage() {
     }
   }
 
-  // Filter items by search query
+  // Filter items by search query (client-side)
   const filteredItems = searchQuery.trim()
-    ? wishlistService.searchWishlist(searchQuery)
+    ? items.filter(item => {
+        const query = searchQuery.toLowerCase();
+        return (
+          item.producer?.toLowerCase().includes(query) ||
+          item.wine_name?.toLowerCase().includes(query) ||
+          item.restaurant_name?.toLowerCase().includes(query) ||
+          item.region?.toLowerCase().includes(query) ||
+          item.grapes?.toLowerCase().includes(query)
+        );
+      })
     : items;
 
   // Format "Added X days ago"
