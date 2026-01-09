@@ -651,8 +651,9 @@ export function WishlistPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowAddSheet(true)}
-          className="fixed bottom-20 shadow-xl rounded-full w-14 h-14 flex items-center justify-center"
+          className="fixed shadow-xl rounded-full w-14 h-14 flex items-center justify-center"
           style={{
+            bottom: 'calc(4rem + env(safe-area-inset-bottom) + 1rem)', // 64px nav + safe-area + 16px gap (PWA-safe)
             right: 'max(1rem, env(safe-area-inset-right))',
             background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
             color: 'white',
