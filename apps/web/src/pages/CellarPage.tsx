@@ -1447,7 +1447,7 @@ export function CellarPage() {
           setEditingBottle(null);
           setShowForm(true);
         }}
-        showWishlistOption={wishlistEnabled} // Wishlist feature (feature-flagged)
+        showWishlistOption={false} // Don't show wishlist option in Cellar page - only in Wishlist page
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);
