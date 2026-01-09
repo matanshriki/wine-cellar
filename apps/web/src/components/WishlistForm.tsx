@@ -226,10 +226,10 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-[100]"
       onClick={handleClose}
     >
-      {/* Mobile hardening (wishlist): Changed max-h to dvh for mobile viewport, improved touch areas */}
+      {/* Mobile hardening (wishlist): Changed max-h to dvh for mobile viewport, improved touch areas, responsive padding */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -243,7 +243,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       >
         {/* Header */}
         <div 
-          className="px-6 py-4 border-b"
+          className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0"
           style={{ borderColor: 'var(--border-soft)' }}
         >
           <div className="flex items-center justify-between">
@@ -287,7 +287,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* Producer */}
           <div>
             <label 
@@ -403,6 +403,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
           </div>
 
           {/* Color */}
+          {/* Mobile hardening (wishlist): Changed grid to flex-wrap for better mobile fit */}
           <div>
             <label 
               className="block text-sm font-medium mb-2"
@@ -410,13 +411,13 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             >
               {t('bottleForm.color')}
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['red', 'white', 'rose', 'sparkling'] as const).map((color) => (
                 <button
                   key={color}
                   type="button"
                   onClick={() => handleChange('color', color)}
-                  className={`py-2 px-3 rounded-lg border-2 transition-all ${
+                  className={`py-2 px-4 rounded-lg border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm ${
                     formData.color === color
                       ? 'border-wine-600 bg-wine-50'
                       : 'border-gray-200 hover:border-gray-300'
@@ -534,9 +535,9 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         </form>
 
         {/* Footer */}
-        {/* Mobile hardening (wishlist): Added safe-area-inset-bottom for PWA, improved touch targets */}
+        {/* Mobile hardening (wishlist): Added safe-area-inset-bottom for PWA, improved touch targets, fixed button layout */}
         <div 
-          className="px-6 py-4 border-t flex gap-3 justify-end"
+          className="px-4 sm:px-6 py-4 border-t flex gap-2 sm:gap-3 justify-end flex-shrink-0"
           style={{ 
             borderColor: 'var(--border-soft)',
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
@@ -546,9 +547,10 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px]"
+            className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] border-2"
             style={{
               backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-medium)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -558,7 +560,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             type="submit"
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px]"
+            className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px] flex-1 sm:flex-none"
             style={{
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
