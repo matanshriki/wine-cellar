@@ -133,6 +133,7 @@ export function AddBottleSheet({
               {/* Options */}
               <div className="space-y-3">
                 {/* PRIMARY: Add Photo (Camera or Gallery) - Single unified option */}
+                {/* Mobile hardening (wishlist): Added capture="environment" for mobile camera */}
                 <label
                   className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
                   style={{
@@ -147,6 +148,7 @@ export function AddBottleSheet({
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => handleFileSelect(e, 'library')}
                     className="hidden"
                     aria-label={t('cellar.addBottle.uploadPhoto')}
@@ -205,6 +207,7 @@ export function AddBottleSheet({
                 </button>
 
                 {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
+                {/* Mobile hardening (wishlist): Added capture="environment" for mobile camera */}
                 {showWishlistOption && onPhotoSelectedForWishlist && (
                   <label
                     className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
@@ -220,9 +223,10 @@ export function AddBottleSheet({
                     <input
                       type="file"
                       accept="image/*"
+                      capture="environment"
                       onChange={handleFileSelectForWishlist}
                       className="hidden"
-                      aria-label="Add to Wishlist (Dev)"
+                      aria-label={t('cellar.addBottle.addToWishlist')}
                     />
                     {/* Bookmark Icon */}
                     <div className="relative w-8 h-8 flex-shrink-0">
@@ -233,7 +237,6 @@ export function AddBottleSheet({
                     <div className="flex-1 text-start">
                       <div className="font-semibold text-lg">
                         {t('cellar.addBottle.addToWishlist')} {/* "Add to Wishlist" */}
-                        <span className="ml-2 text-xs px-2 py-0.5 bg-white/20 rounded">DEV</span>
                       </div>
                       <div className="text-sm opacity-90 mt-0.5">
                         {t('cellar.addBottle.addToWishlistDesc')} {/* "Save wines to buy later" */}

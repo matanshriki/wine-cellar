@@ -331,8 +331,8 @@ export function WishlistPage() {
           </p>
           {!searchQuery && (
             <button
-              onClick={() => setShowAddSheet(true)} // Wishlist feature (dev only) - Open add sheet directly
-              className="px-6 py-3 rounded-lg font-medium transition-all"
+              onClick={() => setShowAddSheet(true)} // Wishlist feature - Open add sheet directly
+              className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px]"
               style={{
                 background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                 color: 'var(--text-inverse)',
@@ -359,7 +359,8 @@ export function WishlistPage() {
               borderColor: 'var(--border-soft)',
             }}
           >
-            <div className="flex gap-4">
+            {/* Mobile hardening (wishlist): Improved card layout for narrow screens */}
+            <div className="flex gap-3 sm:gap-4">
               {/* Image */}
               {item.imageUrl && (
                 <div className="flex-shrink-0 w-16 h-20 sm:w-20 sm:h-24 rounded-lg overflow-hidden bg-gray-100">
@@ -367,19 +368,20 @@ export function WishlistPage() {
                     src={item.imageUrl} 
                     alt={`${item.producer} ${item.wineName}`}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
               )}
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                {/* Title */}
+                {/* Title - improved wrapping on mobile */}
                 <h3 
-                  className="text-lg font-semibold mb-1"
+                  className="text-base sm:text-lg font-semibold mb-1 break-words"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {item.producer} {item.wineName}
-                  {item.vintage && <span className="ml-2 font-normal">{item.vintage}</span>}
+                  {item.vintage && <span className="ml-2 font-normal whitespace-nowrap">{item.vintage}</span>}
                 </h3>
 
                 {/* Metadata */}
@@ -396,7 +398,7 @@ export function WishlistPage() {
                   )}
                   {item.note && (
                     <div 
-                      className="italic mt-2 p-2 rounded"
+                      className="italic mt-2 p-2 rounded text-sm break-words"
                       style={{ 
                         backgroundColor: 'var(--bg-secondary)',
                       }}
@@ -417,12 +419,13 @@ export function WishlistPage() {
             </div>
 
             {/* Actions */}
-            <div className="mt-4 flex flex-wrap gap-2">
+            {/* Mobile hardening (wishlist): Improved touch targets and mobile stacking */}
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
               {/* Primary: Move to Cellar */}
               <button
                 onClick={() => handleMoveToCellar(item)}
                 disabled={movingId === item.id}
-                className="px-4 py-2 rounded-lg font-medium transition-all flex-1 sm:flex-none"
+                className="px-4 py-3 rounded-lg font-medium transition-all flex-1 min-h-[44px]"
                 style={{
                   background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                   color: 'var(--text-inverse)',
@@ -436,7 +439,7 @@ export function WishlistPage() {
               <button
                 onClick={() => handleRemove(item.id)}
                 disabled={movingId === item.id}
-                className="px-4 py-2 rounded-lg font-medium transition-colors"
+                className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] sm:w-auto"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-danger)',

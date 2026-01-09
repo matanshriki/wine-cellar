@@ -229,12 +229,13 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
       onClick={handleClose}
     >
+      {/* Mobile hardening (wishlist): Changed max-h to dvh for mobile viewport, improved touch areas */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',
@@ -255,11 +256,13 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             >
               {t('wishlist.form.title')} {/* "Add to Wishlist" */}
             </h2>
+            {/* Mobile hardening (wishlist): Increased tap target to 44px minimum */}
             <button
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 -mr-2"
+              style={{ minWidth: '44px', minHeight: '44px' }}
               aria-label={t('common.close')}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -531,15 +534,19 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         </form>
 
         {/* Footer */}
+        {/* Mobile hardening (wishlist): Added safe-area-inset-bottom for PWA, improved touch targets */}
         <div 
           className="px-6 py-4 border-t flex gap-3 justify-end"
-          style={{ borderColor: 'var(--border-soft)' }}
+          style={{ 
+            borderColor: 'var(--border-soft)',
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+          }}
         >
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="px-4 py-2 rounded-lg font-medium transition-colors"
+            className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px]"
             style={{
               backgroundColor: 'var(--bg-secondary)',
               color: 'var(--text-secondary)',
@@ -551,7 +558,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             type="submit"
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-2 rounded-lg font-medium transition-all"
+            className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px]"
             style={{
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
