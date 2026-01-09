@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
-import { isDevEnvironment } from '../utils/devOnly';
 import * as wishlistService from '../services/wishlistService';
 import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';
@@ -177,11 +176,6 @@ export function WishlistPage() {
     if (diffDays === 0) return t('wishlist.today');
     if (diffDays === 1) return t('wishlist.yesterday');
     return t('wishlist.daysAgo', { count: diffDays });
-  }
-
-  // Don't render if not dev (should have redirected, but extra guard)
-  if (!isDevEnvironment()) {
-    return null;
   }
 
   if (loading) {
