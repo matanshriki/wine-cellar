@@ -14,6 +14,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext'; // For wishlist feature flag
 
 interface NavItem {
   path: string;
@@ -25,6 +26,7 @@ interface NavItem {
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
+  const { flags } = useFeatureFlags(); // Get feature flags
 
   /**
    * Smooth scroll to top with luxury easing
@@ -79,7 +81,8 @@ export const BottomNav: React.FC = () => {
     }, 100);
   };
 
-  const navItems: NavItem[] = [
+  // Build nav items array - conditionally include Wishlist if feature is enabled
+  const baseNavItems: NavItem[] = [
     {
       path: '/cellar',
       labelKey: 'nav.cellar',
@@ -123,6 +126,26 @@ export const BottomNav: React.FC = () => {
       ),
     },
   ];
+
+  // Add Wishlist nav item if feature is enabled
+  const wishlistNavItem: NavItem = {
+    path: '/wishlist',
+    labelKey: 'nav.wishlist',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    ),
+    activeIcon: (
+      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    ),
+  };
+
+  const navItems: NavItem[] = flags?.wishlistEnabled
+    ? [...baseNavItems, wishlistNavItem]
+    : baseNavItems;
 
   return (
     <>
