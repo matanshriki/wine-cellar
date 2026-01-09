@@ -761,6 +761,7 @@
     "empty": "No wines in your wishlist yet",
     "emptyDesc": "Add wines you'd like to purchase from restaurants or wine shops",
     "addFirst": "Add Your First Wine",
+    "addWine": "Add Wine",
     "searchPlaceholder": "Search by producer, wine, or restaurant...",
     "noResults": "No matching wines found",
     "noResultsDesc": "Try a different search term",

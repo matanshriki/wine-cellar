@@ -643,6 +643,30 @@ export function WishlistPage() {
         </AnimatePresence>
       )}
 
+      {/* Floating Action Button - Always visible when wishlist has items */}
+      {items.length > 0 && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowAddSheet(true)}
+          className="fixed bottom-20 shadow-xl rounded-full w-14 h-14 flex items-center justify-center"
+          style={{
+            right: 'max(1rem, env(safe-area-inset-right))',
+            background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+            color: 'white',
+            zIndex: 40,
+            WebkitTapHighlightColor: 'transparent',
+          }}
+          aria-label={t('wishlist.addWine')}
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </motion.button>
+      )}
+
       {/* Parsing indicator */}
       {isParsing && (
         <div 
