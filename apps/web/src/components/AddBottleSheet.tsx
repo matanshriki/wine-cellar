@@ -133,7 +133,7 @@ export function AddBottleSheet({
               {/* Options */}
               <div className="space-y-3">
                 {/* PRIMARY: Add Photo (Camera or Gallery) - Single unified option */}
-                {/* Mobile hardening (wishlist): Added capture="environment" for mobile camera */}
+                {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}
                 <label
                   className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
                   style={{
@@ -148,7 +148,6 @@ export function AddBottleSheet({
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={(e) => handleFileSelect(e, 'library')}
                     className="hidden"
                     aria-label={t('cellar.addBottle.uploadPhoto')}
@@ -207,7 +206,7 @@ export function AddBottleSheet({
                 </button>
 
                 {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
-                {/* Mobile hardening (wishlist): Added capture="environment" for mobile camera */}
+                {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}
                 {showWishlistOption && onPhotoSelectedForWishlist && (
                   <label
                     className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
@@ -223,7 +222,6 @@ export function AddBottleSheet({
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       onChange={handleFileSelectForWishlist}
                       className="hidden"
                       aria-label={t('cellar.addBottle.addToWishlist')}
