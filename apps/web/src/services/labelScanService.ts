@@ -15,6 +15,7 @@ export interface ExtractedWineData {
   wine_color: 'red' | 'white' | 'rose' | 'sparkling' | null;
   grape: string | null;
   bottle_size_ml: number | null;
+  vivino_url?: string; // Wishlist feature - auto-generated Vivino search URL
   confidence: {
     producer: 'high' | 'medium' | 'low';
     wine_name: 'high' | 'medium' | 'low';

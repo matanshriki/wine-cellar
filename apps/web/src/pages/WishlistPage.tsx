@@ -20,6 +20,7 @@ import { AddBottleSheet } from '../components/AddBottleSheet'; // Wishlist featu
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
 import * as labelParseService from '../services/labelParseService'; // Wishlist feature (dev only)
+import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink'; // Wishlist feature - auto-generate Vivino URLs
 
 export function WishlistPage() {
   const { t, i18n } = useTranslation();
@@ -490,6 +491,15 @@ export function WishlistPage() {
               // Convert parsed data to form data
               const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
 
+              // Auto-generate Vivino search URL from extracted data
+              const vivinoUrl = generateVivinoSearchUrl({
+                producer: formData.producer,
+                wine_name: formData.wine_name,
+                vintage: formData.vintage,
+                region: formData.region,
+                grape: formData.grapes,
+              });
+
               setWishlistExtractedData({
                 imageUrl: result.imageUrl,
                 data: {
@@ -501,6 +511,7 @@ export function WishlistPage() {
                   grape: formData.grapes || null,
                   wine_color: formData.color || null,
                   bottle_size_ml: null,
+                  vivino_url: vivinoUrl || undefined, // ✨ Auto-populated Vivino URL
                   confidence: parseResult.data.overallConfidence ? {
                     producer: parseResult.data.producer?.confidence || 'low',
                     wine_name: parseResult.data.name?.confidence || 'low',
@@ -516,6 +527,7 @@ export function WishlistPage() {
                 } as ExtractedWineData,
               });
               console.log('[WishlistPage] ✅ Wishlist: Extracted data ready');
+              console.log('[WishlistPage] Auto-generated Vivino URL:', vivinoUrl);
               console.log('[WishlistPage] FormData:', formData);
               console.log('[WishlistPage] ParseResult:', parseResult.data);
             } else {
@@ -548,6 +560,15 @@ export function WishlistPage() {
               // Convert parsed data to form data
               const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
 
+              // Auto-generate Vivino search URL from extracted data
+              const vivinoUrl = generateVivinoSearchUrl({
+                producer: formData.producer,
+                wine_name: formData.wine_name,
+                vintage: formData.vintage,
+                region: formData.region,
+                grape: formData.grapes,
+              });
+
               setWishlistExtractedData({
                 imageUrl: result.imageUrl,
                 data: {
@@ -559,6 +580,7 @@ export function WishlistPage() {
                   grape: formData.grapes || null,
                   wine_color: formData.color || null,
                   bottle_size_ml: null,
+                  vivino_url: vivinoUrl || undefined, // ✨ Auto-populated Vivino URL
                   confidence: parseResult.data.overallConfidence ? {
                     producer: parseResult.data.producer?.confidence || 'low',
                     wine_name: parseResult.data.name?.confidence || 'low',
@@ -574,6 +596,7 @@ export function WishlistPage() {
                 } as ExtractedWineData,
               });
               console.log('[WishlistPage] ✅ Wishlist: Extracted data ready');
+              console.log('[WishlistPage] Auto-generated Vivino URL:', vivinoUrl);
               console.log('[WishlistPage] FormData:', formData);
               console.log('[WishlistPage] ParseResult:', parseResult.data);
             } else {
