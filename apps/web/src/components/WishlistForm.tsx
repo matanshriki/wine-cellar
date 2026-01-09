@@ -70,7 +70,12 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
     };
   };
   
-  const [formData, setFormData] = useState(getInitialFormData());
+  const [formData, setFormData] = useState(() => {
+    const initialData = getInitialFormData();
+    console.log('[WishlistForm] Initial form data:', initialData);
+    console.log('[WishlistForm] Initial color:', initialData.color);
+    return initialData;
+  });
   const [loading, setLoading] = useState(false);
   const [fetchingVivino, setFetchingVivino] = useState(false);
   
@@ -100,6 +105,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
   );
 
   function handleChange(field: string, value: string) {
+    console.log(`[WishlistForm] Field changed: ${field} = ${value}`);
     setFormData(prev => ({ ...prev, [field]: value }));
   }
 
@@ -412,20 +418,25 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               {t('bottleForm.color')}
             </label>
             <div className="flex flex-wrap gap-2">
-              {(['red', 'white', 'rose', 'sparkling'] as const).map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => handleChange('color', color)}
-                  className={`py-2 px-4 rounded-lg border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm ${
-                    formData.color === color
-                      ? 'border-wine-600 bg-wine-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {t(`bottleForm.colors.${color}`)}
-                </button>
-              ))}
+              {(['red', 'white', 'rose', 'sparkling'] as const).map((color) => {
+                const isSelected = formData.color === color;
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => handleChange('color', color)}
+                    className="py-2 px-4 rounded-lg border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm font-medium"
+                    style={{
+                      borderColor: isSelected ? 'var(--wine-600)' : 'var(--border-input)',
+                      backgroundColor: isSelected ? 'var(--wine-50)' : 'var(--bg-input)',
+                      color: isSelected ? 'var(--wine-700)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {isSelected && '✓ '}
+                    {t(`bottleForm.colors.${color}`)}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
