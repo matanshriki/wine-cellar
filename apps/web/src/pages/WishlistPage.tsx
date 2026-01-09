@@ -168,10 +168,11 @@ export function WishlistPage() {
         const query = searchQuery.toLowerCase();
         return (
           item.producer?.toLowerCase().includes(query) ||
-          item.wine_name?.toLowerCase().includes(query) ||
-          item.restaurant_name?.toLowerCase().includes(query) ||
+          item.wineName?.toLowerCase().includes(query) ||
+          item.restaurantName?.toLowerCase().includes(query) ||
           item.region?.toLowerCase().includes(query) ||
-          item.grapes?.toLowerCase().includes(query)
+          item.grapes?.toLowerCase().includes(query) ||
+          item.note?.toLowerCase().includes(query)
         );
       })
     : items;
