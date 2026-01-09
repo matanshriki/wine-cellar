@@ -16,6 +16,8 @@ interface AddBottleSheetProps {
   onUploadPhoto: () => void;
   onManualEntry: () => void;
   onPhotoSelected?: (file: File) => void;
+  onPhotoSelectedForWishlist?: (file: File) => void; // Wishlist feature (feature-flagged)
+  showWishlistOption?: boolean; // Wishlist feature (feature-flagged) - controlled by parent
 }
 
 export function AddBottleSheet({
@@ -24,6 +26,8 @@ export function AddBottleSheet({
   onUploadPhoto,
   onManualEntry,
   onPhotoSelected,
+  onPhotoSelectedForWishlist, // Wishlist feature (feature-flagged)
+  showWishlistOption = false, // Wishlist feature (feature-flagged)
 }: AddBottleSheetProps) {
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
@@ -33,6 +37,17 @@ export function AddBottleSheet({
     const file = e.target.files?.[0];
     if (file && onPhotoSelected) {
       onPhotoSelected(file);
+      onClose();
+    }
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  }
+
+  // Wishlist feature (dev only) - Handle photo selection for wishlist
+  function handleFileSelectForWishlist(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file && onPhotoSelectedForWishlist) {
+      onPhotoSelectedForWishlist(file);
       onClose();
     }
     // Reset input so same file can be selected again
@@ -80,7 +95,7 @@ export function AddBottleSheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
             className="fixed left-0 right-0 z-50 ios-modal-scroll bottom-above-nav md:bottom-0"
             style={{
@@ -188,6 +203,47 @@ export function AddBottleSheet({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
+
+                {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
+                {showWishlistOption && onPhotoSelectedForWishlist && (
+                  <label
+                    className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-amber-500), var(--color-amber-600))',
+                      border: '1px solid var(--color-amber-600)',
+                      color: 'white',
+                      boxShadow: 'var(--shadow-sm)',
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelectForWishlist}
+                      className="hidden"
+                      aria-label="Add to Wishlist (Dev)"
+                    />
+                    {/* Bookmark Icon */}
+                    <div className="relative w-8 h-8 flex-shrink-0">
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 text-start">
+                      <div className="font-semibold text-lg">
+                        {t('cellar.addBottle.addToWishlist')} {/* "Add to Wishlist" */}
+                        <span className="ml-2 text-xs px-2 py-0.5 bg-white/20 rounded">DEV</span>
+                      </div>
+                      <div className="text-sm opacity-90 mt-0.5">
+                        {t('cellar.addBottle.addToWishlistDesc')} {/* "Save wines to buy later" */}
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </label>
+                )}
               </div>
 
               {/* Cancel */}

@@ -16,6 +16,7 @@ import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
 import { ShareCellarModal } from '../components/ShareCellarModal'; // Feedback iteration (dev only)
+import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -25,11 +26,13 @@ import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
 import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
+import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags context
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags(); // Load user's feature flags
+  const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -45,6 +48,13 @@ export function CellarPage() {
   
   // Feedback iteration (dev only) - Share cellar state
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Wishlist feature (dev only) - Wishlist state
+  const [showWishlistForm, setShowWishlistForm] = useState(false);
+  const [wishlistExtractedData, setWishlistExtractedData] = useState<{
+    imageUrl: string;
+    data: ExtractedWineData;
+  } | null>(null);
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -736,40 +746,41 @@ export function CellarPage() {
             </p>
           </div>
 
-          {/* Action Buttons - Only show when cellar has bottles */}
-          {bottlesInCellar.length > 0 && (
-            <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
-              {/* Beta feature: Share button - Enabled in dev OR if user has flag */}
-              {featureFlags.canShareCellar && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowShareModal(true);
-                  }}
-                  className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
-                  title={t('cellar.shareCellar.button')}
-                >
-                  {t('cellar.shareCellar.button')}
-                </button>
-              )}
-              {/* Beta feature: Multi-bottle import - Enabled in dev OR if user has flag */}
-              {featureFlags.canMultiBottleImport && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowMultiBottleImport(true);
-                  }}
-                  className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
-                    borderColor: 'var(--color-amber-300)',
-                  }}
-                >
-                  {t('cellar.multiBottle.button')}
-                </button>
-              )}
+          {/* Action Buttons - Always show Add Bottle, others only when cellar has bottles */}
+          <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
+            {/* Beta feature: Share button - Only show when cellar has bottles */}
+            {bottlesInCellar.length > 0 && featureFlags.canShareCellar && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowShareModal(true);
+                }}
+                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
+                title={t('cellar.shareCellar.button')}
+              >
+                {t('cellar.shareCellar.button')}
+              </button>
+            )}
+            {/* Beta feature: Multi-bottle import - Only show when cellar has bottles */}
+            {bottlesInCellar.length > 0 && featureFlags.canMultiBottleImport && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMultiBottleImport(true);
+                }}
+                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                  borderColor: 'var(--color-amber-300)',
+                }}
+              >
+                {t('cellar.multiBottle.button')}
+              </button>
+            )}
+            {/* Import CSV - Only show when cellar has bottles */}
+            {bottlesInCellar.length > 0 && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -781,6 +792,9 @@ export function CellarPage() {
                 <span className="hidden xs:inline">{t('cellar.importCsv')}</span>
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
               </button>
+            )}
+            {/* Add Bottle - Only show when cellar has bottles (empty state has its own buttons) */}
+            {bottlesInCellar.length > 0 && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -792,8 +806,8 @@ export function CellarPage() {
                 <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
                 <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -1088,20 +1102,15 @@ export function CellarPage() {
           {/* Elegant wine glass visual with dramatic bouncy animation */}
           <motion.div
             key="wine-glass-animation"
-            initial={{ opacity: 0, scale: 0, y: -100, rotate: -180 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ 
               opacity: 1, 
-              scale: [0, 1.2, 0.9, 1.05, 1],
+              scale: 1,
               y: 0,
-              rotate: [0, 10, -10, 5, 0]
             }}
             transition={{ 
-              duration: 1.2,
-              ease: "easeOut",
-              times: [0, 0.3, 0.6, 0.8, 1],
-              type: "spring",
-              stiffness: 200,
-              damping: 15
+              duration: 0.6,
+              ease: [0.4, 0, 0.2, 1],
             }}
             className="text-7xl sm:text-8xl mb-6"
           >
@@ -1288,6 +1297,7 @@ export function CellarPage() {
             label_image_url: extractedData.imageUrl,
             vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
           } : undefined}
+          showWishlistOption={!!extractedData && !editingBottle} // Wishlist feature (dev only) - Show wishlist option for scanned wines
         />
       )}
 
@@ -1437,6 +1447,7 @@ export function CellarPage() {
           setEditingBottle(null);
           setShowForm(true);
         }}
+        showWishlistOption={wishlistEnabled} // Wishlist feature (feature-flagged)
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);
@@ -1582,6 +1593,62 @@ export function CellarPage() {
           // Open form
           setEditingBottle(null);
           setShowForm(true);
+        }}
+        onPhotoSelectedForWishlist={async (file) => {
+          // Wishlist feature (dev only) - Direct photo processing for wishlist
+          setShowAddSheet(false);
+          setIsParsing(true);
+          toast.info(t('cellar.labelParse.reading'));
+          
+          try {
+            // Import scanLabelImage to upload and get URL
+            const { scanLabelImage } = await import('../services/labelScanService');
+            const result = await scanLabelImage(file);
+            
+            // Now process with AI
+            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            
+            if (parseResult.success && parseResult.data) {
+              const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
+              
+              const mergedData = {
+                imageUrl: result.imageUrl,
+                data: {
+                  wine_name: formData.wine_name || '',
+                  producer: formData.producer || '',
+                  vintage: formData.vintage,
+                  region: formData.region || '',
+                  country: '',
+                  grape: formData.grapes || '',
+                  wine_color: formData.color || 'red',
+                } as ExtractedWineData,
+              };
+              
+              // Store extracted data for wishlist form
+              setWishlistExtractedData({
+                imageUrl: result.imageUrl,
+                data: parseResult.data,
+              });
+              
+              console.log('[CellarPage] ✅ Wishlist: Extracted data ready');
+              // Open wishlist form on success
+              setShowWishlistForm(true);
+            } else {
+              console.warn('[CellarPage] ⚠️ Wishlist: AI extraction returned no data');
+              toast.warning(t('cellar.labelParse.noData'));
+              // Still open form to allow manual entry
+              setWishlistExtractedData({
+                imageUrl: result.imageUrl,
+                data: parseResult.data || {} as ExtractedWineData,
+              });
+              setShowWishlistForm(true);
+            }
+          } catch (error: any) {
+            console.error('[CellarPage] ❌ Wishlist: Label parsing error:', error);
+            toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+          } finally {
+            setIsParsing(false);
+          }
         }}
       />
 
@@ -1834,6 +1901,34 @@ export function CellarPage() {
           bottles={bottles}
         />
       )}
+
+      {/* Wishlist feature (dev only) - Wishlist Form */}
+      <AnimatePresence>
+        {isDevEnvironment() && showWishlistForm && wishlistExtractedData && (
+          <WishlistForm
+            onClose={() => {
+              setShowWishlistForm(false);
+              setWishlistExtractedData(null);
+            }}
+            onSuccess={() => {
+              // Success handled by WishlistForm (shows toast)
+              // Optionally navigate to wishlist page
+              // navigate('/wishlist');
+            }}
+            prefillData={{
+              wine_name: wishlistExtractedData.data.wine_name || undefined,
+              producer: wishlistExtractedData.data.producer || undefined,
+              vintage: wishlistExtractedData.data.vintage || undefined,
+              region: wishlistExtractedData.data.region || undefined,
+              country: wishlistExtractedData.data.country || undefined,
+              grapes: wishlistExtractedData.data.grape || undefined,
+              color: wishlistExtractedData.data.wine_color || undefined,
+              imageUrl: wishlistExtractedData.imageUrl,
+              extractedData: wishlistExtractedData.data,
+            }}
+          />
+        )}
+      </AnimatePresence>
       
       {/* Grid Overflow Prevention */}
       <style>{`

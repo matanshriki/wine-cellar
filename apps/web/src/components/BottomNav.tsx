@@ -173,12 +173,12 @@ export const BottomNav: React.FC = () => {
                       className="absolute inset-0 -z-10 rounded-full"
                       style={{
                         backgroundColor: 'var(--color-wine-100)',
-                        scale: 1.4,
+                        transform: 'scale(1.4)',
                       }}
                       transition={{
-                        type: 'spring',
-                        stiffness: 400,
-                        damping: 30,
+                        type: 'tween',
+                        duration: 0.2,
+                        ease: 'easeOut',
                       }}
                     />
                   )}

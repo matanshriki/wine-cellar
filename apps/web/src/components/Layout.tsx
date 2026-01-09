@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/SupabaseAuthContext';
+import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CompleteProfileModal } from './CompleteProfileModal';
 import { UserMenu } from './UserMenu';
@@ -73,10 +74,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
     await refreshProfile();
   }
 
+  // Wishlist feature (feature-flagged) - Add wishlist nav item only if enabled
+  const wishlistEnabled = useFeatureFlag('wishlistEnabled');
+  
   const navItems = [
     { path: '/cellar', label: t('nav.cellar') },
     { path: '/recommendation', label: t('nav.tonight') },
     { path: '/history', label: t('nav.history') },
+    // Wishlist feature (feature-flagged)
+    ...(wishlistEnabled ? [{ 
+      path: '/wishlist', 
+      label: t('nav.wishlist'),
+    }] : []),
   ];
 
   return (

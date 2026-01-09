@@ -8,7 +8,8 @@
     "tonight": "Tonight?",
     "history": "History",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "wishlist": "Wishlist"
   },
   "auth": {
     "login": {
@@ -182,7 +183,9 @@
       "chooseFromLibrary": "Choose from Library",
       "chooseFromLibraryDesc": "Select existing photo • AI label extraction",
       "manualEntry": "Enter Manually",
-      "manualEntryDesc": "Fill in the details yourself"
+      "manualEntryDesc": "Fill in the details yourself",
+      "addToWishlist": "Add to Wishlist",
+      "addToWishlistDesc": "Save wines to buy later"
     },
     "shareCellar": {
       "button": "Share Cellar",
@@ -310,12 +313,21 @@
     "editTitle": "Edit Bottle",
     "name": "Name",
     "namePlaceholder": "e.g., Château Margaux",
+    "wineName": "Wine Name",
+    "wineNamePlaceholder": "e.g., Grand Vin",
     "producer": "Producer",
     "producerPlaceholder": "e.g., Château Margaux",
     "vintage": "Vintage",
     "vintagePlaceholder": "e.g., 2015",
     "style": "Style",
     "styles": {
+      "red": "Red",
+      "white": "White",
+      "rose": "Rosé",
+      "sparkling": "Sparkling"
+    },
+    "color": "Color",
+    "colors": {
       "red": "Red",
       "white": "White",
       "rose": "Rosé",
@@ -662,7 +674,9 @@
     "required": "Required",
     "optional": "Optional",
     "important": "Important",
-    "tip": "Tip"
+    "tip": "Tip",
+    "moving": "Moving...",
+    "remove": "Remove"
   },
   "wineImage": {
     "addTitle": "Add Wine Image",
@@ -740,6 +754,37 @@
     "error": "Failed to analyze cellar",
     "cooldownTooltip": "Please wait before running another analysis",
     "buttonLabel": "Analyze Cellar"
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "subtitle": "Wines you want to buy later",
+    "empty": "No wines in your wishlist yet",
+    "emptyDesc": "Add wines you'd like to purchase from restaurants or wine shops",
+    "addFirst": "Add Your First Wine",
+    "searchPlaceholder": "Search by producer, wine, or restaurant...",
+    "noResults": "No matching wines found",
+    "noResultsDesc": "Try a different search term",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}} days ago",
+    "moveToCellar": "Move to Cellar",
+    "moveToCellarConfirm": "Move this wine to your cellar?",
+    "movedToCellar": "Wine moved to cellar!",
+    "moveError": "Failed to move wine to cellar",
+    "removed": "Wine removed from wishlist",
+    "removeConfirm": "Remove this wine from your wishlist?",
+    "form": {
+      "title": "Add to Wishlist",
+      "validation": "Producer and wine name are required",
+      "added": "Added to wishlist!",
+      "save": "Add to Wishlist",
+      "lowConfidence": "Some fields may be unclear - please review",
+      "additionalInfo": "Where did you try it?",
+      "restaurant": "Restaurant / Location",
+      "restaurantPlaceholder": "e.g. La Trattoria",
+      "note": "My Note",
+      "notePlaceholder": "Why I want to buy this..."
+    }
   }
 }
 

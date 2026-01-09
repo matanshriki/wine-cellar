@@ -7,6 +7,8 @@ import { trackBottle } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, getDisplayPrice } from '../utils/currency';
 import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper';
 import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
+import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
+import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -23,9 +25,10 @@ interface Props {
     label_image_url?: string;
     vivino_url?: string;
   };
+  showWishlistOption?: boolean; // Wishlist feature (dev only) - Show "Save to Wishlist" button
 }
 
-export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
+export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishlistOption = false }: Props) {
   const { t, i18n } = useTranslation();
   const currencySymbol = getCurrencySymbol(i18n.language);
   const currentCurrency = getCurrencyCode(i18n.language);
@@ -434,6 +437,52 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
     }
   }
 
+  // Wishlist feature (dev only) - Save to wishlist instead of cellar
+  async function handleSaveToWishlist(e: React.FormEvent) {
+    e.preventDefault();
+    
+    if (!formData.wine_name || !formData.producer) {
+      toast.error(t('bottleForm.fillRequired'));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const wishlistItem: Omit<wishlistService.WishlistItem, 'id' | 'createdAt'> = {
+        producer: formData.producer,
+        wineName: formData.wine_name,
+        vintage: formData.vintage ? parseInt(formData.vintage) : undefined,
+        region: formData.region || undefined,
+        country: undefined, // Could add country field to form
+        grapes: formData.grapes || undefined,
+        color: formData.color as 'red' | 'white' | 'rose' | 'sparkling' | undefined,
+        imageUrl: formData.label_image_url || undefined,
+        source: 'wishlist-photo',
+        vivinoUrl: formData.vivino_url || undefined,
+        note: formData.notes || undefined,
+      };
+
+      wishlistService.addWishlistItem(wishlistItem);
+      console.log('[BottleForm] ✅ Saved to wishlist:', wishlistItem);
+      toast.success('Added to wishlist! 🔖');
+      
+      // Clear sessionStorage
+      try {
+        sessionStorage.removeItem('wine-form-vivino-flow');
+      } catch (e) {
+        console.error('[BottleForm] Failed to clear sessionStorage:', e);
+      }
+      
+      onSuccess();
+    } catch (error: any) {
+      console.error('[BottleForm] ❌ Error saving to wishlist:', error);
+      toast.error('Failed to save to wishlist');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div 
       className="fixed inset-0 z-50"
@@ -818,40 +867,96 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData }: Props) {
             backgroundColor: 'var(--bg-surface)',
           }}
         >
-          <div className="flex gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 btn-luxury-secondary text-sm sm:text-base"
-              disabled={loading}
-              style={{ 
-                minHeight: '48px',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {t('bottleForm.cancel')}
-            </button>
-            <button
-              type="submit"
-              form="bottle-form"
-              className="flex-1 btn-luxury-primary text-sm sm:text-base"
-              disabled={loading}
-              style={{ 
-                minHeight: '48px',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {loading
-                ? t('bottleForm.saving')
-                : bottle
-                ? t('bottleForm.update')
-                : isAIPrefilled
-                ? t('bottleForm.confirmAndAdd')
-                : t('bottleForm.save')}
-            </button>
-          </div>
+          {/* Wishlist feature (dev only) - Show wishlist option if enabled */}
+          {isDevEnvironment() && showWishlistOption && !bottle ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 btn-luxury-secondary text-sm sm:text-base"
+                  disabled={loading}
+                  style={{ 
+                    minHeight: '48px',
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  {t('bottleForm.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  form="bottle-form"
+                  className="flex-1 btn-luxury-primary text-sm sm:text-base"
+                  disabled={loading}
+                  style={{ 
+                    minHeight: '48px',
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  {loading
+                    ? t('bottleForm.saving')
+                    : isAIPrefilled
+                    ? t('bottleForm.confirmAndAdd')
+                    : t('bottleForm.save')}
+                </button>
+              </div>
+              {/* Wishlist alternative button */}
+              <button
+                type="button"
+                onClick={handleSaveToWishlist}
+                className="w-full text-sm sm:text-base font-medium py-3 rounded-lg transition-all"
+                disabled={loading}
+                style={{ 
+                  background: 'linear-gradient(135deg, var(--color-amber-500), var(--color-amber-600))',
+                  border: '1px solid var(--color-amber-700)',
+                  color: 'var(--text-inverse)',
+                  minHeight: '48px',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                🔖 Save to Wishlist Instead <span className="text-xs opacity-80">(dev)</span>
+              </button>
+            </div>
+          ) : (
+            // Normal buttons (no wishlist option)
+            <div className="flex gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 btn-luxury-secondary text-sm sm:text-base"
+                disabled={loading}
+                style={{ 
+                  minHeight: '48px',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {t('bottleForm.cancel')}
+              </button>
+              <button
+                type="submit"
+                form="bottle-form"
+                className="flex-1 btn-luxury-primary text-sm sm:text-base"
+                disabled={loading}
+                style={{ 
+                  minHeight: '48px',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {loading
+                  ? t('bottleForm.saving')
+                  : bottle
+                  ? t('bottleForm.update')
+                  : isAIPrefilled
+                  ? t('bottleForm.confirmAndAdd')
+                  : t('bottleForm.save')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,6 +10,8 @@ A production-grade web application for smart wine cellar management with intelli
 - **👤 User Profiles**: Profile management with avatar upload using Supabase Storage
 - **📊 CSV Import**: Bulk import bottles with automatic Vivino format detection and intelligent column mapping
 - **📜 History & Stats**: Track opened bottles, view consumption statistics and trends
+- **📌 Wishlist**: Save wines you want to buy later (photo-based extraction, move to cellar when purchased)
+- **🔐 Feature Flags**: Per-user feature toggles with real-time updates (no logout required)
 - **🌍 Internationalization**: Full support for English and Hebrew with RTL layout
 - **📱 Mobile-First**: Optimized for mobile devices with responsive design and touch-friendly interactions
 - **🎉 Delightful UX**: Confetti animations, smooth transitions, loading states, and polished interactions
@@ -62,9 +64,11 @@ npm install
 ### 2. Set Up Supabase
 
 1. Create a new project at [supabase.com](https://supabase.com)
-2. Run the SQL migrations in Supabase SQL Editor:
-   - `supabase/migrations/20251226_initial_schema.sql`
-   - `supabase/migrations/20251226_avatar_storage.sql`
+2. Run the SQL migrations in Supabase SQL Editor (in order):
+   - `apps/api/supabase/migrations/20251226_initial_schema.sql`
+   - `apps/api/supabase/migrations/20251226_avatar_storage.sql`
+   - `apps/api/supabase/migrations/20240110_add_wishlist_feature_flag.sql` (adds `wishlist_enabled` to profiles)
+   - `apps/api/supabase/migrations/20240110_create_wishlist_items_table.sql` (creates wishlist table + RLS)
 
 3. Enable authentication providers:
    - Go to **Authentication > Providers**
@@ -76,7 +80,7 @@ npm install
 Create `/apps/web/.env`:
 
 ```bash
-# Supabase
+# Supabase (REQUIRED)
 VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
@@ -84,7 +88,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_ANALYTICS_ENABLED=true
 
-# Feature Flags
+# Feature Flags (optional - for AI label art)
 VITE_FEATURE_GENERATED_LABEL_ART=true
 ```
 
@@ -92,6 +96,10 @@ VITE_FEATURE_GENERATED_LABEL_ART=true
 - Supabase Dashboard > Project Settings > API
 - Use the **anon/public** key (NOT service_role)
 - GA4 Measurement ID: See [docs/ANALYTICS_SETUP.md](./docs/ANALYTICS_SETUP.md)
+
+**For Vercel production deployment:**
+- Add these same env vars in Vercel Dashboard → Settings → Environment Variables
+- Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set for Production, Preview, and Development environments
 
 ### 4. Start Development Server
 
@@ -167,6 +175,7 @@ wine/
 - `display_name`, `first_name`, `last_name`
 - `email`, `avatar_url`
 - `preferred_language`
+- `wishlist_enabled` (boolean) - Feature flag for wishlist access
 
 **`wines`** - Wine catalog (user-scoped)
 - `id`, `user_id`
@@ -185,6 +194,12 @@ wine/
 - `id`, `user_id`, `bottle_id`, `wine_id`
 - `opened_at`, `occasion`, `meal_type`
 - `user_rating`, `tasting_notes`
+
+**`wishlist_items`** - Wines to buy later
+- `id`, `user_id`
+- `producer`, `wine_name`, `vintage`, `region`, `grapes`, `color`
+- `image_url`, `restaurant_name`, `note`, `vivino_url`
+- `confidence` (jsonb) - AI extraction confidence scores
 
 **`recommendation_runs`** - Recommendation history (optional)
 - `id`, `user_id`, `preferences` (jsonb)
@@ -242,6 +257,14 @@ Guided recommendation flow:
 - **Avatar upload**: Upload photo from camera roll or files (mobile + desktop)
 - **Language**: Switch between English and Hebrew
 - **Google sync**: Auto-populate name/email/avatar from Google on first login
+
+### 6. **Wishlist** (Feature-Flagged)
+
+- **Save wines to buy**: Take a photo of a label → AI extracts wine details → save to wishlist
+- **Track where you tried it**: Add restaurant name and personal notes
+- **Move to cellar**: When purchased, convert wishlist item to cellar bottle
+- **Feature flag**: Controlled per-user via `profiles.wishlist_enabled`
+- **Real-time updates**: Flag changes reflect instantly (no logout required)
 
 ---
 
