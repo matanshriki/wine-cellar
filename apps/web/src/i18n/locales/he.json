@@ -7,6 +7,7 @@
     "cellar": "מרתף",
     "tonight": "מה לפתוח הערב?",
     "history": "היסטוריה",
+    "wishlist": "רשימת משאלות",
     "profile": "פרופיל",
     "logout": "התנתק"
   },
@@ -182,7 +183,9 @@
       "chooseFromLibrary": "בחר מהגלריה",
       "chooseFromLibraryDesc": "בחר תמונה קיימת • חילוץ תווית אוטומטי",
       "manualEntry": "הזן ידנית",
-      "manualEntryDesc": "מלא את הפרטים בעצמך"
+      "manualEntryDesc": "מלא את הפרטים בעצמך",
+      "addToWishlist": "הוסף לרשימת משאלות",
+      "addToWishlistDesc": "שמור יינות לקנייה בעתיד"
     },
     "shareCellar": {
       "button": "שתף מרתף",
@@ -716,6 +719,37 @@
     "privacyPolicy": "מדיניות הפרטיות",
     "accept": "אשר והמשך",
     "reject": "לא תודה"
+  },
+  "wishlist": {
+    "title": "רשימת משאלות",
+    "subtitle": "יינות שברצונך לקנות בעתיד",
+    "empty": "עדיין אין יינות ברשימת המשאלות שלך",
+    "emptyDesc": "הוסף יינות שתרצה לרכוש ממסעדות או חנויות יין",
+    "addFirst": "הוסף את היין הראשון שלך",
+    "searchPlaceholder": "חפש לפי יצרן, יין או מסעדה...",
+    "noResults": "לא נמצאו יינות תואמים",
+    "noResultsDesc": "נסה מונח חיפוש אחר",
+    "today": "היום",
+    "yesterday": "אתמול",
+    "daysAgo": "לפני {{count}} ימים",
+    "moveToCellar": "העבר למרתף",
+    "moveToCellarConfirm": "להעביר יין זה למרתף שלך?",
+    "movedToCellar": "היין הועבר למרתף!",
+    "moveError": "נכשל בהעברת היין למרתף",
+    "removed": "היין הוסר מרשימת המשאלות",
+    "removeConfirm": "להסיר יין זה מרשימת המשאלות?",
+    "form": {
+      "title": "הוסף לרשימת משאלות",
+      "validation": "יצרן ושם היין הם שדות חובה",
+      "added": "נוסף לרשימת משאלות!",
+      "save": "הוסף לרשימת משאלות",
+      "lowConfidence": "חלק מהשדות עשויים להיות לא ברורים - אנא בדוק",
+      "additionalInfo": "איפה טעמת אותו?",
+      "restaurant": "מסעדה / מיקום",
+      "restaurantPlaceholder": "למשל: לה טרטוריה",
+      "note": "הערה שלי",
+      "notePlaceholder": "למה אני רוצה לקנות את זה..."
+    }
   }
 }
 
