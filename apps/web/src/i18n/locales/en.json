@@ -789,6 +789,22 @@
       "title": "I can't recommend anything yet – I don't know what you like.",
       "subtitle": "The more I know about your collection, the better I can help you decide what to drink.",
       "cta": "Teach me with one bottle 🍷"
+    },
+    "demoAction": {
+      "edit": {
+        "title": "✨ This is a demo bottle",
+        "message": "Demo bottles are here to showcase the app's features. To edit and manage your own collection, add your first bottle."
+      },
+      "markOpened": {
+        "title": "🍷 Ready to track your real wines?",
+        "message": "This is a demo bottle to show you what's possible. Add your own bottles to track when you open them, manage your cellar, and get personalized recommendations."
+      },
+      "delete": {
+        "title": "✨ This is a demo bottle",
+        "message": "Demo bottles help you explore the app. They'll disappear once you add your first real bottle."
+      },
+      "addBottleButton": "Add My First Bottle",
+      "continueButton": "Continue Exploring"
     }
   },
   "wishlist": {

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { SommelierNotes } from './SommelierNotes';
 import { WineDetailsModal } from './WineDetailsModal';
+import { DemoActionModal } from './DemoActionModal';
 import type { AIAnalysis } from '../services/aiAnalysisService';
 import * as labelArtService from '../services/labelArtService';
 
@@ -18,9 +19,24 @@ interface Props {
 export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, isDemo = false }: Props) {
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoAction, setDemoAction] = useState<'edit' | 'markOpened' | 'delete'>('edit');
   
   // Get display image using centralized logic (user image > AI generated > placeholder)
   const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+
+  // Onboarding v1 – production: Handle demo bottle actions
+  const handleDemoAction = (action: 'edit' | 'markOpened' | 'delete') => {
+    setDemoAction(action);
+    setShowDemoModal(true);
+  };
+
+  const handleAddBottleFromDemo = () => {
+    // This will be handled by parent component (CellarPage)
+    // For now, we'll just close the modal
+    setShowDemoModal(false);
+    // TODO: Trigger add bottle flow from parent
+  };
 
   return (
     <>
@@ -323,7 +339,12 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onMarkOpened();
+              // Onboarding v1 – production: Show demo modal for demo bottles
+              if (isDemo) {
+                handleDemoAction('markOpened');
+              } else {
+                onMarkOpened();
+              }
             }}
             className="w-full py-2.5 px-4 md:py-3 md:px-5 text-sm md:text-base font-semibold rounded-lg transition-all min-h-[44px] group mark-opened-hover"
             style={{
@@ -392,7 +413,12 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onDelete();
+              // Onboarding v1 – production: Show demo modal for demo bottles
+              if (isDemo) {
+                handleDemoAction('delete');
+              } else {
+                onDelete();
+              }
             }}
             className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] delete-button-hover"
             style={{
@@ -503,6 +529,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       isOpen={showDetails}
       onClose={() => setShowDetails(false)}
       bottle={bottle}
+    />
+
+    {/* Onboarding v1 – production: Demo Action Modal */}
+    <DemoActionModal
+      isOpen={showDemoModal}
+      onClose={() => setShowDemoModal(false)}
+      onAddBottle={handleAddBottleFromDemo}
+      action={demoAction}
     />
   </>
   );
