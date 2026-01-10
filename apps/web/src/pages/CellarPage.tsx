@@ -56,6 +56,16 @@ export function CellarPage() {
     data: ExtractedWineData;
   } | null>(null);
   
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationData, setConfirmationData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    isDanger?: boolean;
+  } | null>(null);
+  
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -140,8 +150,21 @@ export function CellarPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('cellar.bottle.deleteConfirm'))) return;
+    // Show luxury confirmation modal instead of basic confirm()
+    setConfirmationData({
+      title: t('common.delete'),
+      message: t('cellar.bottle.deleteConfirm'),
+      confirmText: t('common.delete'),
+      isDanger: true, // Red confirm button
+      onConfirm: () => {
+        setShowConfirmation(false);
+        doDelete(id);
+      },
+    });
+    setShowConfirmation(true);
+  }
 
+  async function doDelete(id: string) {
     try {
       await bottleService.deleteBottle(id);
       trackBottle.delete(); // Track bottle deletion
@@ -1952,6 +1975,92 @@ export function CellarPage() {
               extractedData: wishlistExtractedData.data,
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Luxury Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmation && confirmationData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+            onClick={() => setShowConfirmation(false)}
+            style={{ backdropFilter: 'blur(4px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'tween', duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-soft)',
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="px-6 py-5 border-b"
+                style={{ borderColor: 'var(--border-soft)' }}
+              >
+                <h3 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  {confirmationData.title}
+                </h3>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6">
+                <p 
+                  className="text-base"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {confirmationData.message}
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div 
+                className="px-6 py-4 border-t flex gap-3 justify-end"
+                style={{ 
+                  borderColor: 'var(--border-soft)',
+                  backgroundColor: 'var(--bg-secondary)',
+                }}
+              >
+                <button
+                  onClick={() => setShowConfirmation(false)}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={confirmationData.onConfirm}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  style={{
+                    background: confirmationData.isDanger 
+                      ? 'linear-gradient(135deg, #dc2626, #b91c1c)' 
+                      : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    color: 'white',
+                  }}
+                >
+                  {confirmationData.confirmText || t('common.confirm')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
       
