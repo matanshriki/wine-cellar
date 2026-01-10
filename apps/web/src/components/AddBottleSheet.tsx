@@ -106,6 +106,7 @@ export function AddBottleSheet({
               borderTopLeftRadius: 'var(--radius-2xl)',
               borderTopRightRadius: 'var(--radius-2xl)',
               borderBottom: 'none',
+              pointerEvents: 'auto', // Fix: Ensure interactions work during animation
             }}
           >
             {/* Handle */}
@@ -143,6 +144,7 @@ export function AddBottleSheet({
                     boxShadow: 'var(--shadow-sm)',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
+                    pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
                   }}
                 >
                   <input
@@ -187,6 +189,7 @@ export function AddBottleSheet({
                     boxShadow: 'var(--shadow-xs)',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
+                    pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
                   }}
                 >
                   <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,6 +220,7 @@ export function AddBottleSheet({
                       boxShadow: 'var(--shadow-sm)',
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
+                      pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
                     }}
                   >
                     <input
@@ -255,6 +259,7 @@ export function AddBottleSheet({
                   onClose();
                 }}
                 className="btn-luxury-ghost w-full mt-6"
+                style={{ pointerEvents: 'auto' }} // Fix: Ensure button is immediately clickable
               >
                 {t('common.cancel')}
               </button>

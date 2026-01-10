@@ -26,7 +26,7 @@ interface NavItem {
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
-  const { flags } = useFeatureFlags(); // Get feature flags
+  const { flags, loading } = useFeatureFlags(); // Get feature flags and loading state
 
   /**
    * Smooth scroll to top with luxury easing
@@ -143,9 +143,13 @@ export const BottomNav: React.FC = () => {
     ),
   };
 
+  // Always include Wishlist slot to prevent layout shift (show skeleton while loading)
   const navItems: NavItem[] = flags?.wishlistEnabled
     ? [...baseNavItems, wishlistNavItem]
     : baseNavItems;
+  
+  // During loading, show all 4 slots (including Wishlist skeleton) to prevent layout shift
+  const shouldShowWishlist = loading || flags?.wishlistEnabled;
 
   return (
     <>
@@ -155,6 +159,8 @@ export const BottomNav: React.FC = () => {
        * Fixed to bottom on mobile only (md:hidden).
        * Content spacing handled by Layout's pb-bottom-nav utility.
        * Height: h-16 (64px) + env(safe-area-inset-bottom)
+       * 
+       * UX Fix: Always shows 4 slots (including Wishlist skeleton during load) to prevent layout shift
        */}
       <nav
         className="fixed bottom-0 inset-x-0 bg-white border-t md:hidden safe-area-bottom"
@@ -164,7 +170,7 @@ export const BottomNav: React.FC = () => {
         }}
       >
         <div className="flex items-center justify-around h-16 px-2">
-          {navItems.map((item) => {
+          {baseNavItems.map((item) => {
             const isActive = location.pathname === item.path;
 
             return (
@@ -218,6 +224,65 @@ export const BottomNav: React.FC = () => {
               </Link>
             );
           })}
+          
+          {/* Wishlist button - always reserve space to prevent layout shift */}
+          {shouldShowWishlist && (
+            <Link
+              key={wishlistNavItem.path}
+              to={wishlistNavItem.path}
+              onClick={(e) => {
+                // Prevent navigation during loading
+                if (loading) {
+                  e.preventDefault();
+                  return;
+                }
+                console.log('[BottomNav] Wishlist clicked');
+                scrollToTop();
+              }}
+              className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
+              aria-label={t(wishlistNavItem.labelKey)}
+              aria-current={location.pathname === wishlistNavItem.path ? 'page' : undefined}
+              style={{
+                opacity: loading ? 0.3 : 1, // Dim during loading
+                pointerEvents: loading ? 'none' : 'auto', // Disable clicks during loading
+              }}
+            >
+              <div
+                className="relative transition-colors"
+                style={{
+                  color: location.pathname === wishlistNavItem.path ? 'var(--color-wine-600)' : 'var(--color-stone-500)',
+                }}
+              >
+                {location.pathname === wishlistNavItem.path ? wishlistNavItem.activeIcon : wishlistNavItem.icon}
+
+                {/* Active indicator pill */}
+                {location.pathname === wishlistNavItem.path && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 -z-10 rounded-full"
+                    style={{
+                      backgroundColor: 'var(--color-wine-100)',
+                      transform: 'scale(1.4)',
+                    }}
+                    transition={{
+                      type: 'tween',
+                      duration: 0.2,
+                      ease: 'easeOut',
+                    }}
+                  />
+                )}
+              </div>
+
+              <span
+                className="text-xs font-medium transition-colors"
+                style={{
+                  color: location.pathname === wishlistNavItem.path ? 'var(--color-wine-700)' : 'var(--color-stone-600)',
+                }}
+              >
+                {t(wishlistNavItem.labelKey)}
+              </span>
+            </Link>
+          )}
         </div>
       </nav>
     </>
