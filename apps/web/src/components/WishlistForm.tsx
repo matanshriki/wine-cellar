@@ -232,9 +232,13 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-[100]"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
       onClick={handleClose}
-      style={{ pointerEvents: 'auto' }} // Fix: Ensure backdrop doesn't block interactions
+      style={{ 
+        pointerEvents: 'auto', // Fix: Ensure backdrop doesn't block interactions
+        padding: '0.75rem', // Consistent padding all around
+        paddingBottom: 'calc(0.75rem + 64px + env(safe-area-inset-bottom))', // Account for bottom nav
+      }}
     >
       {/* Mobile hardening (wishlist): Changed max-h to dvh for mobile viewport, improved touch areas, responsive padding */}
       <motion.div
@@ -246,7 +250,8 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',
-          maxHeight: 'calc(100dvh - 2rem)', // Mobile: Full viewport - 1rem padding top/bottom
+          // Mobile: Account for bottom nav (64px) + safe-area + padding
+          maxHeight: 'calc(100dvh - 4rem - 64px - env(safe-area-inset-bottom))',
           pointerEvents: 'auto', // Fix: Ensure modal content is interactive
         }}
       >
@@ -303,6 +308,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
             pointerEvents: 'auto', // Fix: Ensure form is interactive
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))', // Extra space at bottom for scrolling
           }}
         >
           {/* Producer */}
