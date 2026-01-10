@@ -110,6 +110,7 @@ export function CellarPage() {
   async function loadBottles() {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
     try {
+      const startTime = Date.now();
       console.log('[CellarPage] Fetching bottles from database...');
       const data = await bottleService.listBottles();
       console.log('[CellarPage] ✅ Bottles loaded successfully');
@@ -121,6 +122,15 @@ export function CellarPage() {
       })));
       setBottles(data);
       console.log('[CellarPage] Bottles state updated');
+      
+      // Mobile UX Fix: Ensure minimum loading time to prevent tap issues
+      // This gives the browser time to fully render and make buttons interactive
+      const elapsedTime = Date.now() - startTime;
+      const minLoadingTime = 400; // 400ms minimum
+      if (elapsedTime < minLoadingTime) {
+        console.log(`[CellarPage] Waiting ${minLoadingTime - elapsedTime}ms for smooth transition...`);
+        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
+      }
     } catch (error: any) {
       console.error('[CellarPage] ❌ Error loading bottles:', error);
       toast.error(error.message || t('errors.generic'));
@@ -747,7 +757,14 @@ export function CellarPage() {
           </div>
 
           {/* Action Buttons - Always show Add Bottle, others only when cellar has bottles */}
-          <div className="flex flex-col xs:flex-row gap-2 sm:gap-2">
+          {/* Mobile Fix: Wrap buttons in motion.div to prevent tap issues during page load/switch */}
+          <motion.div
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+            className="flex flex-col xs:flex-row gap-2 sm:gap-2"
+            style={{ pointerEvents: 'auto' }} // Ensure buttons work immediately
+          >
             {/* Beta feature: Share button - Only show when cellar has bottles */}
             {bottlesInCellar.length > 0 && featureFlags.canShareCellar && (
               <button
@@ -802,12 +819,13 @@ export function CellarPage() {
                   setShowAddSheet(true);
                 }}
                 className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto"
+                style={{ pointerEvents: 'auto' }} // Fix: Ensure button works immediately on page load/switch
               >
                 <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
                 <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
               </button>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -816,7 +834,9 @@ export function CellarPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }} // Fast animation for immediate interactivity
           className="mb-4 sm:mb-6 space-y-3"
+          style={{ pointerEvents: 'auto' }} // Fix: Ensure filters/search work immediately
         >
           {/* Search Bar */}
           <div className="relative">
@@ -1035,8 +1055,9 @@ export function CellarPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
+          transition={{ duration: 0.2 }} // Removed delay for faster interactivity
           className="mb-4"
+          style={{ pointerEvents: 'auto' }} // Fix: Ensure sort button works immediately
         >
           <button
             onClick={() => setShowSortMenu(true)}
@@ -1062,8 +1083,9 @@ export function CellarPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.3 }} // Removed delay for faster rendering
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
+          style={{ pointerEvents: 'auto' }} // Fix: Ensure widgets are immediately interactive
         >
           <TonightsOrbit 
             bottles={filteredBottles}
@@ -1121,7 +1143,7 @@ export function CellarPage() {
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={{ delay: 0.1, duration: 0.3 }} // Reduced delay for faster render
             className="text-2xl sm:text-3xl mb-3"
             style={{ 
               color: 'var(--text-primary)', 
@@ -1137,7 +1159,7 @@ export function CellarPage() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.15, duration: 0.3 }} // Reduced delay for faster render
             className="text-base sm:text-lg mb-2 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
@@ -1162,8 +1184,9 @@ export function CellarPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
+            transition={{ delay: 0.2, duration: 0.3 }} // Reduced from 0.7s to 0.2s for faster interaction
             className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto"
+            style={{ pointerEvents: 'auto' }} // Fix: Ensure buttons work during animation
           >
             <button 
               onClick={(e) => {
@@ -1172,6 +1195,7 @@ export function CellarPage() {
                 setShowAddSheet(true);
               }}
               className="btn-luxury-primary w-full xs:w-auto"
+              style={{ pointerEvents: 'auto' }} // Fix: Ensure button is immediately clickable
             >
               + {t('cellar.empty.addButton')}
             </button>
@@ -1256,8 +1280,9 @@ export function CellarPage() {
               key={bottle.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.3 }}
+              transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.2 }} // Reduced delay & capped at 0.3s
               className="flex cellar-grid-item"
+              style={{ pointerEvents: 'auto' }} // Fix: Ensure cards are immediately interactive
             >
               <BottleCard
                 bottle={bottle}
