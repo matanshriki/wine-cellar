@@ -132,15 +132,19 @@ export function CellarPage() {
     }
   }, []);
 
-  // Onboarding v1 – production: Initialize onboarding for new users
+  // Onboarding v1 – production: Initialize onboarding for new users and re-engagement
   useEffect(() => {
     // Only check once to avoid multiple modals
     if (hasCheckedOnboarding.current) return;
     hasCheckedOnboarding.current = true;
 
-    // Check if onboarding should be shown (first-time users only)
-    if (onboardingUtils.shouldShowOnboarding()) {
-      console.log('[CellarPage] First-time user detected - showing welcome modal');
+    // Check if onboarding should be shown (first-time users OR re-engagement after 7 days)
+    if (onboardingUtils.shouldShowOnboarding(bottles.length)) {
+      if (bottles.length === 0) {
+        console.log('[CellarPage] Showing onboarding - new user or re-engagement (empty cellar after 7 days)');
+      } else {
+        console.log('[CellarPage] First-time user detected - showing welcome modal');
+      }
       setShowWelcomeModal(true);
     }
 
@@ -149,7 +153,7 @@ export function CellarPage() {
       console.log('[CellarPage] Demo mode active');
       setIsDemoMode(true);
     }
-  }, []);
+  }, [bottles.length]);
 
   // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
   useEffect(() => {
