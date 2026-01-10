@@ -241,10 +241,11 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',
+          maxHeight: 'calc(100dvh - 2rem)', // Mobile: Full viewport - 1rem padding top/bottom
         }}
       >
         {/* Header */}
@@ -548,10 +549,11 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         {/* Footer */}
         {/* Mobile hardening (wishlist): Added safe-area-inset-bottom for PWA, improved touch targets, fixed button layout */}
         <div 
-          className="px-4 sm:px-6 py-4 border-t flex gap-2 sm:gap-3 justify-end flex-shrink-0"
+          className="px-4 sm:px-6 border-t flex gap-2 sm:gap-3 justify-end flex-shrink-0"
           style={{ 
             borderColor: 'var(--border-soft)',
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+            paddingTop: '1rem',
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
           }}
         >
           <button
