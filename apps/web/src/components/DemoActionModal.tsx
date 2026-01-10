@@ -46,7 +46,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
         >
           {/* Backdrop */}
           <motion.div
@@ -55,7 +55,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0"
-            style={{ backdropFilter: 'blur(8px)' }}
+            style={{ backdropFilter: 'blur(12px)' }}
           />
 
           {/* Modal */}
@@ -66,9 +66,9 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
             transition={{ type: 'spring', duration: 0.5 }}
             className="relative w-full max-w-md mx-auto rounded-2xl p-6 sm:p-8"
             style={{
-              background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
-              border: '1px solid var(--border-subtle)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -86,7 +86,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
                 border: '2px solid var(--wine-200)',
               }}
             >
-              <span className="text-4xl">🍷</span>
+              <span className="text-5xl" style={{ filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))' }}>🍷</span>
             </motion.div>
 
             {/* Title */}
@@ -96,9 +96,10 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
               transition={{ delay: 0.15 }}
               className="text-2xl sm:text-3xl font-bold text-center mb-4"
               style={{
-                color: 'var(--text-primary)',
+                color: '#ffffff',
                 fontFamily: 'var(--font-display)',
                 letterSpacing: '-0.02em',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
               }}
             >
               {content.title}
@@ -110,7 +111,10 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="text-base sm:text-lg text-center mb-8 leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+              }}
             >
               {content.message}
             </motion.p>
