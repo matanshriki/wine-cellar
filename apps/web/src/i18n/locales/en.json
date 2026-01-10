@@ -175,7 +175,8 @@
       "error": "Error reading label - please enter details manually"
     },
     "addBottle": {
-      "title": "Add Bottle",
+      "title": "Teach me your taste",
+      "subtitle": "The more I know, the better I get.",
       "uploadPhoto": "Take or Upload Photo",
       "uploadPhotoDescNew": "Use camera or choose from gallery • AI label extraction",
       "takePhoto": "Take Photo",
@@ -754,6 +755,41 @@
     "error": "Failed to analyze cellar",
     "cooldownTooltip": "Please wait before running another analysis",
     "buttonLabel": "Analyze Cellar"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to Wine Cellar Brain",
+      "subtitle": "Your personal AI sommelier – built to help you decide what to drink, when to drink it, and why.",
+      "showDemo": "Show me what this app can do",
+      "skip": "Skip for now",
+      "devOnly": "DEV MODE ONLY - Not visible in production"
+    },
+    "demoBanner": {
+      "message": "You're viewing a demo cellar – replace it with your own anytime",
+      "exitDemo": "Exit Demo"
+    },
+    "demoRecommendation": {
+      "title": "If this were your cellar…",
+      "readyNow": "✨ Perfect for tonight! This wine is in its ideal drinking window. It pairs beautifully with rich dishes and has developed wonderful complexity.",
+      "peakSoon": "⏰ Approaching its peak! This wine is entering its optimal drinking window. Consider opening it within the next few months for the best experience.",
+      "hold": "🎯 Worth the wait! This wine needs more time to develop. Hold onto it for a few more years to unlock its full potential.",
+      "educationalNote": "💡 This app only recommends wines you actually own – that's why it works better than generic wine apps.",
+      "ctaTitle": "Want recommendations like this for your wines?",
+      "ctaButton": "Add just one bottle",
+      "ctaHelper": "One bottle is enough to get started.",
+      "demoOnly": "(Demo mode - analysis not available)"
+    },
+    "firstBottle": {
+      "title": "Got it! I'm already smarter.",
+      "message": "With just one bottle, here's what I know so far about your taste…",
+      "button": "Let's explore!",
+      "closing": "Closing automatically..."
+    },
+    "emptyState": {
+      "title": "I can't recommend anything yet – I don't know what you like.",
+      "subtitle": "The more I know about your collection, the better I can help you decide what to drink.",
+      "cta": "Teach me with one bottle 🍷"
+    }
   },
   "wishlist": {
     "title": "Wishlist",

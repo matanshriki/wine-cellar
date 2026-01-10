@@ -135,7 +135,7 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => 
       aria-live="polite"
       aria-atomic="true"
     >
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence>
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
         ))}

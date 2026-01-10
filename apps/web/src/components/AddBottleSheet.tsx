@@ -121,7 +121,7 @@ export function AddBottleSheet({
             <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom luxury-scrollbar">
               {/* Title */}
               <h2 
-                className="text-2xl font-bold mb-6 text-center"
+                className="text-2xl font-bold mb-2 text-center"
                 style={{ 
                   color: 'var(--text-primary)',
                   fontFamily: 'var(--font-display)',
@@ -129,7 +129,15 @@ export function AddBottleSheet({
                 }}
               >
                 {t('cellar.addBottle.title')}
-              </h2>
+            </h2>
+
+            {/* Onboarding v1 – production: Helper text */}
+            <p
+              className="text-sm mb-6 text-center"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {t('cellar.addBottle.subtitle')}
+              </p>
 
               {/* Options */}
               <div className="space-y-3">

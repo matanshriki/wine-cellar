@@ -31,6 +31,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
   const [currentBottle, setCurrentBottle] = useState<BottleWithWineInfo | null>(bottle);
 
+  // Onboarding v1 – value first: Check if this is a demo bottle
+  const isDemoBottle = currentBottle?.id.startsWith('demo-') || false;
+
   // Update current bottle when prop changes
   useEffect(() => {
     setCurrentBottle(bottle);
@@ -39,6 +42,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   // Check if user has AI label art enabled (per-user flag)
   useEffect(() => {
     const checkUserAccess = async () => {
+      // Onboarding v1 – value first: Skip for demo bottles
+      if (isDemoBottle) {
+        setUserCanGenerateAI(false);
+        return;
+      }
       const enabled = await labelArtService.isLabelArtEnabledForUser();
       setUserCanGenerateAI(enabled);
     };
@@ -46,7 +54,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     if (isOpen && bottle) {
       checkUserAccess();
     }
-  }, [isOpen, bottle]);
+  }, [isOpen, bottle, isDemoBottle]);
 
   // Early return AFTER all hooks
   if (!currentBottle) return null;
@@ -57,6 +65,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const displayImage = labelArtService.getWineDisplayImage(wine);
 
   const handleSaveImage = async (imageUrl: string) => {
+    // Onboarding v1 – value first: Prevent saving for demo bottles
+    if (isDemoBottle) {
+      toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+      return;
+    }
+
     try {
       await bottleService.updateWineImage(wine.id, imageUrl || null);
       
@@ -89,6 +103,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   };
 
   const handleGenerateLabelArt = async (style: labelArtService.LabelArtStyle) => {
+    // Onboarding v1 – value first: Prevent AI generation for demo bottles
+    if (isDemoBottle) {
+      toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+      return;
+    }
+
     setIsGenerating(true);
     setShowGenerateDialog(false);
     trackAILabel.start(style); // Track AI label generation start
@@ -301,8 +321,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     <div className="mt-2 md:mt-3 space-y-2">
                       {/* Add/Update User Image */}
                       <button
-                        onClick={() => setShowImageDialog(true)}
-                        className="w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 image-button-hover"
+                        onClick={() => {
+                          // Onboarding v1 – value first: Prevent image upload for demo bottles
+                          if (isDemoBottle) {
+                            toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+                            return;
+                          }
+                          setShowImageDialog(true);
+                        }}
+                        disabled={isDemoBottle}
+                        className={`w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 image-button-hover ${
+                          isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         style={{
                           background: 'var(--bg-surface)',
                           border: '1px solid var(--border-base)',
@@ -326,12 +356,21 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {/* Generate Label Art Button */}
                       {userCanGenerateAI && !wine.image_url && (
                         <button
-                          onClick={() => setShowGenerateDialog(true)}
-                          disabled={isGenerating}
-                          className="w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ai-button-hover"
-                          title="Generate AI label art"
+                          onClick={() => {
+                            // Onboarding v1 – value first: Prevent AI generation for demo bottles
+                            if (isDemoBottle) {
+                              toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+                              return;
+                            }
+                            setShowGenerateDialog(true);
+                          }}
+                          disabled={isGenerating || isDemoBottle}
+                          className={`w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ai-button-hover ${
+                            isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          title={isDemoBottle ? t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)') : "Generate AI label art"}
                           style={{
-                            background: isGenerating ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
+                            background: isGenerating || isDemoBottle ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
                             border: '1px solid var(--gold-600)',
                             color: 'white',
                             minHeight: '40px',
@@ -470,9 +509,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {t('cellar.bottle.grapes')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {wine.grapes.map((grape, idx) => (
+                      {wine.grapes.map((grape) => (
                         <span 
-                          key={idx}
+                          key={`${wine.id}-${grape}`}
                           className="px-3 py-1 rounded-full text-sm"
                           style={{
                             backgroundColor: 'var(--wine-50)',
@@ -611,10 +650,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {onMarkAsOpened && (
                         <button
                           onClick={() => {
+                            // Onboarding v1 – value first: Prevent marking demo bottles as opened
+                            if (isDemoBottle) {
+                              toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+                              return;
+                            }
                             onMarkAsOpened(bottle);
                             onClose();
                           }}
-                          className="mark-opened-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200"
+                          disabled={isDemoBottle}
+                          className={`mark-opened-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200 ${
+                            isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                           style={{
                             background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
                             color: 'white',

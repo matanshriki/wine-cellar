@@ -17,6 +17,11 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
 import { ShareCellarModal } from '../components/ShareCellarModal'; // Feedback iteration (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
+// Onboarding v1 – value first: Onboarding components (DEV ONLY)
+import { WelcomeModal } from '../components/WelcomeModal';
+import { DemoBanner } from '../components/DemoBanner';
+import { DemoRecommendationCard } from '../components/DemoRecommendationCard';
+import { FirstBottleSuccessModal } from '../components/FirstBottleSuccessModal';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -27,6 +32,9 @@ import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
 import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
 import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags context
+// Onboarding v1 – production: Onboarding utilities and demo data
+import * as onboardingUtils from '../utils/onboarding';
+import { DEMO_BOTTLES } from '../data/demoCellar';
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
@@ -105,6 +113,13 @@ export function CellarPage() {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedFields, setParsedFields] = useState<string[]>([]);
 
+  // Onboarding v1 – production: Onboarding state
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [showFirstBottleSuccess, setShowFirstBottleSuccess] = useState(false);
+  const [firstBottleName, setFirstBottleName] = useState('');
+  const hasCheckedOnboarding = useRef(false);
+
   useEffect(() => {
     loadBottles();
     
@@ -116,6 +131,57 @@ export function CellarPage() {
       console.error('[CellarPage] Failed to clear form draft:', e);
     }
   }, []);
+
+  // Onboarding v1 – production: Initialize onboarding for new users
+  useEffect(() => {
+    // Only check once to avoid multiple modals
+    if (hasCheckedOnboarding.current) return;
+    hasCheckedOnboarding.current = true;
+
+    // Check if onboarding should be shown (first-time users only)
+    if (onboardingUtils.shouldShowOnboarding()) {
+      console.log('[CellarPage] First-time user detected - showing welcome modal');
+      setShowWelcomeModal(true);
+    }
+
+    // Check if demo mode is active
+    if (onboardingUtils.isDemoModeActive()) {
+      console.log('[CellarPage] Demo mode active');
+      setIsDemoMode(true);
+    }
+  }, []);
+
+  // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
+  useEffect(() => {
+    // If demo mode is active AND user has at least one real bottle, exit demo mode
+    if (isDemoMode && bottles.length > 0) {
+      console.log('[CellarPage] User has real bottles, auto-exiting demo mode');
+      onboardingUtils.deactivateDemoMode();
+      setIsDemoMode(false);
+    }
+  }, [bottles, isDemoMode]);
+
+  // Onboarding v1 – production: Handle welcome modal actions
+  function handleShowDemo() {
+    console.log('[CellarPage] User chose to see demo');
+    onboardingUtils.markOnboardingSeen();
+    onboardingUtils.activateDemoMode();
+    setShowWelcomeModal(false);
+    setIsDemoMode(true);
+  }
+
+  function handleSkipOnboarding() {
+    console.log('[CellarPage] User skipped onboarding');
+    onboardingUtils.markOnboardingSeen();
+    setShowWelcomeModal(false);
+  }
+
+  // Onboarding v1 – production: Exit demo mode
+  function handleExitDemo() {
+    console.log('[CellarPage] Exiting demo mode');
+    onboardingUtils.deactivateDemoMode();
+    setIsDemoMode(false);
+  }
 
   async function loadBottles() {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
@@ -267,9 +333,28 @@ export function CellarPage() {
     console.log('[CellarPage] ========== FORM SUCCESS ==========');
     console.log('[CellarPage] Reloading bottles from database...');
     
+    // Onboarding v1 – production: Check if this is the first bottle
+    const isFirstBottle = bottles.length === 0 && !onboardingUtils.hasAddedFirstBottle();
+    
     // CRITICAL: Reload bottles FIRST to get updated data
     await loadBottles();
     console.log('[CellarPage] ✅ Bottles reloaded with latest data');
+    
+    // Onboarding v1 – production: Show first bottle success modal
+    if (isFirstBottle) {
+      console.log('[CellarPage] First bottle added! Showing success modal');
+      onboardingUtils.markFirstBottleAdded();
+      // Exit demo mode if active
+      if (isDemoMode) {
+        setIsDemoMode(false);
+      }
+      // Get the bottle name for the modal
+      const newBottles = await bottleService.listBottles();
+      if (newBottles.length > 0) {
+        setFirstBottleName(newBottles[0].wine.wine_name);
+      }
+      setShowFirstBottleSuccess(true);
+    }
     
     // Then close form and clear state
     setShowForm(false);
@@ -303,11 +388,17 @@ export function CellarPage() {
 
   /**
    * Bottles in cellar (excluding consumed bottles)
+   * Onboarding v1 – value first: Use demo bottles when in demo mode (DEV ONLY)
    * Memoized for performance
    */
   const bottlesInCellar = useMemo(() => {
+    // Onboarding v1 – production: Return demo bottles when in demo mode
+    if (isDemoMode) {
+      console.log('[CellarPage] Using demo bottles:', DEMO_BOTTLES.length);
+      return DEMO_BOTTLES;
+    }
     return bottles.filter(bottle => bottle.quantity > 0);
-  }, [bottles]);
+  }, [bottles, isDemoMode]);
 
   // Calculate unanalyzed bottles count (only for bottles in cellar)
   const unanalyzedCount = bottlesInCellar.filter(bottle => {
@@ -1101,6 +1192,22 @@ export function CellarPage() {
         </motion.div>
       )}
 
+      {/* Onboarding v1 – production: Demo Banner */}
+      {isDemoMode && (
+        <DemoBanner onExitDemo={handleExitDemo} />
+      )}
+
+      {/* Onboarding v1 – production: Demo Recommendation Card */}
+      {isDemoMode && bottlesInCellar.length > 0 && (
+        <DemoRecommendationCard
+          recommendedBottle={bottlesInCellar[1]} // Use Cloudy Bay (ready to drink)
+          onAddBottle={() => {
+            setIsDemoMode(false);
+            setShowAddSheet(true);
+          }}
+        />
+      )}
+
       {/* Innovation Widgets - Tonight's Orbit and Drink Window */}
       {bottlesInCellar.length > 0 && !searchQuery && activeFilters.length === 0 && (
         <motion.div
@@ -1130,9 +1237,9 @@ export function CellarPage() {
       })()}
       {bottlesInCellar.length === 0 ? (
         /**
-         * Empty State - Enhanced UX
+         * Empty State - Onboarding v1 – value first
          * 
-         * - Sophisticated messaging
+         * - Improved messaging focused on teaching the app
          * - Visual element (wine glass illustration)
          * - Clear call-to-action
          * - Mobile optimized
@@ -1162,11 +1269,11 @@ export function CellarPage() {
             🍷
           </motion.div>
 
-          {/* Sophisticated heading */}
+          {/* Onboarding v1 – value first: Improved heading */}
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.3 }} // Reduced delay for faster render
+            transition={{ delay: 0.1, duration: 0.3 }}
             className="text-2xl sm:text-3xl mb-3"
             style={{ 
               color: 'var(--text-primary)', 
@@ -1175,41 +1282,27 @@ export function CellarPage() {
               letterSpacing: '-0.02em',
             }}
           >
-            {t('cellar.empty.title')}
+            {t('onboarding.emptyState.title')}
           </motion.h2>
 
-          {/* Refined explanation */}
+          {/* Onboarding v1 – value first: Improved explanation */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.3 }} // Reduced delay for faster render
-            className="text-base sm:text-lg mb-2 max-w-md mx-auto"
+            transition={{ delay: 0.15, duration: 0.3 }}
+            className="text-base sm:text-lg mb-8 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
-            {t('cellar.empty.subtitle')}
-          </motion.p>
-
-          {/* Additional helpful hint */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="text-sm mb-8 max-w-md mx-auto"
-            style={{ 
-              color: 'var(--text-tertiary)',
-              fontStyle: 'italic'
-            }}
-          >
-            {t('cellar.empty.hint')}
+            {t('onboarding.emptyState.subtitle')}
           </motion.p>
 
           {/* Action buttons */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.3 }} // Reduced from 0.7s to 0.2s for faster interaction
+            transition={{ delay: 0.2, duration: 0.3 }}
             className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto"
-            style={{ pointerEvents: 'auto' }} // Fix: Ensure buttons work during animation
+            style={{ pointerEvents: 'auto' }}
           >
             <button 
               onClick={(e) => {
@@ -1217,10 +1310,10 @@ export function CellarPage() {
                 e.stopPropagation();
                 setShowAddSheet(true);
               }}
-              className="btn-luxury-primary w-full xs:w-auto"
-              style={{ pointerEvents: 'auto' }} // Fix: Ensure button is immediately clickable
+              className="btn-luxury-primary w-full xs:w-auto text-base sm:text-lg"
+              style={{ pointerEvents: 'auto' }}
             >
-              + {t('cellar.empty.addButton')}
+              {t('onboarding.emptyState.cta')}
             </button>
             {/* Beta feature: Multi-bottle import in empty state - Enabled in dev OR if user has flag */}
             {featureFlags.canMultiBottleImport && (
@@ -1316,6 +1409,7 @@ export function CellarPage() {
                 onDelete={() => handleDelete(bottle.id)}
                 onAnalyze={() => handleAnalyze(bottle.id)}
                 onMarkOpened={() => handleMarkOpened(bottle)}
+                isDemo={isDemoMode}
               />
             </motion.div>
           ))}
@@ -2063,6 +2157,20 @@ export function CellarPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Onboarding v1 – production: Welcome Modal */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onShowDemo={handleShowDemo}
+        onSkip={handleSkipOnboarding}
+      />
+
+      {/* Onboarding v1 – production: First Bottle Success Modal */}
+      <FirstBottleSuccessModal
+        isOpen={showFirstBottleSuccess}
+        onClose={() => setShowFirstBottleSuccess(false)}
+        bottleName={firstBottleName}
+      />
       
       {/* Grid Overflow Prevention */}
       <style>{`

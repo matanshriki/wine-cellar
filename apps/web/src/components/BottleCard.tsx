@@ -12,9 +12,10 @@ interface Props {
   onDelete: () => void;
   onAnalyze: () => void;
   onMarkOpened?: () => void;
+  isDemo?: boolean; // Onboarding v1 – production: Flag for demo bottles
 }
 
-export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }: Props) {
+export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, isDemo = false }: Props) {
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
   
@@ -281,16 +282,22 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened }
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onAnalyze();
+            if (!isDemo) {
+              onAnalyze();
+            }
           }}
+          disabled={isDemo}
+          title={isDemo ? t('onboarding.demoRecommendation.demoOnly') : undefined}
           className="w-full mb-3 py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
           style={{
-            backgroundColor: 'var(--bg-subtle)',
-            color: 'var(--wine-700)',
+            backgroundColor: isDemo ? 'var(--bg-muted)' : 'var(--bg-subtle)',
+            color: isDemo ? 'var(--text-tertiary)' : 'var(--wine-700)',
             border: '1px solid var(--border-base)',
             boxShadow: 'var(--shadow-xs)',
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
+            cursor: isDemo ? 'not-allowed' : 'pointer',
+            opacity: isDemo ? 0.6 : 1,
           }}
           aria-label="Generate sommelier notes"
         >
