@@ -234,6 +234,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-[100]"
       onClick={handleClose}
+      style={{ pointerEvents: 'auto' }} // Fix: Ensure backdrop doesn't block interactions
     >
       {/* Mobile hardening (wishlist): Changed max-h to dvh for mobile viewport, improved touch areas, responsive padding */}
       <motion.div
@@ -246,6 +247,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',
           maxHeight: 'calc(100dvh - 2rem)', // Mobile: Full viewport - 1rem padding top/bottom
+          pointerEvents: 'auto', // Fix: Ensure modal content is interactive
         }}
       >
         {/* Header */}
@@ -294,7 +296,15 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <form 
+          onSubmit={handleSubmit} 
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
+          style={{ 
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+            pointerEvents: 'auto', // Fix: Ensure form is interactive
+          }}
+        >
           {/* Producer */}
           <div>
             <label 
@@ -554,6 +564,8 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             borderColor: 'var(--border-soft)',
             paddingTop: '1rem',
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+            pointerEvents: 'auto', // Fix: Ensure footer is interactive
+            backgroundColor: 'var(--bg-surface)', // Ensure footer has background to be visible
           }}
         >
           <button
@@ -565,6 +577,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               backgroundColor: 'var(--bg-secondary)',
               borderColor: 'var(--border-medium)',
               color: 'var(--text-secondary)',
+              pointerEvents: 'auto', // Fix: Ensure button is clickable
             }}
           >
             {t('common.cancel')}
@@ -578,6 +591,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
               opacity: loading ? 0.6 : 1,
+              pointerEvents: loading ? 'none' : 'auto', // Fix: Ensure button is clickable when not loading
             }}
           >
             {loading ? t('common.saving') : t('wishlist.form.save')} {/* "Add to Wishlist" */}
