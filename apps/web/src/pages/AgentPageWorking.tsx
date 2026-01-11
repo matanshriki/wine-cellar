@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
-import { sendAgentMessage, type AgentMessage } from '../services/agentService';
+import { sendAgentMessage, transcribeAudio, type AgentMessage } from '../services/agentService';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
@@ -152,7 +152,7 @@ export function AgentPageWorking() {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await transcribeAudio(audioBlob);
+        await handleTranscribeAudio(audioBlob);
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -172,27 +172,15 @@ export function AgentPageWorking() {
     }
   }
 
-  async function transcribeAudio(audioBlob: Blob) {
+  async function handleTranscribeAudio(audioBlob: Blob) {
     setIsTranscribing(true);
     try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-
-      const response = await fetch('http://localhost:3001/api/agent/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Transcription failed');
-      }
-
-      const data = await response.json();
+      const data = await transcribeAudio(audioBlob);
       setInputValue(data.text);
       toast.success(t('cellarSommelier.transcriptionSuccess'));
     } catch (error: any) {
       console.error('Transcription error:', error);
-      toast.error(t('cellarSommelier.transcriptionFailed'));
+      toast.error(error.message || t('cellarSommelier.transcriptionFailed'));
     } finally {
       setIsTranscribing(false);
     }

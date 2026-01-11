@@ -163,3 +163,39 @@ function formatCounts(counts: Record<string, number>, limit = 3): string {
   return entries.map(([key, count]) => `${key} (${count})`).join(', ');
 }
 
+/**
+ * Transcribe audio using OpenAI Whisper API
+ * Sends audio blob to server for transcription
+ */
+export async function transcribeAudio(audioBlob: Blob): Promise<{ text: string }> {
+  // Get Supabase session for authentication
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Not authenticated. Please log in again.');
+  }
+
+  // Get API URL from environment variable, fallback to relative path for local dev
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  const endpoint = apiUrl ? `${apiUrl}/api/agent/transcribe` : '/api/agent/transcribe';
+
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'recording.webm');
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`, // Pass Supabase token
+    },
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Transcription failed' }));
+    throw new Error(error.error || 'Failed to transcribe audio');
+  }
+
+  return response.json();
+}
+
