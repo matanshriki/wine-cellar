@@ -203,6 +203,7 @@
   background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 160px 190px, 90px 50px, 120px 220px;
   animation: stars-drift 180s linear infinite;
   opacity: 0.3;
+  pointer-events: none;
 }
 
 .luxury-background::after {
@@ -213,6 +214,7 @@
   width: 100%;
   height: 100%;
   background: var(--subtle-vignette);
+  pointer-events: none;
 }
 
 @keyframes stars-drift {

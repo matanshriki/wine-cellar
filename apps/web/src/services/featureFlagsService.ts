@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 
 export interface FeatureFlags {
   wishlistEnabled: boolean;
+  cellarAgentEnabled: boolean;
   // Add more feature flags here as needed in the future
 }
 
@@ -28,6 +29,7 @@ export interface FeatureFlagsResult {
  */
 export const DEFAULT_FLAGS: FeatureFlags = {
   wishlistEnabled: false,
+  cellarAgentEnabled: false,
 };
 
 /**
@@ -56,7 +58,7 @@ export async function fetchFeatureFlags(): Promise<FeatureFlags> {
     // Fetch user's profile with feature flags
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wishlist_enabled')
+      .select('wishlist_enabled, cellar_agent_enabled')
       .eq('id', session.user.id)
       .single();
     
@@ -73,6 +75,7 @@ export async function fetchFeatureFlags(): Promise<FeatureFlags> {
     
     const flags: FeatureFlags = {
       wishlistEnabled: profile.wishlist_enabled ?? false,
+      cellarAgentEnabled: profile.cellar_agent_enabled ?? false,
     };
     
     console.log('[FeatureFlags] ✅ Feature flags loaded:', flags);

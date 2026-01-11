@@ -807,6 +807,35 @@
       "continueButton": "Continue Exploring"
     }
   },
+  "cellarSommelier": {
+    "title": "Cellar Sommelier",
+    "menuButton": "Ask Cellar Sommelier",
+    "loading": "Loading Sommelier...",
+    "notEnabled": "Sommelier is not enabled.",
+    "emptyTitle": "Ask Your Cellar Sommelier",
+    "emptySubtitle": "I'll recommend wines from your cellar based on your preferences",
+    "emptyCellarTitle": "Your Cellar is Empty",
+    "emptyCellarMessage": "Add at least one bottle to get personalized recommendations",
+    "emptyCellarButton": "Add Bottles to Cellar",
+    "inputPlaceholder": "Ask about your wines...",
+    "inputPlaceholderTranscribing": "Transcribing...",
+    "thinking": "Thinking...",
+    "sendButton": "Send",
+    "micButton": "Record audio",
+    "micButtonStop": "Stop recording",
+    "transcriptionSuccess": "Audio transcribed! Review and press Send.",
+    "transcriptionFailed": "Failed to transcribe audio",
+    "micPermissionDenied": "Failed to access microphone. Please check permissions.",
+    "recommendationTitle": "Recommendation",
+    "quickPrompts": {
+      "tonight": "What should I drink tonight?",
+      "readyNow": "Ready to drink now",
+      "pairSteak": "Pair with steak"
+    },
+    "devOnly": "dev only",
+    "back": "Back",
+    "bottleCount": "{{count}} bottles"
+  },
   "wishlist": {
     "title": "Wishlist",
     "subtitle": "Wines you want to buy later",

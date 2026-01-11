@@ -94,6 +94,25 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
       }
     }
     
+    // Check cellar agent flag
+    if (oldFlags.cellarAgentEnabled !== newFlags.cellarAgentEnabled) {
+      if (newFlags.cellarAgentEnabled) {
+        // Flag enabled
+        console.log('[FeatureFlagsContext] ✅ Cellar Sommelier feature enabled');
+        toast.success('New feature enabled: Cellar Sommelier ✅');
+      } else {
+        // Flag disabled
+        console.log('[FeatureFlagsContext] ❌ Cellar Sommelier feature disabled');
+        toast.warning('Cellar Sommelier feature disabled for your account');
+        
+        // If user is on agent page, redirect to cellar
+        if (location.pathname === '/agent') {
+          console.log('[FeatureFlagsContext] Redirecting from /agent to /cellar');
+          navigate('/cellar', { replace: true });
+        }
+      }
+    }
+    
     // Add more flag change detections here as new features are added
   }
 

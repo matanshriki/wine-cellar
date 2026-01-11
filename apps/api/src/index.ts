@@ -10,6 +10,7 @@ import { analysisRouter } from './routes/analysis.js';
 import { recommendationsRouter } from './routes/recommendations.js';
 import { historyRouter } from './routes/history.js';
 import { importsRouter } from './routes/imports.js';
+import { agentRouter } from './routes/agent.js'; // Cellar Agent (localhost only)
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/analysis', analysisRouter);
 app.use('/api/recommendations', recommendationsRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/imports', importsRouter);
+app.use('/api/agent', agentRouter); // Cellar Agent (localhost only)
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

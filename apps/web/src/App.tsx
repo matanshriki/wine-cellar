@@ -17,6 +17,9 @@ import { AdminEnrichPage } from './pages/AdminEnrichPage';
 import { SharedCellarPage } from './pages/SharedCellarPage'; // Feedback iteration (dev only)
 import { CommunityPage } from './pages/CommunityPage'; // Feedback iteration (dev only)
 import { WishlistPage } from './pages/WishlistPage'; // Wishlist feature (feature-flagged)
+import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
+import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
+import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -182,6 +185,15 @@ function AppRoutes() {
               <WishlistPage />
             </Layout>
           </FeatureFlagRoute>
+        }
+      />
+      {/* Cellar Agent (localhost only) - Dev-only AI chat assistant */}
+      <Route
+        path="/agent"
+        element={
+          <PrivateRoute>
+            <AgentPageWorking />
+          </PrivateRoute>
         }
       />
       <Route path="/" element={<Navigate to="/cellar" replace />} />

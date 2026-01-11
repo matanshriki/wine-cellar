@@ -1,328 +1,235 @@
-# Production Deployment Guide for Vercel
+# Production Deployment Guide
 
-## ✅ Pre-Deployment Checklist
+## Environment Variables Required
 
-### Build Status
-- [x] **Production build passes** (`npm run build`)
-- [x] **No critical TypeScript errors** (type checking relaxed for Supabase types)
-- [x] **No hardcoded secrets** (all env vars externalized)
-- [x] **Bundle size acceptable** (549 KB gzipped to 159 KB)
+### API Server (apps/api)
 
-### Database & Backend
-- [x] **Supabase project configured**
-- [x] **Database migrations applied**
-- [x] **RLS policies enabled** on all tables
-- [x] **Storage bucket created** for avatars
-- [x] **Auth providers configured** (Email/Password + Google OAuth)
+The following environment variables MUST be set in your production environment:
 
-### Authentication
-- [x] **Supabase Auth integrated**
-- [x] **Google OAuth configured**
-- [x] **Session persistence working**
-- [x] **Protected routes implemented**
+```bash
+# OpenAI API Key (REQUIRED for Cellar Sommelier feature)
+OPENAI_API_KEY=sk-proj-...
 
-### Features
-- [x] **Profile management** (create, update, avatar upload)
-- [x] **Cellar CRUD** (add, edit, delete bottles)
-- [x] **CSV import** (client-side parsing + Vivino detection)
-- [x] **Recommendations** ("What to open tonight")
-- [x] **History tracking** ("Mark as opened" flow)
-- [x] **Internationalization** (EN/HE with RTL support)
+# Supabase Configuration (REQUIRED)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 
----
+# Node Environment
+NODE_ENV=production
 
-## 🚀 Deployment Steps
+# Database (if using separate database)
+DATABASE_URL=postgresql://...
+```
 
-### 1. Supabase Configuration
-
-#### Required Tables & Migrations
-Run these SQL migrations in your Supabase SQL Editor:
-
-1. **Initial Schema**: `supabase/migrations/20251226_initial_schema.sql`
-   - Creates `profiles`, `wines`, `bottles`, `consumption_history` tables
-   - Sets up RLS policies
-   - Creates triggers for auto-profile creation
-
-2. **Avatar Storage**: `supabase/migrations/20251226_avatar_storage.sql`
-   - Creates `avatars` storage bucket
-   - Sets up storage RLS policies
-
-#### Auth Configuration
-1. Go to **Authentication > Providers** in Supabase Dashboard
-2. Enable **Email** provider
-3. Enable **Google** provider:
-   - Add your Google OAuth Client ID
-   - Add your Google OAuth Client Secret
-   - Add authorized redirect URI: `https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback`
-
-4. In **Authentication > URL Configuration**:
-   - Set **Site URL**: `https://your-app.vercel.app` (your Vercel deployment URL)
-   - Add **Redirect URLs**:
-     - `https://your-app.vercel.app`
-     - `http://localhost:5173` (for local dev)
-     - `http://localhost:3000` (if using different local port)
-
----
-
-### 2. Environment Variables
-
-#### Required Environment Variables for Vercel
-
-Set these in **Vercel Dashboard > Project > Settings > Environment Variables**:
+### Web App (apps/web)
 
 ```bash
 # Supabase Configuration
-VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Analytics (optional)
+VITE_ANALYTICS_ENABLED=false
 ```
 
-**Where to find these values:**
-- Supabase Dashboard > Project Settings > API
-- `VITE_SUPABASE_URL`: Project URL
-- `VITE_SUPABASE_ANON_KEY`: Project API keys > anon/public key
+## Vercel Deployment Steps
 
-⚠️ **Important**: Use the `anon` key, NOT the `service_role` key for frontend!
+### 1. Set Environment Variables in Vercel
 
----
+Go to your Vercel project settings → Environment Variables and add:
 
-### 3. Google Cloud Console Setup
+**For API:**
+- `OPENAI_API_KEY` - Your OpenAI API key
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anon key
+- `NODE_ENV` = `production`
 
-#### For Google OAuth to work:
+**For Web:**
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anon key
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Select your project (or create one)
-3. Navigate to **APIs & Services > Credentials**
-4. Click on your OAuth 2.0 Client ID
-5. Add **Authorized JavaScript origins**:
-   - `https://YOUR_PROJECT_ID.supabase.co`
-   - `https://your-app.vercel.app`
-6. Add **Authorized redirect URIs**:
-   - `https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback`
+### 2. Run Database Migration
 
----
+The Cellar Sommelier feature requires a new column in the profiles table.
 
-### 4. Vercel Project Setup
+**Option A: Using Supabase Dashboard**
 
-#### Initial Deployment
+1. Go to Supabase Dashboard → SQL Editor
+2. Paste the contents of `supabase/migrations/20260111_add_cellar_agent_flag.sql`
+3. Run the migration
 
-1. **Connect your GitHub repository** to Vercel
-2. **Framework Preset**: Vite
-3. **Root Directory**: `apps/web`
-4. **Build Command**: `npm run build`
-5. **Output Directory**: `dist`
-6. **Install Command**: `npm install`
-
-#### Build & Development Settings
+**Option B: Using Supabase CLI**
 
 ```bash
-# Build Command
-npm run build
-
-# Output Directory  
-dist
-
-# Install Command
-npm install --prefix ../../ && npm install
+# Push the migration to your production database
+supabase db push
 ```
 
-7. Add **Environment Variables** (see section 2 above)
-8. Click **Deploy**
+### 3. Deploy to Vercel
 
----
+```bash
+# Deploy from main branch
+git push origin main
 
-### 5. Post-Deployment Verification
-
-After deployment, verify these flows:
-
-#### Authentication
-- [ ] Email/password signup works
-- [ ] Email/password login works
-- [ ] Google OAuth login works
-- [ ] Google OAuth creates profile automatically (first_name, last_name populated)
-- [ ] User menu shows correct name and avatar
-- [ ] Logout works
-
-#### Profile
-- [ ] Profile page loads
-- [ ] Can edit first name, last name, display name
-- [ ] Avatar upload works (mobile + desktop)
-- [ ] Avatar displays in user menu
-- [ ] Profile changes persist after refresh
-
-#### Cellar
-- [ ] Can add a bottle manually
-- [ ] Can edit a bottle
-- [ ] Can delete a bottle
-- [ ] Bottle list displays correctly
-- [ ] Empty state shows when no bottles
-
-#### CSV Import
-- [ ] CSV import modal opens
-- [ ] Vivino export guide shows step-by-step instructions
-- [ ] Can upload CSV file
-- [ ] Column mapping UI works
-- [ ] Import shows progress animation
-- [ ] Imported bottles appear in cellar
-
-#### Recommendations
-- [ ] "What to open tonight" form works
-- [ ] Recommendations are generated
-- [ ] "Mark as opened" button works
-- [ ] Confetti animation plays (if not reduced motion)
-- [ ] Success modal shows
-- [ ] Bottle quantity decrements
-- [ ] History record created
-
-#### History
-- [ ] History page loads without errors
-- [ ] Shows empty state when no history
-- [ ] Shows opened bottles after marking as opened
-- [ ] Stats display correctly
-
-#### Internationalization
-- [ ] Language switcher works (EN/HE)
-- [ ] Hebrew displays correctly (RTL layout)
-- [ ] Language selection persists after refresh
-- [ ] All UI text translates (except bottle names)
-
-#### Mobile
-- [ ] App is responsive on mobile screens
-- [ ] Navigation works on mobile
-- [ ] Forms are usable on mobile
-- [ ] Avatar upload works from mobile camera roll
-- [ ] Modals don't break layout on mobile
-
----
-
-## 🔧 Troubleshooting
-
-### "Something went wrong" on Login
-- **Check**: Supabase URL and Anon Key are correct in Vercel env vars
-- **Check**: Site URL is set correctly in Supabase Dashboard
-- **Check**: Database migrations have been applied
-
-### Google OAuth "redirect_uri_mismatch"
-- **Check**: Supabase callback URL is added to Google Cloud Console authorized redirect URIs
-- **Check**: Format is exactly: `https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback`
-
-### Profile fields (first_name, last_name) are empty after Google login
-- **Check**: `20251226_initial_schema.sql` migration has been applied
-- **Check**: `handle_new_user` trigger exists in Supabase (check SQL Editor > Functions & Triggers)
-
-### Avatar upload fails
-- **Check**: `20251226_avatar_storage.sql` migration has been applied
-- **Check**: Storage bucket `avatars` exists (Supabase > Storage)
-- **Check**: Storage RLS policies are enabled
-
-### "Bottle not found" when marking as opened
-- **This should be fixed**: Recommendation service now uses Supabase
-- **Check**: User has bottles in their cellar
-- **Check**: RLS policies allow user to read/update their own bottles
-
-### History page shows "Something went wrong"
-- **This should be fixed**: History service properly queries Supabase
-- **Check**: `consumption_history` table exists
-- **Check**: RLS policies allow user to read their own history
-
-### Build fails with TypeScript errors
-- **Expected**: TypeScript strict checking is disabled for Supabase type issues
-- **Build command** uses `vite build` (skips `tsc`)
-- **Runtime code is correct** - this is purely a type inference limitation
-
----
-
-## 📊 Performance Notes
-
-### Bundle Size
-- **Main bundle**: 549 KB minified → 159 KB gzipped
-- **Recommendation**: Consider code-splitting for further optimization
-  - Use dynamic imports for heavy components (e.g., `WineLoadingAnimation`, confetti)
-  - Lazy load recommendation page and history page
-
-### Suggested Optimizations (Optional)
-```javascript
-// Lazy load pages
-const RecommendationPage = lazy(() => import('./pages/RecommendationPage'));
-const HistoryPage = lazy(() => import('./pages/HistoryPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+# Vercel will automatically deploy
+# Or manually trigger from Vercel dashboard
 ```
 
----
+### 4. Verify Deployment
 
-## 🔐 Security Checklist
+1. Check that the API server is running: `https://your-api.vercel.app/health`
+2. Check that environment variables are loaded (check server logs)
+3. Verify no secrets are exposed in client bundle:
+   ```bash
+   # Check the built client for OPENAI_API_KEY (should find nothing)
+   grep -r "OPENAI_API_KEY" apps/web/dist/
+   ```
 
-- [x] **No service_role key in frontend** (only anon key)
-- [x] **RLS enabled** on all user tables
-- [x] **RLS policies** enforce user_id = auth.uid()
-- [x] **Storage RLS** restricts avatar access to own user folder
-- [x] **No hardcoded secrets** in code
-- [x] **Environment variables** used for all config
-- [x] **HTTPS only** (enforced by Vercel)
-- [x] **Supabase auth tokens** stored securely (localStorage with httpOnly)
+### 5. Enable Feature for Test Users
 
----
+See section below on enabling the feature for specific users.
 
-## 📱 Mobile Considerations
+## Enabling Cellar Sommelier for Users
 
-- **Responsive design**: Tested and working on mobile breakpoints
-- **Touch targets**: Minimum 44x44px on all interactive elements
-- **RTL support**: Hebrew layout fully functional
-- **Avatar upload**: Works with mobile camera and file picker
-- **Forms**: Optimized for mobile input (proper keyboard types, etc.)
+The Cellar Sommelier feature is **OFF by default** for all users. To enable it:
 
----
+### Using Supabase Dashboard
 
-## 🧪 Known Limitations & Future Improvements
+1. Go to Supabase Dashboard → Table Editor
+2. Open the `profiles` table
+3. Find the user you want to enable
+4. Set `cellar_agent_enabled` = `true`
+5. Save changes
 
-### Known Issues
-1. **TypeScript strict mode disabled** for build
-   - Supabase type inference issues
-   - Runtime code is correct
-   - Consider regenerating types with `supabase gen types typescript` when schema stabilizes
+The user will see the feature appear immediately (no logout required, thanks to Realtime).
 
-2. **ESLint not configured** in monorepo
-   - Linting skipped for now
-   - Add proper ESLint config before expanding team
+### Using SQL
 
-3. **No automated tests**
-   - Manual QA checklist provided
-   - Consider adding Playwright E2E tests
+```sql
+-- Enable for a specific user
+UPDATE profiles
+SET cellar_agent_enabled = true
+WHERE id = 'user-uuid-here';
 
-### Future Enhancements
-- **Code splitting** for better initial load time
-- **Image optimization** for wine/bottle images
-- **AI integration** for bottle analysis and recommendations
-- **Vivino API integration** (if API becomes available)
-- **Push notifications** for drinking windows
-- **Social features** (share recommendations with friends)
-- **Multi-workspace support** (family/group cellars)
+-- Enable for all users (use with caution!)
+UPDATE profiles
+SET cellar_agent_enabled = true;
 
----
+-- Disable for a specific user
+UPDATE profiles
+SET cellar_agent_enabled = false
+WHERE id = 'user-uuid-here';
+```
 
-## 📞 Support & Documentation
+### Beta Testing Strategy
 
-### Related Documentation
-- `SUPABASE_SETUP.md` - Initial Supabase configuration
-- `SUPABASE_DATABASE_SETUP.md` - Database schema details
-- `PROFILE_SYSTEM_COMPLETE.md` - User profile implementation
-- `AVATAR_UPLOAD_FEATURE.md` - Avatar upload details
-- `MARK_AS_OPENED_FIX.md` - History tracking implementation
+Recommended rollout:
 
-### Useful Links
-- [Supabase Documentation](https://supabase.com/docs)
-- [Vercel Documentation](https://vercel.com/docs)
-- [React i18next](https://react.i18next.com/)
-- [TanStack Query](https://tanstack.com/query)
+1. **Phase 1**: Enable for 1-2 internal users (your own accounts)
+2. **Phase 2**: Enable for 5-10 trusted beta testers
+3. **Phase 3**: Enable for 50-100 users
+4. **Phase 4**: Enable for all users (or keep it as a premium feature)
 
----
+## Cost Monitoring
 
-## ✅ Deployment Complete!
+### OpenAI API Usage
 
-Once all verification steps pass, your Wine Cellar Brain app is production-ready! 🍷
+Monitor your OpenAI usage at: https://platform.openai.com/usage
 
-**Access your app at**: `https://your-app.vercel.app`
+**Rate limits in place:**
+- 30 requests per user per day
+- Max 50 bottles sent per request
+- Max 8 conversation turns
 
----
+**Estimated costs (GPT-4o):**
+- ~500 tokens per request (input)
+- ~200 tokens per response (output)
+- $5 per 1M input tokens, $15 per 1M output tokens
+- **Cost per request: ~$0.006** (0.6 cents)
+- **Cost per user per day (at limit): ~$0.18**
 
-*Last updated: December 2025*
+For 1000 active users: ~$180/day = ~$5,400/month (worst case)
 
+### Recommended Monitoring
+
+1. Set up OpenAI usage alerts
+2. Monitor Vercel function execution costs
+3. Monitor Supabase database size (conversations not stored, so minimal impact)
+4. Set up Sentry or similar for error tracking
+
+## Security Checklist
+
+- [ ] `OPENAI_API_KEY` is set as environment variable (not in code)
+- [ ] `OPENAI_API_KEY` is NOT in client bundle (`grep` check passes)
+- [ ] Feature flag is enforced server-side (cannot be bypassed via API)
+- [ ] Rate limiting is active (30 requests/day per user)
+- [ ] User authentication is required for API endpoints
+- [ ] No cellar data is logged or sent to third parties
+- [ ] RLS policies are active on profiles table
+
+## Rollback Plan
+
+If you need to disable the feature:
+
+### Emergency Disable (All Users)
+
+```sql
+-- Disable for all users immediately
+UPDATE profiles
+SET cellar_agent_enabled = false;
+```
+
+### Remove Feature Flag Column (Complete Rollback)
+
+```sql
+-- Remove the column (data will be lost)
+ALTER TABLE profiles
+DROP COLUMN cellar_agent_enabled;
+```
+
+Then redeploy without the Sommelier code.
+
+## Support & Troubleshooting
+
+### Common Issues
+
+**User reports: "Sommelier not showing"**
+1. Check `profiles.cellar_agent_enabled = true` for that user
+2. Ask user to refresh the page
+3. Check browser console for errors
+
+**User reports: "Daily limit reached"**
+1. This is expected behavior (30 requests/day)
+2. Limit resets at midnight (server timezone)
+3. To increase limit: modify `DAILY_LIMIT` in `apps/api/src/routes/agent.ts`
+
+**API returns 403**
+1. Check feature flag is enabled for user
+2. Check user is authenticated
+3. Check `OPENAI_API_KEY` is set in Vercel
+
+**API returns 500**
+1. Check Vercel function logs
+2. Check OpenAI API status
+3. Check Supabase connection
+
+## Monitoring Queries
+
+```sql
+-- Count users with feature enabled
+SELECT COUNT(*) 
+FROM profiles 
+WHERE cellar_agent_enabled = true;
+
+-- List users with feature enabled
+SELECT id, display_name, email 
+FROM profiles 
+WHERE cellar_agent_enabled = true;
+```
+
+## Contact
+
+For issues or questions about deployment:
+- Check Vercel logs
+- Check Supabase logs
+- Check OpenAI usage dashboard

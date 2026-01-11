@@ -720,6 +720,35 @@
     "accept": "אשר והמשך",
     "reject": "לא תודה"
   },
+  "cellarSommelier": {
+    "title": "סומליה המרתף",
+    "menuButton": "שאל את סומליה המרתף",
+    "loading": "טוען סומליה...",
+    "notEnabled": "הסומליה אינו זמין.",
+    "emptyTitle": "שאל את סומליה המרתף שלך",
+    "emptySubtitle": "אני אמליץ על יינות מהמרתף שלך בהתאם להעדפות שלך",
+    "emptyCellarTitle": "המרתף שלך ריק",
+    "emptyCellarMessage": "הוסף לפחות בקבוק אחד כדי לקבל המלצות מותאמות אישית",
+    "emptyCellarButton": "הוסף בקבוקים למרתף",
+    "inputPlaceholder": "שאל על היינות שלך...",
+    "inputPlaceholderTranscribing": "מתמלל...",
+    "thinking": "חושב...",
+    "sendButton": "שלח",
+    "micButton": "הקלט אודיו",
+    "micButtonStop": "עצור הקלטה",
+    "transcriptionSuccess": "האודיו תומלל! בדוק ולחץ שלח.",
+    "transcriptionFailed": "תמלול האודיו נכשל",
+    "micPermissionDenied": "גישה למיקרופון נדחתה. אנא בדוק את ההרשאות.",
+    "recommendationTitle": "המלצה",
+    "quickPrompts": {
+      "tonight": "מה כדאי לי לשתות הערב?",
+      "readyNow": "מוכן לשתייה עכשיו",
+      "pairSteak": "התאמה לסטייק"
+    },
+    "devOnly": "מצב פיתוח בלבד",
+    "back": "חזרה",
+    "bottleCount": "{{count}} בקבוקים"
+  },
   "wishlist": {
     "title": "רשימת משאלות",
     "subtitle": "יינות שברצונך לקנות בעתיד",

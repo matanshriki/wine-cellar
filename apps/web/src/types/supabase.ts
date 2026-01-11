@@ -25,6 +25,7 @@ export interface Database {
           email: string | null
           avatar_url: string | null
           preferred_language: string
+          cellar_agent_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -36,6 +37,7 @@ export interface Database {
           email?: string | null
           avatar_url?: string | null
           preferred_language?: string
+          cellar_agent_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -47,6 +49,7 @@ export interface Database {
           email?: string | null
           avatar_url?: string | null
           preferred_language?: string
+          cellar_agent_enabled?: boolean
           created_at?: string
           updated_at?: string
         }

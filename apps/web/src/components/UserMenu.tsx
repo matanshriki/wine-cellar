@@ -9,12 +9,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
 
 export function UserMenu() {
   const { t } = useTranslation();
   const { user, profile, signOut } = useAuth();
+  const { flags } = useFeatureFlags();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -140,6 +142,23 @@ export function UserMenu() {
               </svg>
               <span>{t('profile.menu.viewProfile')}</span>
             </Link>
+
+            {/* Cellar Agent (localhost only) - Dev-only AI chat assistant */}
+            {flags?.cellarAgentEnabled && (
+              <Link
+                to="/agent"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <span>{t('cellarSommelier.menuButton')}</span>
+                <span className="ml-auto text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                  dev
+                </span>
+              </Link>
+            )}
 
             <button
               onClick={() => {
