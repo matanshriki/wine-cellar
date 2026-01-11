@@ -22,11 +22,20 @@ export const config = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
   
   // Supabase (for Agent authentication)
-  supabaseUrl: process.env.VITE_SUPABASE_URL || '',
-  supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || '',
+  // Try both VITE_ prefixed and non-prefixed versions
+  supabaseUrl: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
+  supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
   
   // URLs
   apiUrl: process.env.API_URL || 'http://localhost:3001',
   webUrl: process.env.WEB_URL || 'http://localhost:5173',
 };
+
+// Log configuration on startup (without sensitive data)
+console.log('[Config] Environment:', config.nodeEnv);
+console.log('[Config] Port:', config.port);
+console.log('[Config] OpenAI API Key:', config.openaiApiKey ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Supabase URL:', config.supabaseUrl ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Supabase Anon Key:', config.supabaseAnonKey ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Web URL:', config.webUrl);
 
