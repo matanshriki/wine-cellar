@@ -170,39 +170,50 @@ function rateLimit(req: AuthRequest, res: any, next: any) {
 /**
  * Build cellar context for OpenAI
  * Limits to 50 bottles max to control token usage
+ * 
+ * NOTE: Frontend already sends flattened bottle structure
  */
 function buildCellarContext(bottles: any[]) {
   // Sort by readiness and recency
   const sorted = [...bottles].sort((a, b) => {
     // Prioritize bottles that are ready to drink
-    const aReady = a.wine?.sommelier_notes?.status === 'ready';
-    const bReady = b.wine?.sommelier_notes?.status === 'ready';
+    const aReady = a.readinessStatus === 'ready' || a.readinessStatus === 'peak';
+    const bReady = b.readinessStatus === 'ready' || b.readinessStatus === 'peak';
     if (aReady && !bReady) return -1;
     if (!aReady && bReady) return 1;
     
-    // Then by recency
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    // Then by vintage (older first for aged wines)
+    if (a.vintage && b.vintage) {
+      return a.vintage - b.vintage;
+    }
+    
+    return 0;
   });
 
   const limited = sorted.slice(0, 50);
   
+  // Bottles are already in flat format from frontend
   const compactBottles = limited.map(b => ({
     id: b.id,
-    producer: b.wine?.producer || 'Unknown',
-    wineName: b.wine?.wine_name || b.wine?.name || 'Unknown',
-    vintage: b.wine?.vintage,
-    region: b.wine?.region,
-    grapes: b.wine?.grapes,
-    color: b.wine?.color,
-    drinkWindow: b.wine?.sommelier_notes?.drink_window,
-    notes: b.wine?.sommelier_notes?.tasting_notes?.substring(0, 200),
+    producer: b.producer || 'Unknown',
+    wineName: b.wineName || 'Unknown',
+    vintage: b.vintage,
+    region: b.region,
+    country: b.country,
+    grapes: b.grapes,
+    color: b.color,
+    drinkWindowStart: b.drinkWindowStart,
+    drinkWindowEnd: b.drinkWindowEnd,
+    readinessStatus: b.readinessStatus,
+    notes: b.notes?.substring(0, 200), // Limit notes to 200 chars
+    quantity: b.quantity,
   }));
 
   let summary = '';
   if (bottles.length > 50) {
     const remaining = bottles.length - 50;
     const colorCounts = bottles.reduce((acc, b) => {
-      const color = b.wine?.color || 'unknown';
+      const color = b.color || 'unknown';
       acc[color] = (acc[color] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
