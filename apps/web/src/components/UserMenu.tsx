@@ -143,7 +143,7 @@ export function UserMenu() {
               <span>{t('profile.menu.viewProfile')}</span>
             </Link>
 
-            {/* Cellar Agent (localhost only) - Dev-only AI chat assistant */}
+            {/* Cellar Sommelier - AI chat assistant */}
             {flags?.cellarAgentEnabled && (
               <Link
                 to="/agent"
@@ -154,9 +154,6 @@ export function UserMenu() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
                 <span>{t('cellarSommelier.menuButton')}</span>
-                <span className="ml-auto text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                  dev
-                </span>
               </Link>
             )}
 

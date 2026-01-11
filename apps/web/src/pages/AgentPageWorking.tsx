@@ -219,14 +219,26 @@ export function AgentPageWorking() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
+        
+        /* Mobile viewport fix: Use dynamic viewport height */
+        @supports (height: 100dvh) {
+          .agent-container {
+            height: 100dvh !important;
+          }
+        }
       `}</style>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#f8f9fa',
-        position: 'relative',
-      }}>
+      <div 
+        className="agent-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          maxHeight: '-webkit-fill-available',
+          backgroundColor: '#f8f9fa',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         {/* Header */}
       <div style={{
         backgroundColor: 'white',
@@ -259,7 +271,7 @@ export function AgentPageWorking() {
               {t('cellarSommelier.title')}
             </h1>
             <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-              {t('cellarSommelier.bottleCount', { count: bottles.length })} • {t('cellarSommelier.devOnly')}
+              {t('cellarSommelier.bottleCount', { count: bottles.length })}
             </p>
           </div>
 
