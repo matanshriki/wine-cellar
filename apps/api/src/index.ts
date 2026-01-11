@@ -22,29 +22,39 @@ setupGoogleAuth();
 const allowedOrigins = [
   'http://localhost:5173',  // Local dev
   'http://localhost:5174',  // Alternative local port
-  config.webUrl,            // Production web URL from env
+  'https://wine-cellar-brain.vercel.app', // Production
 ];
 
-// If WEB_URL is set and looks like a Vercel URL, also allow the vercel.app domain
-if (config.webUrl && config.webUrl.includes('.vercel.app')) {
-  allowedOrigins.push(config.webUrl);
+// Add WEB_URL from environment if set
+if (config.webUrl && config.webUrl.trim()) {
+  allowedOrigins.push(config.webUrl.trim());
 }
+
+console.log('[CORS] Allowed origins:', allowedOrigins);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log('[CORS] Allowing request with no origin');
+        return callback(null, true);
+      }
       
       // Allow if origin is in the whitelist
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (allowedOrigins.includes(origin)) {
+        console.log('[CORS] Allowing origin:', origin);
         callback(null, true);
       } else {
-        console.warn(`CORS blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+        console.warn('[CORS] BLOCKED origin:', origin);
+        console.warn('[CORS] Allowed origins are:', allowedOrigins);
+        callback(null, false); // Don't throw error, just reject
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200,
   })
 );
 app.use(express.json({ limit: '10mb' }));
