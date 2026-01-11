@@ -6,15 +6,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
-import { listBottles, type BottleWithWineInfo } from '../services/bottleService';
+import { useAuth } from '../contexts/SupabaseAuthContext';
+import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
 import { sendAgentMessage, type AgentMessage } from '../services/agentService';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
+import { WineDetailsModal } from '../components/WineDetailsModal';
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { flags } = useFeatureFlags();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [bottles, setBottles] = useState<BottleWithWineInfo[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -23,6 +26,9 @@ export function AgentPageWorking() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
+  const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [loadingBottleDetails, setLoadingBottleDetails] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -51,10 +57,7 @@ export function AgentPageWorking() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await listBottles();
-        setBottles(data);
-      } catch (error) {
-        toast.error('Failed to load cellar');
+        await loadBottles();
       } finally {
         setLoading(false);
       }
@@ -91,6 +94,44 @@ export function AgentPageWorking() {
       toast.error(error.message || 'Failed to get recommendation');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleViewBottleDetails(bottleId: string) {
+    setLoadingBottleDetails(true);
+    try {
+      const bottle = await getBottle(bottleId);
+      if (bottle) {
+        setSelectedBottle(bottle);
+        setShowDetailsModal(true);
+      } else {
+        toast.error(t('errors.bottleNotFound', 'Bottle not found'));
+      }
+    } catch (error: any) {
+      console.error('[AgentPage] Error loading bottle details:', error);
+      toast.error(error.message || t('errors.generic'));
+    } finally {
+      setLoadingBottleDetails(false);
+    }
+  }
+
+  function handleCloseDetailsModal() {
+    setShowDetailsModal(false);
+    setSelectedBottle(null);
+  }
+
+  async function handleMarkOpened(bottle: BottleWithWineInfo) {
+    // Reload bottles after marking as opened
+    await loadBottles();
+    handleCloseDetailsModal();
+  }
+
+  async function loadBottles() {
+    try {
+      const data = await listBottles();
+      setBottles(data);
+    } catch (error) {
+      toast.error('Failed to load cellar');
     }
   }
 
@@ -369,79 +410,190 @@ export function AgentPageWorking() {
         )}
 
         {/* Messages */}
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{
-              maxWidth: '85%',
-              padding: '12px 16px',
-              borderRadius: '16px',
-              backgroundColor: msg.role === 'user' ? '#7c3030' : 'white',
-              color: msg.role === 'user' ? 'white' : '#333',
-              border: msg.role === 'assistant' ? '1px solid #e0e0e0' : 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}>
-              <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
-              
-              {msg.recommendation && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '16px',
-                  backgroundColor: '#f8f9fa',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '12px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <svg style={{ width: '20px', height: '20px', color: '#7c3030' }} fill="currentColor" viewBox="0 0 20 20">
+        {messages.map((msg, idx) => {
+          const isUser = msg.role === 'user';
+          const avatarUrl = isUser ? profile?.avatar_url : null;
+          const showAvatar = true;
+
+          return (
+            <div
+              key={idx}
+              style={{
+                display: 'flex',
+                flexDirection: isUser ? 'row-reverse' : 'row',
+                gap: '12px',
+                marginBottom: '16px',
+                alignItems: 'flex-start',
+              }}
+            >
+              {/* Avatar */}
+              {showAvatar && (
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    backgroundColor: isUser ? '#7c3030' : '#f8f9fa',
+                    border: isUser ? 'none' : '2px solid #7c3030',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {isUser ? (
+                    avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="User"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <svg style={{ width: '20px', height: '20px', color: 'white' }} fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    )
+                  ) : (
+                    // Sommelier avatar - wine glass icon
+                    <svg style={{ width: '24px', height: '24px', color: '#7c3030' }} fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <strong style={{ fontSize: '14px', fontWeight: 600, color: '#7c3030' }}>
-                      {t('cellarSommelier.recommendationTitle')}
-                    </strong>
-                  </div>
-                  <p style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
-                    {msg.recommendation.reason}
-                  </p>
-                  {(msg.recommendation.serveTemp || msg.recommendation.decant) && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {msg.recommendation.serveTemp && (
-                        <div style={{
-                          padding: '6px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          color: '#666',
-                        }}>
-                          🌡️ {msg.recommendation.serveTemp}
-                        </div>
-                      )}
-                      {msg.recommendation.decant && (
-                        <div style={{
-                          padding: '6px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          color: '#666',
-                        }}>
-                          🍷 {msg.recommendation.decant}
-                        </div>
-                      )}
-                    </div>
                   )}
                 </div>
               )}
+
+              <div
+                style={{
+                  maxWidth: '75%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    backgroundColor: isUser ? '#7c3030' : 'white',
+                    color: isUser ? 'white' : '#333',
+                    border: !isUser ? '1px solid #e0e0e0' : 'none',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+
+                  {msg.recommendation && (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        padding: '16px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <svg style={{ width: '20px', height: '20px', color: '#7c3030' }} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                          <path
+                            fillRule="evenodd"
+                            d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <strong style={{ fontSize: '14px', fontWeight: 600, color: '#7c3030' }}>
+                          {t('cellarSommelier.recommendationTitle')}
+                        </strong>
+                      </div>
+                      <p style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>{msg.recommendation.reason}</p>
+                      {(msg.recommendation.serveTemp || msg.recommendation.decant) && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                          {msg.recommendation.serveTemp && (
+                            <div
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'white',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                color: '#666',
+                              }}
+                            >
+                              🌡️ {msg.recommendation.serveTemp}
+                            </div>
+                          )}
+                          {msg.recommendation.decant && (
+                            <div
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'white',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                color: '#666',
+                              }}
+                            >
+                              🍷 {msg.recommendation.decant}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* View Wine Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleViewBottleDetails(msg.recommendation!.bottleId)}
+                        disabled={loadingBottleDetails}
+                        style={{
+                          width: '100%',
+                          padding: '10px 16px',
+                          backgroundColor: '#7c3030',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          cursor: loadingBottleDetails ? 'not-allowed' : 'pointer',
+                          opacity: loadingBottleDetails ? 0.7 : 1,
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!loadingBottleDetails) {
+                            e.currentTarget.style.backgroundColor = '#5a2323';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#7c3030';
+                        }}
+                      >
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        {loadingBottleDetails ? t('common.loading', 'Loading...') : t('cellarSommelier.viewWine', 'View Wine Details')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Loading indicator */}
         {isSubmitting && (
@@ -596,6 +748,15 @@ export function AgentPageWorking() {
         </div>
       </div>
       </div>
+
+      {/* Wine Details Modal */}
+      <WineDetailsModal
+        isOpen={showDetailsModal}
+        onClose={handleCloseDetailsModal}
+        bottle={selectedBottle}
+        onMarkAsOpened={handleMarkOpened}
+        onRefresh={loadBottles}
+      />
     </>
   );
 }
