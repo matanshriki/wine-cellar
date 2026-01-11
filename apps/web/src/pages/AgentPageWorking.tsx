@@ -377,42 +377,22 @@ export function AgentPageWorking() {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              backgroundColor: '#7c3030',
+              backgroundColor: 'white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: '16px',
+              border: '3px solid #7c3030',
             }}>
-              <svg style={{ width: '40px', height: '40px' }} viewBox="0 0 200 200" fill="none">
-                <g transform="translate(100, 100)">
-                  {/* Head and neck */}
-                  <ellipse cx="-5" cy="-45" rx="18" ry="22" fill="white"/>
-                  <path d="M -20 -30 Q -18 -20 -15 -15 L -15 0" fill="white"/>
-                  <path d="M 10 -30 Q 8 -20 5 -15 L 5 0" fill="white"/>
-                  
-                  {/* Bow tie */}
-                  <path d="M -8 0 L -3 -3 L -3 3 Z" fill="white"/>
-                  <path d="M 2 0 L -3 -3 L -3 3 Z" fill="white"/>
-                  
-                  {/* Shoulder and suit */}
-                  <path d="M -15 0 Q -25 10 -30 30 L -30 50 L 25 50 L 25 30 Q 20 10 10 0" fill="white"/>
-                  
-                  {/* Arm holding wine glass */}
-                  <path d="M 25 20 Q 35 25 45 30 L 50 35" stroke="white" strokeWidth="6" fill="none" strokeLinecap="round"/>
-                  
-                  {/* Wine glass */}
-                  <g transform="translate(55, 35)">
-                    {/* Glass bowl */}
-                    <path d="M -8 -8 Q -8 0 -3 8 L 3 8 Q 8 0 8 -8 Z" fill="none" stroke="white" strokeWidth="2"/>
-                    {/* Wine in glass */}
-                    <path d="M -6 -4 Q -6 0 -3 6 L 3 6 Q 6 0 6 -4 Z" fill="white" opacity="0.6"/>
-                    {/* Stem */}
-                    <line x1="0" y1="8" x2="0" y2="16" stroke="white" strokeWidth="2"/>
-                    {/* Base */}
-                    <line x1="-5" y1="16" x2="5" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  </g>
-                </g>
-              </svg>
+              <img
+                src="/assets/sommelier-icon.png"
+                alt="Sommelier"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  objectFit: 'contain',
+                }}
+              />
             </div>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
               {t('cellarSommelier.emptyTitle')}
@@ -574,37 +554,16 @@ export function AgentPageWorking() {
                       </svg>
                     )
                   ) : (
-                    // Sommelier avatar - elegant sommelier silhouette
-                    <svg style={{ width: '28px', height: '28px' }} viewBox="0 0 200 200" fill="none">
-                      <g transform="translate(100, 100)">
-                        {/* Head and neck */}
-                        <ellipse cx="-5" cy="-45" rx="18" ry="22" fill="#7c3030"/>
-                        <path d="M -20 -30 Q -18 -20 -15 -15 L -15 0" fill="#7c3030"/>
-                        <path d="M 10 -30 Q 8 -20 5 -15 L 5 0" fill="#7c3030"/>
-                        
-                        {/* Bow tie */}
-                        <path d="M -8 0 L -3 -3 L -3 3 Z" fill="#7c3030"/>
-                        <path d="M 2 0 L -3 -3 L -3 3 Z" fill="#7c3030"/>
-                        
-                        {/* Shoulder and suit */}
-                        <path d="M -15 0 Q -25 10 -30 30 L -30 50 L 25 50 L 25 30 Q 20 10 10 0" fill="#7c3030"/>
-                        
-                        {/* Arm holding wine glass */}
-                        <path d="M 25 20 Q 35 25 45 30 L 50 35" stroke="#7c3030" strokeWidth="6" fill="none" strokeLinecap="round"/>
-                        
-                        {/* Wine glass */}
-                        <g transform="translate(55, 35)">
-                          {/* Glass bowl */}
-                          <path d="M -8 -8 Q -8 0 -3 8 L 3 8 Q 8 0 8 -8 Z" fill="none" stroke="#7c3030" strokeWidth="2"/>
-                          {/* Wine in glass */}
-                          <path d="M -6 -4 Q -6 0 -3 6 L 3 6 Q 6 0 6 -4 Z" fill="#7c3030" opacity="0.6"/>
-                          {/* Stem */}
-                          <line x1="0" y1="8" x2="0" y2="16" stroke="#7c3030" strokeWidth="2"/>
-                          {/* Base */}
-                          <line x1="-5" y1="16" x2="5" y2="16" stroke="#7c3030" strokeWidth="2" strokeLinecap="round"/>
-                        </g>
-                      </g>
-                    </svg>
+                    // Sommelier avatar - elegant sommelier image
+                    <img
+                      src="/assets/sommelier-icon.png"
+                      alt="Sommelier"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        objectFit: 'contain',
+                      }}
+                    />
                   )}
                 </div>
               )}
