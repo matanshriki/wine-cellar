@@ -52,7 +52,11 @@ export async function sendAgentMessage(
   // Build compact cellar context
   const cellarContext = buildCellarContext(bottles);
 
-  const response = await fetch('/api/agent/recommend', {
+  // Get API URL from environment variable, fallback to relative path for local dev
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  const endpoint = apiUrl ? `${apiUrl}/api/agent/recommend` : '/api/agent/recommend';
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

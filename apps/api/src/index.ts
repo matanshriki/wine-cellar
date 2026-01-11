@@ -18,9 +18,32 @@ const app = express();
 setupGoogleAuth();
 
 // Middleware
+// Allow requests from production and local dev
+const allowedOrigins = [
+  'http://localhost:5173',  // Local dev
+  'http://localhost:5174',  // Alternative local port
+  config.webUrl,            // Production web URL from env
+];
+
+// If WEB_URL is set and looks like a Vercel URL, also allow the vercel.app domain
+if (config.webUrl && config.webUrl.includes('.vercel.app')) {
+  allowedOrigins.push(config.webUrl);
+}
+
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Vite default port
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+      if (!origin) return callback(null, true);
+      
+      // Allow if origin is in the whitelist
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
