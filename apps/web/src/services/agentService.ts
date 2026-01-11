@@ -124,14 +124,32 @@ function buildCellarContext(bottles: BottleWithWineInfo[]) {
       wineName: b.wine.wine_name,
       vintage: b.wine.vintage,
       region: b.wine.region,
+      appellation: b.wine.appellation,
       country: b.wine.country,
       grapes: b.wine.grapes,
       color: b.wine.color,
+      
+      // Aging and readiness data
       drinkWindowStart: b.drink_window_start,
       drinkWindowEnd: b.drink_window_end,
       readinessStatus: b.readiness_status,
+      readinessScore: b.readiness_score,
+      
+      // Serving recommendations
+      serveTempC: b.serve_temp_c,
+      decantMinutes: b.decant_minutes,
+      
+      // Analysis and notes
+      analysisNotes: b.analysis_notes,
       notes: b.notes,
+      
+      // Bottle metadata
       quantity: b.quantity,
+      purchaseDate: b.purchase_date,
+      purchasePrice: b.purchase_price,
+      
+      // Vivino data for additional context
+      vivinoRating: b.wine.vivino_rating,
     })),
     summary: summary || undefined,
     totalBottles: bottles.length,

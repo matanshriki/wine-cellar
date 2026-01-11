@@ -226,54 +226,96 @@ export async function recommendBottles(
   }
 
   try {
-    const bottlesData = bottles.map((b) => ({
-      id: b.id,
-      name: b.name,
-      producer: b.producer,
-      vintage: b.vintage,
-      style: b.style,
-      region: b.region,
-      grapes: b.grapes,
-      rating: b.rating,
-      quantity: b.quantity,
-      readiness: b.analysis?.readinessStatus,
-      explanation: b.analysis?.explanation,
-    }));
+    // Import sommelier knowledge
+    const { getSommelierSystemPrompt, enrichBottleForRecommendation } = await import('./sommelierKnowledge.js');
 
-    const prompt = `You are a sommelier. Based on this context, recommend 1-3 bottles from the user's cellar:
+    // Enrich bottles with inferred characteristics
+    const enrichedBottles = bottles.map((b) => {
+      const baseData = {
+        id: b.id,
+        name: b.name,
+        producer: b.producer,
+        vintage: b.vintage,
+        color: b.style, // Map style to color
+        region: b.region,
+        grapes: b.grapes,
+        rating: b.rating,
+        quantity: b.quantity,
+        
+        // Analysis data
+        readinessStatus: b.analysis?.readinessStatus,
+        drinkWindowStart: b.analysis?.drinkFromYear,
+        drinkWindowEnd: b.analysis?.drinkToYear,
+        decantMinutes: b.analysis?.decantMinutes,
+        serveTempC: b.analysis?.serveTempC,
+        analysisExplanation: b.analysis?.explanation,
+        
+        // Purchase data
+        purchasePrice: b.purchasePrice,
+        purchaseDate: b.purchaseDate,
+      };
 
-Context:
-- Meal type: ${context.mealType || 'any'}
-- Occasion: ${context.occasion || 'casual'}
-- Vibe: ${context.vibe || 'any'}
-- Constraints: ${JSON.stringify(context.constraints || {})}
+      return enrichBottleForRecommendation(baseData);
+    });
 
-Available bottles:
-${JSON.stringify(bottlesData, null, 2)}
+    const prompt = `Recommend 1-3 bottles from the user's cellar for this context:
 
-Provide a JSON array of recommendations (1-3 bottles). Each recommendation should include:
-1. bottleId: the bottle ID from the list
-2. explanation: why this bottle is a good match (2-3 sentences)
-3. servingInstructions: specific serving advice (temperature, decanting, etc.)
-4. score: confidence score 0-100
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUEST CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Respond ONLY with valid JSON array.`;
+${context.mealType ? `Food: ${context.mealType}` : 'Food: Not specified'}
+${context.occasion ? `Occasion: ${context.occasion}` : 'Occasion: Casual'}
+${context.vibe ? `Vibe: ${context.vibe}` : 'Vibe: Any'}
+${context.constraints && Object.keys(context.constraints).length > 0 ? `Constraints: ${JSON.stringify(context.constraints)}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AVAILABLE BOTTLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${JSON.stringify(enrichedBottles, null, 2)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Apply your deep sommelier knowledge to select 1-3 bottles
+2. Prioritize wines that are ready to drink (check readinessStatus and drink windows)
+3. Use structure/terroir/aging reasoning, not simplistic rules
+4. Explain WHY each wine works (specific pairing principles)
+
+Return a JSON array with this exact structure:
+[
+  {
+    "bottleId": "uuid",
+    "explanation": "Detailed reasoning using sommelier principles (4-6 sentences)",
+    "servingInstructions": "Specific serving guidance (temperature, decanting, glassware)",
+    "score": 85
+  }
+]
+
+Return ONLY the JSON array, no markdown or other text.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o', // Upgraded from gpt-3.5-turbo for better reasoning
       messages: [
         {
           role: 'system',
-          content: 'You are a sommelier expert. Provide recommendations in JSON array format only.',
+          content: getSommelierSystemPrompt(),
         },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.8,
-      max_tokens: 600,
+      temperature: 0.7, // Slightly lower for more consistent quality
+      max_tokens: 1200, // Increased for detailed explanations
     });
 
     const content = response.choices[0]?.message?.content || '[]';
-    const recommendations = JSON.parse(content);
+    
+    // Try to extract JSON if wrapped in markdown
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    const jsonContent = jsonMatch ? jsonMatch[0] : content;
+    
+    const recommendations = JSON.parse(jsonContent);
 
     return recommendations.slice(0, 3);
   } catch (error) {
