@@ -31,6 +31,13 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
   const [preview, setPreview] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Detect Samsung browsers - they handle camera capture differently
+  const isSamsung = /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
+  // Detect if running as PWA (standalone mode) - PWAs need different handling
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes('android-app://');
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -296,7 +303,7 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture={mode === 'camera' ? 'environment' : undefined} // Only trigger camera in camera mode
+          {...(mode === 'camera' && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})} // Samsung & PWA work better without capture
           onChange={handleFileSelect}
           className="hidden"
         />

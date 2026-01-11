@@ -32,6 +32,14 @@ export function AddBottleSheet({
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
   
+  // Detect if we're on a mobile device for better camera handling
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isSamsung = /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
+  // Detect if running as PWA (standalone mode)
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes('android-app://');
+  
   // Handle direct photo selection (bypasses LabelCapture modal)
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, source: 'camera' | 'library') {
     const file = e.target.files?.[0];
@@ -158,6 +166,7 @@ export function AddBottleSheet({
                   <input
                     type="file"
                     accept="image/*"
+                    {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})} // Samsung & PWA work better without explicit capture
                     onChange={(e) => handleFileSelect(e, 'library')}
                     className="hidden"
                     aria-label={t('cellar.addBottle.uploadPhoto')}
