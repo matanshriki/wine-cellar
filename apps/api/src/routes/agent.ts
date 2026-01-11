@@ -8,7 +8,6 @@
 import { Router } from 'express';
 import { type AuthRequest } from '../middleware/auth.js';
 import { config } from '../config.js';
-import { prisma } from '../db.js';
 import OpenAI from 'openai';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
@@ -80,10 +79,21 @@ async function authenticateProduction(req: AuthRequest, res: any, next: any) {
  */
 async function checkFeatureFlag(req: AuthRequest, res: any, next: any) {
   try {
-    const profile = await prisma.profile.findUnique({
-      where: { id: req.userId },
-      select: { cellar_agent_enabled: true },
-    });
+    if (!supabase) {
+      console.error('[Sommelier] Supabase not configured');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('cellar_agent_enabled')
+      .eq('id', req.userId)
+      .single();
+
+    if (error) {
+      console.error('[Sommelier] Profile fetch error:', error.message);
+      return res.status(500).json({ error: 'Failed to check feature access' });
+    }
 
     if (!profile || !profile.cellar_agent_enabled) {
       console.log(`[Sommelier] Feature disabled for user: ${req.userId?.substring(0, 8)}...`);
