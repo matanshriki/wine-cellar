@@ -174,21 +174,30 @@ function rateLimit(req: AuthRequest, res: any, next: any) {
  * NOTE: Frontend already sends flattened bottle structure
  */
 function buildCellarContext(bottles: any[]) {
-  // Sort by readiness and recency
-  const sorted = [...bottles].sort((a, b) => {
-    // Prioritize bottles that are ready to drink
-    const aReady = a.readinessStatus === 'ready' || a.readinessStatus === 'peak';
-    const bReady = b.readinessStatus === 'ready' || b.readinessStatus === 'peak';
-    if (aReady && !bReady) return -1;
-    if (!aReady && bReady) return 1;
-    
-    // Then by vintage (older first for aged wines)
-    if (a.vintage && b.vintage) {
-      return a.vintage - b.vintage;
+  // Separate bottles by readiness for smart randomization
+  const readyBottles = bottles.filter(
+    b => b.readinessStatus === 'ready' || b.readinessStatus === 'peak'
+  );
+  const otherBottles = bottles.filter(
+    b => b.readinessStatus !== 'ready' && b.readinessStatus !== 'peak'
+  );
+
+  // Shuffle function for variety
+  const shuffle = (array: any[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    
-    return 0;
-  });
+    return shuffled;
+  };
+
+  // Shuffle within each category for variety, but prioritize ready bottles
+  const shuffledReady = shuffle(readyBottles);
+  const shuffledOthers = shuffle(otherBottles);
+  
+  // Combine: ready bottles first (shuffled), then others (shuffled)
+  const sorted = [...shuffledReady, ...shuffledOthers];
 
   const limited = sorted.slice(0, 50);
   
@@ -284,7 +293,8 @@ agentRouter.post(
 STRICT RULES:
 1. You can ONLY recommend a wine by its bottleId from the list below
 2. If the request is impossible (e.g., user asks for white wine but only has red), explain politely and suggest the closest alternative FROM THE CELLAR
-3. Output MUST be valid JSON matching this exact schema:
+3. VARIETY IS IMPORTANT: When the user asks similar questions multiple times, try to recommend different bottles to help them explore their cellar. Consider different regions, grapes, or styles.
+4. Output MUST be valid JSON matching this exact schema:
 {
   "message": "your friendly response text",
   "recommendation": {
@@ -313,7 +323,7 @@ Always be warm, knowledgeable, and concise.`
               }
             ],
             response_format: { type: 'json_object' },
-            temperature: 0.7,
+            temperature: 0.8, // Higher temperature for more variety in recommendations
           });
 
           const content = response.choices[0]?.message?.content;
