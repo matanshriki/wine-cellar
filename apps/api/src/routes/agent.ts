@@ -76,15 +76,34 @@ async function authenticateProduction(req: AuthRequest, res: any, next: any) {
 /**
  * Middleware: Check feature flag
  * Fetches user profile and verifies cellar_agent_enabled
+ * Uses the user's JWT token to bypass RLS
  */
 async function checkFeatureFlag(req: AuthRequest, res: any, next: any) {
   try {
-    if (!supabase) {
+    if (!config.supabaseUrl || !config.supabaseAnonKey) {
       console.error('[Sommelier] Supabase not configured');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    const { data: profile, error } = await supabase
+    // Get the user's JWT token from the request header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      console.error('[Sommelier] No token provided for feature flag check');
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Create a Supabase client with the user's token (bypasses RLS)
+    const userSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+
+    const { data: profile, error } = await userSupabase
       .from('profiles')
       .select('cellar_agent_enabled')
       .eq('id', req.userId)
