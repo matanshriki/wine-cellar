@@ -18,12 +18,18 @@ CREATE TABLE IF NOT EXISTS sommelier_conversations (
   last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create indexes for performance
-CREATE INDEX idx_sommelier_conversations_user_id ON sommelier_conversations(user_id);
-CREATE INDEX idx_sommelier_conversations_last_message ON sommelier_conversations(user_id, last_message_at DESC);
+-- Create indexes for performance (IF NOT EXISTS to make migration idempotent)
+CREATE INDEX IF NOT EXISTS idx_sommelier_conversations_user_id ON sommelier_conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_sommelier_conversations_last_message ON sommelier_conversations(user_id, last_message_at DESC);
 
 -- RLS (Row Level Security) Policies
 ALTER TABLE sommelier_conversations ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (to make migration idempotent)
+DROP POLICY IF EXISTS "Users can read own conversations" ON sommelier_conversations;
+DROP POLICY IF EXISTS "Users can insert own conversations" ON sommelier_conversations;
+DROP POLICY IF EXISTS "Users can update own conversations" ON sommelier_conversations;
+DROP POLICY IF EXISTS "Users can delete own conversations" ON sommelier_conversations;
 
 -- Users can only read their own conversations
 CREATE POLICY "Users can read own conversations"
@@ -58,6 +64,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS trigger_update_sommelier_conversations_updated_at ON sommelier_conversations;
 
 CREATE TRIGGER trigger_update_sommelier_conversations_updated_at
   BEFORE UPDATE ON sommelier_conversations
