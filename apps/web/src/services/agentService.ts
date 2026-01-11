@@ -1,11 +1,10 @@
 /**
- * Cellar Agent Service (localhost only)
+ * Cellar Sommelier Service (Production)
  * 
- * Client-side service for communicating with the Cellar Agent API.
- * All requests are guarded by dev-only checks on both client and server.
+ * Client-side service for communicating with the Cellar Sommelier API.
+ * Access is controlled by feature flags (cellar_agent_enabled).
  */
 
-import { isDevEnvironment } from '../utils/devOnly';
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
 
@@ -43,11 +42,6 @@ export async function sendAgentMessage(
   conversationHistory: AgentMessage[],
   bottles: BottleWithWineInfo[]
 ): Promise<AgentResponse> {
-  // Dev-only guard
-  if (!isDevEnvironment()) {
-    throw new Error('Agent is not available in production');
-  }
-
   // Get Supabase session for authentication
   const { data: { session } } = await supabase.auth.getSession();
   
