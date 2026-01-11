@@ -254,6 +254,35 @@ export interface Database {
           created_at?: string
         }
       }
+      sommelier_conversations: {
+        Row: {
+          id: string
+          user_id: string
+          title: string | null
+          messages: Json
+          created_at: string
+          updated_at: string
+          last_message_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string | null
+          messages?: Json
+          created_at?: string
+          updated_at?: string
+          last_message_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string | null
+          messages?: Json
+          created_at?: string
+          updated_at?: string
+          last_message_at?: string
+        }
+      }
     }
     Views: {
       bottles_with_wine_info: {

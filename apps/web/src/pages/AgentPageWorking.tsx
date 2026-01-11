@@ -9,6 +9,13 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
 import { sendAgentMessage, transcribeAudio, type AgentMessage } from '../services/agentService';
+import {
+  listConversations,
+  createConversation,
+  updateConversation,
+  generateConversationTitle,
+  type SommelierConversation,
+} from '../services/sommelierConversationService';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
@@ -29,6 +36,8 @@ export function AgentPageWorking() {
   const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [loadingBottleDetails, setLoadingBottleDetails] = useState(false);
+  const [currentConversation, setCurrentConversation] = useState<SommelierConversation | null>(null);
+  const [isSavingConversation, setIsSavingConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -53,11 +62,12 @@ export function AgentPageWorking() {
     }
   }, [flags]);
 
-  // Load bottles once
+  // Load bottles and most recent conversation once
   useEffect(() => {
     async function load() {
       try {
         await loadBottles();
+        await loadMostRecentConversation();
       } finally {
         setLoading(false);
       }
@@ -74,7 +84,8 @@ export function AgentPageWorking() {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInputValue('');
     setIsSubmitting(true);
 
@@ -89,7 +100,11 @@ export function AgentPageWorking() {
         recommendation: response.recommendation,
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      const finalMessages = [...newMessages, assistantMsg];
+      setMessages(finalMessages);
+      
+      // Auto-save conversation after each exchange
+      await saveConversation(finalMessages);
     } catch (error: any) {
       toast.error(error.message || 'Failed to get recommendation');
     } finally {
@@ -133,6 +148,50 @@ export function AgentPageWorking() {
     } catch (error) {
       toast.error('Failed to load cellar');
     }
+  }
+
+  async function loadMostRecentConversation() {
+    try {
+      const conversations = await listConversations();
+      if (conversations.length > 0) {
+        const mostRecent = conversations[0];
+        setCurrentConversation(mostRecent);
+        setMessages(mostRecent.messages || []);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      // Don't show error toast - just start fresh
+    }
+  }
+
+  async function saveConversation(updatedMessages: AgentMessage[]) {
+    setIsSavingConversation(true);
+    try {
+      if (currentConversation) {
+        // Update existing conversation
+        const updated = await updateConversation(
+          currentConversation.id,
+          updatedMessages,
+          currentConversation.title
+        );
+        setCurrentConversation(updated);
+      } else {
+        // Create new conversation with auto-generated title
+        const title = generateConversationTitle(updatedMessages);
+        const created = await createConversation(updatedMessages, title);
+        setCurrentConversation(created);
+      }
+    } catch (error) {
+      console.error('Failed to save conversation:', error);
+      // Silent fail - don't disrupt user experience
+    } finally {
+      setIsSavingConversation(false);
+    }
+  }
+
+  function startNewConversation() {
+    setMessages([]);
+    setCurrentConversation(null);
   }
 
   async function startRecording() {
@@ -254,7 +313,7 @@ export function AgentPageWorking() {
             <span>{t('cellarSommelier.back')}</span>
           </button>
 
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', flex: 1 }}>
             <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>
               {t('cellarSommelier.title')}
             </h1>
@@ -263,7 +322,36 @@ export function AgentPageWorking() {
             </p>
           </div>
 
-          <div style={{ width: '70px' }} />
+          <button
+            onClick={startNewConversation}
+            disabled={messages.length === 0}
+            title={t('cellarSommelier.newConversation', 'New conversation')}
+            style={{
+              padding: '8px',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0',
+              backgroundColor: 'white',
+              color: '#666',
+              cursor: messages.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: messages.length === 0 ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (messages.length > 0) {
+                e.currentTarget.style.backgroundColor = '#f8f9fa';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+            }}
+          >
+            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
       </div>
 
