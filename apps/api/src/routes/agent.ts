@@ -246,6 +246,10 @@ agentRouter.post(
 
       // Build limited cellar context
       const { bottles, summary } = buildCellarContext(cellarContext.bottles);
+      
+      // Debug: Log sample of what we're sending to OpenAI
+      console.log(`[Sommelier] User ${req.userId?.substring(0, 8)} - Sending ${bottles.length} bottles to OpenAI`);
+      console.log(`[Sommelier] Sample bottle:`, bottles[0]);
 
       // Build conversation history (limit to last 8 messages)
       const conversationHistory = (history || []).slice(-8);
