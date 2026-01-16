@@ -15,7 +15,8 @@ import {
   shouldRecoverSession, 
   clearSessionMarkers, 
   isStandalone,
-  setupSessionKeepAlive 
+  setupSessionKeepAlive,
+  checkSessionTimeout 
 } from '../utils/sessionPersistence';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -85,6 +86,25 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     let keepAliveCleanup: (() => void) | null = null;
+    let timeoutCheckInterval: NodeJS.Timeout | null = null;
+
+    // Function to check and enforce session timeouts
+    const checkAndEnforceTimeout = async () => {
+      const timeoutCheck = checkSessionTimeout();
+      if (timeoutCheck.expired) {
+        console.log('[Session] Auto-logout:', timeoutCheck.reason);
+        // Force logout
+        await supabase.auth.signOut();
+        clearSessionMarkers();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setProfileComplete(false);
+        
+        // Show a toast or message to user (optional)
+        // You could emit an event here if needed
+      }
+    };
 
     // Get initial session with recovery support
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -93,6 +113,18 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setLoading(false); // Set loading false BEFORE profile load
       
       if (session?.user) {
+        // Check if session has timed out (client-side enforcement)
+        const timeoutCheck = checkSessionTimeout();
+        if (timeoutCheck.expired) {
+          console.log('[Session] Session timeout detected on load:', timeoutCheck.reason);
+          // Force logout immediately
+          await supabase.auth.signOut();
+          clearSessionMarkers();
+          setUser(null);
+          setSession(null);
+          return;
+        }
+        
         // Mark session as active
         markSessionActive();
         
@@ -111,7 +143,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             }
           });
         }
+        
+        // Setup periodic timeout checks (every 60 seconds)
+        timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
+        
       } else if (shouldRecoverSession()) {
+        // Check if we're within timeout windows before attempting recovery
+        const timeoutCheck = checkSessionTimeout();
+        if (timeoutCheck.expired) {
+          console.log('[Session] Cannot recover - session timeout:', timeoutCheck.reason);
+          clearSessionMarkers();
+          return;
+        }
+        
         // Attempt to recover session if there was recent activity
         console.log('Attempting session recovery...');
         supabase.auth.refreshSession().then(({ data, error }) => {
@@ -126,6 +170,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             if (data.session.user) {
               loadProfile(data.session.user);
             }
+            // Setup timeout checks for recovered session
+            timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
           }
         });
       }
@@ -158,6 +204,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             }
           });
         }
+        
+        // Setup timeout checks if not already active (for new sign-ins)
+        if (!timeoutCheckInterval && event === 'SIGNED_IN') {
+          timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
+        }
       } else {
         // Clear session markers on sign out
         if (event === 'SIGNED_OUT') {
@@ -169,6 +220,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           keepAliveCleanup();
           keepAliveCleanup = null;
         }
+        
+        // Cleanup timeout checks
+        if (timeoutCheckInterval) {
+          clearInterval(timeoutCheckInterval);
+          timeoutCheckInterval = null;
+        }
       }
     });
 
@@ -176,6 +233,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       subscription.unsubscribe();
       if (keepAliveCleanup) {
         keepAliveCleanup();
+      }
+      if (timeoutCheckInterval) {
+        clearInterval(timeoutCheckInterval);
       }
     };
   }, []);
