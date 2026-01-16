@@ -21,15 +21,21 @@ export interface BottleWithWineInfo extends Bottle {
 /**
  * List all bottles for the current user (with wine info)
  * Analysis data is stored directly in the bottles table
+ * 
+ * @param options.offset - Starting index for pagination (default: 0)
+ * @param options.limit - Maximum number of bottles to return (default: all)
  */
-export async function listBottles(): Promise<BottleWithWineInfo[]> {
+export async function listBottles(options?: { 
+  offset?: number; 
+  limit?: number;
+}): Promise<BottleWithWineInfo[]> {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
     throw new Error('Not authenticated');
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('bottles')
     .select(`
       *,
@@ -38,6 +44,13 @@ export async function listBottles(): Promise<BottleWithWineInfo[]> {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false});
 
+  // Apply pagination if specified
+  if (options?.offset !== undefined && options?.limit !== undefined) {
+    query = query.range(options.offset, options.offset + options.limit - 1);
+  }
+
+  const { data, error } = await query;
+
   if (error) {
     console.error('Error fetching bottles:', error);
     throw new Error('Failed to fetch bottles');
@@ -45,6 +58,29 @@ export async function listBottles(): Promise<BottleWithWineInfo[]> {
 
   // Analysis data is already in the bottles table, no need to flatten
   return data as BottleWithWineInfo[];
+}
+
+/**
+ * Get total bottle count for the current user
+ */
+export async function getBottleCount(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { count, error } = await supabase
+    .from('bottles')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error fetching bottle count:', error);
+    throw new Error('Failed to fetch bottle count');
+  }
+
+  return count || 0;
 }
 
 /**

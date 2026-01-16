@@ -43,6 +43,8 @@ export function CellarPage() {
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll: loading more bottles
+  const [hasMore, setHasMore] = useState(true); // Infinite scroll: more bottles available
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingBottle, setEditingBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
@@ -121,7 +123,7 @@ export function CellarPage() {
   const hasCheckedOnboarding = useRef(false);
 
   useEffect(() => {
-    loadBottles();
+    loadBottles(true); // Initial load with reset=true
     
     // Clear any stale form drafts on mount (prevent crashes from old data)
     try {
@@ -131,6 +133,24 @@ export function CellarPage() {
       console.error('[CellarPage] Failed to clear form draft:', e);
     }
   }, []);
+
+  // Infinite scroll: Detect when user scrolls near bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if user scrolled near bottom (within 500px)
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const pageHeight = document.documentElement.scrollHeight;
+      const threshold = 500; // px from bottom
+
+      if (scrollPosition >= pageHeight - threshold && hasMore && !loadingMore && !loading) {
+        console.log('[CellarPage] Near bottom, loading more bottles...');
+        loadMoreBottles();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, loading, bottles.length]); // Reattach when these change
 
   // Onboarding v1 – production: Initialize onboarding for new users and re-engagement
   useEffect(() => {
@@ -187,21 +207,42 @@ export function CellarPage() {
     setIsDemoMode(false);
   }
 
-  async function loadBottles() {
+  // Infinite scroll: Page size
+  const PAGE_SIZE = 30;
+
+  async function loadBottles(reset = false) {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
+    console.log('[CellarPage] Reset:', reset);
+    
     try {
       const startTime = Date.now();
+      const offset = reset ? 0 : bottles.length;
+      
       console.log('[CellarPage] Fetching bottles from database...');
-      const data = await bottleService.listBottles();
+      console.log('[CellarPage] Offset:', offset, 'Limit:', PAGE_SIZE);
+      
+      // Load bottles with pagination
+      const data = await bottleService.listBottles({ 
+        offset, 
+        limit: PAGE_SIZE 
+      });
+      
       console.log('[CellarPage] ✅ Bottles loaded successfully');
-      console.log('[CellarPage] Number of bottles:', data.length);
-      console.log('[CellarPage] Bottles:', data.map(b => ({
-        id: b.id,
-        wine_name: b.wine.wine_name,
-        quantity: b.quantity
-      })));
-      setBottles(data);
+      console.log('[CellarPage] Number of bottles fetched:', data.length);
+      
+      // Update bottles state (append or replace)
+      if (reset) {
+        setBottles(data);
+      } else {
+        setBottles(prev => [...prev, ...data]);
+      }
+      
+      // Check if there are more bottles to load
+      setHasMore(data.length === PAGE_SIZE);
+      
       console.log('[CellarPage] Bottles state updated');
+      console.log('[CellarPage] Total bottles in state:', reset ? data.length : bottles.length + data.length);
+      console.log('[CellarPage] Has more:', data.length === PAGE_SIZE);
       
       // Mobile UX Fix: Ensure minimum loading time to prevent tap issues
       // This gives the browser time to fully render and make buttons interactive
@@ -216,7 +257,17 @@ export function CellarPage() {
       toast.error(error.message || t('errors.generic'));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  }
+
+  // Infinite scroll: Load more bottles
+  async function loadMoreBottles() {
+    if (loadingMore || !hasMore) return;
+    
+    console.log('[CellarPage] Loading more bottles...');
+    setLoadingMore(true);
+    await loadBottles(false);
   }
 
   async function handleDelete(id: string) {
@@ -340,8 +391,8 @@ export function CellarPage() {
     // Onboarding v1 – production: Check if this is the first bottle
     const isFirstBottle = bottles.length === 0 && !onboardingUtils.hasAddedFirstBottle();
     
-    // CRITICAL: Reload bottles FIRST to get updated data
-    await loadBottles();
+    // CRITICAL: Reload bottles FIRST to get updated data (reset pagination)
+    await loadBottles(true); // Reset pagination to load from beginning
     console.log('[CellarPage] ✅ Bottles reloaded with latest data');
     
     // Onboarding v1 – production: Show first bottle success modal
@@ -1418,6 +1469,41 @@ export function CellarPage() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Infinite scroll: Loading more indicator */}
+        {loadingMore && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center items-center py-8"
+          >
+            <WineLoader size="medium" />
+            <span 
+              className="ml-3 text-sm"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {t('cellar.loadingMore', { defaultValue: 'Loading more bottles...' })}
+            </span>
+          </motion.div>
+        )}
+
+        {/* Infinite scroll: No more bottles indicator */}
+        {!hasMore && filteredBottles.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-8"
+          >
+            <p 
+              className="text-sm"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {t('cellar.allBottlesLoaded', { 
+                defaultValue: `All ${bottles.length} bottles loaded` 
+              })}
+            </p>
+          </motion.div>
+        )}
       )}
 
       {showForm && (

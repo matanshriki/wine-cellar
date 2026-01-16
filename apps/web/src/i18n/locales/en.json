@@ -122,6 +122,8 @@
       "importButton": "Import CSV"
     },
     "loading": "Loading your cellar...",
+    "loadingMore": "Loading more bottles...",
+    "allBottlesLoaded": "All {{count}} bottles loaded",
     "search": {
       "placeholder": "Search by name, producer, region, vintage...",
       "clear": "Clear search",

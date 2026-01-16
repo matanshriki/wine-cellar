@@ -122,6 +122,8 @@
       "importButton": "ייבוא מ-CSV"
     },
     "loading": "טוען את המרתף שלך...",
+    "loadingMore": "טוען עוד בקבוקים...",
+    "allBottlesLoaded": "כל {{count}} הבקבוקים נטענו",
     "search": {
       "placeholder": "חפש לפי שם, יצרן, אזור, בציר...",
       "clear": "נקה חיפוש",
