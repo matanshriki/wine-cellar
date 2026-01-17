@@ -29,6 +29,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
+import { shouldReduceMotion, ensureAnimationOnVisible } from '../utils/pwaAnimationFix';
 
 type LoaderVariant = 'page' | 'inline' | 'default';
 type LoaderSize = 'sm' | 'md' | 'lg' | number;
@@ -64,29 +65,45 @@ export function WineLoader({
   color,
   className = '' 
 }: WineLoaderProps) {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => shouldReduceMotion());
   const [fillLevel, setFillLevel] = useState(100);
+  const [isVisible, setIsVisible] = useState(document.visibilityState === 'visible');
   const animationRef = useRef<number>();
 
+  // PWA animation fix: Check for ACTUAL reduced motion preference (not PWA false positive)
   useEffect(() => {
-    // Check for prefers-reduced-motion
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
+    setPrefersReducedMotion(shouldReduceMotion());
 
-    // Listen for changes
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    // Listen for visibility changes to restart animation in PWA
+    const handleVisibilityChange = () => {
+      const visible = document.visibilityState === 'visible';
+      setIsVisible(visible);
+      if (visible) {
+        console.log('[WineLoader] Page visible - restarting animation');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
   }, []);
 
-  // CSS-based animation using requestAnimationFrame for mobile compatibility
+  // PWA animation fix: CSS-based animation using requestAnimationFrame
+  // Restarts when page becomes visible (PWA coming from background)
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     const duration = 2500; // 2.5 seconds per cycle
     let startTime: number | null = null;
+    let isAnimating = false;
 
     const animate = (timestamp: number) => {
+      if (!isAnimating) return;
+      
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = (elapsed % duration) / duration;
@@ -107,14 +124,35 @@ export function WineLoader({
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    const startAnimation = () => {
+      console.log('[WineLoader] Starting animation, visible:', isVisible);
+      if (!isVisible) return; // Don't animate if not visible
+      
+      isAnimating = true;
+      startTime = null; // Reset start time
+      animationRef.current = requestAnimationFrame(animate);
+    };
 
-    return () => {
+    // PWA animation fix: Start animation when visible
+    if (isVisible) {
+      // Use ensureAnimationOnVisible to handle PWA background start
+      const cleanup = ensureAnimationOnVisible(startAnimation);
+      
+      return () => {
+        isAnimating = false;
+        cleanup();
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+    } else {
+      // Stop animation when hidden
+      isAnimating = false;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-    };
-  }, [prefersReducedMotion]);
+    }
+  }, [prefersReducedMotion, isVisible]);
 
   // Convert size to pixels
   const sizeInPixels = typeof size === 'number' 

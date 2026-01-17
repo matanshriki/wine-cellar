@@ -102,15 +102,27 @@
   }
 
   /* Disable smooth scroll for reduced-motion users */
+  /* PWA animation fix: Only apply if NOT running in PWA with animations enabled */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
     }
-    *, *::before, *::after {
+    
+    /* PWA animation fix: Don't kill animations in standalone mode unless explicitly requested */
+    body:not(.pwa-animations-enabled) *, 
+    body:not(.pwa-animations-enabled) *::before, 
+    body:not(.pwa-animations-enabled) *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+  
+  /* PWA animation fix: Force enable animations in standalone mode */
+  body.pwa-animations-enabled * {
+    animation-duration: revert !important;
+    animation-iteration-count: revert !important;
+    transition-duration: revert !important;
   }
 
   /**

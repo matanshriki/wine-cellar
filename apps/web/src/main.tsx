@@ -23,6 +23,9 @@ import { registerServiceWorker } from './utils/registerServiceWorker';
 // Import analytics initialization
 import { initializeAnalytics } from './services/analytics';
 
+// Import PWA animation fixes
+import { initPWAAnimationFixes } from './utils/pwaAnimationFix';
+
 /**
  * Initialize document direction based on selected language
  * Must be called before React renders to prevent FOUC (Flash of Unstyled Content)
@@ -34,6 +37,13 @@ initializeDirection();
  * This enables session persistence and offline capabilities
  */
 registerServiceWorker().catch(console.error);
+
+/**
+ * Initialize PWA animation fixes
+ * Fixes animation issues in standalone mode where prefers-reduced-motion is incorrectly reported
+ * and requestAnimationFrame doesn't fire properly on initial load
+ */
+initPWAAnimationFixes();
 
 /**
  * Initialize Google Analytics 4

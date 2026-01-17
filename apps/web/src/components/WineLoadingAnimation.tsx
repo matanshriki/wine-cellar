@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 interface Props {
   message?: string;
@@ -10,8 +11,27 @@ interface Props {
 export function WineLoadingAnimation({ message, showProgress = false, progress = 0 }: Props) {
   const { t } = useTranslation();
   const [fillLevel, setFillLevel] = useState(0);
+  const [isVisible, setIsVisible] = useState(document.visibilityState === 'visible');
+
+  // PWA animation fix: Monitor visibility to restart animation when returning to app
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(document.visibilityState === 'visible');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
+    // PWA animation fix: Only animate when visible
+    if (!isVisible) return;
+
     if (showProgress) {
       // Use provided progress
       setFillLevel(progress);
@@ -25,7 +45,7 @@ export function WineLoadingAnimation({ message, showProgress = false, progress =
       }, 50);
       return () => clearInterval(interval);
     }
-  }, [showProgress, progress]);
+  }, [showProgress, progress, isVisible]);
 
   return (
     <div className="flex flex-col items-center justify-center py-8 sm:py-12">

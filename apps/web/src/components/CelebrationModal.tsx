@@ -15,6 +15,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
+import { shouldReduceMotion, ensureAnimationOnVisible } from '../utils/pwaAnimationFix';
 
 interface CelebrationModalProps {
   isOpen: boolean;
@@ -56,10 +57,8 @@ export function CelebrationModal({
       offsetHeight: canvasRef.current.offsetHeight,
     });
 
-    // Check if user prefers reduced motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
-    if (prefersReducedMotion) {
+    // PWA animation fix: Check if user ACTUALLY prefers reduced motion (not PWA false positive)
+    if (shouldReduceMotion()) {
       console.log('[CelebrationModal] ⚠️ Skipping confetti - user prefers reduced motion');
       return;
     }
@@ -150,7 +149,7 @@ export function CelebrationModal({
   };
 
   /**
-   * Trigger confetti when modal opens
+   * PWA animation fix: Trigger confetti when modal opens AND page is visible
    */
   useEffect(() => {
     console.log('[CelebrationModal] useEffect triggered:', {
@@ -160,22 +159,27 @@ export function CelebrationModal({
     });
 
     if (isOpen && !confettiTriggered.current && canvasRef.current) {
-      console.log('[CelebrationModal] 🎬 Modal opened, scheduling confetti in 200ms...');
+      console.log('[CelebrationModal] 🎬 Modal opened, scheduling confetti...');
       
-      // Longer delay to ensure canvas is fully rendered on iOS
-      const timeoutId = setTimeout(() => {
-        console.log('[CelebrationModal] ⏰ Timeout fired, triggering confetti now');
+      // PWA animation fix: Wait for page to be visible before triggering
+      const cleanup = ensureAnimationOnVisible(() => {
+        console.log('[CelebrationModal] ⏰ Page visible, triggering confetti now');
         if (canvasRef.current) {
-          triggerConfetti();
-          confettiTriggered.current = true;
+          // Additional delay to ensure canvas is fully rendered on iOS
+          setTimeout(() => {
+            if (canvasRef.current) {
+              triggerConfetti();
+              confettiTriggered.current = true;
+            }
+          }, 100);
         } else {
           console.error('[CelebrationModal] ❌ Canvas disappeared before timeout');
         }
-      }, 200);
+      });
 
       return () => {
-        console.log('[CelebrationModal] 🧹 Cleaning up timeout');
-        clearTimeout(timeoutId);
+        console.log('[CelebrationModal] 🧹 Cleaning up visibility listener');
+        cleanup();
       };
     }
 
