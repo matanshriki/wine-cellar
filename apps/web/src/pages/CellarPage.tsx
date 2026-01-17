@@ -1429,81 +1429,83 @@ export function CellarPage() {
           </button>
         </motion.div>
       ) : (
-        /**
-         * Bottle Grid - Mobile Optimized
-         * 
-         * Breakpoints:
-         * - Mobile (default): 1 column
-         * - Tablet (sm: 640px+): 2 columns
-         * - Desktop (lg: 1024px+): 3 columns
-         * 
-         * - Responsive gap (smaller on mobile)
-         * - Cards automatically adjust padding via .card class
-         */
-        <motion.div
-          ref={bottlesSectionRef}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 cellar-grid"
-        >
-          {filteredBottles.map((bottle, index) => (
+        <>
+          {/**
+           * Bottle Grid - Mobile Optimized
+           * 
+           * Breakpoints:
+           * - Mobile (default): 1 column
+           * - Tablet (sm: 640px+): 2 columns
+           * - Desktop (lg: 1024px+): 3 columns
+           * 
+           * - Responsive gap (smaller on mobile)
+           * - Cards automatically adjust padding via .card class
+           */}
+          <motion.div
+            ref={bottlesSectionRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 cellar-grid"
+          >
+            {filteredBottles.map((bottle, index) => (
+              <motion.div
+                key={bottle.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.2 }} // Reduced delay & capped at 0.3s
+                className="flex cellar-grid-item"
+                style={{ pointerEvents: 'auto' }} // Fix: Ensure cards are immediately interactive
+              >
+                <BottleCard
+                  bottle={bottle}
+                  onEdit={() => {
+                    setEditingBottle(bottle);
+                    setShowForm(true);
+                  }}
+                  onDelete={() => handleDelete(bottle.id)}
+                  onAnalyze={() => handleAnalyze(bottle.id)}
+                  onMarkOpened={() => handleMarkOpened(bottle)}
+                  isDemo={isDemoMode}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Infinite scroll: Loading more indicator */}
+          {loadingMore && (
             <motion.div
-              key={bottle.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.2 }} // Reduced delay & capped at 0.3s
-              className="flex cellar-grid-item"
-              style={{ pointerEvents: 'auto' }} // Fix: Ensure cards are immediately interactive
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-center items-center py-8"
             >
-              <BottleCard
-                bottle={bottle}
-                onEdit={() => {
-                  setEditingBottle(bottle);
-                  setShowForm(true);
-                }}
-                onDelete={() => handleDelete(bottle.id)}
-                onAnalyze={() => handleAnalyze(bottle.id)}
-                onMarkOpened={() => handleMarkOpened(bottle)}
-                isDemo={isDemoMode}
-              />
+              <WineLoader size="medium" />
+              <span 
+                className="ml-3 text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {t('cellar.loadingMore', { defaultValue: 'Loading more bottles...' })}
+              </span>
             </motion.div>
-          ))}
-        </motion.div>
+          )}
 
-        {/* Infinite scroll: Loading more indicator */}
-        {loadingMore && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-center items-center py-8"
-          >
-            <WineLoader size="medium" />
-            <span 
-              className="ml-3 text-sm"
-              style={{ color: 'var(--text-secondary)' }}
+          {/* Infinite scroll: No more bottles indicator */}
+          {!hasMore && filteredBottles.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8"
             >
-              {t('cellar.loadingMore', { defaultValue: 'Loading more bottles...' })}
-            </span>
-          </motion.div>
-        )}
-
-        {/* Infinite scroll: No more bottles indicator */}
-        {!hasMore && filteredBottles.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-8"
-          >
-            <p 
-              className="text-sm"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {t('cellar.allBottlesLoaded', { 
-                defaultValue: `All ${bottles.length} bottles loaded` 
-              })}
-            </p>
-          </motion.div>
-        )}
+              <p 
+                className="text-sm"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {t('cellar.allBottlesLoaded', { 
+                  defaultValue: `All ${bottles.length} bottles loaded` 
+                })}
+              </p>
+            </motion.div>
+          )}
+        </>
       )}
 
       {showForm && (
