@@ -171,12 +171,12 @@ export function HistoryPage() {
 
     try {
       await historyService.undoBottleOpened(undoEventData.id);
-      toast.success('Moved back to cellar ✅');
+      toast.success(t('history.movedBackToCellar'));
       // Reload data to reflect changes
       await loadData();
     } catch (error: any) {
       console.error('[HistoryPage] Error undoing bottle opened:', error);
-      toast.error(error.message || "Couldn't move back - try again.");
+      toast.error(error.message || t('history.moveBackError'));
     } finally {
       setUndoingId(null);
       setUndoEventData(null);
@@ -553,14 +553,14 @@ export function HistoryPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
-                        <span>Moving...</span>
+                        <span>{t('history.moving')}</span>
                       </>
                     ) : (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                         </svg>
-                        <span>Send back to cellar</span>
+                        <span>{t('history.sendBackToCellar')}</span>
                       </>
                     )}
                   </button>
@@ -631,7 +631,7 @@ export function HistoryPage() {
                   className="text-base mb-3"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Move this bottle back to your cellar?
+                  {t('history.undoConfirm')}
                 </p>
                 <p 
                   className="text-sm font-medium"
@@ -668,7 +668,7 @@ export function HistoryPage() {
                     color: 'white',
                   }}
                 >
-                  Move back
+                  {t('history.moveBack')}
                 </button>
               </div>
             </motion.div>
