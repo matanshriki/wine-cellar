@@ -31,19 +31,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
   const [currentBottle, setCurrentBottle] = useState<BottleWithWineInfo | null>(bottle);
 
-  // Onboarding v1 – value first: Check if this is a demo bottle
-  const isDemoBottle = currentBottle?.id.startsWith('demo-') || false;
-
   // Update current bottle when prop changes
   useEffect(() => {
-    setCurrentBottle(bottle);
-  }, [bottle]);
+    if (isOpen && bottle) {
+      setCurrentBottle(bottle);
+    }
+  }, [bottle, isOpen]);
 
   // Check if user has AI label art enabled (per-user flag)
   useEffect(() => {
     const checkUserAccess = async () => {
       // Onboarding v1 – value first: Skip for demo bottles
-      if (isDemoBottle) {
+      if (currentBottle?.id.startsWith('demo-')) {
         setUserCanGenerateAI(false);
         return;
       }
@@ -51,15 +50,20 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
       setUserCanGenerateAI(enabled);
     };
     
-    if (isOpen && bottle) {
+    if (isOpen && currentBottle) {
       checkUserAccess();
     }
-  }, [isOpen, bottle, isDemoBottle]);
+  }, [isOpen, currentBottle]);
 
-  // Early return AFTER all hooks
-  if (!currentBottle) return null;
+  // Don't render anything if no bottle is available
+  if (!isOpen || !bottle) return null;
 
-  const wine = currentBottle.wine;
+  // Use the latest bottle data (currentBottle) or fall back to prop
+  const displayBottle = currentBottle || bottle;
+  const wine = displayBottle.wine;
+  
+  // Onboarding v1 – value first: Check if this is a demo bottle
+  const isDemoBottle = displayBottle.id.startsWith('demo-');
 
   // Get display image with priority: user > generated > placeholder
   const displayImage = labelArtService.getWineDisplayImage(wine);
@@ -115,7 +119,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     
     try {
       console.log('[WineDetailsModal] 🎨 Starting AI label generation...');
-      const result = await labelArtService.generateLabelArt(currentBottle, style);
+      const result = await labelArtService.generateLabelArt(displayBottle, style);
       
       console.log('[WineDetailsModal] ✅ Generation successful:', result);
       trackAILabel.success(style); // Track successful AI label generation
