@@ -340,7 +340,7 @@ export function CellarPage() {
       trackSommelier.success(); // Track successful analysis
       
       // Reload bottles to get fresh data
-      await loadBottles();
+      await loadBottles(true); // Reset pagination
       
       // ✅ No success toast - visual feedback is sufficient
     } catch (error: any) {
@@ -377,7 +377,7 @@ export function CellarPage() {
       setShowCelebration(true);
       
       // Reload bottles to update quantities
-      await loadBottles();
+      await loadBottles(true); // Reset pagination
     } catch (error: any) {
       console.error('Error marking bottle as opened:', error);
       toast.error(error.message || t('cellar.bottle.markOpenedFailed'));
@@ -420,7 +420,7 @@ export function CellarPage() {
 
   function handleImportSuccess() {
     setShowImport(false);
-    loadBottles();
+    loadBottles(true); // Reset pagination after import
   }
 
   function handleBulkAnalysis() {
@@ -430,7 +430,7 @@ export function CellarPage() {
 
   async function handleBulkAnalysisComplete() {
     console.log('[CellarPage] Bulk analysis complete, reloading bottles');
-    await loadBottles();
+    await loadBottles(true); // Reset pagination
     setShowBulkAnalysis(false);
     
     // Set cooldown (5 minutes)
@@ -2111,7 +2111,7 @@ export function CellarPage() {
         }}
         bottle={selectedBottle}
         onMarkAsOpened={handleMarkOpened}
-        onRefresh={loadBottles}
+        onRefresh={() => loadBottles(true)}
       />
 
       {/* Beta feature: Multi-Bottle Import Modal - Enabled in dev OR if user has flag */}
@@ -2120,7 +2120,7 @@ export function CellarPage() {
           isOpen={showMultiBottleImport}
           onClose={() => setShowMultiBottleImport(false)}
           onSuccess={async () => {
-            await loadBottles();
+            await loadBottles(true); // Reset pagination
             setShowMultiBottleImport(false);
           }}
           existingBottles={bottles}
