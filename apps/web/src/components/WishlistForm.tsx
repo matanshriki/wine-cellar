@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import type { ExtractedWineData } from '../services/labelScanService';
 import * as wishlistService from '../services/wishlistService';
@@ -36,6 +36,7 @@ interface Props {
 
 export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
   const { t } = useTranslation();
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
   
   // Try to restore from sessionStorage first, then use prefillData
   const getInitialFormData = () => {
@@ -154,8 +155,11 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent | React.MouseEvent) {
+    // Prevent default if this is a form submission
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
     
     // Validation: Must have at least producer + wine name
     if (!formData.producer.trim() || !formData.wine_name.trim()) {
@@ -206,28 +210,31 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
   function handleClose() {
     if (loading) return;
     
-    // Ask user if they want to keep the draft
+    // Ask user if they want to keep the draft (with luxury modal instead of basic confirm)
     if (formData.wine_name || formData.producer || formData.vivino_url) {
-      const message = 'Your draft will be saved so you can come back to it. Close anyway?';
-      if (!confirm(message)) {
-        return;
-      }
-      
-      // User confirmed - mark form as explicitly closed
-      try {
-        const saved = sessionStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-            ...parsed,
-            isFormOpen: false, // Mark form as explicitly closed
-          }));
-        }
-      } catch (e) {
-        console.error('[WishlistForm] Failed to update draft status:', e);
-      }
+      setShowConfirmClose(true);
+      return;
     }
     
+    onClose();
+  }
+
+  function confirmClose() {
+    // User confirmed - mark form as explicitly closed
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+          ...parsed,
+          isFormOpen: false, // Mark form as explicitly closed
+        }));
+      }
+    } catch (e) {
+      console.error('[WishlistForm] Failed to update draft status:', e);
+    }
+    
+    setShowConfirmClose(false);
     onClose();
   }
 
@@ -615,6 +622,90 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
           </button>
         </div>
       </motion.div>
+
+      {/* Luxury Confirmation Modal for Close */}
+      <AnimatePresence>
+        {showConfirmClose && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[110]"
+            onClick={() => setShowConfirmClose(false)}
+            style={{ backdropFilter: 'blur(4px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'tween', duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-soft)',
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="px-6 py-5 border-b"
+                style={{ borderColor: 'var(--border-soft)' }}
+              >
+                <h3 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  {t('common.confirm')}
+                </h3>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6">
+                <p 
+                  className="text-base"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Your draft will be saved so you can come back to it. Close anyway?
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div 
+                className="px-6 py-4 border-t flex gap-3 justify-end"
+                style={{ 
+                  borderColor: 'var(--border-soft)',
+                  backgroundColor: 'var(--bg-secondary)',
+                }}
+              >
+                <button
+                  onClick={() => setShowConfirmClose(false)}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={confirmClose}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    color: 'white',
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
