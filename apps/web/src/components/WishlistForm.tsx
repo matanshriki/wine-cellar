@@ -127,18 +127,22 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       console.log('[WishlistForm] Fetching from Vivino:', formData.vivino_url);
       const vivinoData = await fetchVivinoWineData(formData.vivino_url);
 
-      // Update form with Vivino data
+      if (!vivinoData) {
+        throw new Error('No data returned from Vivino');
+      }
+
+      // Update form with Vivino data (fix: use correct property names from VivinoWineData interface)
       setFormData(prev => ({
         ...prev,
-        wine_name: vivinoData.wine_name || prev.wine_name,
-        producer: vivinoData.producer || prev.producer,
+        wine_name: vivinoData.name || prev.wine_name,
+        producer: vivinoData.winery || prev.producer,
         vintage: vivinoData.vintage?.toString() || prev.vintage,
         region: vivinoData.region || prev.region,
         grapes: vivinoData.grapes || prev.grapes,
       }));
 
       const ratingText = vivinoData.rating ? `${vivinoData.rating}/5 ⭐` : '';
-      const ratingsCount = vivinoData.ratings_count ? ` (${vivinoData.ratings_count.toLocaleString()} ratings)` : '';
+      const ratingsCount = vivinoData.rating_count ? ` (${vivinoData.rating_count.toLocaleString()} ratings)` : '';
       toast.success(`✅ Fetched from Vivino! Rating: ${ratingText}${ratingsCount}`);
       
       console.log('[WishlistForm] ✅ Vivino data fetched:', vivinoData);
@@ -584,20 +588,26 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               borderColor: 'var(--border-medium)',
               color: 'var(--text-secondary)',
               pointerEvents: 'auto', // Fix: Ensure button is clickable
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
             }}
           >
             {t('common.cancel')}
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
             disabled={loading}
             className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px] flex-1 sm:flex-none"
             style={{
-              background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+              background: loading 
+                ? 'var(--bg-muted)' 
+                : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
               color: 'var(--text-inverse)',
               opacity: loading ? 0.6 : 1,
-              pointerEvents: loading ? 'none' : 'auto', // Fix: Ensure button is clickable when not loading
+              cursor: loading ? 'not-allowed' : 'pointer',
+              pointerEvents: 'auto', // Always allow pointer events, rely on disabled attribute
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
             }}
           >
             {loading ? t('common.saving') : t('wishlist.form.save')} {/* "Add to Wishlist" */}
