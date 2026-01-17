@@ -700,18 +700,46 @@ export function WishlistPage() {
         </motion.button>
       )}
 
-      {/* Parsing indicator */}
-      {isParsing && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          style={{ backdropFilter: 'blur(4px)' }}
-        >
-          <div className="bg-white rounded-lg p-6 text-center">
-            <div className="animate-spin text-4xl mb-4">🍷</div>
-            <p className="text-lg font-medium">{t('cellar.labelParse.reading')}</p>
-          </div>
-        </div>
-      )}
+      {/* Parsing indicator - PWA animation fix: Wrapped in AnimatePresence with forced animation restart */}
+      <AnimatePresence>
+        {isParsing && (
+          <motion.div
+            key="wishlist-parsing-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            style={{ backdropFilter: 'blur(4px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg p-6 text-center"
+              style={{
+                // PWA animation fix: Force hardware acceleration on iOS
+                transform: 'translateZ(0)',
+                WebkitTransform: 'translateZ(0)',
+              }}
+            >
+              {/* PWA animation fix: Inline animation + willChange for mobile reliability */}
+              <div 
+                className="animate-spin text-4xl mb-4"
+                style={{
+                  // Force animation to work in PWA standalone mode
+                  willChange: 'transform',
+                  transform: 'translateZ(0)',
+                  WebkitTransform: 'translateZ(0)',
+                  animation: 'spin 1s linear infinite',
+                }}
+              >
+                🍷
+              </div>
+              <p className="text-lg font-medium">{t('cellar.labelParse.reading')}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Luxury Confirmation Modal */}
       <AnimatePresence>

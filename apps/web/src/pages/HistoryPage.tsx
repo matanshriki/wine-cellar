@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
@@ -40,6 +41,9 @@ export function HistoryPage() {
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState<string>('');
   const [notesSaving, setNotesSaving] = useState<string | null>(null);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [showUndoConfirm, setShowUndoConfirm] = useState(false);
+  const [undoEventData, setUndoEventData] = useState<{ id: string; wineName: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -151,6 +155,32 @@ export function HistoryPage() {
     console.log('[HistoryPage] Cancelled notes editing');
     setEditingNotesId(null);
     setNotesText('');
+  }
+
+  function handleUndoClick(event: HistoryEvent) {
+    const wineName = event.bottle?.wine?.wine_name || t('history.unknownBottle');
+    setUndoEventData({ id: event.id, wineName });
+    setShowUndoConfirm(true);
+  }
+
+  async function confirmUndo() {
+    if (!undoEventData) return;
+
+    setUndoingId(undoEventData.id);
+    setShowUndoConfirm(false);
+
+    try {
+      await historyService.undoBottleOpened(undoEventData.id);
+      toast.success('Moved back to cellar ✅');
+      // Reload data to reflect changes
+      await loadData();
+    } catch (error: any) {
+      console.error('[HistoryPage] Error undoing bottle opened:', error);
+      toast.error(error.message || "Couldn't move back - try again.");
+    } finally {
+      setUndoingId(null);
+      setUndoEventData(null);
+    }
   }
 
   async function handleSaveNotes(eventId: string) {
@@ -501,6 +531,41 @@ export function HistoryPage() {
                   )}
                 </div>
 
+                {/* Send back to cellar button */}
+                <div 
+                  className="mt-3 pt-3 border-t border-gray-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => handleUndoClick(event)}
+                    disabled={undoingId === event.id}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-2"
+                    style={{
+                      backgroundColor: undoingId === event.id ? 'var(--bg-muted)' : 'var(--bg-secondary)',
+                      border: '1px solid var(--border-medium)',
+                      color: undoingId === event.id ? 'var(--text-tertiary)' : 'var(--wine-600)',
+                      cursor: undoingId === event.id ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {undoingId === event.id ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Moving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <span>Send back to cellar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 {/* Click Indicator */}
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,6 +585,96 @@ export function HistoryPage() {
         bottle={selectedBottle}
         onRefresh={loadData}
       />
+
+      {/* Undo Confirmation Modal */}
+      <AnimatePresence>
+        {showUndoConfirm && undoEventData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[110]"
+            onClick={() => setShowUndoConfirm(false)}
+            style={{ backdropFilter: 'blur(4px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'tween', duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-soft)',
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="px-6 py-5 border-b"
+                style={{ borderColor: 'var(--border-soft)' }}
+              >
+                <h3 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  {t('common.confirm')}
+                </h3>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6">
+                <p 
+                  className="text-base mb-3"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Move this bottle back to your cellar?
+                </p>
+                <p 
+                  className="text-sm font-medium"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  "{undoEventData.wineName}"
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div 
+                className="px-6 py-4 border-t flex gap-3 justify-end"
+                style={{ 
+                  borderColor: 'var(--border-soft)',
+                  backgroundColor: 'var(--bg-secondary)',
+                }}
+              >
+                <button
+                  onClick={() => setShowUndoConfirm(false)}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={confirmUndo}
+                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    color: 'white',
+                  }}
+                >
+                  Move back
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

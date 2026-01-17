@@ -260,3 +260,67 @@ export async function getConsumptionStats(): Promise<ConsumptionStats> {
   };
 }
 
+/**
+ * Undo marking a bottle as opened (send back to cellar)
+ * Deletes consumption history entry and increments bottle quantity back by 1
+ */
+export async function undoBottleOpened(historyId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  // First, get the history entry to get bottle_id
+  const { data: history, error: historyFetchError } = await supabase
+    .from('consumption_history')
+    .select('bottle_id')
+    .eq('id', historyId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (historyFetchError || !history) {
+    console.error('Error fetching history entry:', historyFetchError);
+    throw new Error('History entry not found');
+  }
+
+  // Get the bottle to check if it still exists
+  const { data: bottle, error: bottleError } = await supabase
+    .from('bottles')
+    .select('id, quantity')
+    .eq('id', history.bottle_id)
+    .eq('user_id', user.id)
+    .single() as any;
+
+  if (bottleError || !bottle) {
+    console.error('Error fetching bottle:', bottleError);
+    throw new Error('Bottle not found - it may have been deleted');
+  }
+
+  // Delete consumption history entry
+  const { error: deleteError } = await supabase
+    .from('consumption_history')
+    .delete()
+    .eq('id', historyId)
+    .eq('user_id', user.id);
+
+  if (deleteError) {
+    console.error('Error deleting consumption history:', deleteError);
+    throw new Error('Failed to remove from history');
+  }
+
+  // Increment bottle quantity back by 1
+  const { error: updateError } = await supabase
+    .from('bottles')
+    .update({ quantity: bottle.quantity + 1 })
+    .eq('id', history.bottle_id)
+    .eq('user_id', user.id);
+
+  if (updateError) {
+    console.error('Error incrementing bottle quantity:', updateError);
+    // Note: History entry was deleted but quantity wasn't incremented
+    // In production, this should be a transaction
+    throw new Error('Failed to update bottle quantity');
+  }
+}
+
