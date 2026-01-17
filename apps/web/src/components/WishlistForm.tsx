@@ -595,7 +595,8 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             {t('common.cancel')}
           </button>
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={loading}
             className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px] flex-1 sm:flex-none"
             style={{
