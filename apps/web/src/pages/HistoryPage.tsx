@@ -32,7 +32,7 @@ export function HistoryPage() {
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<HistoryEvent[]>([]);
   const [stats, setStats] = useState<historyService.ConsumptionStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep true for proper data loading
   const [error, setError] = useState<string | null>(null);
   const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

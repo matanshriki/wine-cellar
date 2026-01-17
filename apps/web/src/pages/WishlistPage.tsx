@@ -27,7 +27,7 @@ export function WishlistPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep true for proper data loading
   const [movingId, setMovingId] = useState<string | null>(null);
   
   // Wishlist feature (dev only) - Add bottle sheet state

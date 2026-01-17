@@ -455,6 +455,11 @@ export function CellarPage() {
     return bottles.filter(bottle => bottle.quantity > 0);
   }, [bottles, isDemoMode]);
 
+  // Total number of physical bottles (sum of all quantities)
+  const totalBottleCount = useMemo(() => {
+    return bottlesInCellar.reduce((sum, bottle) => sum + bottle.quantity, 0);
+  }, [bottlesInCellar]);
+
   // Calculate unanalyzed bottles count (only for bottles in cellar)
   const unanalyzedCount = bottlesInCellar.filter(bottle => {
     const b = bottle as any;
@@ -602,6 +607,11 @@ export function CellarPage() {
 
     return result;
   }, [bottlesInCellar, searchQuery, activeFilters, sortBy, sortDir]);
+
+  // Total filtered bottle count (sum of quantities in filtered results)
+  const totalFilteredCount = useMemo(() => {
+    return filteredBottles.reduce((sum, bottle) => sum + bottle.quantity, 0);
+  }, [filteredBottles]);
 
   /**
    * Toggle filter chip
@@ -920,8 +930,8 @@ export function CellarPage() {
               style={{ color: 'var(--text-secondary)' }}
             >
               {filteredBottles.length === bottlesInCellar.length
-                ? t('cellar.bottleCount', { count: bottlesInCellar.length })
-                : t('cellar.filteredCount', { count: filteredBottles.length, total: bottlesInCellar.length })}
+                ? t('cellar.bottleCount', { count: totalBottleCount })
+                : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
             </p>
           </div>
 
@@ -1504,8 +1514,8 @@ export function CellarPage() {
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 {t('cellar.allBottlesLoaded', { 
-                  count: filteredBottles.length,
-                  defaultValue: `All ${filteredBottles.length} bottles loaded` 
+                  count: totalFilteredCount,
+                  defaultValue: `All ${totalFilteredCount} bottles loaded` 
                 })}
               </p>
             </motion.div>
