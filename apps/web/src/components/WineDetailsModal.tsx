@@ -29,20 +29,34 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
-  const [currentBottle, setCurrentBottle] = useState<BottleWithWineInfo | null>(bottle);
 
-  // Update current bottle when prop changes
+  // Lock body scroll when modal is open (prevents iOS background shifts)
   useEffect(() => {
-    if (isOpen && bottle) {
-      setCurrentBottle(bottle);
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      
+      // Lock scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      
+      return () => {
+        // Restore scroll
+        document.body.style.overflow = originalOverflow || '';
+        document.body.style.position = originalPosition || '';
+        document.body.style.width = '';
+      };
     }
-  }, [bottle, isOpen]);
+  }, [isOpen]);
 
   // Check if user has AI label art enabled (per-user flag)
   useEffect(() => {
+    if (!isOpen || !bottle) return;
+    
     const checkUserAccess = async () => {
       // Onboarding v1 – value first: Skip for demo bottles
-      if (currentBottle?.id.startsWith('demo-')) {
+      if (bottle.id.startsWith('demo-')) {
         setUserCanGenerateAI(false);
         return;
       }
@@ -50,16 +64,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
       setUserCanGenerateAI(enabled);
     };
     
-    if (isOpen && currentBottle) {
-      checkUserAccess();
-    }
-  }, [isOpen, currentBottle]);
+    checkUserAccess();
+  }, [isOpen, bottle?.id]); // Only depend on bottle.id to avoid unnecessary re-checks
 
   // Don't render anything if no bottle is available
-  if (!isOpen || !bottle) return null;
+  if (!bottle) return null;
 
-  // Use the latest bottle data (currentBottle) or fall back to prop
-  const displayBottle = currentBottle || bottle;
+  // Use bottle prop directly
+  const displayBottle = bottle;
   const wine = displayBottle.wine;
   
   // Onboarding v1 – value first: Check if this is a demo bottle
@@ -88,12 +100,6 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           ? t('wineImage.updateSuccess', 'Wine image updated!')
           : t('wineImage.removeSuccess', 'Wine image removed')
       );
-      
-      // Refresh the bottle data to show the new image
-      const updatedBottle = await bottleService.getBottle(currentBottle.id);
-      if (updatedBottle) {
-        setCurrentBottle(updatedBottle);
-      }
       
       // Refresh data if callback provided
       if (onRefresh) {
@@ -130,15 +136,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
         toast.success(t('labelArt.generateSuccess', 'Label art generated successfully!'));
       }
       
-      // Refresh the bottle data to show the new image
-      console.log('[WineDetailsModal] 🔄 Refreshing bottle data...');
-      const updatedBottle = await bottleService.getBottle(currentBottle.id);
-      if (updatedBottle) {
-        console.log('[WineDetailsModal] ✅ Bottle data refreshed, updating UI');
-        setCurrentBottle(updatedBottle);
-      }
-      
-      // Also refresh parent component
+      // Refresh parent component to update the bottle data
       if (onRefresh) {
         onRefresh();
       }
@@ -168,26 +166,37 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
-        <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1, ease: 'easeOut' }}
+          className="fixed inset-0 z-50"
+          style={{
+            willChange: 'opacity',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+          }}
+        >
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             onClick={onClose}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
-            style={{ backdropFilter: 'blur(4px)' }}
+            className="absolute inset-0 bg-black bg-opacity-50"
+            style={{ 
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
+          <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 ios-modal-scroll">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
+              initial={{ scale: 0.97, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.97, opacity: 0 }}
+              transition={{ duration: 0.1, ease: 'easeOut' }}
               className="luxury-card w-full flex flex-col"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
@@ -203,6 +212,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 maxWidth: 'min(42rem, 100%)',
                 maxHeight: 'calc(100dvh - 2rem)',
                 height: 'auto',
+                willChange: 'transform, opacity',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)', // Force GPU acceleration on iOS
               }}
             >
               {/* Header */}
@@ -762,7 +775,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               </div>
             </motion.div>
           </div>
-        </>
+        </motion.div>
       )}
       
       {/* Add/Update Wine Image Dialog */}

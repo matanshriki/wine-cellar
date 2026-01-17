@@ -725,6 +725,7 @@
   "cellarSommelier": {
     "title": "סומליה המרתף",
     "menuButton": "שאל את סומליה המרתף",
+    "askSommelier": "שאל סומליה",
     "loading": "טוען סומליה...",
     "notEnabled": "הסומליה אינו זמין.",
     "emptyTitle": "שאל את סומליה המרתף שלך",

@@ -31,16 +31,10 @@ const queryClient = new QueryClient({
 });
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen luxury-background">
-        <WineLoader variant="default" size="lg" message="Loading..." />
-      </div>
-    );
-  }
-
+  // Simply redirect to login if not authenticated
+  // No loading state needed - auth is handled at app level
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -93,7 +87,16 @@ function FeatureFlagRoute({
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Show loading only on initial app load (once)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen luxury-background">
+        <WineLoader variant="default" size="lg" message="Loading..." />
+      </div>
+    );
+  }
 
   return (
     <>

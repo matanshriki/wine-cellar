@@ -812,6 +812,7 @@
   "cellarSommelier": {
     "title": "Cellar Sommelier",
     "menuButton": "Ask Cellar Sommelier",
+    "askSommelier": "Ask Sommelier",
     "loading": "Loading Sommelier...",
     "notEnabled": "Sommelier is not enabled.",
     "emptyTitle": "Ask Your Cellar Sommelier",

@@ -42,7 +42,7 @@ export function CellarPage() {
   const featureFlags = useFeatureFlags(); // Load user's feature flags
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep true for proper initial load
   const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll: loading more bottles
   const [hasMore, setHasMore] = useState(true); // Infinite scroll: more bottles available
   const [showForm, setShowForm] = useState(false);
@@ -208,7 +208,7 @@ export function CellarPage() {
   }
 
   // Infinite scroll: Page size
-  const PAGE_SIZE = 30;
+  const PAGE_SIZE = 100; // Increased to load more bottles initially
 
   async function loadBottles(reset = false) {
     console.log('[CellarPage] ========== LOADING BOTTLES ==========');
@@ -1465,6 +1465,10 @@ export function CellarPage() {
                   onDelete={() => handleDelete(bottle.id)}
                   onAnalyze={() => handleAnalyze(bottle.id)}
                   onMarkOpened={() => handleMarkOpened(bottle)}
+                  onShowDetails={() => {
+                    setSelectedBottle(bottle);
+                    setShowDetailsModal(true);
+                  }}
                   isDemo={isDemoMode}
                 />
               </motion.div>
@@ -1500,7 +1504,8 @@ export function CellarPage() {
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 {t('cellar.allBottlesLoaded', { 
-                  defaultValue: `All ${bottles.length} bottles loaded` 
+                  count: filteredBottles.length,
+                  defaultValue: `All ${filteredBottles.length} bottles loaded` 
                 })}
               </p>
             </motion.div>
@@ -2104,6 +2109,7 @@ export function CellarPage() {
 
       {/* Wine Details Modal (for Tonight's Selection clicks) */}
       <WineDetailsModal 
+        key={selectedBottle?.id || 'no-bottle'}
         isOpen={showDetailsModal}
         onClose={() => {
           setShowDetailsModal(false);

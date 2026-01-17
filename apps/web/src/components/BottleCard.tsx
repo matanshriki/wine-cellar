@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { SommelierNotes } from './SommelierNotes';
-import { WineDetailsModal } from './WineDetailsModal';
 import { DemoActionModal } from './DemoActionModal';
 import type { AIAnalysis } from '../services/aiAnalysisService';
 import * as labelArtService from '../services/labelArtService';
@@ -14,11 +13,11 @@ interface Props {
   onAnalyze: () => void;
   onMarkOpened?: () => void;
   isDemo?: boolean; // Onboarding v1 – production: Flag for demo bottles
+  onShowDetails?: () => void; // Callback to show details modal (centralized)
 }
 
-export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, isDemo = false }: Props) {
+export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, isDemo = false, onShowDetails }: Props) {
   const { t } = useTranslation();
-  const [showDetails, setShowDetails] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [demoAction, setDemoAction] = useState<'edit' | 'markOpened' | 'delete'>('edit');
   
@@ -369,7 +368,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setShowDetails(true);
+              if (onShowDetails) {
+                onShowDetails();
+              }
             }}
             className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] flex items-center justify-center gap-1 details-button-hover"
             style={{
@@ -524,13 +525,6 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         }
     `}</style>
     
-    {/* Wine Details Modal */}
-    <WineDetailsModal 
-      isOpen={showDetails}
-      onClose={() => setShowDetails(false)}
-      bottle={bottle}
-    />
-
     {/* Onboarding v1 – production: Demo Action Modal */}
     <DemoActionModal
       isOpen={showDemoModal}

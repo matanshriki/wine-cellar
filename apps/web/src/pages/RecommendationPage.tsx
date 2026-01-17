@@ -17,6 +17,7 @@ import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { WineDetailsModal } from '../components/WineDetailsModal';
+import { SommelierChatButton } from '../components/SommelierChatButton';
 import { ChoiceCard } from '../components/ui/ChoiceCard';
 import { Toggle } from '../components/ui/Toggle';
 import { WineLoader } from '../components/WineLoader';
@@ -56,8 +57,8 @@ export function RecommendationPage() {
   const currencySymbol = getCurrencySymbol(i18n.language);
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
-  const [checkingCellar, setCheckingCellar] = useState(true); // Check if cellar is empty
-  const [hasCellarBottles, setHasCellarBottles] = useState(false);
+  const [checkingCellar, setCheckingCellar] = useState(false); // Changed: Start as false for instant render
+  const [hasCellarBottles, setHasCellarBottles] = useState(true); // Changed: Assume true by default
   const [context, setContext] = useState({
     mealType: '',
     occasion: '',
@@ -74,24 +75,27 @@ export function RecommendationPage() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
 
-  // Check if user has bottles in cellar on mount
+  // Check if user has bottles in cellar on mount (non-blocking)
   useEffect(() => {
     async function checkCellar() {
       try {
         const bottles = await bottleService.listBottles();
         const activeBottles = bottles.filter(b => b.quantity > 0);
-        setHasCellarBottles(activeBottles.length > 0);
+        const hasBottles = activeBottles.length > 0;
+        
+        // Only update state if cellar is actually empty (prevents unnecessary re-render)
+        if (!hasBottles) {
+          setHasCellarBottles(false);
+        }
+        
         console.log('[RecommendationPage] Cellar check:', {
           totalBottles: bottles.length,
           activeBottles: activeBottles.length,
-          hasCellarBottles: activeBottles.length > 0
+          hasCellarBottles: hasBottles
         });
       } catch (error) {
         console.error('[RecommendationPage] Error checking cellar:', error);
-        // Assume they have bottles if check fails (don't block functionality)
-        setHasCellarBottles(true);
-      } finally {
-        setCheckingCellar(false);
+        // Keep default assumption (has bottles) on error
       }
     }
     
@@ -200,9 +204,10 @@ export function RecommendationPage() {
   if (step === 'results') {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
       >
         <div className="mb-6">
           <button 
@@ -242,9 +247,9 @@ export function RecommendationPage() {
           {recommendations.map((rec, index) => (
             <motion.div
               key={rec.bottleId}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05, duration: 0.2 }}
               className="card-hover card"
               style={{ border: '2px solid var(--color-stone-200)' }}
             >
@@ -431,49 +436,31 @@ export function RecommendationPage() {
           onClose={handleCloseDetailsModal}
           bottle={selectedBottle}
         />
+
+        {/* Floating Sommelier Chat Button */}
+        <SommelierChatButton />
       </motion.div>
     );
   }
 
   // Form View
-  // Show loading state while checking cellar
-  if (checkingCellar) {
-    return (
-      <div className="max-w-3xl mx-auto px-4">
-        <WineLoader variant="page" size="lg" message={t('recommendation.checkingCellar', 'Checking your cellar...')} />
-      </div>
-    );
-  }
-
-  // Show empty cellar message if no bottles
+  // Show empty cellar message if no bottles (no loading state needed)
   if (!hasCellarBottles) {
     return (
       <div className="max-w-2xl mx-auto px-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
           className="luxury-card text-center py-12 px-6"
         >
           {/* Elegant visual */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
-              duration: 0.5, 
-              ease: "easeOut",
-              delay: 0.2,
-            }}
-            className="text-8xl mb-6"
-          >
+          <div className="text-8xl mb-6">
             🍾
-          </motion.div>
+          </div>
 
           {/* Heading */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+          <h2
             className="text-2xl sm:text-3xl mb-3"
             style={{ 
               color: 'var(--text-primary)', 
@@ -483,24 +470,18 @@ export function RecommendationPage() {
             }}
           >
             {t('recommendation.emptyCellar.title')}
-          </motion.h2>
+          </h2>
 
           {/* Explanation */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+          <p
             className="text-base sm:text-lg mb-2 max-w-md mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
             {t('recommendation.emptyCellar.message')}
-          </motion.p>
+          </p>
 
           {/* Helpful hint */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
+          <p
             className="text-sm mb-8 max-w-md mx-auto"
             style={{ 
               color: 'var(--text-tertiary)',
@@ -508,18 +489,15 @@ export function RecommendationPage() {
             }}
           >
             {t('recommendation.emptyCellar.hint')}
-          </motion.p>
+          </p>
 
           {/* Action button */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.7, duration: 0.3 }}
+          <button
             onClick={() => navigate('/cellar')}
             className="btn-luxury-primary"
           >
             {t('recommendation.emptyCellar.goToCellar')}
-          </motion.button>
+          </button>
         </motion.div>
       </div>
     );
@@ -529,6 +507,7 @@ export function RecommendationPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
       className="max-w-3xl mx-auto px-4"
     >
       <div className="mb-8">
@@ -548,11 +527,7 @@ export function RecommendationPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Selection Card - Compact Layout */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card space-y-5"
-        >
+        <div className="card space-y-5">
           {/* Meal Type */}
           <div>
             <h3 
@@ -732,15 +707,10 @@ export function RecommendationPage() {
               min="0"
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Submit Button - positioned above bottom nav on mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="sticky z-10 bottom-above-nav"
-        >
+        <div className="sticky z-10 bottom-above-nav">
           <motion.button
             type="submit"
             disabled={loading}
@@ -760,8 +730,11 @@ export function RecommendationPage() {
               </>
             )}
           </motion.button>
-        </motion.div>
+        </div>
       </form>
+
+      {/* Floating Sommelier Chat Button */}
+      <SommelierChatButton />
     </motion.div>
   );
 }

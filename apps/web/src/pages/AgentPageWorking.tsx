@@ -295,7 +295,7 @@ export function AgentPageWorking() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
-            onClick={() => navigate('/cellar')}
+            onClick={() => navigate(-1)}
             style={{
               display: 'flex',
               alignItems: 'center',
