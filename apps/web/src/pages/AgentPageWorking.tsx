@@ -321,7 +321,7 @@ export function AgentPageWorking() {
               {t('cellarSommelier.title')}
             </h1>
             <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-              {t('cellarSommelier.bottleCount', { count: bottles.filter(b => b.quantity > 0).length })}
+              {t('cellarSommelier.bottleCount', { count: bottles.filter(b => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0) })}
             </p>
           </div>
 
