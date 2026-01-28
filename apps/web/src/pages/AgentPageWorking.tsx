@@ -76,7 +76,10 @@ export function AgentPageWorking() {
   }, []);
 
   async function handleSend(text: string) {
-    if (!text.trim() || isSubmitting || bottles.length === 0) return;
+    // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
+    const bottlesInCellar = bottles.filter(bottle => bottle.quantity > 0);
+    
+    if (!text.trim() || isSubmitting || bottlesInCellar.length === 0) return;
 
     const userMsg: AgentMessage = {
       role: 'user',
@@ -91,7 +94,7 @@ export function AgentPageWorking() {
 
     try {
       const history = messages.slice(-8);
-      const response = await sendAgentMessage(text, history, bottles);
+      const response = await sendAgentMessage(text, history, bottlesInCellar);
 
       const assistantMsg: AgentMessage = {
         role: 'assistant',
@@ -318,7 +321,7 @@ export function AgentPageWorking() {
               {t('cellarSommelier.title')}
             </h1>
             <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-              {t('cellarSommelier.bottleCount', { count: bottles.length })}
+              {t('cellarSommelier.bottleCount', { count: bottles.filter(b => b.quantity > 0).length })}
             </p>
           </div>
 
@@ -363,7 +366,7 @@ export function AgentPageWorking() {
         position: 'relative',
       }}>
         {/* Empty state */}
-        {messages.length === 0 && bottles.length > 0 && (
+        {messages.length === 0 && bottles.filter(b => b.quantity > 0).length > 0 && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -458,7 +461,7 @@ export function AgentPageWorking() {
         )}
 
         {/* Empty cellar warning */}
-        {bottles.length === 0 && (
+        {bottles.filter(b => b.quantity > 0).length === 0 && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -760,7 +763,7 @@ export function AgentPageWorking() {
               }
             }}
             placeholder={isTranscribing ? t('cellarSommelier.inputPlaceholderTranscribing') : t('cellarSommelier.inputPlaceholder')}
-            disabled={isSubmitting || bottles.length === 0 || isRecording || isTranscribing}
+            disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isRecording || isTranscribing}
             rows={1}
             style={{
               flex: 1,
@@ -788,7 +791,7 @@ export function AgentPageWorking() {
                   startRecording();
                 }
               }}
-              disabled={isSubmitting || bottles.length === 0 || isTranscribing}
+              disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isTranscribing}
               title={isRecording ? t('cellarSommelier.micButtonStop') : t('cellarSommelier.micButton')}
               style={{
                 width: '48px',
@@ -798,7 +801,7 @@ export function AgentPageWorking() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: isRecording ? '2px solid #dc3545' : '1px solid #ddd',
-                cursor: isSubmitting || bottles.length === 0 || isTranscribing ? 'not-allowed' : 'pointer',
+                cursor: isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isTranscribing ? 'not-allowed' : 'pointer',
                 backgroundColor: isRecording ? '#ffe5e5' : 'white',
                 color: isRecording ? '#dc3545' : '#666',
                 transition: 'all 0.2s',
@@ -825,7 +828,7 @@ export function AgentPageWorking() {
               console.log('Send clicked');
               handleSend(inputValue);
             }}
-            disabled={isSubmitting || !inputValue.trim() || bottles.length === 0 || isRecording}
+            disabled={isSubmitting || !inputValue.trim() || bottles.filter(b => b.quantity > 0).length === 0 || isRecording}
             style={{
               width: '48px',
               height: '48px',
@@ -834,8 +837,8 @@ export function AgentPageWorking() {
               alignItems: 'center',
               justifyContent: 'center',
               border: 'none',
-              cursor: inputValue.trim() && !isSubmitting && bottles.length > 0 && !isRecording ? 'pointer' : 'not-allowed',
-              backgroundColor: inputValue.trim() && !isSubmitting && bottles.length > 0 && !isRecording ? '#7c3030' : '#ccc',
+              cursor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'pointer' : 'not-allowed',
+              backgroundColor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? '#7c3030' : '#ccc',
               color: 'white',
               transition: 'all 0.2s',
               flexShrink: 0,
