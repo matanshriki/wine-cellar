@@ -15,6 +15,7 @@ import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WineLoader } from './WineLoader';
+import { ImageCropEditor } from './ImageCropEditor';
 import { scanLabelImage } from '../services/labelScanService';
 import type { ExtractedWineData } from '../services/labelScanService';
 
@@ -30,6 +31,8 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [showCropEditor, setShowCropEditor] = useState(false);
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Detect Samsung browsers - they handle camera capture differently
@@ -58,21 +61,50 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
     setCurrentFile(file);
     setError(null);
 
-    // Show preview
+    // Show preview (for crop editor)
     const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.onload = (e) => {
+      setPreview(e.target?.result as string);
+      // Show crop editor immediately after preview loads
+      setShowCropEditor(true);
+    };
     reader.readAsDataURL(file);
   };
 
-  const handleProcess = async () => {
-    if (!currentFile) return;
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    console.log('[LabelCapture] Crop complete, blob size:', croppedBlob.size);
+    
+    // Convert blob to File
+    const croppedFile = new File([croppedBlob], currentFile?.name || 'cropped-label.jpg', {
+      type: 'image/jpeg',
+    });
+    
+    setCroppedFile(croppedFile);
+    setShowCropEditor(false);
+    
+    // Auto-process the cropped image
+    await handleProcess(croppedFile);
+  };
+
+  const handleCropCancel = () => {
+    setShowCropEditor(false);
+    // Go back to file selection
+    setPreview(null);
+    setCurrentFile(null);
+    setCroppedFile(null);
+  };
+
+  const handleProcess = async (fileToProcess?: File) => {
+    const file = fileToProcess || croppedFile || currentFile;
+    if (!file) return;
 
     setIsProcessing(true);
     setError(null);
 
     try {
       console.log('[LabelCapture] Processing image...');
-      const result = await scanLabelImage(currentFile);
+      console.log('[LabelCapture] Using cropped image:', !!croppedFile);
+      const result = await scanLabelImage(file);
       console.log('[LabelCapture] Processing complete:', result);
       onSuccess(result);
     } catch (err: any) {
@@ -94,22 +126,35 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
   const handleRetake = () => {
     setPreview(null);
     setCurrentFile(null);
+    setCroppedFile(null);
     setError(null);
     setIsProcessing(false);
+    setShowCropEditor(false);
     fileInputRef.current?.click();
   };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black z-50 flex flex-col h-screen-ios"
-        style={{
-          height: '100dvh',
-        }}
-      >
+      {/* Crop Editor (shown when user selects an image) */}
+      {showCropEditor && preview && (
+        <ImageCropEditor
+          imageUrl={preview}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* Main capture interface */}
+      {!showCropEditor && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black z-50 flex flex-col h-screen-ios"
+          style={{
+            height: '100dvh',
+          }}
+        >
         {/* Header with safe area */}
         <div className="flex-shrink-0 p-4 safe-area-top flex items-center justify-between bg-black/80 backdrop-blur-sm">
           <button
@@ -206,7 +251,8 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleProcess();
+                        // Show crop editor instead of processing directly
+                        setShowCropEditor(true);
                       }}
                       className="flex-1 py-3 px-4 rounded-lg font-medium transition-all active:scale-[0.98] min-h-[44px]"
                       style={{
@@ -218,7 +264,7 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
                         cursor: 'pointer',
                       }}
                     >
-                      {t('cellar.labelScan.usePhoto')}
+                      {t('cellar.labelScan.cropPhoto', 'Crop & Use')}
                     </button>
                   )}
                 </div>
@@ -307,7 +353,8 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
           onChange={handleFileSelect}
           className="hidden"
         />
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }

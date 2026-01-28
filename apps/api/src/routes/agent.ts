@@ -218,19 +218,23 @@ function buildCellarContext(bottles: any[]) {
     quantity: b.quantity,
   }));
 
+  // Calculate total physical bottles (sum of quantities, not just entries)
+  const totalPhysicalBottles = bottles.reduce((sum, b) => sum + (b.quantity || 1), 0);
+  const limitedPhysicalBottles = limited.reduce((sum, b) => sum + (b.quantity || 1), 0);
+
   let summary = '';
   if (bottles.length > 50) {
-    const remaining = bottles.length - 50;
+    const remaining = totalPhysicalBottles - limitedPhysicalBottles;
     const colorCounts = bottles.reduce((acc, b) => {
       const color = b.color || 'unknown';
-      acc[color] = (acc[color] || 0) + 1;
+      acc[color] = (acc[color] || 0) + (b.quantity || 1);
       return acc;
     }, {} as Record<string, number>);
     
-    summary = `\n\nNote: Showing top 50 bottles. You have ${remaining} more bottles (${Object.entries(colorCounts).map(([c, n]) => `${n} ${c}`).join(', ')}).`;
+    summary = `\n\nNote: Showing ${limitedPhysicalBottles} bottles. You have ${remaining} more bottles in cellar (${Object.entries(colorCounts).map(([c, n]) => `${n} ${c}`).join(', ')}).`;
   }
 
-  return { bottles: compactBottles, summary };
+  return { bottles: compactBottles, summary, totalBottles: totalPhysicalBottles };
 }
 
 /**

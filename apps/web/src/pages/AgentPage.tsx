@@ -77,8 +77,11 @@ export function AgentPage() {
   async function handleSendMessage(text: string) {
     if (!text.trim() || isSubmitting) return;
 
+    // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
+    const bottlesInCellar = bottles.filter(bottle => bottle.quantity > 0);
+
     // Check if cellar is empty
-    if (bottles.length === 0) {
+    if (bottlesInCellar.length === 0) {
       toast.warning('Add at least one bottle to get recommendations.');
       return;
     }
@@ -96,7 +99,7 @@ export function AgentPage() {
     try {
       // Send message with conversation history (last 8 messages)
       const history = messages.slice(-8);
-      const response = await sendAgentMessage(text, history, bottles);
+      const response = await sendAgentMessage(text, history, bottlesInCellar);
 
       const assistantMessage: AgentMessage = {
         role: 'assistant',

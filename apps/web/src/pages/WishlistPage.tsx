@@ -18,6 +18,7 @@ import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';
 import { AddBottleSheet } from '../components/AddBottleSheet'; // Wishlist feature (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
+import { WishlistDetailsModal } from '../components/WishlistDetailsModal'; // Wishlist feature - details modal
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
 import * as labelParseService from '../services/labelParseService'; // Wishlist feature (dev only)
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink'; // Wishlist feature - auto-generate Vivino URLs
@@ -49,6 +50,10 @@ export function WishlistPage() {
     confirmText?: string;
     isDanger?: boolean;
   } | null>(null);
+
+  // Details modal state
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null);
 
   // Load wishlist items on mount
   useEffect(() => {
@@ -395,10 +400,14 @@ export function WishlistPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="mb-4 rounded-xl border p-4 sm:p-6 transition-all hover:shadow-md"
+            className="mb-4 rounded-xl border p-4 sm:p-6 transition-all hover:shadow-md cursor-pointer"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderColor: 'var(--border-soft)',
+            }}
+            onClick={() => {
+              setSelectedItem(item);
+              setShowDetailsModal(true);
             }}
           >
             {/* Mobile hardening (wishlist): Improved card layout for narrow screens */}
@@ -465,7 +474,10 @@ export function WishlistPage() {
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
               {/* Primary: Move to Cellar */}
               <button
-                onClick={() => handleMoveToCellar(item)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card click
+                  handleMoveToCellar(item);
+                }}
                 disabled={movingId === item.id}
                 className="px-4 py-3 rounded-lg font-medium transition-all flex-1 min-h-[44px]"
                 style={{
@@ -479,7 +491,10 @@ export function WishlistPage() {
 
               {/* Secondary: Remove */}
               <button
-                onClick={() => handleRemove(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card click
+                  handleRemove(item.id);
+                }}
                 disabled={movingId === item.id}
                 className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] sm:w-auto"
                 style={{
@@ -740,6 +755,18 @@ export function WishlistPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Wishlist Details Modal */}
+      <WishlistDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedItem(null);
+        }}
+        item={selectedItem}
+        onMoveToCellar={handleMoveToCellar}
+        onRemove={handleRemove}
+      />
 
       {/* Luxury Confirmation Modal */}
       <AnimatePresence>

@@ -114,8 +114,14 @@ function buildCellarContext(bottles: BottleWithWineInfo[]) {
     const minVintage = vintages[0];
     const maxVintage = vintages[vintages.length - 1];
 
-    summary = `Total cellar: ${bottles.length} bottles. Colors: ${formatCounts(colorCounts)}. Regions: ${formatCounts(regionCounts, 5)}. Vintages: ${minVintage}-${maxVintage}.`;
+    // Calculate total physical bottles (sum of quantities, not just entries)
+    const totalPhysicalBottles = bottles.reduce((sum, b) => sum + b.quantity, 0);
+    
+    summary = `Total cellar: ${totalPhysicalBottles} bottles. Colors: ${formatCounts(colorCounts)}. Regions: ${formatCounts(regionCounts, 5)}. Vintages: ${minVintage}-${maxVintage}.`;
   }
+
+  // Calculate total physical bottles (sum of quantities, not just entries)
+  const totalPhysicalBottles = bottles.reduce((sum, b) => sum + b.quantity, 0);
 
   return {
     bottles: bottlesToInclude.map((b) => ({
@@ -152,7 +158,7 @@ function buildCellarContext(bottles: BottleWithWineInfo[]) {
       vivinoRating: b.wine.vivino_rating,
     })),
     summary: summary || undefined,
-    totalBottles: bottles.length,
+    totalBottles: totalPhysicalBottles,
   };
 }
 

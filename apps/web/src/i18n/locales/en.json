@@ -870,6 +870,8 @@
     "moveError": "Failed to move wine to cellar",
     "removed": "Wine removed from wishlist",
     "removeConfirm": "Remove this wine from your wishlist?",
+    "restaurantInfo": "Where You Found It",
+    "personalNote": "Your Note",
     "form": {
       "title": "Add to Wishlist",
       "validation": "Producer and wine name are required",
