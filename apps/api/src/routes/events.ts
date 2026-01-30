@@ -22,13 +22,13 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       .from('bottles')
       .select(`
         id,
-        wines!inner (
+        wine:wines (
           grapes,
           color
         )
       `)
       .eq('user_id', userId)
-      .gt('quantity', 0) as any; // Type assertion for complex nested query
+      .gt('quantity', 0);
 
     if (error) {
       console.error('[Events] ❌ Error fetching bottles from Supabase:', error);
@@ -40,8 +40,8 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       const sample = bottles[0] as any;
       console.log('[Events] 📦 Sample bottle:', {
         id: sample.id,
-        grapes: sample.wines?.grapes,
-        color: sample.wines?.color
+        grapes: sample.wine?.grapes,
+        color: sample.wine?.color
       });
     }
 
@@ -60,19 +60,19 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       
       for (const bottle of bottles) {
         const b = bottle as any; // Type assertion for nested data
-        if (!b.wines) {
+        if (!b.wine) {
           console.log('[Events] ⚠️ Bottle', b.id?.substring(0, 8), 'has no wine data');
           continue;
         }
         
         // Get grapes (can be array or string)
-        const grapes = b.wines.grapes;
+        const grapes = b.wine.grapes;
         const grapesStr = Array.isArray(grapes) 
           ? grapes.join(' ').toLowerCase() 
           : (grapes || '').toLowerCase();
         
         // Get color/style
-        const color = (b.wines.color || '').toLowerCase();
+        const color = (b.wine.color || '').toLowerCase();
         
         // Match against grapes or color
         if (grapesStr.includes(tagLower) || color.includes(tagLower)) {
