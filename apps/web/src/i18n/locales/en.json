@@ -886,6 +886,7 @@
     }
   },
   "wineEvents": {
+    "thisWeek": "This week",
     "youHaveMatches": "You have {{count}} matching bottle",
     "youHaveMatches_plural": "You have {{count}} matching bottles",
     "viewMatches": "Show My Bottles",

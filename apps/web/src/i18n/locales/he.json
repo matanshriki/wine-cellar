@@ -803,6 +803,7 @@
     }
   },
   "wineEvents": {
+    "thisWeek": "השבוע",
     "youHaveMatches": "יש לך בקבוק {{count}} תואם",
     "youHaveMatches_plural": "יש לך {{count}} בקבוקים תואמים",
     "viewMatches": "הצג את הבקבוקים שלי",
