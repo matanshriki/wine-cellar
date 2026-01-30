@@ -125,7 +125,7 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     }
 
     const userId = req.userId;
-    const daysWindow = 3; // Show events +/- 3 days
+    const daysWindow = 7; // Show events +/- 7 days (full week before/after)
 
     // Get user's auth token from request header
     const authHeader = req.headers.authorization;

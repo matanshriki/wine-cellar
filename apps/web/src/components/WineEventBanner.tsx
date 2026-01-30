@@ -75,13 +75,34 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
     }
   };
 
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(i18n.language, {
+  // Format date with context (Today, Tomorrow, or full date)
+  const formatDateWithContext = (dateStr: string) => {
+    const eventDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
+    
+    const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const formattedDate = eventDate.toLocaleDateString(i18n.language, {
+      weekday: 'long',
       month: 'long',
       day: 'numeric',
     });
+    
+    if (diffDays === 0) {
+      return `${formattedDate} • Today`;
+    } else if (diffDays === 1) {
+      return `${formattedDate} • Tomorrow`;
+    } else if (diffDays === -1) {
+      return `${formattedDate} • Yesterday`;
+    } else if (diffDays > 0) {
+      return `${formattedDate} • Upcoming`;
+    } else if (diffDays < 0 && diffDays >= -7) {
+      return `${formattedDate} • This week`;
+    }
+    
+    return formattedDate;
   };
 
   // Icon based on event type
@@ -150,15 +171,34 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
 
             {/* Text content */}
             <div className="flex-1 min-w-0 pr-6">
+              {/* "This week is..." header */}
+              <p 
+                className="text-xs font-medium mb-1 uppercase tracking-wide opacity-70"
+                style={{ color: '#8b455b' }}
+              >
+                {t('wineEvents.thisWeek', 'This week')}
+              </p>
+              
               <h3 
-                className="text-base font-semibold mb-1"
+                className="text-lg font-bold mb-1"
                 style={{ 
                   color: '#653045',
-                  lineHeight: '1.4',
+                  lineHeight: '1.3',
                 }}
               >
                 {event.name}
               </h3>
+              
+              {/* Date with context (Today, Tomorrow, etc.) */}
+              <p 
+                className="text-sm mb-1 font-medium"
+                style={{ 
+                  color: '#8b455b',
+                  lineHeight: '1.5',
+                }}
+              >
+                📅 {formatDateWithContext(event.date)}
+              </p>
               
               <p 
                 className="text-sm mb-2 opacity-80"
@@ -167,7 +207,7 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
                   lineHeight: '1.5',
                 }}
               >
-                {formatDate(event.date)} • {event.description}
+                {event.description}
               </p>
 
               {/* Matching bottles indicator */}
