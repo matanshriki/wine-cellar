@@ -165,7 +165,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                 {(() => {
                   const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
                   return displayImage.imageUrl && (
-                    <div className="mb-2 flex justify-center relative">
+                    <div className="mb-1 flex justify-center relative">
                       <img 
                         src={displayImage.imageUrl} 
                         alt={bottle.wine.wine_name}
@@ -203,7 +203,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
                 {/* Wine name */}
                 <div 
-                  className="font-semibold text-base mb-1.5 pe-8 line-clamp-2 leading-snug"
+                  className="font-semibold text-base mb-1 pe-8 line-clamp-2 leading-snug"
                   style={{ 
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-body)',
