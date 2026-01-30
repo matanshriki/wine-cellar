@@ -68,7 +68,7 @@ export function UserMenu() {
   useEffect(() => {
     async function loadBottles() {
       try {
-        const { bottles: userBottles } = await bottleService.getUserBottles();
+        const userBottles = await bottleService.listBottles();
         setBottles(userBottles);
       } catch (error) {
         console.error('Failed to load bottles for sharing:', error);
