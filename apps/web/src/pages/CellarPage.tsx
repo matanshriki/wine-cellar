@@ -1048,23 +1048,6 @@ export function CellarPage() {
                 {t('cellar.shareCellar.button')}
               </button>
             )}
-            {/* Beta feature: Multi-bottle import - Only show when cellar has bottles */}
-            {bottlesInCellar.length > 0 && featureFlags.canMultiBottleImport && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowMultiBottleImport(true);
-                }}
-                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
-                  borderColor: 'var(--color-amber-300)',
-                }}
-              >
-                {t('cellar.multiBottle.button')}
-              </button>
-            )}
             {/* Import CSV - Only show when cellar has bottles */}
             {bottlesInCellar.length > 0 && (
               <button
@@ -1479,23 +1462,6 @@ export function CellarPage() {
             >
               {t('onboarding.emptyState.cta')}
             </button>
-            {/* Beta feature: Multi-bottle import in empty state - Enabled in dev OR if user has flag */}
-            {featureFlags.canMultiBottleImport && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowMultiBottleImport(true);
-                }}
-                className="btn-luxury-secondary w-full xs:w-auto"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
-                  borderColor: 'var(--color-amber-300)',
-                }}
-              >
-                {t('cellar.multiBottle.button')}
-              </button>
-            )}
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -1795,7 +1761,12 @@ export function CellarPage() {
           setEditingBottle(null);
           setShowForm(true);
         }}
+        onMultiBottleImport={() => {
+          setShowAddSheet(false);
+          setShowMultiBottleImport(true);
+        }}
         showWishlistOption={false} // Don't show wishlist option in Cellar page - only in Wishlist page
+        showMultiBottleOption={featureFlags.canMultiBottleImport} // Beta feature: show multi-bottle option if user has flag
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);

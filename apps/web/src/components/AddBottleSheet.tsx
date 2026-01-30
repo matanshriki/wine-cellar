@@ -15,9 +15,11 @@ interface AddBottleSheetProps {
   onClose: () => void;
   onUploadPhoto: () => void;
   onManualEntry: () => void;
+  onMultiBottleImport?: () => void; // Multi-bottle feature (feature-flagged)
   onPhotoSelected?: (file: File) => void;
   onPhotoSelectedForWishlist?: (file: File) => void; // Wishlist feature (feature-flagged)
   showWishlistOption?: boolean; // Wishlist feature (feature-flagged) - controlled by parent
+  showMultiBottleOption?: boolean; // Multi-bottle feature (feature-flagged) - controlled by parent
 }
 
 export function AddBottleSheet({
@@ -25,9 +27,11 @@ export function AddBottleSheet({
   onClose,
   onUploadPhoto,
   onManualEntry,
+  onMultiBottleImport, // Multi-bottle feature (feature-flagged)
   onPhotoSelected,
   onPhotoSelectedForWishlist, // Wishlist feature (feature-flagged)
   showWishlistOption = false, // Wishlist feature (feature-flagged)
+  showMultiBottleOption = false, // Multi-bottle feature (feature-flagged)
 }: AddBottleSheetProps) {
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
@@ -224,6 +228,52 @@ export function AddBottleSheet({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
+
+                {/* Beta feature: Multi-Bottle Import (feature-flagged) */}
+                {showMultiBottleOption && onMultiBottleImport && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onMultiBottleImport();
+                    }}
+                    className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
+                      border: '1px solid var(--color-amber-300)',
+                      color: 'var(--text-primary)',
+                      boxShadow: 'var(--shadow-xs)',
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
+                      pointerEvents: 'auto',
+                    }}
+                  >
+                    {/* Film/Multiple Photos Icon */}
+                    <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    <div className="flex-1 text-start">
+                      <div className="font-semibold flex items-center gap-2">
+                        {t('cellar.multiBottle.button')}
+                        <span 
+                          className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{
+                            background: 'var(--color-amber-500)',
+                            color: 'white',
+                          }}
+                        >
+                          BETA
+                        </span>
+                      </div>
+                      <div className="text-sm opacity-70 mt-0.5">
+                        {t('cellar.addBottle.multiBottleDesc', 'Scan multiple bottles at once')}
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
 
                 {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
                 {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}
