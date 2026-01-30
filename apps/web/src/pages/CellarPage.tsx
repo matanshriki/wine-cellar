@@ -826,7 +826,8 @@ export function CellarPage() {
   function handleViewEventMatches(filterTag: string) {
     console.log('[CellarPage] 🍷 Event: Filtering by tag:', filterTag);
     setSearchQuery(filterTag);
-    setActiveEvent(null);
+    // Don't hide the banner - keep it visible so user can see context
+    // setActiveEvent(null); // REMOVED - banner should stay visible
     
     // Scroll to bottles section after a short delay to let state update
     setTimeout(() => {
@@ -1338,8 +1339,8 @@ export function CellarPage() {
         />
       )}
 
-      {/* Wine World Moments: Event Banner */}
-      {!isDemoMode && activeEvent && (
+      {/* Wine World Moments: Event Banner - Only show if no active search/filters */}
+      {!isDemoMode && activeEvent && !searchQuery && activeFilters.length === 0 && (
         <WineEventBanner
           event={activeEvent}
           onDismiss={handleEventDismiss}
