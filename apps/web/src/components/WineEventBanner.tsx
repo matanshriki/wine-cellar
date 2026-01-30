@@ -23,39 +23,55 @@ export interface WineEvent {
 }
 
 interface WineEventBannerProps {
-  event: WineEvent | null;
+  events: WineEvent[];
   onDismiss: (eventId: string) => void;
   onViewMatches?: (filterTag: string) => void;
 }
 
-export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBannerProps) {
+export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventBannerProps) {
   const { t, i18n } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
 
-  // Debug: Log event details
+  // Current event being displayed
+  const event = events[currentIndex];
+
+  // Debug: Log events
   useEffect(() => {
-    if (event) {
-      console.log('[WineEventBanner] 🍷 Rendering event:', {
+    if (events.length > 0) {
+      console.log('[WineEventBanner] 🍷 Rendering', events.length, 'events');
+      console.log('[WineEventBanner] Current event:', {
+        index: currentIndex,
         name: event.name,
         matchCount: event.matchCount,
         filterTag: event.filterTag,
-        hasButton: event.matchCount > 0 && !!event.filterTag
       });
     }
-  }, [event]);
+  }, [events, currentIndex]);
 
   useEffect(() => {
-    if (event) {
+    if (events.length > 0) {
       // Delay appearance for smooth fade-in
       const timer = setTimeout(() => setIsVisible(true), 300);
       return () => clearTimeout(timer);
     } else {
       setIsVisible(false);
     }
-  }, [event]);
+  }, [events]);
 
-  if (!event) return null;
+  // Auto-rotate through events every 10 seconds if there are multiple
+  useEffect(() => {
+    if (events.length <= 1) return;
+
+    const intervalId = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % events.length);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(intervalId);
+  }, [events.length]);
+
+  if (events.length === 0 || !event) return null;
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -73,6 +89,14 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
     if (event.sourceUrl) {
       window.open(event.sourceUrl, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex(prev => (prev - 1 + events.length) % events.length);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => (prev + 1) % events.length);
   };
 
   // Format date with context (Today, Tomorrow, or full date)
@@ -137,10 +161,54 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
             backdropFilter: 'blur(10px)',
           }}
         >
+          {/* Navigation arrows (if multiple events) */}
+          {events.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevious}
+                className="absolute top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors"
+                aria-label="Previous event"
+                style={{
+                  [i18n.dir() === 'rtl' ? 'right' : 'left']: '8px',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M12 16L6 10L12 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.6"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors"
+                aria-label="Next event"
+                style={{
+                  [i18n.dir() === 'rtl' ? 'left' : 'right']: '48px',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M8 16L14 10L8 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.6"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
+
           {/* Close button */}
           <button
             onClick={handleDismiss}
-            className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full transition-colors"
+            className="absolute top-2 p-1 hover:bg-white/10 rounded-full transition-colors"
             aria-label="Dismiss"
             style={{
               [i18n.dir() === 'rtl' ? 'left' : 'right']: '8px',
@@ -250,6 +318,32 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
                   </button>
                 ) : null}
               </div>
+
+              {/* Event counter (if multiple events) */}
+              {events.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  {events.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className="w-2 h-2 rounded-full transition-all"
+                      style={{
+                        backgroundColor: index === currentIndex 
+                          ? '#653045' 
+                          : 'rgba(101, 48, 69, 0.3)',
+                        transform: index === currentIndex ? 'scale(1.2)' : 'scale(1)',
+                      }}
+                      aria-label={`Go to event ${index + 1}`}
+                    />
+                  ))}
+                  <span 
+                    className="text-xs ml-2 opacity-60"
+                    style={{ color: '#653045' }}
+                  >
+                    {currentIndex + 1} / {events.length}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

@@ -207,61 +207,69 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     });
 
     if (eligibleEvents.length === 0) {
-      return res.json({ event: null });
+      return res.json({ events: [] });
     }
 
-    // Pick the best event (closest to today)
-    const bestEvent = eligibleEvents.reduce((best, current) => {
-      const bestDiff = Math.abs(new Date(best.date).getTime() - today.getTime());
-      const currentDiff = Math.abs(new Date(current.date).getTime() - today.getTime());
-      return currentDiff < bestDiff ? current : best;
+    // Sort events by date (closest to today first)
+    const sortedEvents = eligibleEvents.sort((a, b) => {
+      const aDiff = Math.abs(new Date(a.date).getTime() - today.getTime());
+      const bDiff = Math.abs(new Date(b.date).getTime() - today.getTime());
+      return aDiff - bDiff;
     });
 
-    // Check for matching bottles
-    const { count: matchCount, filterTag } = await getMatchingBottles(
-      userId,
-      bestEvent.tags || [],
-      userSupabase // Pass authenticated client
+    // Process ALL eligible events (not just one)
+    const processedEvents = await Promise.all(
+      sortedEvents.map(async (event) => {
+        // Check for matching bottles
+        const { count: matchCount, filterTag } = await getMatchingBottles(
+          userId,
+          event.tags || [],
+          userSupabase
+        );
+
+        // Update last_shown_at and seen_at (upsert)
+        const now = new Date().toISOString();
+        const existingState = statesMap.get(event.id);
+
+        if (existingState) {
+          // Update existing state
+          await userSupabase
+            .from('user_event_states')
+            .update({
+              last_shown_at: now,
+              seen_at: existingState.seen_at || now,
+              updated_at: now,
+            })
+            .eq('id', existingState.id);
+        } else {
+          // Insert new state
+          await userSupabase
+            .from('user_event_states')
+            .insert({
+              user_id: userId,
+              event_id: event.id,
+              seen_at: now,
+              last_shown_at: now,
+            });
+        }
+
+        return {
+          id: event.id,
+          name: event.name,
+          date: event.date,
+          type: event.type,
+          description: event.description_short,
+          sourceName: event.source_name,
+          sourceUrl: event.source_url,
+          matchCount,
+          filterTag,
+        };
+      })
     );
 
-    // Update last_shown_at and seen_at (upsert)
-    const now = new Date().toISOString();
-    const existingState = statesMap.get(bestEvent.id);
-
-    if (existingState) {
-      // Update existing state
-      await userSupabase
-        .from('user_event_states')
-        .update({
-          last_shown_at: now,
-          seen_at: existingState.seen_at || now,
-          updated_at: now,
-        })
-        .eq('id', existingState.id);
-    } else {
-      // Insert new state
-      await userSupabase
-        .from('user_event_states')
-        .insert({
-          user_id: userId,
-          event_id: bestEvent.id,
-          seen_at: now,
-          last_shown_at: now,
-        });
-    }
-
+    // Return ALL events (frontend will handle carousel)
     return res.json({
-      event: {
-        id: bestEvent.id,
-        name: bestEvent.name,
-        date: bestEvent.date,
-        type: bestEvent.type,
-        description: bestEvent.description_short,
-        sourceName: bestEvent.source_name,
-        sourceUrl: bestEvent.source_url,
-        matchCount,
-        filterTag,
-      },
+      events: processedEvents,
     });
   } catch (error: any) {
     console.error('[Events] Error in /active:', error);

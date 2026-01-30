@@ -125,7 +125,7 @@ export function CellarPage() {
   const hasCheckedOnboarding = useRef(false);
 
   // Wine World Moments: Wine events state
-  const [activeEvent, setActiveEvent] = useState<WineEvent | null>(null);
+  const [activeEvents, setActiveEvents] = useState<WineEvent[]>([]);
 
   useEffect(() => {
     loadBottles(true); // Initial load with reset=true
@@ -180,16 +180,16 @@ export function CellarPage() {
     }
   }, [bottles.length]);
 
-  // Wine World Moments: Load active event
+  // Wine World Moments: Load active events
   useEffect(() => {
-    async function fetchActiveEvent() {
-      const event = await wineEventsService.getActiveEvent();
-      setActiveEvent(event);
+    async function fetchActiveEvents() {
+      const events = await wineEventsService.getActiveEvents();
+      setActiveEvents(events);
     }
     
     // Only fetch if not in demo mode and has bottles
     if (!isDemoMode && bottles.length > 0) {
-      fetchActiveEvent();
+      fetchActiveEvents();
     }
   }, [isDemoMode, bottles.length]);
 
@@ -201,19 +201,20 @@ export function CellarPage() {
     // Check for new events every 5 minutes
     const intervalId = setInterval(async () => {
       console.log('[CellarPage] 🔄 Checking for new wine events...');
-      const event = await wineEventsService.getActiveEvent();
+      const events = await wineEventsService.getActiveEvents();
       
-      // Only update if:
-      // 1. We have a new event AND no current event, OR
-      // 2. The event ID changed (new event!)
-      if (event && (!activeEvent || event.id !== activeEvent.id)) {
-        console.log('[CellarPage] 🎉 New event detected:', event.name);
-        setActiveEvent(event);
+      // Only update if events changed (different count or IDs)
+      const currentIds = activeEvents.map(e => e.id).sort().join(',');
+      const newIds = events.map(e => e.id).sort().join(',');
+      
+      if (newIds !== currentIds) {
+        console.log('[CellarPage] 🎉 Events changed:', events.length, 'events');
+        setActiveEvents(events);
       }
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(intervalId);
-  }, [isDemoMode, activeEvent]);
+  }, [isDemoMode, activeEvents]);
 
   // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
   useEffect(() => {
@@ -836,7 +837,8 @@ export function CellarPage() {
   async function handleEventDismiss(eventId: string) {
     try {
       await wineEventsService.dismissEvent(eventId);
-      setActiveEvent(null);
+      // Remove dismissed event from list
+      setActiveEvents(prev => prev.filter(e => e.id !== eventId));
     } catch (error) {
       console.error('[CellarPage] Failed to dismiss event:', error);
     }
@@ -1361,10 +1363,10 @@ export function CellarPage() {
         />
       )}
 
-      {/* Wine World Moments: Event Banner - Only show if no active search/filters */}
-      {!isDemoMode && activeEvent && !searchQuery && activeFilters.length === 0 && (
+      {/* Wine World Moments: Event Banner(s) - Only show if no active search/filters */}
+      {!isDemoMode && activeEvents.length > 0 && !searchQuery && activeFilters.length === 0 && (
         <WineEventBanner
-          event={activeEvent}
+          events={activeEvents}
           onDismiss={handleEventDismiss}
           onViewMatches={handleViewEventMatches}
         />
