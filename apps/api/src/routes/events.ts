@@ -14,6 +14,9 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
   filterTag: string | null;
 }> {
   try {
+    console.log('[Events] 🔍 Matching bottles for user:', userId.substring(0, 8));
+    console.log('[Events] 🔍 Event tags:', eventTags);
+    
     // Get user's bottles from Supabase (with wine info for grapes)
     const { data: bottles, error } = await supabase
       .from('bottles')
@@ -28,11 +31,21 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       .gt('quantity', 0);
 
     if (error) {
-      console.error('[Events] Error fetching bottles:', error);
+      console.error('[Events] ❌ Error fetching bottles from Supabase:', error);
       return { count: 0, filterTag: null };
     }
 
+    console.log('[Events] ✅ Found', bottles?.length || 0, 'bottles in Supabase');
+    if (bottles && bottles.length > 0) {
+      console.log('[Events] 📦 Sample bottle:', {
+        id: bottles[0].id,
+        grapes: bottles[0].wine?.grapes,
+        color: bottles[0].wine?.color
+      });
+    }
+
     if (!bottles || bottles.length === 0) {
+      console.log('[Events] ⚠️ No bottles found for user');
       return { count: 0, filterTag: null };
     }
 
@@ -42,9 +55,13 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
 
     for (const tag of eventTags) {
       const tagLower = tag.toLowerCase();
+      console.log('[Events] 🔍 Checking tag:', tagLower);
       
       for (const bottle of bottles) {
-        if (!bottle.wine) continue;
+        if (!bottle.wine) {
+          console.log('[Events] ⚠️ Bottle', bottle.id.substring(0, 8), 'has no wine data');
+          continue;
+        }
         
         // Get grapes (can be array or string)
         const grapes = bottle.wine.grapes;
@@ -57,6 +74,7 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
         
         // Match against grapes or color
         if (grapesStr.includes(tagLower) || color.includes(tagLower)) {
+          console.log('[Events] ✅ MATCH! Bottle', bottle.id.substring(0, 8), ':', { grapes: grapesStr, color });
           matchCount++;
           if (!bestMatchTag) {
             bestMatchTag = tag;
@@ -65,6 +83,7 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       }
     }
 
+    console.log('[Events] 🎯 Final result:', { matchCount, filterTag: bestMatchTag });
     return { count: matchCount, filterTag: bestMatchTag };
   } catch (error) {
     console.error('[Events] Error matching bottles:', error);
