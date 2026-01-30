@@ -802,6 +802,14 @@
       "notePlaceholder": "למה אני רוצה לקנות את זה..."
     }
   },
+  "wineEvents": {
+    "youHaveMatches": "יש לך בקבוק {{count}} תואם",
+    "youHaveMatches_plural": "יש לך {{count}} בקבוקים תואמים",
+    "viewMatches": "הצג את הבקבוקים שלי",
+    "learnMore": "למד עוד",
+    "source": "מקור",
+    "dismiss": "סגור"
+  },
   "onboarding": {
     "welcome": {
       "title": "ברוכים הבאים למוח מרתף היין",

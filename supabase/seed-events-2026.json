@@ -1,0 +1,111 @@
+{
+  "source": "WSET - Wine and grape days 2026",
+  "sourceUrl": "https://www.wsetglobal.com/knowledge-centre/calendar/wine-and-grape-days-2026/",
+  "events": [
+    {
+      "name": "International Riesling Day",
+      "date": "2026-03-13",
+      "tags": ["riesling", "white"],
+      "type": "grape",
+      "descriptionShort": "Celebrate one of the world's most noble white grapes with refreshing acidity and versatility."
+    },
+    {
+      "name": "International Malbec Day",
+      "date": "2026-04-17",
+      "tags": ["malbec", "red"],
+      "type": "grape",
+      "descriptionShort": "Honor Argentina's signature red grape known for its bold, fruit-forward character."
+    },
+    {
+      "name": "International Sauvignon Blanc Day",
+      "date": "2026-05-01",
+      "tags": ["sauvignon blanc", "sauvignon", "white"],
+      "type": "grape",
+      "descriptionShort": "Raise a glass to this crisp, aromatic white grape with vibrant citrus and herbaceous notes."
+    },
+    {
+      "name": "International Rosé Day",
+      "date": "2026-06-12",
+      "tags": ["rosé", "rose", "pink"],
+      "type": "wine",
+      "descriptionShort": "Celebrate summer's favorite wine - pink, refreshing, and perfect for any occasion."
+    },
+    {
+      "name": "International Albariño Day",
+      "date": "2026-08-01",
+      "tags": ["albariño", "albarino", "white"],
+      "type": "grape",
+      "descriptionShort": "Discover Spain's coastal treasure - a crisp white grape perfect for seafood pairing."
+    },
+    {
+      "name": "International Chardonnay Day",
+      "date": "2026-05-21",
+      "tags": ["chardonnay", "white"],
+      "type": "grape",
+      "descriptionShort": "The world's most popular white grape - from buttery to mineral, oak to stainless."
+    },
+    {
+      "name": "International Cabernet Sauvignon Day",
+      "date": "2026-08-30",
+      "tags": ["cabernet sauvignon", "cabernet", "red"],
+      "type": "grape",
+      "descriptionShort": "The king of red grapes - bold, structured, and age-worthy with dark fruit and tannins."
+    },
+    {
+      "name": "International Syrah Day",
+      "date": "2026-02-16",
+      "tags": ["syrah", "shiraz", "red"],
+      "type": "grape",
+      "descriptionShort": "Celebrate this versatile red grape - peppery Syrah or fruity Shiraz, same noble variety."
+    },
+    {
+      "name": "International Grenache/Garnacha Day",
+      "date": "2026-09-18",
+      "tags": ["grenache", "garnacha", "red"],
+      "type": "grape",
+      "descriptionShort": "Honor this warm-climate red grape with juicy red fruit and soft, approachable tannins."
+    },
+    {
+      "name": "International Pinot Noir Day",
+      "date": "2026-08-18",
+      "tags": ["pinot noir", "pinot", "red"],
+      "type": "grape",
+      "descriptionShort": "The heartbreak grape - elegant, delicate, and expressive of terroir like no other."
+    },
+    {
+      "name": "World Champagne Day",
+      "date": "2026-10-23",
+      "tags": ["champagne", "sparkling"],
+      "type": "wine",
+      "descriptionShort": "Pop the cork for the world's most celebrated sparkling wine from France's Champagne region."
+    },
+    {
+      "name": "International Tempranillo Day",
+      "date": "2026-11-07",
+      "tags": ["tempranillo", "red"],
+      "type": "grape",
+      "descriptionShort": "Spain's noble red grape - the backbone of Rioja and Ribera del Duero wines."
+    },
+    {
+      "name": "Beaujolais Nouveau Day",
+      "date": "2026-11-19",
+      "tags": ["beaujolais", "gamay", "red"],
+      "type": "occasion",
+      "descriptionShort": "The third Thursday in November - celebrate France's youngest wine of the year!"
+    },
+    {
+      "name": "International Merlot Day",
+      "date": "2026-11-07",
+      "tags": ["merlot", "red"],
+      "type": "grape",
+      "descriptionShort": "Soft, approachable, and versatile - Merlot deserves more love than it gets."
+    },
+    {
+      "name": "International Sangiovese Day",
+      "date": "2026-12-04",
+      "tags": ["sangiovese", "red"],
+      "type": "grape",
+      "descriptionShort": "Italy's most planted red grape - the heart of Chianti, Brunello, and more."
+    }
+  ]
+}

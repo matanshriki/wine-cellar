@@ -17,6 +17,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
 import { ShareCellarModal } from '../components/ShareCellarModal'; // Feedback iteration (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
+import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -35,6 +36,7 @@ import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature fla
 // Onboarding v1 – production: Onboarding utilities and demo data
 import * as onboardingUtils from '../utils/onboarding';
 import { DEMO_BOTTLES } from '../data/demoCellar';
+import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
@@ -122,6 +124,9 @@ export function CellarPage() {
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
 
+  // Wine World Moments: Wine events state
+  const [activeEvent, setActiveEvent] = useState<WineEvent | null>(null);
+
   useEffect(() => {
     loadBottles(true); // Initial load with reset=true
     
@@ -174,6 +179,19 @@ export function CellarPage() {
       setIsDemoMode(true);
     }
   }, [bottles.length]);
+
+  // Wine World Moments: Load active event
+  useEffect(() => {
+    async function fetchActiveEvent() {
+      const event = await wineEventsService.getActiveEvent();
+      setActiveEvent(event);
+    }
+    
+    // Only fetch if not in demo mode and has bottles
+    if (!isDemoMode && bottles.length > 0) {
+      fetchActiveEvent();
+    }
+  }, [isDemoMode, bottles.length]);
 
   // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
   useEffect(() => {
@@ -772,6 +790,31 @@ export function CellarPage() {
     setActiveFilters([]);
   }
 
+  /**
+   * Wine World Moments: Dismiss event
+   */
+  async function handleEventDismiss(eventId: string) {
+    try {
+      await wineEventsService.dismissEvent(eventId);
+      setActiveEvent(null);
+    } catch (error) {
+      console.error('[CellarPage] Failed to dismiss event:', error);
+    }
+  }
+
+  /**
+   * Wine World Moments: View matching bottles
+   */
+  function handleViewEventMatches(filterTag: string) {
+    setSearchQuery(filterTag);
+    setActiveEvent(null);
+    
+    // Scroll to bottles section
+    if (bottlesSectionRef.current) {
+      bottlesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   function handleSortChange(newSortBy: string, newSortDir: 'asc' | 'desc') {
     console.log('[CellarPage] 📊 Sort changed:', { newSortBy, newSortDir });
     setSortBy(newSortBy);
@@ -1270,6 +1313,15 @@ export function CellarPage() {
             setIsDemoMode(false);
             setShowAddSheet(true);
           }}
+        />
+      )}
+
+      {/* Wine World Moments: Event Banner */}
+      {!isDemoMode && activeEvent && (
+        <WineEventBanner
+          event={activeEvent}
+          onDismiss={handleEventDismiss}
+          onViewMatches={handleViewEventMatches}
         />
       )}
 

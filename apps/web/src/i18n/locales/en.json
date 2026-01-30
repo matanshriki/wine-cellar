@@ -884,6 +884,14 @@
       "note": "My Note",
       "notePlaceholder": "Why I want to buy this..."
     }
+  },
+  "wineEvents": {
+    "youHaveMatches": "You have {{count}} matching bottle",
+    "youHaveMatches_plural": "You have {{count}} matching bottles",
+    "viewMatches": "Show My Bottles",
+    "learnMore": "Learn More",
+    "source": "Source",
+    "dismiss": "Dismiss"
   }
 }
 
