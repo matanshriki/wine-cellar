@@ -804,6 +804,11 @@
   },
   "wineEvents": {
     "thisWeek": "השבוע",
+    "today": "היום",
+    "tomorrow": "מחר",
+    "yesterday": "אתמול",
+    "upcoming": "בקרוב",
+    "thisWeekPassed": "השבוע",
     "youHaveMatches": "יש לך בקבוק {{count}} תואם",
     "youHaveMatches_plural": "יש לך {{count}} בקבוקים תואמים",
     "viewMatches": "הצג את הבקבוקים שלי",

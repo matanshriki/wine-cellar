@@ -90,19 +90,21 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
       day: 'numeric',
     });
     
+    // Get context label (translated)
+    let contextLabel = '';
     if (diffDays === 0) {
-      return `${formattedDate} • Today`;
+      contextLabel = t('wineEvents.today');
     } else if (diffDays === 1) {
-      return `${formattedDate} • Tomorrow`;
+      contextLabel = t('wineEvents.tomorrow');
     } else if (diffDays === -1) {
-      return `${formattedDate} • Yesterday`;
+      contextLabel = t('wineEvents.yesterday');
     } else if (diffDays > 0) {
-      return `${formattedDate} • Upcoming`;
+      contextLabel = t('wineEvents.upcoming');
     } else if (diffDays < 0 && diffDays >= -7) {
-      return `${formattedDate} • This week`;
+      contextLabel = t('wineEvents.thisWeekPassed');
     }
     
-    return formattedDate;
+    return contextLabel ? `${formattedDate} • ${contextLabel}` : formattedDate;
   };
 
   // Icon based on event type

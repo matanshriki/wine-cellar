@@ -887,6 +887,11 @@
   },
   "wineEvents": {
     "thisWeek": "This week",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "upcoming": "Upcoming",
+    "thisWeekPassed": "This week",
     "youHaveMatches": "You have {{count}} matching bottle",
     "youHaveMatches_plural": "You have {{count}} matching bottles",
     "viewMatches": "Show My Bottles",
