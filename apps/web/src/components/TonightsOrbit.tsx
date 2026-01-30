@@ -141,7 +141,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
               }}
             >
               <div
-                className="relative h-full p-4 rounded-lg transition-all duration-200 group-active:scale-[0.98]"
+                className="relative h-full p-3 rounded-lg transition-all duration-200 group-active:scale-[0.98]"
                 style={{
                   background: 'var(--bg-surface)',
                   border: '1px solid var(--border-subtle)',
@@ -150,7 +150,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
               >
                 {/* Premium indicator */}
                 <div 
-                  className="absolute top-3 end-3 w-8 h-8 rounded-full flex items-center justify-center"
+                  className="absolute top-2 end-2 w-7 h-7 rounded-full flex items-center justify-center z-10"
                   style={{
                     background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
                     border: '1px solid var(--wine-200)',
@@ -161,18 +161,18 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   </span>
                 </div>
 
-                {/* Wine Image */}
+                {/* Wine Image - Larger for mobile carousel */}
                 {(() => {
                   const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
                   return displayImage.imageUrl && (
-                    <div className="mb-3 flex justify-center relative">
+                    <div className="mb-2 flex justify-center relative">
                       <img 
                         src={displayImage.imageUrl} 
                         alt={bottle.wine.wine_name}
-                        className="w-20 h-28 object-cover rounded-md"
+                        className="w-36 h-48 object-cover rounded-md"
                         style={{
                           border: '1px solid var(--border-base)',
-                          boxShadow: 'var(--shadow-sm)',
+                          boxShadow: 'var(--shadow-md)',
                         }}
                         loading="lazy"
                         onError={(e) => {
@@ -183,7 +183,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                       {/* AI Generated Badge */}
                       {displayImage.isGenerated && (
                         <div 
-                          className="absolute top-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-medium flex items-center gap-0.5"
+                          className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-medium flex items-center gap-0.5"
                           style={{
                             background: 'rgba(0, 0, 0, 0.7)',
                             color: 'white',
@@ -203,7 +203,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
                 {/* Wine name */}
                 <div 
-                  className="font-semibold text-base mb-2 pe-10 line-clamp-2 leading-snug"
+                  className="font-semibold text-base mb-1.5 pe-8 line-clamp-2 leading-snug"
                   style={{ 
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-body)',
@@ -214,7 +214,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                 </div>
 
                 {/* Details row */}
-                <div className="space-y-2 mb-3">
+                <div className="space-y-1.5 mb-2">
                   {/* Vintage */}
                   {bottle.wine.vintage && (
                     <div 
@@ -556,9 +556,9 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
           margin-right: 0;
         }
 
-        /* Compact mobile card styling */
+        /* Compact mobile card styling - increased for larger images */
         .tonights-carousel .relative {
-          min-height: 280px;
+          min-height: 320px;
         }
 
         /* Touch feedback */
