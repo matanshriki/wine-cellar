@@ -558,7 +558,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
         /* Compact mobile card styling - increased for larger images */
         .tonights-carousel .relative {
-          min-height: 320px;
+          min-height: 230px;
         }
 
         /* Touch feedback */
