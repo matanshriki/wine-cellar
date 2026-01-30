@@ -191,6 +191,7 @@
       "chooseFromLibraryDesc": "Select existing photo • AI label extraction",
       "manualEntry": "Enter Manually",
       "manualEntryDesc": "Fill in the details yourself",
+      "multiBottleDesc": "Scan multiple bottles at once",
       "addToWishlist": "Add to Wishlist",
       "addToWishlistDesc": "Save wines to buy later"
     },
