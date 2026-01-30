@@ -295,6 +295,7 @@
       "title": "Sommelier Notes",
       "aiPowered": "AI-powered analysis",
       "generate": "Generate Sommelier Notes",
+      "analyzed": "Analyzed",
       "refresh": "Refresh analysis",
       "failed": "Failed to generate analysis. Please try again.",
       "whyThisAnalysis": "Why this analysis?",

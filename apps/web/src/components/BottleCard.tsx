@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
-import { SommelierNotes } from './SommelierNotes';
 import { DemoActionModal } from './DemoActionModal';
-import type { AIAnalysis } from '../services/aiAnalysisService';
 import * as labelArtService from '../services/labelArtService';
 
 interface Props {
@@ -39,7 +37,27 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
 
   return (
     <>
-      <div className="luxury-card luxury-card-hover p-4 sm:p-4 md:p-5 w-full">
+      <div 
+        className="luxury-card luxury-card-hover p-4 sm:p-4 md:p-5 w-full"
+        onClick={(e) => {
+          // Only trigger details if not clicking on a button
+          const target = e.target as HTMLElement;
+          const isButton = target.closest('button') || target.closest('a');
+          if (!isButton && onShowDetails) {
+            onShowDetails();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && onShowDetails) {
+            e.preventDefault();
+            onShowDetails();
+          }
+        }}
+        style={{ cursor: onShowDetails ? 'pointer' : 'default' }}
+        aria-label={`View details for ${bottle.wine.wine_name}`}
+      >
         {/* Header Section */}
         <div className="relative mb-3 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
@@ -273,24 +291,70 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       {/* Divider */}
       <div className="divider-luxury my-3" />
 
-      {/* Sommelier Notes (AI Analysis) */}
+      {/* Analysis Status - Compact Badge or Generate Button */}
       {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
-        <div className="mb-3">
-          <SommelierNotes
-            analysis={{
-              analysis_summary: (bottle as any).analysis_summary,
-              analysis_reasons: (bottle as any).analysis_reasons || [],
-              readiness_label: (bottle as any).readiness_label,
-              serving_temp_c: bottle.serve_temp_c || 16,
-              decant_minutes: bottle.decant_minutes || 0,
-              drink_window_start: (bottle as any).drink_window_start,
-              drink_window_end: (bottle as any).drink_window_end,
-              confidence: (bottle as any).confidence || 'MEDIUM',
-              assumptions: (bottle as any).assumptions,
-              analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span 
+              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--wine-50)',
+                color: 'var(--wine-700)',
+                border: '1px solid var(--wine-200)',
+              }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{t('cellar.sommelier.analyzed', 'Analyzed')}</span>
+            </span>
+            {/* Readiness Status Indicator */}
+            <span 
+              className="text-xs px-2 py-1 rounded-full font-medium"
+              style={{
+                backgroundColor: 
+                  (bottle as any).readiness_label === 'READY' 
+                    ? 'var(--color-green-100)' 
+                    : (bottle as any).readiness_label === 'HOLD'
+                    ? 'var(--color-blue-100)'
+                    : 'var(--color-yellow-100)',
+                color: 
+                  (bottle as any).readiness_label === 'READY' 
+                    ? 'var(--color-green-700)' 
+                    : (bottle as any).readiness_label === 'HOLD'
+                    ? 'var(--color-blue-700)'
+                    : 'var(--color-yellow-700)',
+              }}
+            >
+              {t(`cellar.sommelier.status.${((bottle as any).readiness_label || '').toLowerCase()}`, (bottle as any).readiness_label)}
+            </span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isDemo) {
+                onAnalyze();
+              }
             }}
-            onRefresh={onAnalyze}
-          />
+            disabled={isDemo}
+            className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'transparent',
+            }}
+            aria-label={t('cellar.sommelier.refresh', 'Refresh analysis')}
+            title={t('cellar.sommelier.refresh', 'Refresh analysis')}
+          >
+            <svg
+              className="w-4 h-4"
+              style={{ color: 'var(--text-secondary)' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       ) : (
         <button

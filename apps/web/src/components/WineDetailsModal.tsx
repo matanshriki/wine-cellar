@@ -11,6 +11,7 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
 import { AddWineImageDialog } from './AddWineImageDialog';
+import { SommelierNotes } from './SommelierNotes';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
@@ -21,9 +22,10 @@ interface WineDetailsModalProps {
   bottle: BottleWithWineInfo | null;
   onMarkAsOpened?: (bottle: BottleWithWineInfo) => void;
   onRefresh?: () => void;
+  onAnalyze?: () => void;
 }
 
-export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh }: WineDetailsModalProps) {
+export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh, onAnalyze }: WineDetailsModalProps) {
   const { t, i18n } = useTranslation();
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -600,8 +602,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   </div>
                 )}
 
-                {/* AI Analysis */}
-                {bottle.readiness_status && (
+                {/* AI Analysis - Full Sommelier Notes */}
+                {(bottle as any).analysis_summary && (bottle as any).readiness_label && (
                   <div>
                     <h3 
                       className="text-sm font-semibold mb-3 flex items-center gap-2"
@@ -610,30 +612,21 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       <span>🔬</span>
                       {t('cellar.bottle.analysis')}
                     </h3>
-                    <div 
-                      className="p-4 rounded-lg"
-                      style={{
-                        backgroundColor: 'var(--wine-50)',
-                        border: '1px solid var(--wine-200)',
+                    <SommelierNotes
+                      analysis={{
+                        analysis_summary: (bottle as any).analysis_summary,
+                        analysis_reasons: (bottle as any).analysis_reasons || [],
+                        readiness_label: (bottle as any).readiness_label,
+                        serving_temp_c: bottle.serve_temp_c || 16,
+                        decant_minutes: bottle.decant_minutes || 0,
+                        drink_window_start: (bottle as any).drink_window_start,
+                        drink_window_end: (bottle as any).drink_window_end,
+                        confidence: (bottle as any).confidence || 'MEDIUM',
+                        assumptions: (bottle as any).assumptions,
+                        analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
                       }}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span 
-                          className="px-3 py-1 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: 'var(--wine-600)',
-                            color: 'white',
-                          }}
-                        >
-                          {bottle.readiness_status}
-                        </span>
-                      </div>
-                      {bottle.tasting_notes && (
-                        <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-                          {bottle.tasting_notes}
-                        </p>
-                      )}
-                    </div>
+                      onRefresh={onAnalyze}
+                    />
                   </div>
                 )}
 

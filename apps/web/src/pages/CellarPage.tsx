@@ -2202,6 +2202,7 @@ export function CellarPage() {
         bottle={selectedBottle}
         onMarkAsOpened={handleMarkOpened}
         onRefresh={() => loadBottles(true)}
+        onAnalyze={selectedBottle ? () => handleAnalyze(selectedBottle.id) : undefined}
       />
 
       {/* Beta feature: Multi-Bottle Import Modal - Enabled in dev OR if user has flag */}
