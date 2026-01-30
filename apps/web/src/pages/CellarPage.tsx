@@ -1048,8 +1048,8 @@ export function CellarPage() {
                 {t('cellar.shareCellar.button')}
               </button>
             )}
-            {/* Import CSV - Only show when cellar has bottles */}
-            {bottlesInCellar.length > 0 && (
+            {/* Import CSV - Only show when cellar has bottles AND user has permission */}
+            {bottlesInCellar.length > 0 && featureFlags.csvImportEnabled && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -1462,16 +1462,19 @@ export function CellarPage() {
             >
               {t('onboarding.emptyState.cta')}
             </button>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowImport(true);
-              }}
-              className="btn-luxury-secondary w-full xs:w-auto"
-            >
-              {t('cellar.empty.importButton')}
-            </button>
+            {/* Import CSV - Only show if user has permission */}
+            {featureFlags.csvImportEnabled && (
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowImport(true);
+                }}
+                className="btn-luxury-secondary w-full xs:w-auto"
+              >
+                {t('cellar.empty.importButton')}
+              </button>
+            )}
           </motion.div>
         </motion.div>
       ) : filteredBottles.length === 0 ? (
