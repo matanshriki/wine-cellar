@@ -394,7 +394,9 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
             throw new Error('Empty response from OpenAI');
           }
 
+          console.log('[Sommelier] OpenAI response:', content.substring(0, 200) + '...');
           const parsed = JSON.parse(content);
+          console.log('[Sommelier] Parsed type:', parsed.type, '| Has bottles:', !!parsed.bottles, '| Has recommendation:', !!parsed.recommendation);
 
           // Validate response format
           if (parsed.type === 'bottle_list') {
@@ -449,6 +451,14 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
             });
           }
         }
+      }
+
+      // Check if we got a valid recommendation
+      if (!recommendation) {
+        console.error('[Sommelier] Failed to generate recommendation after all attempts');
+        return res.status(500).json({ 
+          error: 'Failed to generate valid recommendation' 
+        });
       }
 
       const duration = Date.now() - startTime;
