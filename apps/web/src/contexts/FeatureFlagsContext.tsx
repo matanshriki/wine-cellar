@@ -175,7 +175,8 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
               if (newRecord && 'wishlist_enabled' in newRecord) {
                 const updatedFlags: FeatureFlags = {
                   wishlistEnabled: newRecord.wishlist_enabled ?? false,
-                  // Add more flags here as they are added
+                  cellarAgentEnabled: newRecord.cellar_agent_enabled ?? false,
+                  csvImportEnabled: newRecord.csv_import_enabled ?? false,
                 };
                 
                 // Detect changes and show toasts
