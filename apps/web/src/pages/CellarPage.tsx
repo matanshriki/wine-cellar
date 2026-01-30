@@ -491,17 +491,34 @@ export function CellarPage() {
   const filteredBottles = useMemo(() => {
     // Start with bottles in cellar (quantity > 0)
     let result = bottlesInCellar;
+    
+    console.log('[CellarPage] 🔍 Filtering bottles:', {
+      total: bottlesInCellar.length,
+      searchQuery,
+      activeFilters,
+    });
 
     // Apply search query (debounced via input)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((bottle) => {
+        // Handle grapes as either string or array
+        let grapesText = '';
+        if (bottle.wine.grapes) {
+          if (Array.isArray(bottle.wine.grapes)) {
+            grapesText = bottle.wine.grapes.join(' ');
+          } else if (typeof bottle.wine.grapes === 'string') {
+            grapesText = bottle.wine.grapes;
+          }
+        }
+        
         const searchableText = [
           bottle.wine.wine_name,
           bottle.wine.producer,
           bottle.wine.region,
           bottle.wine.vintage?.toString(),
-          ...(Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes : []),
+          grapesText,
+          bottle.wine.color, // Also search by color/style
         ]
           .filter(Boolean)
           .join(' ')
@@ -622,7 +639,8 @@ export function CellarPage() {
       // Apply sort direction
       return sortDir === 'asc' ? compareValue : -compareValue;
     });
-
+    
+    console.log('[CellarPage] 🔍 Filtered result:', result.length, 'bottles');
     return result;
   }, [bottlesInCellar, searchQuery, activeFilters, sortBy, sortDir]);
 
@@ -806,13 +824,17 @@ export function CellarPage() {
    * Wine World Moments: View matching bottles
    */
   function handleViewEventMatches(filterTag: string) {
+    console.log('[CellarPage] 🍷 Event: Filtering by tag:', filterTag);
     setSearchQuery(filterTag);
     setActiveEvent(null);
     
-    // Scroll to bottles section
-    if (bottlesSectionRef.current) {
-      bottlesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // Scroll to bottles section after a short delay to let state update
+    setTimeout(() => {
+      if (bottlesSectionRef.current) {
+        console.log('[CellarPage] 🍷 Event: Scrolling to bottles section');
+        bottlesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 
   function handleSortChange(newSortBy: string, newSortDir: 'asc' | 'desc') {

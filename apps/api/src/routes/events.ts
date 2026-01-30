@@ -2,11 +2,10 @@ import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { AuthRequest, authenticateSupabase } from '../middleware/auth.js';
-import { prisma } from '../db.js';
 
 export const eventsRouter = Router();
 
-// Initialize Supabase client for events (stored in Supabase, not SQLite)
+// Initialize Supabase client for events and bottles
 const supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
 
 // Helper to match event tags with user's bottles
@@ -15,19 +14,25 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
   filterTag: string | null;
 }> {
   try {
-    // Get user's bottles from SQLite
-    const bottles = await prisma.bottle.findMany({
-      where: { 
-        userId,
-        quantity: { gt: 0 } // Only in-stock bottles
-      },
-      select: {
-        grapes: true,
-        style: true,
-      },
-    });
+    // Get user's bottles from Supabase (with wine info for grapes)
+    const { data: bottles, error } = await supabase
+      .from('bottles')
+      .select(`
+        id,
+        wine:wines (
+          grapes,
+          color
+        )
+      `)
+      .eq('user_id', userId)
+      .gt('quantity', 0);
 
-    if (bottles.length === 0) {
+    if (error) {
+      console.error('[Events] Error fetching bottles:', error);
+      return { count: 0, filterTag: null };
+    }
+
+    if (!bottles || bottles.length === 0) {
       return { count: 0, filterTag: null };
     }
 
@@ -39,11 +44,19 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       const tagLower = tag.toLowerCase();
       
       for (const bottle of bottles) {
-        const grapesLower = (bottle.grapes || '').toLowerCase();
-        const styleLower = (bottle.style || '').toLowerCase();
+        if (!bottle.wine) continue;
         
-        // Match against grapes or style
-        if (grapesLower.includes(tagLower) || styleLower.includes(tagLower)) {
+        // Get grapes (can be array or string)
+        const grapes = bottle.wine.grapes;
+        const grapesStr = Array.isArray(grapes) 
+          ? grapes.join(' ').toLowerCase() 
+          : (grapes || '').toLowerCase();
+        
+        // Get color/style
+        const color = (bottle.wine.color || '').toLowerCase();
+        
+        // Match against grapes or color
+        if (grapesStr.includes(tagLower) || color.includes(tagLower)) {
           matchCount++;
           if (!bestMatchTag) {
             bestMatchTag = tag;
