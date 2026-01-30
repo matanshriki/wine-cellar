@@ -539,7 +539,11 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
       
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error('[Sommelier] Error:', error.message, `| duration: ${duration}ms`);
+      console.error('[Sommelier] ====== CAUGHT EXCEPTION ======');
+      console.error('[Sommelier] Error name:', error.name);
+      console.error('[Sommelier] Error message:', error.message);
+      console.error('[Sommelier] Error stack:', error.stack);
+      console.error('[Sommelier] Duration:', duration, 'ms');
       return res.status(500).json({ 
         error: 'Failed to generate recommendation. Please try again.' 
       });
