@@ -272,7 +272,9 @@ agentRouter.post(
       const { bottles, summary } = buildCellarContext(cellarContext.bottles);
       
       // Debug: Log sample of what we're sending to OpenAI
+      console.log(`[Sommelier] ====== NEW REQUEST ======`);
       console.log(`[Sommelier] User ${req.userId?.substring(0, 8)} - Sending ${bottles.length} bottles to OpenAI`);
+      console.log(`[Sommelier] User message: "${message.substring(0, 100)}..."`);
       console.log(`[Sommelier] Sample bottle:`, bottles[0]);
 
       // Build conversation history (limit to last 8 messages)
@@ -391,17 +393,36 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
 
           const content = response.choices[0]?.message?.content;
           if (!content) {
+            console.error('[Sommelier] ERROR: Empty response from OpenAI');
             throw new Error('Empty response from OpenAI');
           }
 
-          console.log('[Sommelier] OpenAI response:', content.substring(0, 200) + '...');
-          const parsed = JSON.parse(content);
-          console.log('[Sommelier] Parsed type:', parsed.type, '| Has bottles:', !!parsed.bottles, '| Has recommendation:', !!parsed.recommendation);
+          console.log('[Sommelier] ====== OpenAI RAW RESPONSE ======');
+          console.log(content);
+          console.log('[Sommelier] ====== END RAW RESPONSE ======');
+          
+          let parsed;
+          try {
+            parsed = JSON.parse(content);
+            console.log('[Sommelier] ✓ JSON parse successful');
+          } catch (e: any) {
+            console.error('[Sommelier] ERROR: JSON parse failed:', e.message);
+            throw e;
+          }
+          
+          console.log('[Sommelier] Parsed structure:');
+          console.log('  - type:', parsed.type);
+          console.log('  - message:', parsed.message ? 'YES' : 'NO');
+          console.log('  - bottles:', parsed.bottles ? `YES (${parsed.bottles.length})` : 'NO');
+          console.log('  - recommendation:', parsed.recommendation ? 'YES' : 'NO');
+          console.log('  - followUpQuestion:', parsed.followUpQuestion ? 'YES' : 'NO');
 
           // Validate response format - check for multi-bottle response
           if (parsed.bottles && Array.isArray(parsed.bottles) && parsed.bottles.length > 0) {
             // Multi-bottle response (with or without explicit type field)
+            console.log('[Sommelier] ====== MULTI-BOTTLE PATH ======');
             console.log('[Sommelier] Detected multi-bottle response with', parsed.bottles.length, 'bottles');
+            console.log('[Sommelier] First bottle:', JSON.stringify(parsed.bottles[0]));
             
             // Validate all bottle IDs exist in cellar
             const invalidBottles = parsed.bottles.filter((b: any) => 
@@ -409,7 +430,8 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
             );
 
             if (invalidBottles.length > 0) {
-              console.warn('[Sommelier] Invalid bottleIds in list:', invalidBottles.length, '| Retrying...');
+              console.warn('[Sommelier] ⚠️  VALIDATION FAILED: Invalid bottleIds in list:', invalidBottles.length);
+              console.warn('[Sommelier] Invalid bottles:', invalidBottles.map((b: any) => b.bottleId));
               
               if (attempt < maxAttempts) {
                 continue; // Retry
@@ -435,15 +457,19 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
               }
             } else {
               // All bottles valid
+              console.log('[Sommelier] ✓ All bottles valid, setting recommendation');
               recommendation = {
                 type: 'bottle_list',
                 title: parsed.title || 'Recommended Wines',
                 message: parsed.message || "Here are some wines from your cellar:",
                 bottles: parsed.bottles,
               };
+              console.log('[Sommelier] Recommendation set:', !!recommendation);
             }
           } else if (parsed.recommendation && parsed.recommendation.bottleId) {
             // Single-bottle response with recommendation
+            console.log('[Sommelier] ====== SINGLE-BOTTLE PATH ======');
+            console.log('[Sommelier] Bottle ID:', parsed.recommendation.bottleId);
             const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
             
             if (!bottleExists) {
@@ -463,11 +489,15 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
             }
           } else {
             // No recommendation (probably a clarifying question or message only)
+            console.log('[Sommelier] ====== MESSAGE/QUESTION PATH ======');
             console.log('[Sommelier] No bottles or recommendation, treating as message/question');
             recommendation = parsed;
+            console.log('[Sommelier] Recommendation set:', !!recommendation);
           }
         } catch (parseError: any) {
+          console.error('[Sommelier] ====== PARSE ERROR ======');
           console.error('[Sommelier] Parse error:', parseError.message);
+          console.error('[Sommelier] Stack:', parseError.stack);
           
           if (attempt >= maxAttempts) {
             return res.status(500).json({ 
@@ -478,8 +508,12 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
       }
 
       // Check if we got a valid recommendation
+      console.log('[Sommelier] ====== FINAL CHECK ======');
+      console.log('[Sommelier] Recommendation exists:', !!recommendation);
+      console.log('[Sommelier] Recommendation type:', recommendation?.type || 'undefined');
+      
       if (!recommendation) {
-        console.error('[Sommelier] Failed to generate recommendation after all attempts');
+        console.error('[Sommelier] ❌ ERROR: Failed to generate recommendation after all attempts');
         return res.status(500).json({ 
           error: 'Failed to generate valid recommendation' 
         });
@@ -488,7 +522,8 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
       const duration = Date.now() - startTime;
       
       // Log minimal metrics (no PII, no full messages)
-      console.log(`[Sommelier] Request completed | user: ${req.userId?.substring(0, 8)}... | duration: ${duration}ms | success: ${!!recommendation}`);
+      console.log(`[Sommelier] ✓ Request completed successfully | user: ${req.userId?.substring(0, 8)}... | duration: ${duration}ms`);
+      console.log('[Sommelier] ====== RETURNING RESPONSE ======');
 
       return res.json(recommendation);
       
