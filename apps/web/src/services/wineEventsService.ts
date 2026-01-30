@@ -19,15 +19,15 @@ export interface WineEvent {
 }
 
 /**
- * Get the currently active wine event for the user
+ * Get all active wine events for the user
  */
-export async function getActiveEvent(): Promise<WineEvent | null> {
+export async function getActiveEvents(): Promise<WineEvent[]> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      console.warn('[WineEvents] No session, skipping event fetch');
-      return null;
+      console.warn('[WineEvents] No session, skipping events fetch');
+      return [];
     }
 
     const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -43,17 +43,25 @@ export async function getActiveEvent(): Promise<WineEvent | null> {
     });
 
     if (!response.ok) {
-      console.error('[WineEvents] Failed to fetch active event:', response.status);
-      return null;
+      console.error('[WineEvents] Failed to fetch active events:', response.status);
+      return [];
     }
 
     const data = await response.json();
-    console.log('[WineEvents] 🍷 Received event from API:', data.event);
-    return data.event || null;
+    console.log('[WineEvents] 🍷 Received events from API:', data.events);
+    return data.events || [];
   } catch (error) {
-    console.error('[WineEvents] Error fetching active event:', error);
-    return null;
+    console.error('[WineEvents] Error fetching active events:', error);
+    return [];
   }
+}
+
+/**
+ * Get the currently active wine event for the user (legacy - returns first event)
+ */
+export async function getActiveEvent(): Promise<WineEvent | null> {
+  const events = await getActiveEvents();
+  return events.length > 0 ? events[0] : null;
 }
 
 /**
