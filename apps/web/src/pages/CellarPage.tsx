@@ -41,8 +41,9 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const featureFlags = useFeatureFlags(); // Load user's feature flags
+  const featureFlags = useFeatureFlags(); // Load user's feature flags (beta features)
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
+  const csvImportEnabled = useFeatureFlag('csvImportEnabled'); // CSV Import permission flag
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true); // Keep true for proper initial load
   const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll: loading more bottles
@@ -1049,7 +1050,7 @@ export function CellarPage() {
               </button>
             )}
             {/* Import CSV - Only show when cellar has bottles AND user has permission */}
-            {bottlesInCellar.length > 0 && featureFlags.csvImportEnabled && (
+            {bottlesInCellar.length > 0 && csvImportEnabled && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -1463,7 +1464,7 @@ export function CellarPage() {
               {t('onboarding.emptyState.cta')}
             </button>
             {/* Import CSV - Only show if user has permission */}
-            {featureFlags.csvImportEnabled && (
+            {csvImportEnabled && (
               <button 
                 onClick={(e) => {
                   e.preventDefault();
