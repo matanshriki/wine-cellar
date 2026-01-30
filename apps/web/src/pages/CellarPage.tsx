@@ -193,6 +193,28 @@ export function CellarPage() {
     }
   }, [isDemoMode, bottles.length]);
 
+  // Wine World Moments: Periodically check for new events
+  // This ensures new events appear without requiring page refresh
+  useEffect(() => {
+    if (isDemoMode) return; // Don't check in demo mode
+
+    // Check for new events every 5 minutes
+    const intervalId = setInterval(async () => {
+      console.log('[CellarPage] 🔄 Checking for new wine events...');
+      const event = await wineEventsService.getActiveEvent();
+      
+      // Only update if:
+      // 1. We have a new event AND no current event, OR
+      // 2. The event ID changed (new event!)
+      if (event && (!activeEvent || event.id !== activeEvent.id)) {
+        console.log('[CellarPage] 🎉 New event detected:', event.name);
+        setActiveEvent(event);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, [isDemoMode, activeEvent]);
+
   // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
   useEffect(() => {
     // If demo mode is active AND user has at least one real bottle, exit demo mode
