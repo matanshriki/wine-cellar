@@ -9,7 +9,11 @@ export const eventsRouter = Router();
 const supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
 
 // Helper to match event tags with user's bottles
-async function getMatchingBottles(userId: string, eventTags: string[]): Promise<{
+async function getMatchingBottles(
+  userId: string, 
+  eventTags: string[],
+  userSupabase: any // Authenticated Supabase client
+): Promise<{
   count: number;
   filterTag: string | null;
 }> {
@@ -18,7 +22,7 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
     console.log('[Events] 🔍 Event tags:', eventTags);
     
     // Get user's bottles from Supabase (with wine info for grapes)
-    const { data: bottles, error } = await supabase
+    const { data: bottles, error } = await userSupabase
       .from('bottles')
       .select(`
         id,
@@ -103,6 +107,24 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     const userId = req.userId;
     const daysWindow = 3; // Show events +/- 3 days
 
+    // Get user's auth token from request header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      console.error('[Events] No auth token provided');
+      return res.status(401).json({ error: 'Authentication token required' });
+    }
+
+    // Create authenticated Supabase client for this user (to bypass RLS)
+    const userSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+
     // Calculate date range
     const today = new Date();
     const startDate = new Date(today);
@@ -111,7 +133,7 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     endDate.setDate(today.getDate() + daysWindow);
 
     // Get active events (within window, not dismissed, not shown today)
-    const { data: events, error: eventsError } = await supabase
+    const { data: events, error: eventsError } = await userSupabase
       .from('wine_events')
       .select('*')
       .gte('date', startDate.toISOString().split('T')[0])
@@ -128,7 +150,7 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     }
 
     // Get user's event states
-    const { data: states, error: statesError } = await supabase
+    const { data: states, error: statesError } = await userSupabase
       .from('user_event_states')
       .select('*')
       .eq('user_id', userId)
@@ -178,7 +200,8 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
     // Check for matching bottles
     const { count: matchCount, filterTag } = await getMatchingBottles(
       userId,
-      bestEvent.tags || []
+      bestEvent.tags || [],
+      userSupabase // Pass authenticated client
     );
 
     // Update last_shown_at and seen_at (upsert)
@@ -187,7 +210,7 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
 
     if (existingState) {
       // Update existing state
-      await supabase
+      await userSupabase
         .from('user_event_states')
         .update({
           last_shown_at: now,
@@ -197,7 +220,7 @@ eventsRouter.get('/active', authenticateSupabase, async (req: AuthRequest, res) 
         .eq('id', existingState.id);
     } else {
       // Insert new state
-      await supabase
+      await userSupabase
         .from('user_event_states')
         .insert({
           user_id: userId,
