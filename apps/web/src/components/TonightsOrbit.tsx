@@ -165,11 +165,11 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                 {(() => {
                   const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
                   return displayImage.imageUrl && (
-                    <div className="mb-1 flex justify-center relative">
+                    <div className="flex justify-center relative">
                       <img 
                         src={displayImage.imageUrl} 
                         alt={bottle.wine.wine_name}
-                        className="w-36 h-48 object-cover rounded-md"
+                        className="w-36 h-48 object-cover rounded-md mb-0.5"
                         style={{
                           border: '1px solid var(--border-base)',
                           boxShadow: 'var(--shadow-md)',
