@@ -252,21 +252,31 @@ agentRouter.post(
     const startTime = Date.now();
     
     try {
+      console.log('[Sommelier] ====== REQUEST START ======');
+      console.log('[Sommelier] Request body keys:', Object.keys(req.body));
+      
       if (!openai) {
+        console.error('[Sommelier] ERROR: OpenAI not configured');
         return res.status(503).json({ 
           error: 'OpenAI API key not configured. Sommelier is unavailable.' 
         });
       }
 
       const { message, history, cellarContext } = req.body;
+      console.log('[Sommelier] Message:', message ? 'present' : 'MISSING');
+      console.log('[Sommelier] CellarContext:', cellarContext ? 'present' : 'MISSING');
 
       if (!message || typeof message !== 'string') {
+        console.error('[Sommelier] ERROR: Invalid message');
         return res.status(400).json({ error: 'Message is required' });
       }
 
       if (!cellarContext || !cellarContext.bottles || cellarContext.bottles.length === 0) {
+        console.error('[Sommelier] ERROR: Invalid cellarContext');
         return res.status(400).json({ error: 'Cellar context is required' });
       }
+      
+      console.log('[Sommelier] ✓ Basic validation passed');
 
       // Build limited cellar context
       const { bottles, summary } = buildCellarContext(cellarContext.bottles);
