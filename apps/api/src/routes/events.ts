@@ -58,7 +58,18 @@ async function getMatchingBottles(
     let matchCount = 0;
     let bestMatchTag: string | null = null;
 
-    for (const tag of eventTags) {
+    // Prioritize grape-specific tags over color tags
+    const grapeTags = eventTags.filter(tag => !['red', 'white', 'rose', 'rosé', 'sparkling'].includes(tag.toLowerCase()));
+    const colorTags = eventTags.filter(tag => ['red', 'white', 'rose', 'rosé', 'sparkling'].includes(tag.toLowerCase()));
+    
+    // Use grape tags if available, otherwise fall back to color tags
+    const tagsToMatch = grapeTags.length > 0 ? grapeTags : colorTags;
+    
+    console.log('[Events] 🔍 Grape tags:', grapeTags);
+    console.log('[Events] 🔍 Color tags:', colorTags);
+    console.log('[Events] 🔍 Using tags for matching:', tagsToMatch);
+
+    for (const tag of tagsToMatch) {
       const tagLower = tag.toLowerCase();
       console.log('[Events] 🔍 Checking tag:', tagLower);
       
@@ -78,14 +89,23 @@ async function getMatchingBottles(
         // Get color/style
         const color = (b.wine.color || '').toLowerCase();
         
-        // Match against grapes or color
-        if (grapesStr.includes(tagLower) || color.includes(tagLower)) {
+        // Match against grapes or color (depending on which tags we're using)
+        const matches = grapeTags.length > 0 
+          ? grapesStr.includes(tagLower) // Only match grapes if grape tags exist
+          : (grapesStr.includes(tagLower) || color.includes(tagLower)); // Match both if only color tags
+        
+        if (matches) {
           console.log('[Events] ✅ MATCH! Bottle', b.id?.substring(0, 8), ':', { grapes: grapesStr, color });
           matchCount++;
           if (!bestMatchTag) {
             bestMatchTag = tag;
           }
         }
+      }
+      
+      // Stop after first tag finds matches (don't double-count bottles)
+      if (matchCount > 0 && !bestMatchTag) {
+        bestMatchTag = tag;
       }
     }
 
