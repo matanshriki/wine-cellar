@@ -33,6 +33,18 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
   const [isVisible, setIsVisible] = useState(false);
   const navigate = useNavigate();
 
+  // Debug: Log event details
+  useEffect(() => {
+    if (event) {
+      console.log('[WineEventBanner] 🍷 Rendering event:', {
+        name: event.name,
+        matchCount: event.matchCount,
+        filterTag: event.filterTag,
+        hasButton: event.matchCount > 0 && !!event.filterTag
+      });
+    }
+  }, [event]);
+
   useEffect(() => {
     if (event) {
       // Delay appearance for smooth fade-in

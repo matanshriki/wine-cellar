@@ -48,6 +48,7 @@ export async function getActiveEvent(): Promise<WineEvent | null> {
     }
 
     const data = await response.json();
+    console.log('[WineEvents] 🍷 Received event from API:', data.event);
     return data.event || null;
   } catch (error) {
     console.error('[WineEvents] Error fetching active event:', error);
