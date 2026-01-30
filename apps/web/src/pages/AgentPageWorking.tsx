@@ -19,10 +19,11 @@ import {
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
+import { BottleCarousel, type BottleRecommendation } from '../components/BottleCarousel';
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { flags } = useFeatureFlags();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -101,6 +102,10 @@ export function AgentPageWorking() {
         content: response.message || '',
         timestamp: new Date().toISOString(),
         recommendation: response.recommendation,
+        bottleList: response.type === 'bottle_list' && response.bottles ? {
+          title: response.title,
+          bottles: response.bottles,
+        } : undefined,
       };
 
       const finalMessages = [...newMessages, assistantMsg];
@@ -591,6 +596,23 @@ export function AgentPageWorking() {
                 >
                   <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
 
+                  {/* Multi-bottle carousel response */}
+                  {msg.bottleList && msg.bottleList.bottles && msg.bottleList.bottles.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <BottleCarousel
+                        title={msg.bottleList.title}
+                        bottles={msg.bottleList.bottles.map(b => ({
+                          ...b,
+                          imageUrl: bottles.find(bottle => bottle.id === b.bottleId)?.wine.user_image_url || 
+                                   bottles.find(bottle => bottle.id === b.bottleId)?.wine.ai_label_url || 
+                                   null,
+                        }))}
+                        onBottleClick={handleViewBottleDetails}
+                      />
+                    </div>
+                  )}
+
+                  {/* Single bottle recommendation */}
                   {msg.recommendation && (
                     <div
                       style={{
@@ -844,7 +866,16 @@ export function AgentPageWorking() {
               flexShrink: 0,
             }}
           >
-            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg 
+              style={{ 
+                width: '20px', 
+                height: '20px',
+                transform: `rotate(${i18n.language === 'he' ? '-90' : '90'}deg)`,
+              }} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>

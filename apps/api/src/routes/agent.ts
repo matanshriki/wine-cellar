@@ -314,9 +314,16 @@ You are assisting a user in a conversational interface. Apply all sommelier know
 - VARIETY IS IMPORTANT: When similar questions are asked multiple times, recommend different bottles to help explore the cellar
 
 **RESPONSE FORMAT:**
-You MUST respond with valid JSON matching this exact schema:
 
+FIRST, analyze the user's request:
+- If they ask for MULTIPLE bottles (e.g., "top 5", "3 recommendations", "several wines"), use the MULTI-BOTTLE format
+- If they ask for ONE bottle or it's unclear, use the SINGLE-BOTTLE format
+- Extract the requested count N from phrases like: "top N", "N bottles", "N recommendations", "best N", etc.
+- Default to 3 if a multi-bottle request doesn't specify a number
+
+**SINGLE-BOTTLE FORMAT** (for single recommendations):
 {
+  "type": "single",
   "message": "Your warm, knowledgeable response (2-4 sentences)",
   "recommendation": {
     "bottleId": "the exact ID from the cellar list",
@@ -327,9 +334,34 @@ You MUST respond with valid JSON matching this exact schema:
   "followUpQuestion": "Optional clarifying question if you need more context (omit if not needed)"
 }
 
+**MULTI-BOTTLE FORMAT** (for multiple recommendations):
+{
+  "type": "bottle_list",
+  "title": "Top N Bottles in Your Cellar" (or similar descriptive title),
+  "message": "Brief intro explaining the selection (1-2 sentences)",
+  "bottles": [
+    {
+      "bottleId": "exact ID from cellar",
+      "name": "wine name",
+      "producer": "producer name",
+      "vintage": vintage number or null,
+      "region": "region name" or null,
+      "rating": rating number or null,
+      "readinessStatus": "ready/peak/aging/drink_soon" or null,
+      "serveTempC": temperature number or null,
+      "decantMinutes": minutes number or null,
+      "shortWhy": "One sentence explaining why this bottle (max 100 chars)"
+    }
+  ],
+  "followUpQuestion": "Optional clarifying question (omit if not needed)"
+}
+
 **IMPORTANT:**
-- If you need clarification, set "followUpQuestion" and OMIT "recommendation"
-- Your "reason" field should demonstrate deep wine knowledge, not generic statements
+- For multi-bottle requests, return exactly N bottles (or fewer if cellar doesn't have enough)
+- Order bottles by quality/appropriateness (best first)
+- Each "shortWhy" should be unique and specific to that bottle
+- If you need clarification, set "followUpQuestion" and OMIT "recommendation" or "bottles"
+- Your reasoning should demonstrate deep wine knowledge, not generic statements
 - Reference specific wine characteristics: grape variety, region, aging status, structure
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -364,14 +396,36 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
 
           const parsed = JSON.parse(content);
 
-          // Validate recommendedBottleId exists in cellar
-          if (parsed.recommendation && parsed.recommendation.bottleId) {
-            const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
-            
-            if (!bottleExists) {
-              console.warn('[Sommelier] Invalid bottleId, retrying with corrective instruction');
+          // Validate response format
+          if (parsed.type === 'bottle_list') {
+            // Multi-bottle response
+            if (!parsed.bottles || !Array.isArray(parsed.bottles)) {
+              throw new Error('Invalid bottle_list response: missing bottles array');
+            }
+
+            // Validate all bottle IDs exist in cellar
+            const invalidBottles = parsed.bottles.filter((b: any) => 
+              !bottles.some((cellarBottle: any) => cellarBottle.id === b.bottleId)
+            );
+
+            if (invalidBottles.length > 0) {
+              console.warn('[Sommelier] Invalid bottleIds in list, retrying');
               
               if (attempt < maxAttempts) {
+                continue; // Retry
+              }
+            }
+
+            recommendation = parsed;
+          } else {
+            // Single-bottle response (type: "single" or legacy format)
+            if (parsed.recommendation && parsed.recommendation.bottleId) {
+              const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
+              
+              if (!bottleExists) {
+                console.warn('[Sommelier] Invalid bottleId, retrying with corrective instruction');
+                
+                if (attempt < maxAttempts) {
                 // Retry with correction
                 continue;
               } else {
@@ -386,6 +440,7 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
           } else {
             // No recommendation (probably a clarifying question)
             recommendation = parsed;
+          }
           }
         } catch (parseError: any) {
           console.error('[Sommelier] Parse error:', parseError.message);

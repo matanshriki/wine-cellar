@@ -19,10 +19,27 @@ export interface AgentMessage {
     decant?: string;
     alternatives?: Array<{ bottleId: string; reason: string }>;
   };
+  bottleList?: {
+    title?: string;
+    bottles: Array<{
+      bottleId: string;
+      name: string;
+      producer: string;
+      vintage?: number | null;
+      region?: string | null;
+      rating?: number | null;
+      readinessStatus?: string | null;
+      serveTempC?: number | null;
+      decantMinutes?: number | null;
+      shortWhy: string;
+    }>;
+  };
 }
 
 export interface AgentResponse {
+  type?: 'single' | 'bottle_list';
   message: string;
+  title?: string;
   recommendation?: {
     bottleId: string;
     reason: string;
@@ -30,6 +47,18 @@ export interface AgentResponse {
     decant?: string;
     alternatives?: Array<{ bottleId: string; reason: string }>;
   };
+  bottles?: Array<{
+    bottleId: string;
+    name: string;
+    producer: string;
+    vintage?: number | null;
+    region?: string | null;
+    rating?: number | null;
+    readinessStatus?: string | null;
+    serveTempC?: number | null;
+    decantMinutes?: number | null;
+    shortWhy: string;
+  }>;
   followUpQuestion?: string;
 }
 
