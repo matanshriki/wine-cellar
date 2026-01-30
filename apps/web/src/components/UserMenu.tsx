@@ -10,14 +10,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { ShareCellarModal } from './ShareCellarModal';
 import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
+import * as bottleService from '../services/bottleService';
 
 export function UserMenu() {
   const { t } = useTranslation();
   const { user, profile, signOut } = useAuth();
   const { flags } = useFeatureFlags();
   const [isOpen, setIsOpen] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -58,6 +62,22 @@ export function UserMenu() {
     }
   }, [isOpen]);
 
+  // Load bottles for share functionality
+  useEffect(() => {
+    async function loadBottles() {
+      try {
+        const { bottles: userBottles } = await bottleService.getUserBottles();
+        setBottles(userBottles);
+      } catch (error) {
+        console.error('Failed to load bottles for sharing:', error);
+      }
+    }
+    
+    if (user && flags?.canShareCellar) {
+      loadBottles();
+    }
+  }, [user, flags?.canShareCellar]);
+
   async function handleLogout() {
     try {
       await signOut();
@@ -67,6 +87,11 @@ export function UserMenu() {
     } catch (error: any) {
       toast.error('Logout failed');
     }
+  }
+
+  function handleShareCellar() {
+    setIsOpen(false);
+    setShowShareModal(true);
   }
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
@@ -157,6 +182,19 @@ export function UserMenu() {
               </Link>
             )}
 
+            {/* Share Cellar - Only show if user has bottles and feature enabled */}
+            {flags?.canShareCellar && bottles.length > 0 && (
+              <button
+                onClick={handleShareCellar}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span>{t('cellar.shareCellar.button')}</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setIsOpen(false);
@@ -171,6 +209,15 @@ export function UserMenu() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Share Cellar Modal */}
+      {flags?.canShareCellar && (
+        <ShareCellarModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          bottles={bottles}
+        />
       )}
     </div>
   );

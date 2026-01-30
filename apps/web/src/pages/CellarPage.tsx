@@ -15,7 +15,6 @@ import { TonightsOrbit } from '../components/TonightsOrbit';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
-import { ShareCellarModal } from '../components/ShareCellarModal'; // Feedback iteration (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
@@ -58,9 +57,6 @@ export function CellarPage() {
   
   // Feedback iteration (dev only) - Multi-bottle import state
   const [showMultiBottleImport, setShowMultiBottleImport] = useState(false);
-  
-  // Feedback iteration (dev only) - Share cellar state
-  const [showShareModal, setShowShareModal] = useState(false);
   
   // Wishlist feature (dev only) - Wishlist state
   const [showWishlistForm, setShowWishlistForm] = useState(false);
@@ -1035,20 +1031,6 @@ export function CellarPage() {
             className="flex flex-col xs:flex-row gap-2 sm:gap-2"
             style={{ pointerEvents: 'auto' }} // Ensure buttons work immediately
           >
-            {/* Beta feature: Share button - Only show when cellar has bottles */}
-            {bottlesInCellar.length > 0 && featureFlags.canShareCellar && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowShareModal(true);
-                }}
-                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
-                title={t('cellar.shareCellar.button')}
-              >
-                {t('cellar.shareCellar.button')}
-              </button>
-            )}
             {/* Import CSV - Only show when cellar has bottles AND user has permission */}
             {bottlesInCellar.length > 0 && csvImportEnabled && (
               <button
@@ -2215,15 +2197,6 @@ export function CellarPage() {
             setShowMultiBottleImport(false);
           }}
           existingBottles={bottles}
-        />
-      )}
-
-      {/* Beta feature: Share Cellar Modal - Enabled in dev OR if user has flag */}
-      {featureFlags.canShareCellar && (
-        <ShareCellarModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          bottles={bottles}
         />
       )}
 
