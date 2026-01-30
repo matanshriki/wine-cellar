@@ -22,13 +22,13 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       .from('bottles')
       .select(`
         id,
-        wine:wines (
+        wines!inner (
           grapes,
           color
         )
       `)
       .eq('user_id', userId)
-      .gt('quantity', 0);
+      .gt('quantity', 0) as any; // Type assertion for complex nested query
 
     if (error) {
       console.error('[Events] ❌ Error fetching bottles from Supabase:', error);
@@ -37,10 +37,11 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
 
     console.log('[Events] ✅ Found', bottles?.length || 0, 'bottles in Supabase');
     if (bottles && bottles.length > 0) {
+      const sample = bottles[0] as any;
       console.log('[Events] 📦 Sample bottle:', {
-        id: bottles[0].id,
-        grapes: bottles[0].wine?.grapes,
-        color: bottles[0].wine?.color
+        id: sample.id,
+        grapes: sample.wines?.grapes,
+        color: sample.wines?.color
       });
     }
 
@@ -58,23 +59,24 @@ async function getMatchingBottles(userId: string, eventTags: string[]): Promise<
       console.log('[Events] 🔍 Checking tag:', tagLower);
       
       for (const bottle of bottles) {
-        if (!bottle.wine) {
-          console.log('[Events] ⚠️ Bottle', bottle.id.substring(0, 8), 'has no wine data');
+        const b = bottle as any; // Type assertion for nested data
+        if (!b.wines) {
+          console.log('[Events] ⚠️ Bottle', b.id?.substring(0, 8), 'has no wine data');
           continue;
         }
         
         // Get grapes (can be array or string)
-        const grapes = bottle.wine.grapes;
+        const grapes = b.wines.grapes;
         const grapesStr = Array.isArray(grapes) 
           ? grapes.join(' ').toLowerCase() 
           : (grapes || '').toLowerCase();
         
         // Get color/style
-        const color = (bottle.wine.color || '').toLowerCase();
+        const color = (b.wines.color || '').toLowerCase();
         
         // Match against grapes or color
         if (grapesStr.includes(tagLower) || color.includes(tagLower)) {
-          console.log('[Events] ✅ MATCH! Bottle', bottle.id.substring(0, 8), ':', { grapes: grapesStr, color });
+          console.log('[Events] ✅ MATCH! Bottle', b.id?.substring(0, 8), ':', { grapes: grapesStr, color });
           matchCount++;
           if (!bestMatchTag) {
             bestMatchTag = tag;
