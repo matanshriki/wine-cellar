@@ -398,27 +398,50 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
           const parsed = JSON.parse(content);
           console.log('[Sommelier] Parsed type:', parsed.type, '| Has bottles:', !!parsed.bottles, '| Has recommendation:', !!parsed.recommendation);
 
-          // Validate response format
-          if (parsed.type === 'bottle_list') {
-            // Multi-bottle response
-            if (!parsed.bottles || !Array.isArray(parsed.bottles)) {
-              throw new Error('Invalid bottle_list response: missing bottles array');
-            }
-
+          // Validate response format - check for multi-bottle response
+          if (parsed.bottles && Array.isArray(parsed.bottles) && parsed.bottles.length > 0) {
+            // Multi-bottle response (with or without explicit type field)
+            console.log('[Sommelier] Detected multi-bottle response with', parsed.bottles.length, 'bottles');
+            
             // Validate all bottle IDs exist in cellar
             const invalidBottles = parsed.bottles.filter((b: any) => 
               !bottles.some((cellarBottle: any) => cellarBottle.id === b.bottleId)
             );
 
             if (invalidBottles.length > 0) {
-              console.warn('[Sommelier] Invalid bottleIds in list, retrying');
+              console.warn('[Sommelier] Invalid bottleIds in list:', invalidBottles.length, '| Retrying...');
               
               if (attempt < maxAttempts) {
                 continue; // Retry
+              } else {
+                // Max attempts reached, return with valid bottles only
+                console.warn('[Sommelier] Max attempts reached, filtering invalid bottles');
+                const validBottles = parsed.bottles.filter((b: any) => 
+                  bottles.some((cellarBottle: any) => cellarBottle.id === b.bottleId)
+                );
+                
+                if (validBottles.length > 0) {
+                  recommendation = {
+                    type: 'bottle_list',
+                    title: parsed.title || 'Recommended Wines',
+                    message: parsed.message || "Here are some wines from your cellar:",
+                    bottles: validBottles,
+                  };
+                } else {
+                  recommendation = {
+                    message: "I couldn't find matching bottles in your cellar. Please try rephrasing your request.",
+                  };
+                }
               }
+            } else {
+              // All bottles valid
+              recommendation = {
+                type: 'bottle_list',
+                title: parsed.title || 'Recommended Wines',
+                message: parsed.message || "Here are some wines from your cellar:",
+                bottles: parsed.bottles,
+              };
             }
-
-            recommendation = parsed;
           } else if (parsed.recommendation && parsed.recommendation.bottleId) {
             // Single-bottle response with recommendation
             const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
@@ -439,7 +462,8 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
               recommendation = parsed;
             }
           } else {
-            // No recommendation (probably a clarifying question)
+            // No recommendation (probably a clarifying question or message only)
+            console.log('[Sommelier] No bottles or recommendation, treating as message/question');
             recommendation = parsed;
           }
         } catch (parseError: any) {
