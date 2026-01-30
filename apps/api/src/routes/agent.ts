@@ -417,15 +417,14 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
             }
 
             recommendation = parsed;
-          } else {
-            // Single-bottle response (type: "single" or legacy format)
-            if (parsed.recommendation && parsed.recommendation.bottleId) {
-              const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
+          } else if (parsed.recommendation && parsed.recommendation.bottleId) {
+            // Single-bottle response with recommendation
+            const bottleExists = bottles.some((b: any) => b.id === parsed.recommendation.bottleId);
+            
+            if (!bottleExists) {
+              console.warn('[Sommelier] Invalid bottleId, retrying with corrective instruction');
               
-              if (!bottleExists) {
-                console.warn('[Sommelier] Invalid bottleId, retrying with corrective instruction');
-                
-                if (attempt < maxAttempts) {
+              if (attempt < maxAttempts) {
                 // Retry with correction
                 continue;
               } else {
@@ -440,7 +439,6 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`
           } else {
             // No recommendation (probably a clarifying question)
             recommendation = parsed;
-          }
           }
         } catch (parseError: any) {
           console.error('[Sommelier] Parse error:', parseError.message);
