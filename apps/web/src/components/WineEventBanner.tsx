@@ -207,15 +207,6 @@ export function WineEventBanner({ event, onDismiss, onViewMatches }: WineEventBa
                     {t('wineEvents.learnMore')}
                   </button>
                 ) : null}
-
-                {event.sourceName && (
-                  <div 
-                    className="text-xs opacity-60 self-center"
-                    style={{ color: '#653045' }}
-                  >
-                    {t('wineEvents.source')}: {event.sourceName}
-                  </div>
-                )}
               </div>
             </div>
           </div>
