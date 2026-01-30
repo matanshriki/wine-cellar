@@ -9,7 +9,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useFeatureFlags as useContextFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags';
 import { ShareCellarModal } from './ShareCellarModal';
 import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
@@ -18,7 +19,8 @@ import * as bottleService from '../services/bottleService';
 export function UserMenu() {
   const { t } = useTranslation();
   const { user, profile, signOut } = useAuth();
-  const { flags } = useFeatureFlags();
+  const { flags } = useContextFeatureFlags(); // For wishlist, cellar agent, csv import
+  const betaFlags = useBetaFeatureFlags(); // For share cellar, multi-bottle import
   const [isOpen, setIsOpen] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
@@ -73,10 +75,10 @@ export function UserMenu() {
       }
     }
     
-    if (user && flags?.canShareCellar) {
+    if (user && betaFlags.canShareCellar) {
       loadBottles();
     }
-  }, [user, flags?.canShareCellar]);
+  }, [user, betaFlags.canShareCellar]);
 
   async function handleLogout() {
     try {
@@ -183,7 +185,7 @@ export function UserMenu() {
             )}
 
             {/* Share Cellar - Only show if user has bottles and feature enabled */}
-            {flags?.canShareCellar && bottles.length > 0 && (
+            {betaFlags.canShareCellar && bottles.length > 0 && (
               <button
                 onClick={handleShareCellar}
                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -212,7 +214,7 @@ export function UserMenu() {
       )}
 
       {/* Share Cellar Modal */}
-      {flags?.canShareCellar && (
+      {betaFlags.canShareCellar && (
         <ShareCellarModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
