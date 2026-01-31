@@ -18,6 +18,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
+import { MobileFloatingFooter } from '../components/MobileFloatingFooter'; // Mobile-only floating footer with Camera FAB
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -1063,7 +1064,7 @@ export function CellarPage() {
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
               </button>
             )}
-            {/* Add Bottle - Only show when cellar has bottles (empty state has its own buttons) */}
+            {/* Add Bottle - Desktop only (mobile uses floating Camera FAB) */}
             {bottlesInCellar.length > 0 && (
               <button
                 onClick={(e) => {
@@ -1071,11 +1072,10 @@ export function CellarPage() {
                   e.stopPropagation();
                   setShowAddSheet(true);
                 }}
-                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto"
+                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
                 style={{ pointerEvents: 'auto' }} // Fix: Ensure button works immediately on page load/switch
               >
-                <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
-                <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
+                <span>+ {t('cellar.addBottleButton')}</span>
               </button>
             )}
           </motion.div>
@@ -2374,6 +2374,11 @@ export function CellarPage() {
           min-width: 0;
         }
       `}</style>
+
+      {/* Mobile Floating Footer with Camera FAB - Only show when cellar has bottles */}
+      {bottlesInCellar.length > 0 && (
+        <MobileFloatingFooter onCameraClick={() => setShowAddSheet(true)} />
+      )}
     </div>
   );
 }
