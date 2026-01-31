@@ -95,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen" style={{ position: 'relative' }}>
+    <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
       {/* Luxury Background (light with subtle texture) */}
       <div className="luxury-background" />
 
@@ -104,7 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
        * safe-area-top: Ensures proper spacing for iPhone notch/status bar in PWA mode
        */}
       <nav 
-        className="sticky top-0 z-40 safe-area-top"
+        className="fixed top-0 left-0 right-0 z-40 safe-area-top"
         style={{ 
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(12px)',
@@ -182,8 +182,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
        * Main Content Area
        * Mobile: extra padding bottom for bottom nav (pb-bottom-nav includes safe-area)
        * Desktop: standard padding (pb-bottom-nav automatically switches at md breakpoint)
+       * Top padding added to account for fixed header
        */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav" style={{ paddingTop: 'calc(4rem + 1.5rem)' }}>
         {children}
       </main>
 

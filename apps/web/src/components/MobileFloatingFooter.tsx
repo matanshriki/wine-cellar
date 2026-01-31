@@ -61,7 +61,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
     },
   ];
 
-  // Add wishlist if enabled
+  // Add wishlist if enabled (default to showing base items immediately to prevent icon flash)
   const allNavItems = flags?.wishlistEnabled
     ? [
         ...navItems,
@@ -76,6 +76,9 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
         },
       ]
     : navItems;
+
+  // Always show at least the base items (prevents delayed icon rendering)
+  const displayItems = allNavItems.length > 0 ? allNavItems : navItems;
 
   return (
     <>
@@ -174,7 +177,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
           >
             <div className="flex items-center h-16 px-2">
               {/* Left nav items */}
-              {allNavItems.slice(0, 2).map((item) => {
+              {displayItems.slice(0, 2).map((item) => {
                 const isActive = location.pathname === item.path;
 
                 return (
@@ -221,7 +224,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
               <div className="flex-1 h-full" />
 
               {/* Right nav items */}
-              {allNavItems.slice(2).map((item) => {
+              {displayItems.slice(2).map((item) => {
                 const isActive = location.pathname === item.path;
 
                 return (
