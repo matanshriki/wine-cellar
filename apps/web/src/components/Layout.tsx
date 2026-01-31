@@ -7,12 +7,16 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { CompleteProfileModal } from './CompleteProfileModal';
 import { UserMenu } from './UserMenu';
 import { BottomNav } from './BottomNav';
+import { MobileFloatingFooter } from './MobileFloatingFooter';
+import { AddBottleSheet } from './AddBottleSheet';
+import { useAddBottleContext } from '../contexts/AddBottleContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const { showAddSheet, openAddBottleFlow, closeAddBottleFlow } = useAddBottleContext();
 
   // Show CompleteProfile modal if profile is incomplete
   useEffect(() => {
@@ -179,8 +183,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Premium Bottom Navigation for Mobile */}
-      <BottomNav />
+      {/* Mobile Floating Footer with Camera FAB - Replaces BottomNav on mobile */}
+      <MobileFloatingFooter onCameraClick={openAddBottleFlow} />
+
+      {/* Global Add Bottle Sheet - Accessible from Camera FAB on any page */}
+      <AddBottleSheet
+        isOpen={showAddSheet}
+        onClose={closeAddBottleFlow}
+        onUploadPhoto={() => {
+          closeAddBottleFlow();
+          // Trigger camera/label capture
+          const event = new CustomEvent('openLabelCapture');
+          window.dispatchEvent(event);
+        }}
+        onManualEntry={() => {
+          closeAddBottleFlow();
+          // Trigger manual form
+          const event = new CustomEvent('openManualForm');
+          window.dispatchEvent(event);
+        }}
+        onMultiBottleImport={() => {
+          closeAddBottleFlow();
+          // Trigger multi-bottle import
+          const event = new CustomEvent('openMultiBottleImport');
+          window.dispatchEvent(event);
+        }}
+        showMultiBottleOption={false} // Hide multi-bottle for now, show only in Cellar
+      />
 
       {/* Complete Profile Modal */}
       <CompleteProfileModal

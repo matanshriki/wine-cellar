@@ -22,9 +22,9 @@ export function SommelierChatButton() {
       onClick={() => navigate('/agent')}
       className="fixed z-[45] flex items-center gap-3 px-5 py-3 rounded-full shadow-2xl group"
       style={{
-        // Mobile: Above bottom nav, right side
+        // Mobile: Above new floating footer, right side
         // Desktop: Bottom right
-        bottom: 'calc(var(--app-bottom-nav-total) + 1rem)',
+        bottom: 'calc(6.5rem + env(safe-area-inset-bottom) + 1rem)', // 104px footer + safe-area + 16px gap (adjusted for new floating footer)
         right: '1rem',
         background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
         color: 'white',

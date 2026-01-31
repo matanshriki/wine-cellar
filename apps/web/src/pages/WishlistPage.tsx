@@ -700,7 +700,7 @@ export function WishlistPage() {
           onClick={() => setShowAddSheet(true)}
           className="fixed shadow-xl rounded-full w-14 h-14 flex items-center justify-center"
           style={{
-            bottom: 'calc(4rem + env(safe-area-inset-bottom) + 1rem)', // 64px nav + safe-area + 16px gap (PWA-safe)
+            bottom: 'calc(6.5rem + env(safe-area-inset-bottom) + 1rem)', // 104px footer + safe-area + 16px gap (PWA-safe, adjusted for new floating footer)
             right: 'max(1rem, env(safe-area-inset-right))',
             background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
             color: 'white',

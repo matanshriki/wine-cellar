@@ -141,6 +141,29 @@ export function CellarPage() {
     }
   }, []);
 
+  // Listen for Camera FAB actions from global Layout
+  useEffect(() => {
+    const handleOpenLabelCapture = () => {
+      setShowCamera(true);
+    };
+    const handleOpenManualForm = () => {
+      setShowForm(true);
+    };
+    const handleOpenMultiBottleImport = () => {
+      setShowMultiImport(true);
+    };
+
+    window.addEventListener('openLabelCapture', handleOpenLabelCapture);
+    window.addEventListener('openManualForm', handleOpenManualForm);
+    window.addEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
+
+    return () => {
+      window.removeEventListener('openLabelCapture', handleOpenLabelCapture);
+      window.removeEventListener('openManualForm', handleOpenManualForm);
+      window.removeEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
+    };
+  }, []);
+
   // Infinite scroll: Detect when user scrolls near bottom
   useEffect(() => {
     const handleScroll = () => {
@@ -1063,7 +1086,7 @@ export function CellarPage() {
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
               </button>
             )}
-            {/* Add Bottle - Only show when cellar has bottles (empty state has its own buttons) */}
+            {/* Add Bottle - Desktop only (mobile uses floating Camera FAB) */}
             {bottlesInCellar.length > 0 && (
               <button
                 onClick={(e) => {
@@ -1071,11 +1094,10 @@ export function CellarPage() {
                   e.stopPropagation();
                   setShowAddSheet(true);
                 }}
-                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto"
+                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
                 style={{ pointerEvents: 'auto' }} // Fix: Ensure button works immediately on page load/switch
               >
-                <span className="hidden xs:inline">+ {t('cellar.addBottleButton')}</span>
-                <span className="xs:hidden">+ {t('cellar.addBottleButton')}</span>
+                <span>+ {t('cellar.addBottleButton')}</span>
               </button>
             )}
           </motion.div>

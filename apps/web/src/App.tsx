@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
+import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -213,7 +214,9 @@ export function App() {
         <ToastProvider>
           <SupabaseAuthProvider>
             <FeatureFlagsProvider>
-              <AppRoutes />
+              <AddBottleProvider>
+                <AppRoutes />
+              </AddBottleProvider>
             </FeatureFlagsProvider>
           </SupabaseAuthProvider>
         </ToastProvider>
