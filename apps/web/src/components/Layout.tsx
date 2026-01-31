@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags
 import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags'; // Beta feature flags (multi-bottle, share)
@@ -11,6 +12,7 @@ import { BottomNav } from './BottomNav';
 import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -115,23 +117,46 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo/Brand */}
+            {/* Logo/Brand - Scroll to Top Button */}
             <div className="flex items-center gap-4 sm:gap-8">
-              <button
+              <motion.button
                 onClick={() => {
-                  console.log('[Wine Glass Icon] Clicked, current path:', location.pathname);
-                  // Always scroll to top, and navigate to cellar if not there
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  if (location.pathname !== '/cellar') {
-                    window.location.href = '/cellar';
+                  // Only scroll if not already at top (prevents jitter)
+                  if (window.scrollY > 10) {
+                    const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                    window.scrollTo({ top: 0, behavior });
+                    console.log('[Wine Glass Icon] Scrolling to top with behavior:', behavior);
                   }
                 }}
-                className="flex items-center gap-2 group cursor-pointer"
-                style={{ background: 'none', border: 'none', padding: 0 }}
+                onKeyDown={(e) => {
+                  // Keyboard accessibility: Enter or Space triggers scroll
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (window.scrollY > 10) {
+                      const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                      window.scrollTo({ top: 0, behavior });
+                    }
+                  }
+                }}
+                className="flex items-center gap-2 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg"
+                style={{ background: 'none', border: 'none', padding: '4px' }}
+                aria-label="Scroll to top"
+                role="button"
+                tabIndex={0}
+                // Micro-interactions
+                whileHover={shouldReduceMotion() ? {} : { 
+                  scale: 1.02,
+                  y: -1,
+                  transition: { duration: 0.2, ease: 'easeOut' }
+                }}
+                whileTap={shouldReduceMotion() ? {} : { 
+                  scale: 0.97,
+                  transition: { duration: 0.1 }
+                }}
               >
-                <span className="text-2xl">🍷</span>
+                <span className="text-2xl transition-opacity group-hover:opacity-80">🍷</span>
                 <span 
-                  className="hidden xs:inline text-xl sm:text-2xl font-bold transition-colors"
+                  className="hidden xs:inline text-xl sm:text-2xl font-bold transition-all group-hover:opacity-90"
                   style={{ 
                     fontFamily: 'var(--font-display)',
                     color: 'var(--wine-700)',
@@ -139,7 +164,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   {t('app.title')}
                 </span>
-              </button>
+              </motion.button>
 
               {/* Desktop Navigation - Light Luxury pill tabs */}
               <div className="hidden md:flex gap-2">
