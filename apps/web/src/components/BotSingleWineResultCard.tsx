@@ -11,7 +11,6 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import type { BottleWithWineInfo } from '../services/bottleService';
@@ -23,6 +22,7 @@ interface BotSingleWineResultCardProps {
   decant?: string;
   imageUrl: string | null;
   onOpenBottle?: () => void;
+  onViewDetails?: () => void;
 }
 
 export function BotSingleWineResultCard({
@@ -32,9 +32,9 @@ export function BotSingleWineResultCard({
   decant,
   imageUrl,
   onOpenBottle,
+  onViewDetails,
 }: BotSingleWineResultCardProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const reduceMotion = shouldReduceMotion();
 
@@ -135,17 +135,17 @@ export function BotSingleWineResultCard({
 
       {/* Wine Hero Card */}
       <motion.div
-        onClick={() => navigate(`/cellar?bottleId=${bottle.id}`)}
+        onClick={onViewDetails}
         style={{
           padding: '20px',
-          cursor: 'pointer',
+          cursor: onViewDetails ? 'pointer' : 'default',
           display: 'flex',
           gap: '16px',
           backgroundColor: 'white',
           transition: 'background-color 0.2s',
         }}
-        whileHover={reduceMotion ? {} : { backgroundColor: 'var(--bg-subtle)' }}
-        whileTap={reduceMotion ? {} : { scale: 0.99 }}
+        whileHover={reduceMotion || !onViewDetails ? {} : { backgroundColor: 'var(--bg-subtle)' }}
+        whileTap={reduceMotion || !onViewDetails ? {} : { scale: 0.99 }}
       >
         {/* Bottle Image */}
         <div
@@ -461,33 +461,35 @@ export function BotSingleWineResultCard({
           </motion.button>
         )}
 
-        {/* Secondary Action - View in Cellar */}
-        <motion.button
-          onClick={() => navigate(`/cellar?bottleId=${bottle.id}`)}
-          whileHover={reduceMotion ? {} : { scale: 1.02 }}
-          whileTap={reduceMotion ? {} : { scale: 0.98 }}
-          style={{
-            flex: 1,
-            minWidth: '140px',
-            padding: '12px 20px',
-            borderRadius: '12px',
-            border: '1px solid var(--wine-600)',
-            background: 'transparent',
-            color: 'var(--wine-600)',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'background-color 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--wine-50)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          {t('cellarSommelier.viewInCellar', 'View in Cellar')}
-        </motion.button>
+        {/* Secondary Action - View Details */}
+        {onViewDetails && (
+          <motion.button
+            onClick={onViewDetails}
+            whileHover={reduceMotion ? {} : { scale: 1.02 }}
+            whileTap={reduceMotion ? {} : { scale: 0.98 }}
+            style={{
+              flex: 1,
+              minWidth: '140px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: '1px solid var(--wine-600)',
+              background: 'transparent',
+              color: 'var(--wine-600)',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--wine-50)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            {t('cellarSommelier.viewDetails', 'View Details')}
+          </motion.button>
+        )}
       </div>
     </motion.div>
   );

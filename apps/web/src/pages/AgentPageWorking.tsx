@@ -667,6 +667,10 @@ export function AgentPageWorking() {
                     }
                   };
 
+                  const handleViewDetails = () => {
+                    handleViewBottleDetails(recommendedBottle.id);
+                  };
+
                   return (
                     <BotSingleWineResultCard
                       bottle={recommendedBottle}
@@ -675,6 +679,7 @@ export function AgentPageWorking() {
                       decant={msg.recommendation!.decant}
                       imageUrl={displayImage.imageUrl}
                       onOpenBottle={handleOpenBottle}
+                      onViewDetails={handleViewDetails}
                     />
                   );
                 })()}
