@@ -179,8 +179,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Premium Bottom Navigation for Mobile - Hidden on Cellar page (uses floating footer instead) */}
-      {location.pathname !== '/cellar' && <BottomNav />}
+      {/* Premium Bottom Navigation for Mobile */}
+      <BottomNav />
 
       {/* Complete Profile Modal */}
       <CompleteProfileModal
