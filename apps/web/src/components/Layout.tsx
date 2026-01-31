@@ -119,44 +119,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand - Scroll to Top Button */}
             <div className="flex items-center gap-4 sm:gap-8">
-              <motion.button
-                onClick={() => {
-                  // Only scroll if not already at top (prevents jitter)
-                  if (window.scrollY > 10) {
-                    const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
-                    window.scrollTo({ top: 0, behavior });
-                    console.log('[Wine Glass Icon] Scrolling to top with behavior:', behavior);
-                  }
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('[Wine Glass Icon] CLICKED! scrollY:', window.scrollY);
+                  
+                  // Always scroll to top (simplified - no jitter check)
+                  const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                  window.scrollTo({ top: 0, behavior });
+                  console.log('[Wine Glass Icon] Scroll command sent with behavior:', behavior);
                 }}
                 onKeyDown={(e) => {
-                  // Keyboard accessibility: Enter or Space triggers scroll
+                  console.log('[Wine Glass Icon] Key pressed:', e.key);
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    if (window.scrollY > 10) {
-                      const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
-                      window.scrollTo({ top: 0, behavior });
-                    }
+                    const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                    window.scrollTo({ top: 0, behavior });
                   }
                 }}
-                className="flex items-center gap-2 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg"
-                style={{ background: 'none', border: 'none', padding: '4px' }}
+                type="button"
+                className="flex items-center gap-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg transition-all hover:opacity-80 active:scale-95"
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  padding: '4px',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  userSelect: 'none',
+                  pointerEvents: 'auto',
+                  position: 'relative',
+                  zIndex: 10,
+                }}
                 aria-label="Scroll to top"
-                role="button"
                 tabIndex={0}
-                // Micro-interactions
-                whileHover={shouldReduceMotion() ? {} : { 
-                  scale: 1.02,
-                  y: -1,
-                  transition: { duration: 0.2, ease: 'easeOut' }
-                }}
-                whileTap={shouldReduceMotion() ? {} : { 
-                  scale: 0.97,
-                  transition: { duration: 0.1 }
-                }}
               >
-                <span className="text-2xl transition-opacity group-hover:opacity-80">🍷</span>
+                <span className="text-2xl pointer-events-none">🍷</span>
                 <span 
-                  className="hidden xs:inline text-xl sm:text-2xl font-bold transition-all group-hover:opacity-90"
+                  className="hidden xs:inline text-xl sm:text-2xl font-bold pointer-events-none"
                   style={{ 
                     fontFamily: 'var(--font-display)',
                     color: 'var(--wine-700)',
@@ -164,7 +164,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   {t('app.title')}
                 </span>
-              </motion.button>
+              </button>
 
               {/* Desktop Navigation - Light Luxury pill tabs */}
               <div className="hidden md:flex gap-2">
