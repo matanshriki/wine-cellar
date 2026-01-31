@@ -29,8 +29,9 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
   const { flags } = useFeatureFlags();
   const reduceMotion = shouldReduceMotion();
 
-  // Navigation items - keeping all 4 items visible
-  // Icons are inline SVGs (not lazy loaded) for instant rendering
+  // Navigation items - ALL 4 items always visible for instant rendering
+  // Icons are inline SVGs (not lazy loaded) to prevent delayed appearance
+  // Note: Wishlist is always shown - feature flag only controls backend behavior
   const navItems = [
     {
       path: '/cellar',
@@ -59,26 +60,16 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
         </svg>
       ),
     },
+    {
+      path: '/wishlist',
+      labelKey: 'nav.wishlist',
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+      ),
+    },
   ];
-
-  // Add wishlist if enabled (default to showing base items immediately to prevent icon flash)
-  const allNavItems = flags?.wishlistEnabled
-    ? [
-        ...navItems,
-        {
-          path: '/wishlist',
-          labelKey: 'nav.wishlist',
-          icon: (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-          ),
-        },
-      ]
-    : navItems;
-
-  // Always show at least the base items (prevents delayed icon rendering)
-  const displayItems = allNavItems.length > 0 ? allNavItems : navItems;
 
   return (
     <>
@@ -177,7 +168,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
           >
             <div className="flex items-center h-16 px-2">
               {/* Left nav items */}
-              {displayItems.slice(0, 2).map((item) => {
+              {navItems.slice(0, 2).map((item) => {
                 const isActive = location.pathname === item.path;
 
                 return (
@@ -224,7 +215,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
               <div className="flex-1 h-full" />
 
               {/* Right nav items */}
-              {displayItems.slice(2).map((item) => {
+              {navItems.slice(2).map((item) => {
                 const isActive = location.pathname === item.path;
 
                 return (
