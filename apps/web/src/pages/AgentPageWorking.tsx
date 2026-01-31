@@ -20,6 +20,8 @@ import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { BottleCarousel, type BottleRecommendation } from '../components/BottleCarousel';
+import { BotRichResultCard } from '../components/BotRichResultCard';
+import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
@@ -517,6 +519,7 @@ export function AgentPageWorking() {
           const isUser = msg.role === 'user';
           const avatarUrl = isUser ? profile?.avatar_url : null;
           const showAvatar = true;
+          const hasMultiBottles = msg.bottleList && msg.bottleList.bottles && msg.bottleList.bottles.length > 0;
 
           return (
             <div
@@ -576,31 +579,39 @@ export function AgentPageWorking() {
                 </div>
               )}
 
+              {/* Message Content */}
               <div
                 style={{
-                  maxWidth: '75%',
+                  maxWidth: hasMultiBottles && !isUser ? '95%' : '75%',
+                  width: hasMultiBottles && !isUser ? '100%' : 'auto',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
+                  gap: '8px',
                 }}
               >
-                <div
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    backgroundColor: isUser ? '#7c3030' : 'white',
-                    color: isUser ? 'white' : '#333',
-                    border: !isUser ? '1px solid #e0e0e0' : 'none',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                {/* Rich Result Layout for Multi-Bottle Bot Responses */}
+                {!isUser && hasMultiBottles ? (
+                  <>
+                    {/* Message text bubble */}
+                    {msg.content && (
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '16px',
+                          backgroundColor: 'white',
+                          color: '#333',
+                          border: '1px solid #e0e0e0',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          maxWidth: '75%',
+                        }}
+                      >
+                        <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                      </div>
+                    )}
 
-                  {/* Multi-bottle carousel response */}
-                  {msg.bottleList && msg.bottleList.bottles && msg.bottleList.bottles.length > 0 && (
-                    <div style={{ marginTop: '16px' }}>
-                      <BottleCarousel
-                        title={msg.bottleList.title}
+                    {/* Rich Result Card with Luxury Carousel */}
+                    <BotRichResultCard>
+                      <BottleCarouselLuxury
                         bottles={msg.bottleList.bottles.map(b => ({
                           ...b,
                           imageUrl: bottles.find(bottle => bottle.id === b.bottleId)?.wine.user_image_url || 
@@ -609,11 +620,26 @@ export function AgentPageWorking() {
                         }))}
                         onBottleClick={handleViewBottleDetails}
                       />
-                    </div>
-                  )}
+                    </BotRichResultCard>
+                  </>
+                ) : (
+                  /* Normal Chat Bubble */
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '16px',
+                      backgroundColor: isUser ? '#7c3030' : 'white',
+                      color: isUser ? 'white' : '#333',
+                      border: !isUser ? '1px solid #e0e0e0' : 'none',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                  </div>
+                )}
 
-                  {/* Single bottle recommendation */}
-                  {msg.recommendation && (
+                {/* Single bottle recommendation (only for normal bubbles) */}
+                {!hasMultiBottles && msg.recommendation && (
                     <div
                       style={{
                         marginTop: '12px',
@@ -714,7 +740,7 @@ export function AgentPageWorking() {
                       </button>
                     </div>
                   )}
-                </div>
+                )}
               </div>
             </div>
           );
