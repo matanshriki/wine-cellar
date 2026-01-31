@@ -7,6 +7,7 @@ import { BottleCard } from '../components/BottleCard';
 import { BottleForm } from '../components/BottleForm';
 import { CSVImport } from '../components/CSVImport';
 import { CelebrationModal } from '../components/CelebrationModal';
+import { OpenBottleQuantityModal } from '../components/OpenBottleQuantityModal';
 import { AddBottleSheet } from '../components/AddBottleSheet';
 import { LabelCapture } from '../components/LabelCapture';
 import { BulkAnalysisModal } from '../components/BulkAnalysisModal';
@@ -54,6 +55,10 @@ export function CellarPage() {
   const [openedBottleName, setOpenedBottleName] = useState('');
   const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
   const [bulkAnalysisCooldown, setBulkAnalysisCooldown] = useState(false);
+  
+  // Quantity modal state (for opening multiple bottles)
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [bottleToOpen, setBottleToOpen] = useState<bottleService.BottleWithWineInfo | null>(null);
   
   // Feedback iteration (dev only) - Multi-bottle import state
   const [showMultiBottleImport, setShowMultiBottleImport] = useState(false);
@@ -397,10 +402,23 @@ export function CellarPage() {
   }
 
   async function handleMarkOpened(bottle: bottleService.BottleWithWineInfo) {
+    // If quantity > 1, show quantity selection modal
+    if (bottle.quantity > 1) {
+      setBottleToOpen(bottle);
+      setShowQuantityModal(true);
+      return;
+    }
+
+    // If quantity == 1, proceed directly with opening
+    await markBottleOpenedWithQuantity(bottle, 1);
+  }
+
+  async function markBottleOpenedWithQuantity(bottle: bottleService.BottleWithWineInfo, openedCount: number) {
     try {
-      // Mark the bottle as opened
+      // Mark the bottle as opened with specified quantity
       await historyService.markBottleOpened({
         bottle_id: bottle.id,
+        opened_count: openedCount,
         occasion: 'casual',
         meal_type: undefined,
         vibe: undefined,
@@ -1609,6 +1627,24 @@ export function CellarPage() {
       )}
 
       {/* Celebration Modal for marking bottle as opened */}
+      {/* Open Bottle Quantity Modal */}
+      <OpenBottleQuantityModal
+        isOpen={showQuantityModal}
+        onClose={() => {
+          setShowQuantityModal(false);
+          setBottleToOpen(null);
+        }}
+        onConfirm={(quantity) => {
+          if (bottleToOpen) {
+            markBottleOpenedWithQuantity(bottleToOpen, quantity);
+          }
+          setShowQuantityModal(false);
+          setBottleToOpen(null);
+        }}
+        maxQuantity={bottleToOpen?.quantity || 1}
+        wineName={bottleToOpen?.wine.wine_name || ''}
+      />
+
       {/* Celebration Modal */}
       <CelebrationModal
         isOpen={showCelebration}

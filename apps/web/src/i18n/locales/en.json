@@ -271,6 +271,13 @@
       "markOpened": "Mark as Opened",
       "markOpenedFailed": "Failed to mark bottle as opened"
     },
+    "openBottle": {
+      "howMany": "How many bottles?",
+      "selectQuantity": "Select how many bottles of {{wineName}} you want to mark as opened.",
+      "quantity": "Quantity",
+      "maxAvailable": "Max: {{max}}",
+      "markAsOpened": "Mark {{count}} as Opened"
+    },
     "wineStyles": {
       "red": "Red",
       "white": "White",
@@ -680,6 +687,8 @@
     "edit": "Edit",
     "close": "Close",
     "back": "Back",
+    "increase": "Increase",
+    "decrease": "Decrease",
     "next": "Next",
     "confirm": "Confirm",
     "search": "Search",

@@ -62,6 +62,7 @@ export async function listHistory(): Promise<ConsumptionHistoryWithDetails[]> {
  */
 export interface MarkBottleOpenedInput {
   bottle_id: string;
+  opened_count?: number; // Number of bottles to open (default: 1)
   occasion?: string;
   meal_type?: string;
   vibe?: string;
@@ -75,6 +76,12 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
   
   if (!user) {
     throw new Error('Not authenticated');
+  }
+
+  // Validate opened_count (default to 1 if not provided)
+  const openedCount = input.opened_count || 1;
+  if (openedCount < 1) {
+    throw new Error('Opened count must be at least 1');
   }
 
   // First, get the bottle to get wine_id and check quantity
@@ -94,11 +101,16 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
     throw new Error('No bottles left to open');
   }
 
-  // Create consumption history entry
+  if (openedCount > bottle.quantity) {
+    throw new Error(`Cannot open ${openedCount} bottles - only ${bottle.quantity} available`);
+  }
+
+  // Create consumption history entry with opened_quantity
   const historyData: ConsumptionHistoryInsert = {
     user_id: user.id,
     bottle_id: input.bottle_id,
     wine_id: bottle.wine_id,
+    opened_quantity: openedCount,
     occasion: input.occasion || null,
     meal_type: input.meal_type || null,
     vibe: input.vibe || null,
@@ -118,11 +130,12 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
     throw new Error('Failed to record consumption');
   }
 
-  // Decrement bottle quantity
+  // Decrement bottle quantity by opened_count
+  const newQuantity = bottle.quantity - openedCount;
   // @ts-ignore - Supabase type inference issue
   const { error: updateError } = await supabase
     .from('bottles')
-    .update({ quantity: bottle.quantity - 1 })
+    .update({ quantity: newQuantity })
     .eq('id', input.bottle_id)
     .eq('user_id', user.id);
 

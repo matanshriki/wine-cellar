@@ -270,6 +270,13 @@
       "markOpened": "סמן כנפתח",
       "markOpenedFailed": "סימון הבקבוק כנפתח נכשל"
     },
+    "openBottle": {
+      "howMany": "כמה בקבוקים?",
+      "selectQuantity": "בחר כמה בקבוקים של {{wineName}} ברצונך לסמן כנפתחו.",
+      "quantity": "כמות",
+      "maxAvailable": "מקסימום: {{max}}",
+      "markAsOpened": "סמן {{count}} כנפתחו"
+    },
     "wineStyles": {
       "red": "אדום",
       "white": "לבן",
@@ -669,6 +676,8 @@
     "edit": "ערוך",
     "close": "סגור",
     "back": "חזור",
+    "increase": "הגדל",
+    "decrease": "הקטן",
     "next": "הבא",
     "confirm": "אשר",
     "search": "חפש",
