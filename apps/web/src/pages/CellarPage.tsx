@@ -144,13 +144,13 @@ export function CellarPage() {
   // Listen for Camera FAB actions from global Layout
   useEffect(() => {
     const handleOpenLabelCapture = () => {
-      setShowCamera(true);
+      setShowLabelCapture(true);
     };
     const handleOpenManualForm = () => {
       setShowForm(true);
     };
     const handleOpenMultiBottleImport = () => {
-      setShowMultiImport(true);
+      setShowMultiBottleImport(true);
     };
 
     window.addEventListener('openLabelCapture', handleOpenLabelCapture);
