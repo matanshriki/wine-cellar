@@ -100,74 +100,59 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="luxury-background" />
 
       {/**
-       * Top Navigation Bar - Light Luxury Design
+       * Sticky Top Header Bar - Contains only profile/language controls
        * safe-area-top: Ensures proper spacing for iPhone notch/status bar in PWA mode
        */}
       <nav 
         className="sticky top-0 z-40 safe-area-top"
         style={{ 
-          background: 'var(--bg-surface)',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--border-light)',
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Brand */}
-            <div className="flex items-center gap-4 sm:gap-8">
-              <Link 
-                to="/cellar" 
-                className="flex items-center gap-2 group"
-              >
-                <span className="text-2xl">🍷</span>
-                <span 
-                  className="hidden xs:inline text-xl sm:text-2xl font-bold transition-colors"
-                  style={{ 
-                    fontFamily: 'var(--font-display)',
-                    color: 'var(--wine-700)',
+          <div className="flex justify-between items-center h-14">
+            {/* Desktop Navigation Pills - Only on desktop */}
+            <div className="hidden md:flex gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => {
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`
+                    px-4 py-2 rounded-full text-sm font-medium transition-all
+                    ${
+                      location.pathname === item.path
+                        ? ''
+                        : 'hover:bg-opacity-80'
+                    }
+                  `}
+                  style={{
+                    background: location.pathname === item.path 
+                      ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
+                      : 'var(--bg-surface-2)',
+                    color: location.pathname === item.path 
+                      ? 'var(--text-inverse)' 
+                      : 'var(--text-secondary)',
+                    boxShadow: location.pathname === item.path 
+                      ? 'var(--shadow-sm)' 
+                      : 'none',
                   }}
                 >
-                  {t('app.title')}
-                </span>
-              </Link>
-
-              {/* Desktop Navigation - Light Luxury pill tabs */}
-              <div className="hidden md:flex gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => {
-                      // Instant scroll for desktop (smooth scroll handled by Layout useEffect)
-                      window.scrollTo(0, 0);
-                    }}
-                    className={`
-                      px-4 py-2 rounded-full text-sm font-medium transition-all
-                      ${
-                        location.pathname === item.path
-                          ? ''
-                          : 'hover:bg-opacity-80'
-                      }
-                    `}
-                    style={{
-                      background: location.pathname === item.path 
-                        ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
-                        : 'var(--bg-surface-2)',
-                      color: location.pathname === item.path 
-                        ? 'var(--text-inverse)' 
-                        : 'var(--text-secondary)',
-                      boxShadow: location.pathname === item.path 
-                        ? 'var(--shadow-sm)' 
-                        : 'none',
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+                  {item.label}
+                </Link>
+              ))}
             </div>
 
-            {/* End side actions */}
+            {/* Mobile: Empty space to balance layout */}
+            <div className="md:hidden" />
+
+            {/* Profile & Language Controls - Always visible */}
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
               <UserMenu />
@@ -175,6 +160,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+
+      {/**
+       * Page Header Content - Scrolls with content
+       * Contains wine glass icon and app title
+       */}
+      <div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2"
+        style={{
+          borderBottom: '1px solid var(--border-subtle)',
+        }}
+      >
+        <Link 
+          to="/cellar" 
+          className="flex items-center gap-2 group w-fit"
+        >
+          <span className="text-2xl">🍷</span>
+          <span 
+            className="hidden xs:inline text-xl sm:text-2xl font-bold transition-colors"
+            style={{ 
+              fontFamily: 'var(--font-display)',
+              color: 'var(--wine-700)',
+            }}
+          >
+            {t('app.title')}
+          </span>
+        </Link>
+      </div>
 
       {/**
        * Main Content Area
