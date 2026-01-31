@@ -104,7 +104,11 @@
       "hold": "שמור",
       "peakSoon": "שיא בקרוב",
       "ready": "מוכן עכשיו",
-      "noAnalysis": "עדיין אין ניתוח זמין"
+      "noAnalysis": "עדיין אין ניתוח זמין",
+      "totalAnalyzed": "סה\"כ נותחו",
+      "thisMonth": "החודש",
+      "tonightSignal": "יין אחד מושלם להערב",
+      "tonightSignal_plural": "{{count}} יינות מושלמים להערב"
     }
   },
   "cellar": {

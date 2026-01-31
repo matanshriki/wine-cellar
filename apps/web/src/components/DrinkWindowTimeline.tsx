@@ -3,48 +3,57 @@
  * 
  * Premium visualization of bottles by readiness
  * Clean, elegant progress bars - inspired by luxury analytics
+ * 
+ * Enhanced with:
+ * - Actionable buckets (click to filter)
+ * - Momentum deltas (changes over time)
+ * - Tonight Signal (highly-rated ready wines)
  */
 
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import {
+  getBucketInsights,
+  computeTonightSignal,
+  saveSnapshot,
+  shouldSaveSnapshot,
+  type ReadinessCategory,
+} from '../utils/drinkWindowInsights';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 interface DrinkWindowTimelineProps {
   bottles: BottleWithWineInfo[];
 }
 
-type ReadinessCategory = 'READY' | 'PEAK_SOON' | 'HOLD' | 'UNKNOWN';
-
 export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const reduceMotion = shouldReduceMotion();
+  const [isVisible, setIsVisible] = useState(false);
 
-  // Group bottles by readiness
-  const categorizeBottles = () => {
-    const categories: Record<ReadinessCategory, BottleWithWineInfo[]> = {
-      HOLD: [],
-      PEAK_SOON: [],
-      READY: [],
-      UNKNOWN: [],
-    };
+  // Compute insights
+  const insights = getBucketInsights(bottles);
+  const tonightSignal = computeTonightSignal(insights.READY.bottles);
 
-    bottles.forEach((bottle) => {
-      const analysis = bottle as any;
-      if (analysis.readiness_label) {
-        const category = analysis.readiness_label as ReadinessCategory;
-        if (categories[category]) {
-          categories[category].push(bottle);
-        } else {
-          categories.UNKNOWN.push(bottle);
-        }
-      } else {
-        categories.UNKNOWN.push(bottle);
-      }
-    });
+  // Save snapshot on mount (once per day)
+  useEffect(() => {
+    if (insights.totalAnalyzed > 0 && shouldSaveSnapshot()) {
+      saveSnapshot({
+        HOLD: insights.HOLD.count,
+        PEAK_SOON: insights.PEAK_SOON.count,
+        READY: insights.READY.count,
+      });
+    }
+  }, [insights.HOLD.count, insights.PEAK_SOON.count, insights.READY.count, insights.totalAnalyzed]);
 
-    return categories;
-  };
-
-  const categorized = categorizeBottles();
+  // Trigger bar animations on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const timelineStages = [
     {
@@ -53,6 +62,8 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
       color: 'var(--wine-400)',
       bgGradient: 'linear-gradient(90deg, rgba(164, 77, 90, 0.15), rgba(164, 77, 90, 0.25))',
       icon: '⏳',
+      count: insights.HOLD.count,
+      delta: insights.HOLD.delta,
     },
     {
       key: 'PEAK_SOON' as ReadinessCategory,
@@ -60,6 +71,8 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
       color: 'var(--gold-400)',
       bgGradient: 'linear-gradient(90deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.3))',
       icon: '⚡',
+      count: insights.PEAK_SOON.count,
+      delta: insights.PEAK_SOON.delta,
     },
     {
       key: 'READY' as ReadinessCategory,
@@ -67,16 +80,44 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
       color: 'var(--gold-300)',
       bgGradient: 'linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.4))',
       icon: '✨',
+      count: insights.READY.count,
+      delta: insights.READY.delta,
     },
   ];
 
-  // CRITICAL FIX: Count only analyzed bottles (those with readiness status)
-  // Not all bottles in the cellar, only those that have been analyzed
-  const totalBottles = categorized.HOLD.length + categorized.PEAK_SOON.length + categorized.READY.length;
-
-  if (totalBottles === 0) {
+  if (insights.totalAnalyzed === 0) {
     return null;
   }
+
+  /**
+   * Handle bucket click - navigate to cellar with readiness filter
+   */
+  const handleBucketClick = (readinessLabel: ReadinessCategory) => {
+    const params = new URLSearchParams();
+    params.set('readiness', readinessLabel);
+    params.set('sort', 'rating'); // Sort by rating (highest first)
+    navigate(`/cellar?${params.toString()}`);
+  };
+
+  /**
+   * Handle tonight signal click - navigate with ready + high rating filter
+   */
+  const handleTonightSignalClick = () => {
+    const params = new URLSearchParams();
+    params.set('readiness', 'READY');
+    params.set('rating', tonightSignal.threshold.toString());
+    params.set('sort', 'rating');
+    navigate(`/cellar?${params.toString()}`);
+  };
+
+  /**
+   * Format delta text
+   */
+  const formatDelta = (delta?: number): string | null => {
+    if (delta === undefined) return null;
+    const sign = delta > 0 ? '+' : '';
+    return `${sign}${delta} ${t('dashboard.drinkWindow.thisMonth', 'this month')}`;
+  };
 
   return (
     <div className="luxury-card overflow-hidden">
@@ -123,70 +164,161 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
       </div>
 
       <div className="p-6">
-
-        {/* Timeline visualization */}
+        {/* Timeline visualization - Clickable buckets */}
         <div className="space-y-5">
-        {timelineStages.map((stage, index) => {
-          const count = categorized[stage.key].length;
-          const percentage = totalBottles > 0 ? (count / totalBottles) * 100 : 0;
+          {timelineStages.map((stage, index) => {
+            const percentage = insights.totalAnalyzed > 0 ? (stage.count / insights.totalAnalyzed) * 100 : 0;
 
-          return (
-            <motion.div
-              key={stage.key}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ 
-                delay: index * 0.1,
-                duration: 0.4,
-                ease: [0.4, 0, 0.2, 1]
-              }}
-              className="relative"
-            >
-              {/* Stage label */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{stage.icon}</span>
-                  <span 
-                    className="text-sm font-medium"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {stage.label}
-                  </span>
-                </div>
-                <span 
-                  className="text-sm font-semibold tabular-nums"
-                  style={{ color: stage.color }}
-                >
-                  {count}
-                </span>
-              </div>
-
-              {/* Progress bar */}
-              <div 
-                className="h-2 rounded-full overflow-hidden"
+            return (
+              <motion.button
+                key={stage.key}
+                onClick={() => handleBucketClick(stage.key)}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileTap={reduceMotion ? {} : { scale: 0.99 }}
+                transition={{ 
+                  delay: index * 0.1,
+                  duration: 0.4,
+                  ease: [0.4, 0, 0.2, 1]
+                }}
+                className="relative w-full text-left p-3 -mx-3 rounded-lg transition-colors"
                 style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ 
-                    duration: 0.8, 
-                    delay: index * 0.1 + 0.3,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-                  className="h-full rounded-full"
+                {/* Stage label with delta */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{stage.icon}</span>
+                    <span 
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {stage.label}
+                    </span>
+                    {/* Momentum delta */}
+                    {stage.delta !== undefined && (
+                      <span
+                        className="text-xs font-normal"
+                        style={{
+                          color: stage.delta > 0 ? 'var(--color-emerald-600)' : 'var(--color-rose-600)',
+                          opacity: 0.8,
+                        }}
+                      >
+                        ({formatDelta(stage.delta)})
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: stage.color }}
+                    >
+                      {stage.count}
+                    </span>
+                    {/* Chevron indicator */}
+                    <svg
+                      className="w-4 h-4 transition-opacity"
+                      style={{ 
+                        color: 'var(--text-tertiary)',
+                        opacity: 0.4,
+                      }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Progress bar with animation */}
+                <div 
+                  className="h-2 rounded-full overflow-hidden"
                   style={{
-                    background: stage.bgGradient,
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-subtle)',
                   }}
-                />
-              </div>
-            </motion.div>
-          );
-        })}
+                >
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: isVisible ? `${percentage}%` : 0 }}
+                    transition={reduceMotion ? {
+                      duration: 0,
+                    } : { 
+                      duration: 0.8, 
+                      delay: index * 0.1 + 0.3,
+                      ease: [0.4, 0, 0.2, 1]
+                    }}
+                    className="h-full rounded-full"
+                    style={{
+                      background: stage.bgGradient,
+                    }}
+                  />
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
+
+        {/* Tonight Signal */}
+        {tonightSignal.count > 0 && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            onClick={handleTonightSignalClick}
+            className="w-full mt-6 pt-4 text-left"
+            style={{
+              borderTop: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <div 
+              className="flex items-center gap-2 p-3 -mx-3 rounded-lg transition-colors"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <span className="text-lg">✨</span>
+              <span 
+                className="text-sm font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {t('dashboard.drinkWindow.tonightSignal', {
+                  count: tonightSignal.count,
+                  defaultValue: `${tonightSignal.count} ${tonightSignal.count === 1 ? 'wine is' : 'wines are'} perfect for tonight`
+                })}
+              </span>
+              <svg
+                className="w-4 h-4 ms-auto transition-opacity"
+                style={{ 
+                  color: 'var(--text-tertiary)',
+                  opacity: 0.4,
+                }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </motion.button>
+        )}
 
         {/* Summary footer */}
         <div 
@@ -203,7 +335,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
               className="font-semibold tabular-nums"
               style={{ color: 'var(--text-primary)' }}
             >
-              {totalBottles}
+              {insights.totalAnalyzed}
             </span>
           </div>
         </div>

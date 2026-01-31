@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { BottleCard } from '../components/BottleCard';
@@ -41,6 +41,7 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const featureFlags = useFeatureFlags(); // Load user's feature flags (beta features)
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
   const csvImportEnabled = useFeatureFlag('csvImportEnabled'); // CSV Import permission flag
@@ -163,6 +164,53 @@ export function CellarPage() {
       window.removeEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
     };
   }, []);
+
+  // Handle URL parameters for filtering (from Drink Window navigation)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const readiness = params.get('readiness');
+    const rating = params.get('rating');
+    const sort = params.get('sort');
+
+    // Apply readiness filter from URL
+    if (readiness) {
+      const filterMap: Record<string, string> = {
+        'READY': 'ready',
+        'PEAK_SOON': 'aging',
+        'HOLD': 'aging',
+      };
+      
+      const filter = filterMap[readiness];
+      if (filter && !activeFilters.includes(filter)) {
+        setActiveFilters([filter]);
+      }
+    }
+
+    // Apply rating filter (as search query for simplicity)
+    if (rating) {
+      const threshold = parseFloat(rating);
+      if (!isNaN(threshold)) {
+        // We'll filter by rating in the filtering logic
+        setSearchQuery(`rating:${threshold}`);
+      }
+    }
+
+    // Apply sort from URL
+    if (sort) {
+      setSortBy('rating');
+      setSortDir('desc');
+      localStorage.setItem('cellar-sort-by', 'rating');
+      localStorage.setItem('cellar-sort-dir', 'desc');
+    }
+
+    // Clear URL params after applying (clean URL)
+    if (params.toString()) {
+      const timer = setTimeout(() => {
+        navigate('/cellar', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.search]);
 
   // Infinite scroll: Detect when user scrolls near bottom
   useEffect(() => {
@@ -559,8 +607,12 @@ export function CellarPage() {
       activeFilters,
     });
 
-    // Apply search query (debounced via input)
-    if (searchQuery.trim()) {
+    // Check if search query is a rating filter
+    const ratingMatch = searchQuery.match(/^rating:(\d+\.?\d*)$/);
+    const ratingThreshold = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+
+    // Apply search query (debounced via input) - skip if rating filter
+    if (searchQuery.trim() && !ratingThreshold) {
       const query = searchQuery.toLowerCase();
       result = result.filter((bottle) => {
         // Handle grapes as either string or array
@@ -619,12 +671,15 @@ export function CellarPage() {
             case 'ready':
               return (
                 bottle.readiness_status === 'InWindow' ||
-                bottle.readiness_status === 'Peak'
+                bottle.readiness_status === 'Peak' ||
+                (bottle as any).readiness_label === 'READY'
               );
             case 'aging':
               return (
                 bottle.readiness_status === 'TooYoung' ||
-                bottle.readiness_status === 'Approaching'
+                bottle.readiness_status === 'Approaching' ||
+                (bottle as any).readiness_label === 'PEAK_SOON' ||
+                (bottle as any).readiness_label === 'HOLD'
               );
             case 'pastPeak': // Feedback iteration (dev only)
               return bottle.readiness_status === 'PastPeak';
@@ -645,6 +700,15 @@ export function CellarPage() {
         
         // Wine must match all categories (AND between categories, OR within categories)
         return matchesColor && matchesReadiness && matchesOther;
+      });
+    }
+
+    // Apply rating filter (from Tonight Signal navigation)
+    if (ratingThreshold) {
+      result = result.filter((bottle) => {
+        const wine = bottle.wine || bottle;
+        const rating = (wine as any).vivino_rating || (wine as any).rating || 0;
+        return rating >= ratingThreshold;
       });
     }
 

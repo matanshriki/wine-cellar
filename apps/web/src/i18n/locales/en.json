@@ -104,7 +104,11 @@
       "hold": "Hold",
       "peakSoon": "Peak Soon",
       "ready": "Ready Now",
-      "noAnalysis": "No analysis available yet"
+      "noAnalysis": "No analysis available yet",
+      "totalAnalyzed": "Total analyzed",
+      "thisMonth": "this month",
+      "tonightSignal": "{{count}} wine is perfect for tonight",
+      "tonightSignal_plural": "{{count}} wines are perfect for tonight"
     }
   },
   "cellar": {
