@@ -120,6 +120,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link 
                 to="/cellar" 
                 className="flex items-center gap-2 group"
+                onClick={(e) => {
+                  // If already on cellar page, just scroll to top
+                  if (location.pathname === '/cellar') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
               >
                 <span className="text-2xl">🍷</span>
                 <span 
@@ -135,37 +142,43 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Desktop Navigation - Light Luxury pill tabs */}
               <div className="hidden md:flex gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => {
-                      // Instant scroll for desktop (smooth scroll handled by Layout useEffect)
-                      window.scrollTo(0, 0);
-                    }}
-                    className={`
-                      px-4 py-2 rounded-full text-sm font-medium transition-all
-                      ${
-                        location.pathname === item.path
-                          ? ''
-                          : 'hover:bg-opacity-80'
-                      }
-                    `}
-                    style={{
-                      background: location.pathname === item.path 
-                        ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
-                        : 'var(--bg-surface-2)',
-                      color: location.pathname === item.path 
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={(e) => {
+                        // If already on this page, scroll to top instead of navigating
+                        if (isActive) {
+                          e.preventDefault();
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={`
+                        px-4 py-2 rounded-full text-sm font-medium transition-all
+                        ${
+                          isActive
+                            ? ''
+                            : 'hover:bg-opacity-80'
+                        }
+                      `}
+                      style={{
+                        background: isActive 
+                          ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
+                          : 'var(--bg-surface-2)',
+                      color: isActive 
                         ? 'var(--text-inverse)' 
                         : 'var(--text-secondary)',
-                      boxShadow: location.pathname === item.path 
+                      boxShadow: isActive 
                         ? 'var(--shadow-sm)' 
                         : 'none',
                     }}
                   >
                     {item.label}
                   </Link>
-                ))}
+                );
+                })}
               </div>
             </div>
 

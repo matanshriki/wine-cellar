@@ -181,6 +181,13 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
                     }}
+                    onClick={(e) => {
+                      // If already on this page, scroll to top instead of navigating
+                      if (isActive) {
+                        e.preventDefault();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                   >
                     <motion.div
                       className="relative"
@@ -227,6 +234,13 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
                     aria-current={isActive ? 'page' : undefined}
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
+                    }}
+                    onClick={(e) => {
+                      // If already on this page, scroll to top instead of navigating
+                      if (isActive) {
+                        e.preventDefault();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
                     }}
                   >
                     <motion.div

@@ -178,10 +178,11 @@ export const BottomNav: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 onClick={(e) => {
-                  console.log('[BottomNav] Link clicked:', item.path);
-                  console.log('[BottomNav] Current pathname:', location.pathname);
-                  console.log('[BottomNav] Is same route?', location.pathname === item.path);
-                  scrollToTop();
+                  // If already on this page, scroll to top instead of navigating
+                  if (isActive) {
+                    e.preventDefault();
+                    scrollToTop();
+                  }
                 }}
                 className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
                 aria-label={t(item.labelKey)}
@@ -236,8 +237,11 @@ export const BottomNav: React.FC = () => {
                   e.preventDefault();
                   return;
                 }
-                console.log('[BottomNav] Wishlist clicked');
-                scrollToTop();
+                // If already on wishlist page, scroll to top instead of navigating
+                if (location.pathname === wishlistNavItem.path) {
+                  e.preventDefault();
+                  scrollToTop();
+                }
               }}
               className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
               aria-label={t(wishlistNavItem.labelKey)}
