@@ -22,6 +22,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { BottleCarousel, type BottleRecommendation } from '../components/BottleCarousel';
 import { BotRichResultCard } from '../components/BotRichResultCard';
 import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
+import * as labelArtService from '../services/labelArtService';
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
@@ -612,12 +613,14 @@ export function AgentPageWorking() {
                     {/* Rich Result Card with Luxury Carousel */}
                     <BotRichResultCard>
                       <BottleCarouselLuxury
-                        bottles={msg.bottleList.bottles.map(b => ({
-                          ...b,
-                          imageUrl: bottles.find(bottle => bottle.id === b.bottleId)?.wine.user_image_url || 
-                                   bottles.find(bottle => bottle.id === b.bottleId)?.wine.ai_label_url || 
-                                   null,
-                        }))}
+                        bottles={msg.bottleList.bottles.map(b => {
+                          const bottle = bottles.find(bottle => bottle.id === b.bottleId);
+                          const displayImage = bottle ? labelArtService.getWineDisplayImage(bottle.wine) : { imageUrl: null };
+                          return {
+                            ...b,
+                            imageUrl: displayImage.imageUrl,
+                          };
+                        })}
                         onBottleClick={handleViewBottleDetails}
                       />
                     </BotRichResultCard>
