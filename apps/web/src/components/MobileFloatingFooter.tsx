@@ -171,6 +171,16 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
               {navItems.slice(0, 2).map((item) => {
                 const isActive = location.pathname === item.path;
 
+                const handleClick = (e: React.MouseEvent) => {
+                  console.log('[Footer Icon]', item.path, 'clicked, isActive:', isActive);
+                  if (isActive) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Footer Icon] Scrolling to top');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                };
+
                 return (
                   <Link
                     key={item.path}
@@ -181,13 +191,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
                     }}
-                    onClick={(e) => {
-                      // If already on this page, scroll to top instead of navigating
-                      if (isActive) {
-                        e.preventDefault();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
+                    onClick={handleClick}
                   >
                     <motion.div
                       className="relative"
@@ -225,6 +229,16 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
               {navItems.slice(2).map((item) => {
                 const isActive = location.pathname === item.path;
 
+                const handleClick = (e: React.MouseEvent) => {
+                  console.log('[Footer Icon]', item.path, 'clicked, isActive:', isActive);
+                  if (isActive) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Footer Icon] Scrolling to top');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                };
+
                 return (
                   <Link
                     key={item.path}
@@ -235,13 +249,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
                     }}
-                    onClick={(e) => {
-                      // If already on this page, scroll to top instead of navigating
-                      if (isActive) {
-                        e.preventDefault();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
+                    onClick={handleClick}
                   >
                     <motion.div
                       className="relative"

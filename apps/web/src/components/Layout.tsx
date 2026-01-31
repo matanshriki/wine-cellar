@@ -117,16 +117,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand */}
             <div className="flex items-center gap-4 sm:gap-8">
-              <Link 
-                to="/cellar" 
-                className="flex items-center gap-2 group"
-                onClick={(e) => {
-                  // If already on cellar page, just scroll to top
-                  if (location.pathname === '/cellar') {
-                    e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+              <button
+                onClick={() => {
+                  console.log('[Wine Glass Icon] Clicked, current path:', location.pathname);
+                  // Always scroll to top, and navigate to cellar if not there
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (location.pathname !== '/cellar') {
+                    window.location.href = '/cellar';
                   }
                 }}
+                className="flex items-center gap-2 group cursor-pointer"
+                style={{ background: 'none', border: 'none', padding: 0 }}
               >
                 <span className="text-2xl">🍷</span>
                 <span 
@@ -138,23 +139,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   {t('app.title')}
                 </span>
-              </Link>
+              </button>
 
               {/* Desktop Navigation - Light Luxury pill tabs */}
               <div className="hidden md:flex gap-2">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
+                  
+                  const handleClick = (e: React.MouseEvent) => {
+                    console.log('[Desktop Nav]', item.path, 'clicked, isActive:', isActive);
+                    if (isActive) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('[Desktop Nav] Scrolling to top');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  };
+                  
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={(e) => {
-                        // If already on this page, scroll to top instead of navigating
-                        if (isActive) {
-                          e.preventDefault();
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
+                      onClick={handleClick}
                       className={`
                         px-4 py-2 rounded-full text-sm font-medium transition-all
                         ${
