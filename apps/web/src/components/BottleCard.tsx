@@ -257,18 +257,18 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         </span>
       </div>
 
-      {/* Region & Grapes - Compact single line */}
-      {(bottle.wine.region || (bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0)) && (
+      {/* Region & Country & Grapes - Compact single line */}
+      {(bottle.wine.region || bottle.wine.country || (bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0)) && (
         <div className="mb-3 space-y-1">
-          {/* Region - Note: NOT translated, it's actual geographic data */}
-          {bottle.wine.region && (
+          {/* Region & Country - Note: NOT translated, it's actual geographic data */}
+          {(bottle.wine.region || bottle.wine.country) && (
             <div className="flex items-center gap-2">
               <span className="text-base flex-shrink-0" aria-hidden="true">📍</span>
               <span 
                 className="text-sm line-clamp-1"
                 style={{ color: 'var(--text-tertiary)' }}
               >
-                {bottle.wine.region}
+                {[bottle.wine.region, bottle.wine.country].filter(Boolean).join(', ')}
               </span>
             </div>
           )}

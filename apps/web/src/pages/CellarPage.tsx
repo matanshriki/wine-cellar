@@ -635,6 +635,7 @@ export function CellarPage() {
           bottle.wine.wine_name,
           bottle.wine.producer,
           bottle.wine.region,
+          bottle.wine.country,
           bottle.wine.vintage?.toString(),
           grapesText,
           bottle.wine.color, // Also search by color/style
