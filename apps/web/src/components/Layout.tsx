@@ -123,19 +123,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('[Wine Glass Icon] CLICKED! scrollY:', window.scrollY);
                   
-                  // Always scroll to top (simplified - no jitter check)
                   const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                  
+                  // Log scroll positions to debug
+                  console.log('[Wine Glass Icon] CLICKED!');
+                  console.log('  window.scrollY:', window.scrollY);
+                  console.log('  document.documentElement.scrollTop:', document.documentElement.scrollTop);
+                  console.log('  document.body.scrollTop:', document.body.scrollTop);
+                  
+                  // Try multiple scroll methods (body might be the scroll container)
                   window.scrollTo({ top: 0, behavior });
-                  console.log('[Wine Glass Icon] Scroll command sent with behavior:', behavior);
+                  document.documentElement.scrollTo?.({ top: 0, behavior });
+                  document.body.scrollTo?.({ top: 0, behavior });
+                  
+                  // Force scroll with scrollTop as fallback
+                  if (behavior === 'auto') {
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                  }
+                  
+                  console.log('[Wine Glass Icon] Scroll commands sent with behavior:', behavior);
                 }}
                 onKeyDown={(e) => {
-                  console.log('[Wine Glass Icon] Key pressed:', e.key);
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
+                    
+                    // Try multiple scroll methods
                     window.scrollTo({ top: 0, behavior });
+                    document.documentElement.scrollTo?.({ top: 0, behavior });
+                    document.body.scrollTo?.({ top: 0, behavior });
+                    
+                    if (behavior === 'auto') {
+                      document.documentElement.scrollTop = 0;
+                      document.body.scrollTop = 0;
+                    }
                   }
                 }}
                 type="button"
