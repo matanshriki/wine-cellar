@@ -24,8 +24,8 @@
   html {
     /* Fix for iOS viewport height issues */
     height: 100%;
-    overflow: hidden;
     overflow-x: hidden;
+    /* Removed overflow: hidden to allow sticky positioning */
   }
 
   body {
@@ -37,8 +37,7 @@
     -webkit-tap-highlight-color: transparent;
     
     /* iOS scrolling fixes */
-    height: 100%;
-    overflow-y: auto;
+    min-height: 100%;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
