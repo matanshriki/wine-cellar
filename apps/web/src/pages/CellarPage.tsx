@@ -84,6 +84,7 @@ export function CellarPage() {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   
   // Sort state - persist in localStorage
   const [sortBy, setSortBy] = useState<string>(() => {
@@ -186,12 +187,11 @@ export function CellarPage() {
       }
     }
 
-    // Apply rating filter (as search query for simplicity)
+    // Apply rating filter (dedicated state, not search query)
     if (rating) {
       const threshold = parseFloat(rating);
       if (!isNaN(threshold)) {
-        // We'll filter by rating in the filtering logic
-        setSearchQuery(`rating:${threshold}`);
+        setRatingFilter(threshold);
       }
     }
 
@@ -204,6 +204,8 @@ export function CellarPage() {
     }
 
     // Clear URL params after applying (clean URL)
+    // Note: We keep the filter states (activeFilters, ratingFilter) active
+    // so the user sees the filtered results
     if (params.toString()) {
       const timer = setTimeout(() => {
         navigate('/cellar', { replace: true });
@@ -211,6 +213,13 @@ export function CellarPage() {
       return () => clearTimeout(timer);
     }
   }, [location.search]);
+
+  // Clear rating filter when user manually changes search or filters
+  useEffect(() => {
+    if (searchQuery && !searchQuery.startsWith('rating:')) {
+      setRatingFilter(null);
+    }
+  }, [searchQuery]);
 
   // Infinite scroll: Detect when user scrolls near bottom
   useEffect(() => {
@@ -605,14 +614,11 @@ export function CellarPage() {
       total: bottlesInCellar.length,
       searchQuery,
       activeFilters,
+      ratingFilter,
     });
 
-    // Check if search query is a rating filter
-    const ratingMatch = searchQuery.match(/^rating:(\d+\.?\d*)$/);
-    const ratingThreshold = ratingMatch ? parseFloat(ratingMatch[1]) : null;
-
-    // Apply search query (debounced via input) - skip if rating filter
-    if (searchQuery.trim() && !ratingThreshold) {
+    // Apply search query (debounced via input)
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((bottle) => {
         // Handle grapes as either string or array
@@ -704,11 +710,11 @@ export function CellarPage() {
     }
 
     // Apply rating filter (from Tonight Signal navigation)
-    if (ratingThreshold) {
+    if (ratingFilter) {
       result = result.filter((bottle) => {
         const wine = bottle.wine || bottle;
         const rating = (wine as any).vivino_rating || (wine as any).rating || 0;
-        return rating >= ratingThreshold;
+        return rating >= ratingFilter;
       });
     }
 
@@ -767,7 +773,7 @@ export function CellarPage() {
     
     console.log('[CellarPage] 🔍 Filtered result:', result.length, 'bottles');
     return result;
-  }, [bottlesInCellar, searchQuery, activeFilters, sortBy, sortDir]);
+  }, [bottlesInCellar, searchQuery, activeFilters, ratingFilter, sortBy, sortDir]);
 
   // Total filtered bottle count (sum of quantities in filtered results)
   const totalFilteredCount = useMemo(() => {
