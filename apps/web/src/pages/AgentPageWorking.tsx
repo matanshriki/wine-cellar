@@ -740,7 +740,6 @@ export function AgentPageWorking() {
                       </button>
                     </div>
                   )}
-                )}
               </div>
             </div>
           );
