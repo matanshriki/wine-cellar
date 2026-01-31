@@ -9,6 +9,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
 import { sendAgentMessage, transcribeAudio, type AgentMessage } from '../services/agentService';
+import { markBottleOpened } from '../services/historyService';
 import {
   listConversations,
   createConversation,
@@ -22,6 +23,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { BottleCarousel, type BottleRecommendation } from '../components/BottleCarousel';
 import { BotRichResultCard } from '../components/BotRichResultCard';
 import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
+import { BotSingleWineResultCard } from '../components/BotSingleWineResultCard';
 import * as labelArtService from '../services/labelArtService';
 
 export function AgentPageWorking() {
@@ -641,108 +643,41 @@ export function AgentPageWorking() {
                   </div>
                 )}
 
-                {/* Single bottle recommendation (only for normal bubbles) */}
-                {!hasMultiBottles && msg.recommendation && (
-                    <div
-                      style={{
-                        marginTop: '12px',
-                        padding: '16px',
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <svg style={{ width: '20px', height: '20px', color: '#7c3030' }} fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <strong style={{ fontSize: '14px', fontWeight: 600, color: '#7c3030' }}>
-                          {t('cellarSommelier.recommendationTitle')}
-                        </strong>
-                      </div>
-                      <p style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>{msg.recommendation.reason}</p>
-                      {(msg.recommendation.serveTemp || msg.recommendation.decant) && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                          {msg.recommendation.serveTemp && (
-                            <div
-                              style={{
-                                padding: '6px 12px',
-                                backgroundColor: 'white',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '20px',
-                                fontSize: '12px',
-                                color: '#666',
-                              }}
-                            >
-                              🌡️ {msg.recommendation.serveTemp}
-                            </div>
-                          )}
-                          {msg.recommendation.decant && (
-                            <div
-                              style={{
-                                padding: '6px 12px',
-                                backgroundColor: 'white',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '20px',
-                                fontSize: '12px',
-                                color: '#666',
-                              }}
-                            >
-                              🍷 {msg.recommendation.decant}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                {/* Luxury Single Wine Result Card */}
+                {!hasMultiBottles && msg.recommendation && (() => {
+                  const recommendedBottle = bottles.find(b => b.id === msg.recommendation!.bottleId);
+                  if (!recommendedBottle) return null;
 
-                      {/* View Wine Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleViewBottleDetails(msg.recommendation!.bottleId)}
-                        disabled={loadingBottleDetails}
-                        style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          backgroundColor: '#7c3030',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          cursor: loadingBottleDetails ? 'not-allowed' : 'pointer',
-                          opacity: loadingBottleDetails ? 0.7 : 1,
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!loadingBottleDetails) {
-                            e.currentTarget.style.backgroundColor = '#5a2323';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#7c3030';
-                        }}
-                      >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                        {loadingBottleDetails ? t('common.loading', 'Loading...') : t('cellarSommelier.viewWine', 'View Wine Details')}
-                      </button>
-                    </div>
-                  )}
+                  const displayImage = labelArtService.getWineDisplayImage(recommendedBottle.wine);
+
+                  const handleOpenBottle = async () => {
+                    try {
+                      await markBottleOpened({
+                        bottle_id: recommendedBottle.id,
+                        opened_count: 1,
+                      });
+                      
+                      toast.success(t('cellar.markedAsOpened', 'Bottle marked as opened'));
+                      
+                      // Reload bottles to update counts
+                      await loadBottles();
+                    } catch (error) {
+                      console.error('Error marking bottle as opened:', error);
+                      toast.error(t('cellar.markOpenedError', 'Failed to mark bottle as opened'));
+                    }
+                  };
+
+                  return (
+                    <BotSingleWineResultCard
+                      bottle={recommendedBottle}
+                      reason={msg.recommendation!.reason}
+                      serveTemp={msg.recommendation!.serveTemp}
+                      decant={msg.recommendation!.decant}
+                      imageUrl={displayImage.imageUrl}
+                      onOpenBottle={handleOpenBottle}
+                    />
+                  );
+                })()}
               </div>
             </div>
           );

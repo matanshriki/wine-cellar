@@ -438,6 +438,9 @@
       "markConfirm": "לסמן את \"{{name}}\" כנפתח?",
       "marked": "הבקבוק סומן כנפתח! תהנה! 🍷",
       "markFailed": "הסימון כנפתח נכשל",
+      "markedAsOpened": "הבקבוק סומן כנפתח",
+      "markOpenedError": "נכשל בסימון הבקבוק כנפתח",
+      "inCellar": "במרתף",
       "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך."
     },
     "emptyCellar": {
@@ -691,7 +694,10 @@
     "required": "חובה",
     "optional": "אופציונלי",
     "important": "חשוב",
-    "tip": "טיפ"
+    "tip": "טיפ",
+    "readMore": "קרא עוד",
+    "readLess": "קרא פחות",
+    "viewAll": "צפה בהכל"
   },
   "wineImage": {
     "addTitle": "הוסף תמונת יין",
@@ -774,6 +780,9 @@
     "recommendationTitle": "המלצה",
     "viewWine": "צפה בפרטי היין",
     "newConversation": "שיחה חדשה",
+    "sommelierPick": "בחירת הסומליה",
+    "whyThisWine": "למה יין זה",
+    "viewInCellar": "צפה במרתף",
     "quickPrompts": {
       "tonight": "מה כדאי לי לשתות הערב?",
       "readyNow": "מוכן לשתייה עכשיו",

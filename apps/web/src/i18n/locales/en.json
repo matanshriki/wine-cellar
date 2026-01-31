@@ -448,6 +448,9 @@
       "markConfirm": "Mark \"{{name}}\" as opened?",
       "marked": "Bottle marked as opened! Enjoy! 🍷",
       "markFailed": "Failed to mark as opened",
+      "markedAsOpened": "Bottle marked as opened",
+      "markOpenedError": "Failed to mark bottle as opened",
+      "inCellar": "in cellar",
       "noResults": "No matching bottles found. Try adjusting your preferences."
     },
     "emptyCellar": {
@@ -704,7 +707,10 @@
     "important": "Important",
     "tip": "Tip",
     "moving": "Moving...",
-    "remove": "Remove"
+    "remove": "Remove",
+    "readMore": "Read more",
+    "readLess": "Read less",
+    "viewAll": "View all"
   },
   "wineImage": {
     "addTitle": "Add Wine Image",
@@ -857,6 +863,9 @@
     "recommendationTitle": "Recommendation",
     "viewWine": "View Wine Details",
     "newConversation": "New conversation",
+    "sommelierPick": "Sommelier Pick",
+    "whyThisWine": "Why this wine",
+    "viewInCellar": "View in Cellar",
     "quickPrompts": {
       "tonight": "What should I drink tonight?",
       "readyNow": "Ready to drink now",
