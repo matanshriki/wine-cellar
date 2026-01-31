@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags
+import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags'; // Beta feature flags (multi-bottle, share)
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CompleteProfileModal } from './CompleteProfileModal';
 import { UserMenu } from './UserMenu';
@@ -17,6 +18,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { showAddSheet, openAddBottleFlow, closeAddBottleFlow } = useAddBottleContext();
+  const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
 
   // Show CompleteProfile modal if profile is incomplete
   useEffect(() => {
@@ -208,7 +210,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           const event = new CustomEvent('openMultiBottleImport');
           window.dispatchEvent(event);
         }}
-        showMultiBottleOption={false} // Hide multi-bottle for now, show only in Cellar
+        showMultiBottleOption={betaFlags.canMultiBottleImport} // Beta feature - enabled for specific users
       />
 
       {/* Complete Profile Modal */}
