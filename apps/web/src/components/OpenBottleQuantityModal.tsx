@@ -113,15 +113,16 @@ export function OpenBottleQuantityModal({
 
             {/* Header */}
             <div className="mb-8 text-center">
-              <div className="mb-3 flex justify-center">
+              <div className="mb-4 flex justify-center">
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  className="w-20 h-20 rounded-full flex items-center justify-center"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-100), var(--gold-100))',
+                    background: 'linear-gradient(135deg, rgba(164, 76, 104, 0.1), rgba(164, 76, 104, 0.15))',
+                    border: '2px solid rgba(164, 76, 104, 0.2)',
                   }}
                 >
                   <svg 
-                    className="w-8 h-8" 
+                    className="w-10 h-10" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -133,20 +134,22 @@ export function OpenBottleQuantityModal({
               </div>
               
               <h2
-                className="text-2xl font-bold mb-3"
+                className="text-2xl font-bold mb-4"
                 style={{
                   color: 'var(--text-primary)',
                   fontFamily: 'var(--font-heading)',
+                  letterSpacing: '-0.02em',
                 }}
               >
                 {t('cellar.openBottle.howMany', 'How many bottles?')}
               </h2>
               
               <p
-                className="text-base leading-relaxed px-4"
+                className="text-base leading-relaxed px-2"
                 style={{ 
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500',
+                  color: 'var(--text-primary)',
+                  opacity: 0.8,
+                  fontWeight: '400',
                 }}
               >
                 {t('cellar.openBottle.selectQuantity', {
@@ -203,7 +206,10 @@ export function OpenBottleQuantityModal({
                     />
                     <p
                       className="text-sm font-medium mt-2"
-                      style={{ color: 'var(--text-tertiary)' }}
+                      style={{ 
+                        color: 'var(--text-primary)',
+                        opacity: 0.6,
+                      }}
                     >
                       {t('cellar.openBottle.maxAvailable', {
                         defaultValue: 'Max: {{max}}',
@@ -236,36 +242,36 @@ export function OpenBottleQuantityModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4">
-              {/* Cancel Button */}
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-4 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-base)',
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-
+            <div className="flex flex-col gap-3">
               {/* Confirm Button */}
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex-1 py-4 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 active:scale-95"
+                className="w-full py-4 px-6 rounded-xl font-semibold text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{
-                  background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
+                  background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
                   color: 'white',
-                  boxShadow: '0 6px 20px rgba(212, 175, 55, 0.35)',
+                  boxShadow: '0 6px 20px rgba(164, 76, 104, 0.35)',
                 }}
               >
                 {t('cellar.openBottle.markAsOpened', {
                   defaultValue: 'Mark {{count}} as Opened',
                   count: quantity,
                 })}
+              </button>
+
+              {/* Cancel Button */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-4 px-6 rounded-xl font-medium text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                }}
+              >
+                {t('common.cancel', 'Cancel')}
               </button>
             </div>
           </motion.div>
