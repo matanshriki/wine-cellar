@@ -94,7 +94,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
           className="relative mx-4 mb-4 pointer-events-auto"
         >
           {/* Camera FAB - Centered and protruding above footer */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-10">
+          <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
             <motion.button
               onClick={onCameraClick}
               className="relative w-16 h-16 rounded-full flex items-center justify-center overflow-hidden"
