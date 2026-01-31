@@ -101,8 +101,9 @@ export function OpenBottleQuantityModal({
               onClick={onClose}
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
               style={{
-                background: 'var(--bg-secondary)',
-                color: 'var(--text-tertiary)',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'rgba(255, 255, 255, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
               }}
               aria-label="Close"
             >
@@ -117,8 +118,8 @@ export function OpenBottleQuantityModal({
                 <div 
                   className="w-20 h-20 rounded-full flex items-center justify-center"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(164, 76, 104, 0.1), rgba(164, 76, 104, 0.15))',
-                    border: '2px solid rgba(164, 76, 104, 0.2)',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.12))',
+                    border: '2px solid rgba(255, 255, 255, 0.15)',
                   }}
                 >
                   <svg 
@@ -126,7 +127,7 @@ export function OpenBottleQuantityModal({
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
-                    style={{ color: 'var(--wine-600)' }}
+                    style={{ color: 'rgba(255, 255, 255, 0.9)' }}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
@@ -136,7 +137,7 @@ export function OpenBottleQuantityModal({
               <h2
                 className="text-2xl font-bold mb-4"
                 style={{
-                  color: 'var(--text-primary)',
+                  color: 'white',
                   fontFamily: 'var(--font-heading)',
                   letterSpacing: '-0.02em',
                 }}
@@ -147,8 +148,7 @@ export function OpenBottleQuantityModal({
               <p
                 className="text-base leading-relaxed px-2"
                 style={{ 
-                  color: 'var(--text-primary)',
-                  opacity: 0.8,
+                  color: 'rgba(255, 255, 255, 0.85)',
                   fontWeight: '400',
                 }}
               >
@@ -187,8 +187,8 @@ export function OpenBottleQuantityModal({
                   <div 
                     className="relative rounded-2xl p-6 text-center"
                     style={{
-                      background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
-                      border: '2px solid var(--border-base)',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '2px solid rgba(255, 255, 255, 0.15)',
                     }}
                   >
                     <input
@@ -199,7 +199,7 @@ export function OpenBottleQuantityModal({
                       onChange={handleInputChange}
                       className="w-full text-center text-5xl font-bold outline-none bg-transparent"
                       style={{
-                        color: 'var(--text-primary)',
+                        color: 'white',
                         fontFamily: 'var(--font-heading)',
                       }}
                       aria-label={t('cellar.openBottle.quantity', 'Quantity')}
@@ -207,8 +207,7 @@ export function OpenBottleQuantityModal({
                     <p
                       className="text-sm font-medium mt-2"
                       style={{ 
-                        color: 'var(--text-primary)',
-                        opacity: 0.6,
+                        color: 'rgba(255, 255, 255, 0.6)',
                       }}
                     >
                       {t('cellar.openBottle.maxAvailable', {
@@ -251,7 +250,7 @@ export function OpenBottleQuantityModal({
                 style={{
                   background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
                   color: 'white',
-                  boxShadow: '0 6px 20px rgba(164, 76, 104, 0.35)',
+                  boxShadow: '0 6px 20px rgba(164, 76, 104, 0.4)',
                 }}
               >
                 {t('cellar.openBottle.markAsOpened', {
@@ -266,9 +265,9 @@ export function OpenBottleQuantityModal({
                 onClick={onClose}
                 className="w-full py-4 px-6 rounded-xl font-medium text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
-                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
                 }}
               >
                 {t('common.cancel', 'Cancel')}
