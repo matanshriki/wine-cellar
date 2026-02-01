@@ -528,9 +528,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {t('cellar.bottle.grapes')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {wine.grapes.map((grape) => (
+                      {wine.grapes.map((grape, index) => (
                         <span 
-                          key={`${wine.id}-${grape}`}
+                          key={`${wine.id}-grape-${index}-${grape}`}
                           className="px-3 py-1 rounded-full text-sm"
                           style={{
                             backgroundColor: 'var(--wine-50)',

@@ -13,6 +13,7 @@ import { LabelCapture } from '../components/LabelCapture';
 import { BulkAnalysisModal } from '../components/BulkAnalysisModal';
 import { WineLoader } from '../components/WineLoader';
 import { TonightsOrbit } from '../components/TonightsOrbit';
+import { TonightsOrbitCinematic } from '../components/TonightsOrbitCinematic';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
@@ -37,6 +38,9 @@ import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature fla
 import * as onboardingUtils from '../utils/onboarding';
 import { DEMO_BOTTLES } from '../data/demoCellar';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
+
+// LOCAL DEV FLAG: Enable cinematic carousel for testing
+const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();
@@ -1458,13 +1462,23 @@ export function CellarPage() {
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
           style={{ pointerEvents: 'auto' }} // Fix: Ensure widgets are immediately interactive
         >
-          <TonightsOrbit 
-            bottles={filteredBottles}
-            onBottleClick={(bottle) => {
-              setSelectedBottle(bottle);
-              setShowDetailsModal(true);
-            }}
-          />
+          {ENABLE_CINEMATIC_CAROUSEL ? (
+            <TonightsOrbitCinematic 
+              bottles={filteredBottles}
+              onBottleClick={(bottle) => {
+                setSelectedBottle(bottle);
+                setShowDetailsModal(true);
+              }}
+            />
+          ) : (
+            <TonightsOrbit 
+              bottles={filteredBottles}
+              onBottleClick={(bottle) => {
+                setSelectedBottle(bottle);
+                setShowDetailsModal(true);
+              }}
+            />
+          )}
           <DrinkWindowTimeline bottles={filteredBottles} />
         </motion.div>
       )}

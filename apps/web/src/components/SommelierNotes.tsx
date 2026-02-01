@@ -216,7 +216,7 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
                 <ul className="space-y-1.5">
                   {analysis.analysis_reasons.map((reason, index) => (
                     <motion.li
-                      key={index}
+                      key={`analysis-reason-${index}-${reason.substring(0, 30)}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}

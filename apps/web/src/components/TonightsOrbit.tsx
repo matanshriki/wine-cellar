@@ -148,18 +148,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                {/* Premium indicator */}
-                <div 
-                  className="absolute top-2 end-2 w-7 h-7 rounded-full flex items-center justify-center z-10"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                    border: '1px solid var(--wine-200)',
-                  }}
-                >
-                  <span className="text-xs font-semibold" style={{ color: 'var(--wine-700)' }}>
-                    {index + 1}
-                  </span>
-                </div>
+                {/* Removed ranking numbers - presenting as curated selection, not ranked list */}
 
                 {/* Wine Image - Larger for mobile carousel */}
                 {(() => {
@@ -336,18 +325,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                {/* Premium indicator */}
-                <div 
-                  className="absolute top-3 end-3 w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                    border: '1px solid var(--wine-200)',
-                  }}
-                >
-                  <span className="text-xs font-semibold" style={{ color: 'var(--wine-700)' }}>
-                    {index + 1}
-                  </span>
-                </div>
+                {/* Removed ranking numbers - presenting as curated selection, not ranked list */}
 
                 {/* Wine Image */}
                 {(() => {
