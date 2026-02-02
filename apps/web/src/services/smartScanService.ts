@@ -43,12 +43,12 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
   const imageUrl = await uploadLabelImage(file);
   console.log('[smartScanService] Image uploaded:', imageUrl);
 
-  // 2. Call AI with smart detection mode
+  // 2. Call AI with multi-bottle mode (always returns array, which we then analyze)
   try {
     const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
         imageUrl: imageUrl,
-        mode: 'smart', // Let AI decide single vs multi
+        mode: 'multi-bottle', // Always use multi-bottle mode to get array response
       },
     });
 
@@ -57,9 +57,8 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       throw new Error(`AI extraction failed: ${error.message}`);
     }
 
-    if (!data || !data.success) {
-      console.warn('[smartScanService] Extraction failed, falling back to single mode');
-      // Fallback to single mode with empty data
+    if (!data) {
+      console.warn('[smartScanService] No data returned, falling back to single mode');
       return {
         mode: 'single',
         imageUrl,
@@ -72,8 +71,15 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
     }
 
     // 3. Analyze response to determine mode
+    // Multi-bottle mode always returns { bottles: [...] }
     const bottles = data.bottles && Array.isArray(data.bottles) ? data.bottles : [];
     const detectedCount = bottles.length;
+    
+    console.log('[smartScanService] AI response:', { 
+      success: data.success, 
+      bottlesCount: detectedCount,
+      hasBottlesArray: !!data.bottles 
+    });
     
     console.log('[smartScanService] Detected', detectedCount, 'bottle(s)');
 
