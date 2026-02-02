@@ -6,7 +6,7 @@
  * Community-lite feature for testing UX.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
@@ -24,6 +24,24 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
   const [shareLink, setShareLink] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [generating, setGenerating] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+        document.body.style.position = originalPosition || '';
+        document.body.style.width = '';
+      };
+    }
+  }, [isOpen]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -67,15 +85,16 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
 
   return (
     <div 
-      className="fixed inset-0 z-50"
+      className="fixed inset-0"
       style={{
+        zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 'max(env(safe-area-inset-top), 1rem) max(env(safe-area-inset-right), 1rem) max(env(safe-area-inset-bottom), 1rem) max(env(safe-area-inset-left), 1rem)',
-        background: 'var(--bg-overlay)',
-        backdropFilter: 'var(--blur-medium)',
-        WebkitBackdropFilter: 'var(--blur-medium)',
+        background: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         overflow: 'auto',
       }}
       onClick={handleClose}
