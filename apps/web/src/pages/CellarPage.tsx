@@ -591,6 +591,7 @@ export function CellarPage() {
    */
   async function handleSmartScan(file: File) {
     console.log('[CellarPage] ========== SMART SCAN START ==========');
+    console.log('[CellarPage] handleSmartScan called successfully!');
     console.log('[CellarPage] File:', file.name, 'Size:', file.size, 'Type:', file.type);
     
     // CRITICAL for iOS: Don't close sheet until file is being processed
@@ -1974,16 +1975,23 @@ export function CellarPage() {
       </AnimatePresence>
 
       {/* Add Bottle Sheet */}
-      <AddBottleSheet
-        isOpen={showAddSheet}
-        onClose={() => setShowAddSheet(false)}
-        onManualEntry={() => {
-          setShowAddSheet(false);
-          setEditingBottle(null);
-          setShowForm(true);
-        }}
-        onSmartScan={handleSmartScan} // Unified smart scan handler
-        showWishlistOption={false}
+      {(() => {
+        console.log('[CellarPage] Rendering AddBottleSheet, handleSmartScan is:', typeof handleSmartScan, handleSmartScan ? 'DEFINED' : 'UNDEFINED');
+        return (
+          <AddBottleSheet
+            isOpen={showAddSheet}
+            onClose={() => {
+              console.log('[CellarPage] Closing AddBottleSheet');
+              setShowAddSheet(false);
+            }}
+            onManualEntry={() => {
+              console.log('[CellarPage] Manual entry selected');
+              setShowAddSheet(false);
+              setEditingBottle(null);
+              setShowForm(true);
+            }}
+            onSmartScan={handleSmartScan} // Unified smart scan handler
+            showWishlistOption={false}
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);
@@ -2187,6 +2195,8 @@ export function CellarPage() {
           }
         }}
       />
+        );
+      })()}
 
       {/* AI Processing Overlay - Luxury Wine Glass Animation */}
       <AnimatePresence>

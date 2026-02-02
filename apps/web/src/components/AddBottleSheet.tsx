@@ -38,6 +38,15 @@ export function AddBottleSheet({
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
   
+  // Debug: Log what props are actually received
+  console.log('[AddBottleSheet] Component rendered with props:', {
+    hasOnSmartScan: !!onSmartScan,
+    hasOnPhotoSelected: !!onPhotoSelected,
+    hasOnUploadPhoto: !!onUploadPhoto,
+    onSmartScanType: typeof onSmartScan,
+    isOpen,
+  });
+  
   // Detect if we're on a mobile device for better camera handling
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isSamsung = /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
