@@ -1978,6 +1978,7 @@ export function CellarPage() {
       </AnimatePresence>
 
       {/* Add Bottle Sheet */}
+      {console.log('[CellarPage] About to render AddBottleSheet with onSmartScan:', typeof handleSmartScan, handleSmartScan)}
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={() => {
@@ -1990,7 +1991,10 @@ export function CellarPage() {
           setEditingBottle(null);
           setShowForm(true);
         }}
-        onSmartScan={handleSmartScan} // Unified smart scan handler
+        onSmartScan={(file) => {
+          console.log('[CellarPage] onSmartScan inline wrapper called!');
+          return handleSmartScan(file);
+        }}
         showWishlistOption={false}
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
