@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
@@ -83,7 +84,7 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div 
       className="fixed inset-0"
       style={{
@@ -310,7 +311,8 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
