@@ -590,81 +590,43 @@ export function CellarPage() {
    * Automatically routes to appropriate confirmation flow
    */
   const handleSmartScan = async (file: File) => {
-    console.log('[CellarPage] ========== SMART SCAN START ==========');
-    console.log('[CellarPage] handleSmartScan called successfully!');
-    console.log('[CellarPage] File:', file.name, 'Size:', file.size, 'Type:', file.type);
-    
-    // CRITICAL for iOS: Don't close sheet until file is being processed
-    // Start parsing state first
-    setIsParsing(true);
-    toast.info('Identifying bottle(s)…');
-    
-    // Give a small delay to ensure UI state is updated
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Now close the sheet
-    console.log('[CellarPage] Closing add sheet');
-    setShowAddSheet(false);
-
     try {
-      console.log('[CellarPage] Calling smartScanService.performSmartScan...');
+      // Start loading state
+      setIsParsing(true);
+      toast.info('Identifying bottle(s)…');
       
+      // Close sheet after starting loading (critical for iOS file reference stability)
+      await new Promise(resolve => setTimeout(resolve, 50));
+      setShowAddSheet(false);
+
       // Perform smart scan
       const result = await smartScanService.performSmartScan(file);
-      
-      console.log('[CellarPage] ========== SMART SCAN COMPLETE ==========');
-      console.log('[CellarPage] Mode:', result.mode);
-      console.log('[CellarPage] Detected count:', result.detectedCount);
-      console.log('[CellarPage] Confidence:', result.confidence);
-      console.log('[CellarPage] Image URL:', result.imageUrl);
-      console.log('[CellarPage] Has single bottle data:', !!result.singleBottle);
-      console.log('[CellarPage] Has multiple bottles data:', !!result.multipleBottles);
 
       if (result.mode === 'single') {
         // Single bottle detected - show single bottle form
-        console.log('[CellarPage] ✅ Routing to SINGLE BOTTLE form');
-        
         if (result.singleBottle) {
-          console.log('[CellarPage] Setting extracted data:', result.singleBottle.extractedData);
           setExtractedData({
             imageUrl: result.imageUrl,
             data: result.singleBottle.extractedData,
           });
-        } else {
-          console.warn('[CellarPage] ⚠️ Single mode but no singleBottle data!');
         }
         
         setEditingBottle(null);
-        console.log('[CellarPage] Opening bottle form...');
         setShowForm(true);
-        
         toast.success('Label scanned successfully!');
       } else if (result.mode === 'multi') {
         // Multiple bottles detected - show multi-bottle import
-        console.log('[CellarPage] ✅ Routing to MULTI-BOTTLE import');
-        console.log('[CellarPage] Bottles count:', result.multipleBottles?.bottles.length);
-        
-        // Store result for multi-bottle modal
         setSmartScanResult(result);
-        console.log('[CellarPage] Opening multi-bottle import...');
         setShowMultiBottleImport(true);
-        
         toast.success(`✅ Detected ${result.detectedCount} bottles!`);
       } else {
         // Unknown mode - default to single
-        console.warn('[CellarPage] ⚠️ Unknown mode:', result.mode, '- defaulting to single form');
         setEditingBottle(null);
         setShowForm(true);
-        
         toast.info('Please verify the details');
       }
-      
-      console.log('[CellarPage] ========== SMART SCAN ROUTING COMPLETE ==========');
     } catch (error: any) {
-      console.error('[CellarPage] ========== SMART SCAN ERROR ==========');
-      console.error('[CellarPage] Error:', error);
-      console.error('[CellarPage] Error message:', error?.message);
-      console.error('[CellarPage] Error stack:', error?.stack);
+      console.error('[CellarPage] Smart scan error:', error);
       
       // Show error toast with details
       const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
@@ -674,13 +636,9 @@ export function CellarPage() {
       setEditingBottle(null);
       setShowForm(true);
     } finally {
-      console.log('[CellarPage] Setting isParsing to false');
       setIsParsing(false);
     }
   };
-  
-  // Debug: Verify handleSmartScan is defined
-  console.log('[CellarPage] handleSmartScan defined:', typeof handleSmartScan, !!handleSmartScan);
 
   /**
    * Bottles in cellar (excluding consumed bottles)
@@ -1978,170 +1936,22 @@ export function CellarPage() {
       </AnimatePresence>
 
       {/* Add Bottle Sheet */}
-      {console.log('[CellarPage] About to render AddBottleSheet with onSmartScan:', typeof handleSmartScan, handleSmartScan)}
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={() => {
-          console.log('[CellarPage] Closing AddBottleSheet');
           setShowAddSheet(false);
         }}
         onManualEntry={() => {
-          console.log('[CellarPage] Manual entry selected');
           setShowAddSheet(false);
           setEditingBottle(null);
           setShowForm(true);
         }}
-        onSmartScan={(file) => {
-          console.log('[CellarPage] onSmartScan inline wrapper called!');
-          return handleSmartScan(file);
+        onPhotoSelected={async (file: File) => {
+          console.log('[CellarPage] onPhotoSelected called with file:', file.name);
+          // Call smart scan handler
+          await handleSmartScan(file);
         }}
         showWishlistOption={false}
-        onPhotoSelected={async (file) => {
-          // Direct photo processing (bypasses LabelCapture modal for fewer taps)
-          setShowAddSheet(false);
-          setIsParsing(true);
-          toast.info(t('cellar.labelParse.reading'));
-          
-          try {
-            // Import scanLabelImage to upload and get URL
-            const { scanLabelImage } = await import('../services/labelScanService');
-            const result = await scanLabelImage(file);
-            
-            // Now process with AI
-            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
-            
-            if (parseResult.success && parseResult.data) {
-              const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
-              const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
-              setParsedFields(extractedFieldNames);
-              
-              const mergedData = {
-                imageUrl: result.imageUrl,
-                data: {
-                  wine_name: formData.wine_name || '',
-                  producer: formData.producer || '',
-                  vintage: formData.vintage,
-                  region: formData.region || '',
-                  country: '',
-                  grape: formData.grapes || '',
-                  wine_color: formData.color || 'red',
-                } as ExtractedWineData,
-              };
-              
-              // Vivino auto-link (dev only) - Auto-generate Vivino search URL from extracted data
-              const vivinoUrl = generateVivinoSearchUrl({
-                producer: mergedData.data.producer,
-                wine_name: mergedData.data.wine_name,
-                vintage: mergedData.data.vintage,
-                region: mergedData.data.region,
-                grape: mergedData.data.grape,
-              });
-              
-              if (vivinoUrl) {
-                console.log('[CellarPage] 🍷 Auto-generated Vivino URL (direct photo):', vivinoUrl);
-                (mergedData.data as any).vivino_url = vivinoUrl;
-              }
-              
-              // **AUTO-FILL MISSING DATA FROM VIVINO** (Smart Merge)
-              // If AI extraction is incomplete AND we have enough data to search Vivino,
-              // automatically fetch missing fields from Vivino
-              const hasEnoughDataToSearch = mergedData.data.producer && mergedData.data.wine_name;
-              const hasMissingFields = !mergedData.data.vintage || !mergedData.data.region || !mergedData.data.grape;
-              
-              // IMPORTANT: Only auto-fetch if we have a DIRECT wine page URL, not a search URL
-              // Search URLs won't work with the Vivino scraper (it needs /w/12345 format)
-              const isDirectWineUrl = vivinoUrl && (vivinoUrl.includes('/w/') || vivinoUrl.includes('/wines/'));
-              
-              if (hasEnoughDataToSearch && hasMissingFields && isDirectWineUrl) {
-                console.log('[CellarPage] 🔍 AI extraction incomplete. Auto-fetching from Vivino to fill gaps...');
-                console.log('[CellarPage] Missing fields:', {
-                  vintage: !mergedData.data.vintage,
-                  region: !mergedData.data.region,
-                  grape: !mergedData.data.grape,
-                });
-                
-                try {
-                  // Import Vivino fetcher
-                  const { fetchVivinoWineData } = await import('../services/vivinoScraper');
-                  
-                  // Fetch from Vivino (uses short URL format internally)
-                  const vivinoData = await fetchVivinoWineData(vivinoUrl);
-                  
-                  if (vivinoData && (vivinoData.name || vivinoData.winery)) {
-                    console.log('[CellarPage] ✅ Vivino data fetched:', vivinoData);
-                    
-                    // **SMART MERGE: AI data takes priority, Vivino fills gaps only**
-                    mergedData.data = {
-                      wine_name: mergedData.data.wine_name || vivinoData.name || '',
-                      producer: mergedData.data.producer || vivinoData.winery || '',
-                      vintage: mergedData.data.vintage || vivinoData.vintage || undefined,
-                      region: mergedData.data.region || vivinoData.region || '',
-                      country: mergedData.data.country || vivinoData.country || '',
-                      grape: mergedData.data.grape || vivinoData.grape || '',
-                      wine_color: mergedData.data.wine_color || 'red',
-                    };
-                    
-                    // Add rating from Vivino if available
-                    if (vivinoData.rating) {
-                      (mergedData.data as any).rating = vivinoData.rating;
-                    }
-                    
-                    console.log('[CellarPage] 🎯 Smart merge complete. AI + Vivino data combined.');
-                    toast.success(`🍷 ${t('cellar.labelParse.vivinoEnhanced', 'Enriched with Vivino data!')}`);
-                  } else {
-                    console.log('[CellarPage] ⚠️ Vivino fetch returned no data or error');
-                  }
-                } catch (error) {
-                  console.error('[CellarPage] ❌ Vivino auto-fetch failed:', error);
-                  // Don't show error to user - AI data is still valid, just not enhanced
-                }
-              } else if (!hasEnoughDataToSearch) {
-                console.log('[CellarPage] ⚠️ Not enough data to search Vivino (need producer + wine_name)');
-              } else if (!isDirectWineUrl) {
-                console.log('[CellarPage] ⚠️ Skipping auto-fetch: Generated URL is a search page, not a direct wine page');
-                console.log('[CellarPage] 💡 TIP: User can manually click "Search on Vivino" button to find the exact wine');
-              } else {
-                console.log('[CellarPage] ✅ AI extraction complete. No Vivino fetch needed.');
-              }
-              
-              setExtractedData(mergedData);
-              
-              if (extractedFieldNames.length > 0) {
-                toast.success(t('cellar.labelParse.success', { count: extractedFieldNames.length }));
-              } else {
-                toast.warning(t('cellar.labelParse.partial'));
-              }
-            } else {
-              const fallbackData = {
-                imageUrl: result.imageUrl,
-                data: {} as ExtractedWineData,
-              };
-              setExtractedData(fallbackData);
-              toast.warning(t('cellar.labelParse.failed'));
-            }
-          } catch (error: any) {
-            console.error('[CellarPage] Direct photo processing error:', error);
-            console.error('[CellarPage] Error message:', error.message);
-            console.error('[CellarPage] Error name:', error.name);
-            console.error('[CellarPage] User agent:', navigator.userAgent);
-            
-            // Track error
-            analytics.trackLabelParse.error(
-              error.name || 'UnknownError',
-              'camera',
-              error.message
-            );
-            
-            const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
-            toast.error(t('cellar.labelParse.error') + errorDetails);
-          } finally {
-            setIsParsing(false);
-          }
-          
-          // Open form
-          setEditingBottle(null);
-          setShowForm(true);
-        }}
         onPhotoSelectedForWishlist={async (file) => {
           // Wishlist feature (dev only) - Direct photo processing for wishlist
           setShowAddSheet(false);

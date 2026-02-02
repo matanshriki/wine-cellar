@@ -35,17 +35,8 @@ export function AddBottleSheet({
   showWishlistOption = false, // Wishlist feature (feature-flagged)
   showMultiBottleOption = false, // DEPRECATED - Smart scan replaces this
 }: AddBottleSheetProps) {
-  const { t } = useTranslation();
+  const { t} = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
-  
-  // Debug: Log what props are actually received
-  console.log('[AddBottleSheet] Component rendered with props:', {
-    hasOnSmartScan: !!onSmartScan,
-    hasOnPhotoSelected: !!onPhotoSelected,
-    hasOnUploadPhoto: !!onUploadPhoto,
-    onSmartScanType: typeof onSmartScan,
-    isOpen,
-  });
   
   // Detect if we're on a mobile device for better camera handling
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -58,40 +49,24 @@ export function AddBottleSheet({
   // Handle direct photo selection
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, source: 'camera' | 'library') {
     const file = e.target.files?.[0];
-    if (!file) {
-      console.log('[AddBottleSheet] No file selected');
-      return;
-    }
-    
-    console.log('[AddBottleSheet] ========== FILE SELECTED ==========');
-    console.log('[AddBottleSheet] File:', file.name, file.size, 'bytes', file.type);
-    console.log('[AddBottleSheet] Current props at selection time:');
-    console.log('[AddBottleSheet]   - onSmartScan:', typeof onSmartScan, !!onSmartScan);
-    console.log('[AddBottleSheet]   - onPhotoSelected:', typeof onPhotoSelected, !!onPhotoSelected);
-    console.log('[AddBottleSheet]   - onUploadPhoto:', typeof onUploadPhoto, !!onUploadPhoto);
+    if (!file) return;
     
     // CRITICAL for iOS: Don't clear input immediately
     // On iOS, clearing the input can invalidate the file reference before async operations complete
     
-    // Use smart scan if available, otherwise fall back to legacy handler
-    if (onSmartScan) {
-      console.log('[AddBottleSheet] ✅ Calling onSmartScan...');
-      // Don't close here - let the scan handler close the sheet after it starts processing
-      // This ensures the file reference stays valid long enough
-      onSmartScan(file);
-    } else if (onPhotoSelected) {
-      console.log('[AddBottleSheet] ⚠️ Calling onPhotoSelected (legacy fallback)...');
+    // Call photo selected handler
+    if (onPhotoSelected) {
       onPhotoSelected(file);
-      onClose();
+    } else if (onSmartScan) {
+      onSmartScan(file);
     } else {
-      console.error('[AddBottleSheet] ❌ No scan handler provided! Both onSmartScan and onPhotoSelected are undefined');
+      console.error('[AddBottleSheet] No scan handler provided!');
       onClose();
     }
     
     // Reset input so same file can be selected again
     // Delay this to ensure file data is fully captured first (especially on iOS)
     setTimeout(() => {
-      console.log('[AddBottleSheet] Resetting file input');
       e.target.value = '';
     }, 500);
   }
