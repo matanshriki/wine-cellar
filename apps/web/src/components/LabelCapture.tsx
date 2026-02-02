@@ -20,7 +20,7 @@ import { scanLabelImage } from '../services/labelScanService';
 import type { ExtractedWineData } from '../services/labelScanService';
 
 interface LabelCaptureProps {
-  onSuccess: (data: { imageUrl: string; extractedData: ExtractedWineData }) => void;
+  onSuccess: (data: { imageUrl: string; extractedData: ExtractedWineData; file?: File; source?: string }) => void;
   onCancel: () => void;
   mode?: 'camera' | 'upload'; // camera = direct camera, upload = photo library
 }
@@ -106,7 +106,11 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
       console.log('[LabelCapture] Using cropped image:', !!croppedFile);
       const result = await scanLabelImage(file);
       console.log('[LabelCapture] Processing complete:', result);
-      onSuccess(result);
+      onSuccess({
+        ...result,
+        file,  // Pass the original file for smart scan
+        source: mode === 'camera' ? 'camera' : 'library'
+      });
     } catch (err: any) {
       console.error('[LabelCapture] Scan error:', err);
       

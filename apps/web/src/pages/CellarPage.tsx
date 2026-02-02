@@ -2066,157 +2066,17 @@ export function CellarPage() {
           <LabelCapture
             mode={labelCaptureMode}
             onSuccess={async (result) => {
-              console.log('[CellarPage] ========== LABEL CAPTURE SUCCESS ==========');
-              console.log('[CellarPage] Result:', result);
-              console.log('[CellarPage] Image URL:', result.imageUrl);
-              console.log('[CellarPage] Result data:', result.data);
-              
-              // Don't close label capture yet - keep user on same view
-              console.log('[CellarPage] Photo captured, starting AI processing...');
-              
-              // Track label parse start
-              const parseSource = result.source || 'library';
-              analytics.trackLabelParse.start(parseSource as 'camera' | 'library');
-              
-              // Show parsing state FIRST (before closing anything)
-              setIsParsing(true);
-              console.log('[CellarPage] Set isParsing to true');
-              toast.info(t('cellar.labelParse.reading'));
-              console.log('[CellarPage] Showed toast: reading label');
-              
-              // Now close label capture (user will see loading spinner)
+              // Close label capture immediately
               setShowLabelCapture(false);
-              console.log('[CellarPage] Closed label capture modal');
               
-              try {
-                // Call AI parsing service
-                console.log('[CellarPage] ========== STARTING AI PARSE ==========');
-                console.log('[CellarPage] Calling labelParseService.parseLabelImage...');
-                const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
-                console.log('[CellarPage] ========== PARSE RESULT ==========');
-                console.log('[CellarPage] Parse result:', JSON.stringify(parseResult, null, 2));
-                
-                if (parseResult.success && parseResult.data) {
-                  console.log('[CellarPage] ✅ Parse successful!');
-                  console.log('[CellarPage] Parsed data:', parseResult.data);
-                  
-                  // Convert parsed data to form format
-                  console.log('[CellarPage] Converting parsed data to form format...');
-                  const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
-                  console.log('[CellarPage] Form data:', formData);
-                  
-                  const extractedFieldNames = labelParseService.getExtractedFields(parseResult.data);
-                  console.log('[CellarPage] Extracted field names:', extractedFieldNames);
-                  
-                  // Track success
-                  analytics.trackLabelParse.success(extractedFieldNames.length, parseSource as 'camera' | 'library');
-                  
-                  // Store parsed fields for highlighting
-                  setParsedFields(extractedFieldNames);
-                  console.log('[CellarPage] Set parsed fields');
-                  
-                  // Merge with any existing extracted data from old label scan
-                  const mergedData = {
-                    imageUrl: result.imageUrl,
-                    data: {
-                      wine_name: formData.wine_name || result.data?.wine_name || '',
-                      producer: formData.producer || result.data?.producer || '',
-                      vintage: formData.vintage || result.data?.vintage,
-                      region: formData.region || result.data?.region || '',
-                      country: result.data?.country || '',
-                      grape: formData.grapes || result.data?.grape || '',
-                      wine_color: formData.color || result.data?.wine_color || 'red',
-                    } as ExtractedWineData,
-                  };
-                  console.log('[CellarPage] Merged data:', mergedData);
-                  console.log('[CellarPage] ✓ Vintage in merged data:', mergedData.data.vintage);
-                  console.log('[CellarPage] ✓ Region in merged data:', mergedData.data.region);
-                  
-                  // Vivino auto-link (dev only) - Auto-generate Vivino search URL from extracted data
-                  const vivinoUrl = generateVivinoSearchUrl({
-                    producer: mergedData.data.producer,
-                    wine_name: mergedData.data.wine_name,
-                    vintage: mergedData.data.vintage,
-                    region: mergedData.data.region,
-                    grape: mergedData.data.grape,
-                  });
-                  
-                  if (vivinoUrl) {
-                    console.log('[CellarPage] 🍷 Auto-generated Vivino URL:', vivinoUrl);
-                    (mergedData.data as any).vivino_url = vivinoUrl;
-                  }
-                  
-                  setExtractedData(mergedData);
-                  console.log('[CellarPage] Set extracted data');
-                  
-                  // Show success message
-                  const fieldsCount = extractedFieldNames.length;
-                  console.log('[CellarPage] Fields count:', fieldsCount);
-                  if (fieldsCount > 0) {
-                    toast.success(t('cellar.labelParse.success', { count: fieldsCount }));
-                    console.log('[CellarPage] Showed success toast');
-                  } else {
-                    toast.warning(t('cellar.labelParse.partial'));
-                    console.log('[CellarPage] Showed partial toast');
-                  }
-                } else {
-                  console.warn('[CellarPage] ⚠️ Parse failed or no data');
-                  console.warn('[CellarPage] Parse result:', parseResult);
-                  
-                  // Still allow manual entry with the image
-                  const fallbackData = {
-                    imageUrl: result.imageUrl,
-                    data: result.data || {} as ExtractedWineData,
-                  };
-                  console.log('[CellarPage] Fallback data:', fallbackData);
-                  
-                  setExtractedData(fallbackData);
-                  console.log('[CellarPage] Set fallback extracted data');
-                  
-                  toast.warning(t('cellar.labelParse.failed'));
-                  console.log('[CellarPage] Showed failed toast');
-                }
-              } catch (error: any) {
-                console.error('[CellarPage] ❌ Parse error:', error);
-                console.error('[CellarPage] Error message:', error.message);
-                console.error('[CellarPage] Error stack:', error.stack);
-                console.error('[CellarPage] Error name:', error.name);
-                console.error('[CellarPage] User agent:', navigator.userAgent);
-                console.error('[CellarPage] Browser:', navigator.vendor);
-                console.error('[CellarPage] Platform:', navigator.platform);
-                
-                // Track error with details
-                analytics.trackLabelParse.error(
-                  error.name || 'UnknownError',
-                  parseSource as 'camera' | 'library',
-                  error.message
-                );
-                
-                // Fallback to manual entry with image
-                const errorFallbackData = {
-                  imageUrl: result.imageUrl,
-                  data: result.data || {} as ExtractedWineData,
-                };
-                console.log('[CellarPage] Error fallback data:', errorFallbackData);
-                
-                setExtractedData(errorFallbackData);
-                console.log('[CellarPage] Set error fallback extracted data');
-                
-                // Show error toast with more details for debugging
-                const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
-                toast.error(t('cellar.labelParse.error') + errorDetails);
-                console.log('[CellarPage] Showed error toast');
-              } finally {
-                setIsParsing(false);
-                console.log('[CellarPage] Set isParsing to false');
+              // Use smart scan if file is available (should always be the case now)
+              if (result.file) {
+                await handleSmartScan(result.file);
+              } else {
+                // Fallback: no file available (shouldn't happen)
+                console.error('[CellarPage] No file in LabelCapture result');
+                toast.error('Unable to process image');
               }
-              
-              // ALWAYS open form with prefilled data (or empty if parse failed)
-              console.log('[CellarPage] ========== OPENING FORM ==========');
-              setEditingBottle(null);
-              console.log('[CellarPage] Set editing bottle to null');
-              setShowForm(true);
-              console.log('[CellarPage] Set showForm to true - FORM SHOULD NOW BE VISIBLE');
             }}
             onCancel={() => {
               console.log('[CellarPage] Label capture cancelled');
