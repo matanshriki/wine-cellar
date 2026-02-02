@@ -33,10 +33,15 @@ export interface ExtractedWineData {
  * Strategy: Resize to reasonable dimensions + JPEG compression
  */
 export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> {
+  console.log('[compressImage] Starting compression:', file.name, file.size, 'bytes');
+  console.log('[compressImage] File type:', file.type);
+  console.log('[compressImage] Is file valid?', file instanceof File);
+  
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
     reader.onload = (e) => {
+      console.log('[compressImage] FileReader loaded successfully');
       const img = new Image();
       
       img.onload = () => {
@@ -102,11 +107,20 @@ export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> 
         );
       };
       
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = (error) => {
+        console.error('[compressImage] Image load error:', error);
+        reject(new Error('Failed to load image'));
+      };
       img.src = e.target?.result as string;
     };
     
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = (error) => {
+      console.error('[compressImage] FileReader error:', error);
+      console.error('[compressImage] Error event:', reader.error);
+      reject(new Error(`Failed to read file: ${reader.error?.message || 'Unknown error'}`));
+    };
+    
+    console.log('[compressImage] Starting FileReader.readAsDataURL...');
     reader.readAsDataURL(file);
   });
 }

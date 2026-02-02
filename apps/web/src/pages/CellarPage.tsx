@@ -593,10 +593,17 @@ export function CellarPage() {
     console.log('[CellarPage] ========== SMART SCAN START ==========');
     console.log('[CellarPage] File:', file.name, 'Size:', file.size, 'Type:', file.type);
     
-    setShowAddSheet(false);
+    // CRITICAL for iOS: Don't close sheet until file is being processed
+    // Start parsing state first
     setIsParsing(true);
-    
     toast.info('Identifying bottle(s)…');
+    
+    // Give a small delay to ensure UI state is updated
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Now close the sheet
+    console.log('[CellarPage] Closing add sheet');
+    setShowAddSheet(false);
 
     try {
       console.log('[CellarPage] Calling smartScanService.performSmartScan...');

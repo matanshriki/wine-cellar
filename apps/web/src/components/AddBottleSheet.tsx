@@ -49,17 +49,37 @@ export function AddBottleSheet({
   // Handle direct photo selection
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, source: 'camera' | 'library') {
     const file = e.target.files?.[0];
-    if (file) {
-      // Use smart scan if available, otherwise fall back to legacy handler
-      if (onSmartScan) {
-        onSmartScan(file);
-      } else if (onPhotoSelected) {
-        onPhotoSelected(file);
-      }
+    if (!file) {
+      console.log('[AddBottleSheet] No file selected');
+      return;
+    }
+    
+    console.log('[AddBottleSheet] File selected:', file.name, file.size, 'bytes', file.type);
+    
+    // CRITICAL for iOS: Don't clear input immediately
+    // On iOS, clearing the input can invalidate the file reference before async operations complete
+    
+    // Use smart scan if available, otherwise fall back to legacy handler
+    if (onSmartScan) {
+      console.log('[AddBottleSheet] Calling onSmartScan...');
+      // Don't close here - let the scan handler close the sheet after it starts processing
+      // This ensures the file reference stays valid long enough
+      onSmartScan(file);
+    } else if (onPhotoSelected) {
+      console.log('[AddBottleSheet] Calling onPhotoSelected (legacy)...');
+      onPhotoSelected(file);
+      onClose();
+    } else {
+      console.warn('[AddBottleSheet] No scan handler provided!');
       onClose();
     }
+    
     // Reset input so same file can be selected again
-    e.target.value = '';
+    // Delay this to ensure file data is fully captured first (especially on iOS)
+    setTimeout(() => {
+      console.log('[AddBottleSheet] Resetting file input');
+      e.target.value = '';
+    }, 500);
   }
 
   // Wishlist feature (dev only) - Handle photo selection for wishlist
