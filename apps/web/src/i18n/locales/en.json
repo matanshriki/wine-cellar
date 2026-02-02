@@ -189,6 +189,8 @@
       "subtitle": "The more I know, the better I get.",
       "uploadPhoto": "Take or Upload Photo",
       "uploadPhotoDescNew": "Use camera or choose from gallery • AI label extraction",
+      "smartScan": "Scan Bottles",
+      "smartScanDesc": "AI detects single or multiple bottles automatically",
       "takePhoto": "Take Photo",
       "takePhotoDesc": "Use camera • AI label extraction",
       "chooseFromLibrary": "Choose from Library",

@@ -6,7 +6,7 @@
  * each detected bottle before adding to cellar.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
@@ -22,6 +22,11 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
   existingBottles: bottleService.BottleWithWineInfo[];
+  // Smart scan: Pre-scanned data from unified scan (optional)
+  preScannedData?: {
+    imageUrl: string;
+    bottles: ExtractedBottleData[];
+  };
 }
 
 interface ReviewBottle extends ExtractedBottleData {
@@ -31,14 +36,42 @@ interface ReviewBottle extends ExtractedBottleData {
   editing: boolean;
 }
 
-export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles }: Props) {
+export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles, preScannedData }: Props) {
   const { t } = useTranslation();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
-  const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving'>('upload');
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving'>(
+    preScannedData ? 'review' : 'upload'
+  );
+  const [imageUrl, setImageUrl] = useState<string>(preScannedData?.imageUrl || '');
   const [bottles, setBottles] = useState<ReviewBottle[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  // Process pre-scanned data from smart scan (if provided)
+  useEffect(() => {
+    if (preScannedData && isOpen) {
+      console.log('[MultiBottleImport] Processing pre-scanned data:', preScannedData.bottles.length, 'bottles');
+      
+      // Convert to review bottles
+      const reviewBottles: ReviewBottle[] = preScannedData.bottles.map((bottle, index) => {
+        const isDuplicate = checkForDuplicate(bottle, existingBottles);
+        const isHighConfidence = bottle.confidence >= 0.65;
+        const hasRequiredFields = !!bottle.producer && !!bottle.wineName;
+        
+        return {
+          ...bottle,
+          id: `bottle-${index}`,
+          selected: isHighConfidence && hasRequiredFields && !isDuplicate,
+          isDuplicate,
+          editing: false,
+        };
+      });
+
+      setBottles(reviewBottles);
+      setImageUrl(preScannedData.imageUrl);
+      setStep('review');
+    }
+  }, [preScannedData, isOpen, existingBottles]);
 
   const handleFileSelect = async (file: File) => {
     if (!file) return;

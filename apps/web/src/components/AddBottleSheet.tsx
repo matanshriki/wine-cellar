@@ -13,25 +13,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface AddBottleSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadPhoto: () => void;
+  onUploadPhoto: () => void; // Legacy - kept for backwards compatibility
   onManualEntry: () => void;
-  onMultiBottleImport?: () => void; // Multi-bottle feature (feature-flagged)
-  onPhotoSelected?: (file: File) => void;
+  onMultiBottleImport?: () => void; // Legacy - kept for backwards compatibility
+  onPhotoSelected?: (file: File) => void; // Legacy - kept for backwards compatibility
+  onSmartScan?: (file: File) => void; // New unified scan handler
   onPhotoSelectedForWishlist?: (file: File) => void; // Wishlist feature (feature-flagged)
   showWishlistOption?: boolean; // Wishlist feature (feature-flagged) - controlled by parent
-  showMultiBottleOption?: boolean; // Multi-bottle feature (feature-flagged) - controlled by parent
+  showMultiBottleOption?: boolean; // DEPRECATED - Smart scan replaces this
 }
 
 export function AddBottleSheet({
   isOpen,
   onClose,
-  onUploadPhoto,
+  onUploadPhoto, // Legacy - kept for backwards compatibility
   onManualEntry,
-  onMultiBottleImport, // Multi-bottle feature (feature-flagged)
-  onPhotoSelected,
+  onMultiBottleImport, // Legacy - kept for backwards compatibility
+  onPhotoSelected, // Legacy - kept for backwards compatibility
+  onSmartScan, // New unified scan handler
   onPhotoSelectedForWishlist, // Wishlist feature (feature-flagged)
   showWishlistOption = false, // Wishlist feature (feature-flagged)
-  showMultiBottleOption = false, // Multi-bottle feature (feature-flagged)
+  showMultiBottleOption = false, // DEPRECATED - Smart scan replaces this
 }: AddBottleSheetProps) {
   const { t } = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
@@ -44,11 +46,16 @@ export function AddBottleSheet({
                 (window.navigator as any).standalone === true ||
                 document.referrer.includes('android-app://');
   
-  // Handle direct photo selection (bypasses LabelCapture modal)
+  // Handle direct photo selection
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, source: 'camera' | 'library') {
     const file = e.target.files?.[0];
-    if (file && onPhotoSelected) {
-      onPhotoSelected(file);
+    if (file) {
+      // Use smart scan if available, otherwise fall back to legacy handler
+      if (onSmartScan) {
+        onSmartScan(file);
+      } else if (onPhotoSelected) {
+        onPhotoSelected(file);
+      }
       onClose();
     }
     // Reset input so same file can be selected again
@@ -153,8 +160,7 @@ export function AddBottleSheet({
 
               {/* Options */}
               <div className="space-y-3">
-                {/* PRIMARY: Add Photo (Camera or Gallery) - Single unified option */}
-                {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}
+                {/* PRIMARY: Smart Scan - Auto-detects single or multiple bottles */}
                 <label
                   className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
                   style={{
@@ -164,30 +170,36 @@ export function AddBottleSheet({
                     boxShadow: 'var(--shadow-sm)',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
-                    pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
+                    pointerEvents: 'auto',
                   }}
                 >
                   <input
                     type="file"
                     accept="image/*"
-                    {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})} // Samsung & PWA work better without explicit capture
+                    {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
                     onChange={(e) => handleFileSelect(e, 'library')}
                     className="hidden"
-                    aria-label={t('cellar.addBottle.uploadPhoto')}
+                    aria-label={t('cellar.addBottle.smartScan')}
                   />
-                  {/* Camera Icon */}
+                  {/* Camera Icon with AI Sparkle */}
                   <div className="relative w-8 h-8 flex-shrink-0">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
+                    {/* AI Indicator */}
+                    <div className="absolute -top-1 -right-1 w-3 h-3">
+                      <svg fill="currentColor" viewBox="0 0 20 20" className="w-3 h-3">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
                   </div>
                   <div className="flex-1 text-start">
                     <div className="font-semibold text-lg">
-                      {t('cellar.addBottle.uploadPhoto')}
+                      {t('cellar.addBottle.smartScan')}
                     </div>
                     <div className="text-sm opacity-90 mt-0.5">
-                      {t('cellar.addBottle.uploadPhotoDescNew')}
+                      {t('cellar.addBottle.smartScanDesc')}
                     </div>
                   </div>
                   <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,51 +241,7 @@ export function AddBottleSheet({
                   </svg>
                 </button>
 
-                {/* Beta feature: Multi-Bottle Import (feature-flagged) */}
-                {showMultiBottleOption && onMultiBottleImport && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onMultiBottleImport();
-                    }}
-                    className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.15) 100%)',
-                      border: '1px solid var(--color-amber-300)',
-                      color: 'var(--text-primary)',
-                      boxShadow: 'var(--shadow-xs)',
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation',
-                      pointerEvents: 'auto',
-                    }}
-                  >
-                    {/* Film/Multiple Photos Icon */}
-                    <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                    </svg>
-                    <div className="flex-1 text-start">
-                      <div className="font-semibold flex items-center gap-2">
-                        {t('cellar.multiBottle.button')}
-                        <span 
-                          className="text-xs px-2 py-0.5 rounded-full font-bold"
-                          style={{
-                            background: 'var(--color-amber-500)',
-                            color: 'white',
-                          }}
-                        >
-                          BETA
-                        </span>
-                      </div>
-                      <div className="text-sm opacity-70 mt-0.5">
-                        {t('cellar.addBottle.multiBottleDesc', 'Scan multiple bottles at once')}
-                      </div>
-                    </div>
-                    <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                )}
+                {/* DEPRECATED: Multi-Bottle Import - Now integrated into Smart Scan above */}
 
                 {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
                 {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}

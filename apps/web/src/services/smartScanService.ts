@@ -1,0 +1,277 @@
+/**
+ * Smart Scan Service
+ * 
+ * Unified bottle detection that automatically determines if a photo contains
+ * a single bottle or multiple bottles, then routes to the appropriate confirmation flow.
+ * 
+ * Reuses existing AI infrastructure (parse-label-image edge function)
+ */
+
+import { supabase } from '../lib/supabase';
+import { uploadLabelImage } from './labelScanService';
+import type { ExtractedWineData } from './labelScanService';
+import type { ExtractedBottleData } from './multiBottleService';
+
+export type ScanMode = 'single' | 'multi' | 'unknown';
+
+export interface SmartScanResult {
+  mode: ScanMode;
+  imageUrl: string;
+  // Single bottle result
+  singleBottle?: {
+    extractedData: ExtractedWineData;
+  };
+  // Multiple bottles result
+  multipleBottles?: {
+    bottles: ExtractedBottleData[];
+  };
+  // Metadata
+  detectedCount: number;
+  confidence: number;
+}
+
+/**
+ * Perform smart scan: automatically detect if image contains single or multiple bottles
+ * 
+ * @param file - Image file to scan
+ * @returns SmartScanResult with mode (single/multi) and appropriate data
+ */
+export async function performSmartScan(file: File): Promise<SmartScanResult> {
+  console.log('[smartScanService] Starting smart scan...');
+
+  // 1. Upload image
+  const imageUrl = await uploadLabelImage(file);
+  console.log('[smartScanService] Image uploaded:', imageUrl);
+
+  // 2. Call AI with smart detection mode
+  try {
+    const { data, error } = await supabase.functions.invoke('parse-label-image', {
+      body: {
+        imageUrl: imageUrl,
+        mode: 'smart', // Let AI decide single vs multi
+      },
+    });
+
+    if (error) {
+      console.error('[smartScanService] Edge function error:', error);
+      throw new Error(`AI extraction failed: ${error.message}`);
+    }
+
+    if (!data || !data.success) {
+      console.warn('[smartScanService] Extraction failed, falling back to single mode');
+      // Fallback to single mode with empty data
+      return {
+        mode: 'single',
+        imageUrl,
+        singleBottle: {
+          extractedData: createEmptyExtractedData(),
+        },
+        detectedCount: 0,
+        confidence: 0,
+      };
+    }
+
+    // 3. Analyze response to determine mode
+    const bottles = data.bottles && Array.isArray(data.bottles) ? data.bottles : [];
+    const detectedCount = bottles.length;
+    
+    console.log('[smartScanService] Detected', detectedCount, 'bottle(s)');
+
+    // 4. Determine mode based on detected count and confidence
+    if (detectedCount === 0) {
+      // No bottles detected - single mode with empty data
+      console.log('[smartScanService] No bottles detected, defaulting to single mode');
+      return {
+        mode: 'single',
+        imageUrl,
+        singleBottle: {
+          extractedData: createEmptyExtractedData(),
+        },
+        detectedCount: 0,
+        confidence: 0,
+      };
+    }
+
+    if (detectedCount === 1) {
+      // Single bottle detected
+      console.log('[smartScanService] ✅ Single bottle detected');
+      const bottle = bottles[0];
+      
+      return {
+        mode: 'single',
+        imageUrl,
+        singleBottle: {
+          extractedData: mapBottleToExtractedData(bottle),
+        },
+        detectedCount: 1,
+        confidence: calculateBottleConfidence(bottle),
+      };
+    }
+
+    // Multiple bottles detected
+    console.log('[smartScanService] ✅ Multiple bottles detected:', detectedCount);
+    
+    // Map bottles to multi-bottle format
+    const mappedBottles = bottles.map((b: any, index: number) => {
+      const getFieldValue = (field: any) => field?.value || null;
+      const getFieldConfidence = (field: any) => {
+        if (!field || !field.confidence) return 0.5;
+        const conf = field.confidence;
+        return conf === 'high' ? 0.9 : conf === 'medium' ? 0.7 : 0.5;
+      };
+      
+      const allConfidences = [
+        getFieldConfidence(b.producer),
+        getFieldConfidence(b.name),
+        getFieldConfidence(b.vintage),
+        getFieldConfidence(b.region),
+        getFieldConfidence(b.style),
+      ].filter(c => c > 0);
+      
+      const avgConfidence = allConfidences.length > 0
+        ? allConfidences.reduce((sum, c) => sum + c, 0) / allConfidences.length
+        : 0.5;
+      
+      return {
+        producer: getFieldValue(b.producer) || `Unknown Producer ${index + 1}`,
+        wineName: getFieldValue(b.name) || `Wine ${index + 1}`,
+        vintage: getFieldValue(b.vintage),
+        region: getFieldValue(b.region),
+        grapes: getFieldValue(b.grapes) ? (Array.isArray(getFieldValue(b.grapes)) ? getFieldValue(b.grapes).join(', ') : getFieldValue(b.grapes)) : undefined,
+        color: getFieldValue(b.style) || 'red',
+        confidence: avgConfidence,
+        notes: undefined,
+        source: 'multi-photo' as const,
+      };
+    });
+
+    // Calculate average confidence across all bottles
+    const avgConfidence = mappedBottles.length > 0
+      ? mappedBottles.reduce((sum, b) => sum + b.confidence, 0) / mappedBottles.length
+      : 0.5;
+
+    return {
+      mode: 'multi',
+      imageUrl,
+      multipleBottles: {
+        bottles: mappedBottles,
+      },
+      detectedCount: mappedBottles.length,
+      confidence: avgConfidence,
+    };
+
+  } catch (error: any) {
+    console.error('[smartScanService] Error during smart scan:', error);
+    
+    // Fallback: return single mode with empty data so user can enter manually
+    console.log('[smartScanService] Falling back to single mode due to error');
+    return {
+      mode: 'single',
+      imageUrl,
+      singleBottle: {
+        extractedData: createEmptyExtractedData(),
+      },
+      detectedCount: 0,
+      confidence: 0,
+    };
+  }
+}
+
+/**
+ * Create empty extracted data for fallback
+ */
+function createEmptyExtractedData(): ExtractedWineData {
+  return {
+    producer: null,
+    wine_name: null,
+    vintage: null,
+    country: null,
+    region: null,
+    wine_color: null,
+    grape: null,
+    bottle_size_ml: 750,
+    confidence: {
+      producer: 'low',
+      wine_name: 'low',
+      vintage: 'low',
+      overall: 'low',
+    },
+    notes: 'Please enter wine details manually',
+  };
+}
+
+/**
+ * Map bottle data from AI response to ExtractedWineData format
+ */
+function mapBottleToExtractedData(bottle: any): ExtractedWineData {
+  const getFieldValue = (field: any) => field?.value || null;
+  const getFieldConfidence = (field: any) => {
+    if (!field || !field.confidence) return 'low';
+    return field.confidence as 'high' | 'medium' | 'low';
+  };
+
+  const producer = getFieldValue(bottle.producer);
+  const wine_name = getFieldValue(bottle.name);
+  const vintage = getFieldValue(bottle.vintage);
+  const region = getFieldValue(bottle.region);
+  const wine_color = getFieldValue(bottle.style);
+  const grape = getFieldValue(bottle.grapes);
+
+  return {
+    producer,
+    wine_name,
+    vintage,
+    country: getFieldValue(bottle.country),
+    region,
+    wine_color: wine_color || null,
+    grape: Array.isArray(grape) ? grape.join(', ') : grape,
+    bottle_size_ml: getFieldValue(bottle.bottle_size_ml) || 750,
+    confidence: {
+      producer: getFieldConfidence(bottle.producer),
+      wine_name: getFieldConfidence(bottle.name),
+      vintage: getFieldConfidence(bottle.vintage),
+      overall: getFieldConfidence(bottle.overall) || calculateOverallConfidence(bottle),
+    },
+    notes: '',
+  };
+}
+
+/**
+ * Calculate overall confidence from individual fields
+ */
+function calculateOverallConfidence(bottle: any): 'high' | 'medium' | 'low' {
+  const confidences = [
+    bottle.producer?.confidence,
+    bottle.name?.confidence,
+    bottle.vintage?.confidence,
+    bottle.region?.confidence,
+  ].filter(Boolean);
+
+  const highCount = confidences.filter(c => c === 'high').length;
+  const totalCount = confidences.length;
+
+  if (totalCount === 0) return 'low';
+  if (highCount >= totalCount * 0.6) return 'high';
+  if (highCount >= totalCount * 0.3) return 'medium';
+  return 'low';
+}
+
+/**
+ * Calculate numeric confidence for a bottle
+ */
+function calculateBottleConfidence(bottle: any): number {
+  const getFieldConfidence = (field: any) => {
+    if (!field || !field.confidence) return 0.5;
+    const conf = field.confidence;
+    return conf === 'high' ? 0.9 : conf === 'medium' ? 0.7 : 0.5;
+  };
+
+  const confidences = [
+    getFieldConfidence(bottle.producer),
+    getFieldConfidence(bottle.name),
+    getFieldConfidence(bottle.vintage),
+    getFieldConfidence(bottle.region),
+  ];
+
+  return confidences.reduce((sum, c) => sum + c, 0) / confidences.length;
+}

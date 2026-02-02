@@ -29,6 +29,7 @@ import * as historyService from '../services/historyService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
 import * as labelParseService from '../services/labelParseService';
+import * as smartScanService from '../services/smartScanService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
@@ -67,6 +68,9 @@ export function CellarPage() {
   
   // Feedback iteration (dev only) - Multi-bottle import state
   const [showMultiBottleImport, setShowMultiBottleImport] = useState(false);
+  
+  // Smart scan state - unified single/multi bottle detection
+  const [smartScanResult, setSmartScanResult] = useState<smartScanService.SmartScanResult | null>(null);
   
   // Wishlist feature (dev only) - Wishlist state
   const [showWishlistForm, setShowWishlistForm] = useState(false);
@@ -579,6 +583,74 @@ export function CellarPage() {
       console.log('[CellarPage] Bulk analysis cooldown expired');
       setBulkAnalysisCooldown(false);
     }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Handle smart scan - unified single/multi bottle detection
+   * Automatically routes to appropriate confirmation flow
+   */
+  async function handleSmartScan(file: File) {
+    console.log('[CellarPage] Starting smart scan...');
+    setShowAddSheet(false);
+    setIsParsing(true);
+    
+    toast.info('Identifying bottle(s)…');
+
+    try {
+      // Perform smart scan
+      const result = await smartScanService.performSmartScan(file);
+      
+      console.log('[CellarPage] Smart scan result:', {
+        mode: result.mode,
+        detectedCount: result.detectedCount,
+        confidence: result.confidence,
+      });
+
+      if (result.mode === 'single') {
+        // Single bottle detected - show single bottle form
+        console.log('[CellarPage] ✅ Routing to single bottle form');
+        
+        if (result.singleBottle) {
+          setExtractedData({
+            imageUrl: result.imageUrl,
+            data: result.singleBottle.extractedData,
+          });
+        }
+        
+        setEditingBottle(null);
+        setShowForm(true);
+        
+        toast.success('Label scanned successfully!');
+      } else if (result.mode === 'multi') {
+        // Multiple bottles detected - show multi-bottle import
+        console.log('[CellarPage] ✅ Routing to multi-bottle import');
+        
+        // Store result for multi-bottle modal
+        setSmartScanResult(result);
+        setShowMultiBottleImport(true);
+        
+        toast.success(`✅ Detected ${result.detectedCount} bottles!`);
+      } else {
+        // Unknown mode - default to single
+        console.log('[CellarPage] ⚠️ Unknown mode, defaulting to single form');
+        setEditingBottle(null);
+        setShowForm(true);
+        
+        toast.info('Please verify the details');
+      }
+    } catch (error: any) {
+      console.error('[CellarPage] Smart scan error:', error);
+      
+      // Show error toast with details
+      const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
+      toast.error('Scan failed' + errorDetails);
+      
+      // Fallback: open empty form so user can enter manually
+      setEditingBottle(null);
+      setShowForm(true);
+    } finally {
+      setIsParsing(false);
+    }
   }
 
   /**
@@ -1882,7 +1954,7 @@ export function CellarPage() {
         onClose={() => setShowAddSheet(false)}
         onUploadPhoto={() => {
           setShowAddSheet(false);
-          setLabelCaptureMode('upload'); // 'upload' mode allows both camera and gallery
+          setLabelCaptureMode('upload');
           setShowLabelCapture(true);
         }}
         onManualEntry={() => {
@@ -1894,8 +1966,9 @@ export function CellarPage() {
           setShowAddSheet(false);
           setShowMultiBottleImport(true);
         }}
-        showWishlistOption={false} // Don't show wishlist option in Cellar page - only in Wishlist page
-        showMultiBottleOption={featureFlags.canMultiBottleImport} // Beta feature: show multi-bottle option if user has flag
+        onSmartScan={handleSmartScan} // NEW: Unified smart scan handler
+        showWishlistOption={false}
+        showMultiBottleOption={false} // DEPRECATED: Smart scan replaces this
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);
@@ -2330,18 +2403,24 @@ export function CellarPage() {
         onAnalyze={selectedBottle ? () => handleAnalyze(selectedBottle.id) : undefined}
       />
 
-      {/* Beta feature: Multi-Bottle Import Modal - Enabled in dev OR if user has flag */}
-      {featureFlags.canMultiBottleImport && (
-        <MultiBottleImport
-          isOpen={showMultiBottleImport}
-          onClose={() => setShowMultiBottleImport(false)}
-          onSuccess={async () => {
-            await loadBottles(true); // Reset pagination
-            setShowMultiBottleImport(false);
-          }}
-          existingBottles={bottles}
-        />
-      )}
+      {/* Multi-Bottle Import Modal - Now accessible via Smart Scan */}
+      <MultiBottleImport
+        isOpen={showMultiBottleImport}
+        onClose={() => {
+          setShowMultiBottleImport(false);
+          setSmartScanResult(null); // Clear smart scan result
+        }}
+        onSuccess={async () => {
+          await loadBottles(true); // Reset pagination
+          setShowMultiBottleImport(false);
+          setSmartScanResult(null); // Clear smart scan result
+        }}
+        existingBottles={bottles}
+        preScannedData={smartScanResult?.multipleBottles ? {
+          imageUrl: smartScanResult.imageUrl,
+          bottles: smartScanResult.multipleBottles.bottles,
+        } : undefined}
+      />
 
       {/* Wishlist feature (dev only) - Wishlist Form */}
       <AnimatePresence>
