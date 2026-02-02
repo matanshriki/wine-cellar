@@ -37,14 +37,19 @@ export interface SmartScanResult {
  * @returns SmartScanResult with mode (single/multi) and appropriate data
  */
 export async function performSmartScan(file: File): Promise<SmartScanResult> {
-  console.log('[smartScanService] Starting smart scan...');
+  console.log('[smartScanService] ========== SMART SCAN START ==========');
+  console.log('[smartScanService] File:', file.name, file.size, 'bytes', file.type);
 
-  // 1. Upload image
-  const imageUrl = await uploadLabelImage(file);
-  console.log('[smartScanService] Image uploaded:', imageUrl);
-
-  // 2. Call AI with multi-bottle mode (always returns array, which we then analyze)
   try {
+    // 1. Upload image
+    console.log('[smartScanService] Step 1: Uploading image...');
+    const imageUrl = await uploadLabelImage(file);
+    console.log('[smartScanService] ✅ Image uploaded successfully:', imageUrl);
+
+    // 2. Call AI with multi-bottle mode (always returns array, which we then analyze)
+    console.log('[smartScanService] Step 2: Calling edge function...');
+    console.log('[smartScanService] Request params:', { imageUrl, mode: 'multi-bottle' });
+    
     const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
         imageUrl: imageUrl,
@@ -52,13 +57,18 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       },
     });
 
+    console.log('[smartScanService] Edge function response received');
+    console.log('[smartScanService] Error:', error);
+    console.log('[smartScanService] Data:', data);
+
     if (error) {
-      console.error('[smartScanService] Edge function error:', error);
+      console.error('[smartScanService] ❌ Edge function error:', error);
       throw new Error(`AI extraction failed: ${error.message}`);
     }
 
     if (!data) {
-      console.warn('[smartScanService] No data returned, falling back to single mode');
+      console.warn('[smartScanService] ⚠️ No data returned from edge function');
+      console.warn('[smartScanService] Falling back to single mode with empty data');
       return {
         mode: 'single',
         imageUrl,
@@ -75,10 +85,12 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
     const bottles = data.bottles && Array.isArray(data.bottles) ? data.bottles : [];
     const detectedCount = bottles.length;
     
-    console.log('[smartScanService] AI response:', { 
+    console.log('[smartScanService] Step 3: Analyzing response');
+    console.log('[smartScanService] Response structure:', { 
       success: data.success, 
       bottlesCount: detectedCount,
-      hasBottlesArray: !!data.bottles 
+      hasBottlesArray: !!data.bottles,
+      bottlesIsArray: Array.isArray(data.bottles)
     });
     
     console.log('[smartScanService] Detected', detectedCount, 'bottle(s)');
@@ -167,19 +179,12 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
     };
 
   } catch (error: any) {
-    console.error('[smartScanService] Error during smart scan:', error);
+    console.error('[smartScanService] ❌ Error during AI processing:', error);
+    console.error('[smartScanService] Error message:', error?.message);
+    console.error('[smartScanService] Error stack:', error?.stack);
     
-    // Fallback: return single mode with empty data so user can enter manually
-    console.log('[smartScanService] Falling back to single mode due to error');
-    return {
-      mode: 'single',
-      imageUrl,
-      singleBottle: {
-        extractedData: createEmptyExtractedData(),
-      },
-      detectedCount: 0,
-      confidence: 0,
-    };
+    // Re-throw the error so the caller can handle it
+    throw error;
   }
 }
 

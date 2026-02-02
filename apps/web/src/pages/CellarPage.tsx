@@ -590,56 +590,73 @@ export function CellarPage() {
    * Automatically routes to appropriate confirmation flow
    */
   async function handleSmartScan(file: File) {
-    console.log('[CellarPage] Starting smart scan...');
+    console.log('[CellarPage] ========== SMART SCAN START ==========');
+    console.log('[CellarPage] File:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
     setShowAddSheet(false);
     setIsParsing(true);
     
     toast.info('Identifying bottle(s)…');
 
     try {
+      console.log('[CellarPage] Calling smartScanService.performSmartScan...');
+      
       // Perform smart scan
       const result = await smartScanService.performSmartScan(file);
       
-      console.log('[CellarPage] Smart scan result:', {
-        mode: result.mode,
-        detectedCount: result.detectedCount,
-        confidence: result.confidence,
-      });
+      console.log('[CellarPage] ========== SMART SCAN COMPLETE ==========');
+      console.log('[CellarPage] Mode:', result.mode);
+      console.log('[CellarPage] Detected count:', result.detectedCount);
+      console.log('[CellarPage] Confidence:', result.confidence);
+      console.log('[CellarPage] Image URL:', result.imageUrl);
+      console.log('[CellarPage] Has single bottle data:', !!result.singleBottle);
+      console.log('[CellarPage] Has multiple bottles data:', !!result.multipleBottles);
 
       if (result.mode === 'single') {
         // Single bottle detected - show single bottle form
-        console.log('[CellarPage] ✅ Routing to single bottle form');
+        console.log('[CellarPage] ✅ Routing to SINGLE BOTTLE form');
         
         if (result.singleBottle) {
+          console.log('[CellarPage] Setting extracted data:', result.singleBottle.extractedData);
           setExtractedData({
             imageUrl: result.imageUrl,
             data: result.singleBottle.extractedData,
           });
+        } else {
+          console.warn('[CellarPage] ⚠️ Single mode but no singleBottle data!');
         }
         
         setEditingBottle(null);
+        console.log('[CellarPage] Opening bottle form...');
         setShowForm(true);
         
         toast.success('Label scanned successfully!');
       } else if (result.mode === 'multi') {
         // Multiple bottles detected - show multi-bottle import
-        console.log('[CellarPage] ✅ Routing to multi-bottle import');
+        console.log('[CellarPage] ✅ Routing to MULTI-BOTTLE import');
+        console.log('[CellarPage] Bottles count:', result.multipleBottles?.bottles.length);
         
         // Store result for multi-bottle modal
         setSmartScanResult(result);
+        console.log('[CellarPage] Opening multi-bottle import...');
         setShowMultiBottleImport(true);
         
         toast.success(`✅ Detected ${result.detectedCount} bottles!`);
       } else {
         // Unknown mode - default to single
-        console.log('[CellarPage] ⚠️ Unknown mode, defaulting to single form');
+        console.warn('[CellarPage] ⚠️ Unknown mode:', result.mode, '- defaulting to single form');
         setEditingBottle(null);
         setShowForm(true);
         
         toast.info('Please verify the details');
       }
+      
+      console.log('[CellarPage] ========== SMART SCAN ROUTING COMPLETE ==========');
     } catch (error: any) {
-      console.error('[CellarPage] Smart scan error:', error);
+      console.error('[CellarPage] ========== SMART SCAN ERROR ==========');
+      console.error('[CellarPage] Error:', error);
+      console.error('[CellarPage] Error message:', error?.message);
+      console.error('[CellarPage] Error stack:', error?.stack);
       
       // Show error toast with details
       const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
@@ -649,6 +666,7 @@ export function CellarPage() {
       setEditingBottle(null);
       setShowForm(true);
     } finally {
+      console.log('[CellarPage] Setting isParsing to false');
       setIsParsing(false);
     }
   }
@@ -1952,23 +1970,13 @@ export function CellarPage() {
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={() => setShowAddSheet(false)}
-        onUploadPhoto={() => {
-          setShowAddSheet(false);
-          setLabelCaptureMode('upload');
-          setShowLabelCapture(true);
-        }}
         onManualEntry={() => {
           setShowAddSheet(false);
           setEditingBottle(null);
           setShowForm(true);
         }}
-        onMultiBottleImport={() => {
-          setShowAddSheet(false);
-          setShowMultiBottleImport(true);
-        }}
-        onSmartScan={handleSmartScan} // NEW: Unified smart scan handler
+        onSmartScan={handleSmartScan} // Unified smart scan handler
         showWishlistOption={false}
-        showMultiBottleOption={false} // DEPRECATED: Smart scan replaces this
         onPhotoSelected={async (file) => {
           // Direct photo processing (bypasses LabelCapture modal for fewer taps)
           setShowAddSheet(false);
