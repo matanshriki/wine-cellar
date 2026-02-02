@@ -13,10 +13,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface AddBottleSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadPhoto: () => void; // Legacy - kept for backwards compatibility
+  onUploadPhoto?: () => void; // Legacy - optional for backwards compatibility
   onManualEntry: () => void;
-  onMultiBottleImport?: () => void; // Legacy - kept for backwards compatibility
-  onPhotoSelected?: (file: File) => void; // Legacy - kept for backwards compatibility
+  onMultiBottleImport?: () => void; // Legacy - optional for backwards compatibility
+  onPhotoSelected?: (file: File) => void; // Legacy - optional for backwards compatibility
   onSmartScan?: (file: File) => void; // New unified scan handler
   onPhotoSelectedForWishlist?: (file: File) => void; // Wishlist feature (feature-flagged)
   showWishlistOption?: boolean; // Wishlist feature (feature-flagged) - controlled by parent
@@ -63,23 +63,28 @@ export function AddBottleSheet({
       return;
     }
     
-    console.log('[AddBottleSheet] File selected:', file.name, file.size, 'bytes', file.type);
+    console.log('[AddBottleSheet] ========== FILE SELECTED ==========');
+    console.log('[AddBottleSheet] File:', file.name, file.size, 'bytes', file.type);
+    console.log('[AddBottleSheet] Current props at selection time:');
+    console.log('[AddBottleSheet]   - onSmartScan:', typeof onSmartScan, !!onSmartScan);
+    console.log('[AddBottleSheet]   - onPhotoSelected:', typeof onPhotoSelected, !!onPhotoSelected);
+    console.log('[AddBottleSheet]   - onUploadPhoto:', typeof onUploadPhoto, !!onUploadPhoto);
     
     // CRITICAL for iOS: Don't clear input immediately
     // On iOS, clearing the input can invalidate the file reference before async operations complete
     
     // Use smart scan if available, otherwise fall back to legacy handler
     if (onSmartScan) {
-      console.log('[AddBottleSheet] Calling onSmartScan...');
+      console.log('[AddBottleSheet] ✅ Calling onSmartScan...');
       // Don't close here - let the scan handler close the sheet after it starts processing
       // This ensures the file reference stays valid long enough
       onSmartScan(file);
     } else if (onPhotoSelected) {
-      console.log('[AddBottleSheet] Calling onPhotoSelected (legacy)...');
+      console.log('[AddBottleSheet] ⚠️ Calling onPhotoSelected (legacy fallback)...');
       onPhotoSelected(file);
       onClose();
     } else {
-      console.warn('[AddBottleSheet] No scan handler provided!');
+      console.error('[AddBottleSheet] ❌ No scan handler provided! Both onSmartScan and onPhotoSelected are undefined');
       onClose();
     }
     
