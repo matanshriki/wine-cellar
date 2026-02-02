@@ -8,6 +8,10 @@
  * - Global styles
  */
 
+// App version for deployment verification
+const APP_VERSION = '2.1.0-smart-scan-unified';
+console.log(`🍷 Wine Cellar Brain v${APP_VERSION}`);
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
