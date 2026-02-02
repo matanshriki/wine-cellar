@@ -72,10 +72,11 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1rem',
+        padding: 'max(env(safe-area-inset-top), 1rem) max(env(safe-area-inset-right), 1rem) max(env(safe-area-inset-bottom), 1rem) max(env(safe-area-inset-left), 1rem)',
         background: 'var(--bg-overlay)',
         backdropFilter: 'var(--blur-medium)',
         WebkitBackdropFilter: 'var(--blur-medium)',
+        overflow: 'auto',
       }}
       onClick={handleClose}
     >
@@ -84,14 +85,16 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="modal-luxury w-full"
+        className="modal-luxury w-full flex flex-col"
         style={{
           maxWidth: 'min(90vw, 36rem)',
+          maxHeight: 'min(90vh, 48rem)',
+          margin: 'auto',
         }}
       >
         {/* Header */}
         <div 
-          className="px-6 py-4"
+          className="flex-shrink-0 px-6 py-4"
           style={{ 
             borderBottom: '1px solid var(--border-light)',
           }}
@@ -110,16 +113,30 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
             </div>
             <button
               onClick={handleClose}
-              className="text-2xl opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--text-primary)' }}
+              className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all"
+              style={{
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-muted)',
+                minWidth: '44px',
+                minHeight: '44px',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              aria-label="Close modal"
             >
-              ×
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-4">
+        {/* Content - Scrollable */}
+        <div 
+          className="flex-1 overflow-y-auto p-6 space-y-4"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           {/* Info Banner */}
           <div 
             className="p-4 rounded-lg"
@@ -261,7 +278,7 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
 
         {/* Footer */}
         <div 
-          className="px-6 py-4"
+          className="flex-shrink-0 px-6 py-4"
           style={{
             borderTop: '1px solid var(--border-light)',
           }}
