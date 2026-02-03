@@ -201,6 +201,14 @@
       "addToWishlist": "Add to Wishlist",
       "addToWishlistDesc": "Save wines to buy later"
     },
+    "camera": {
+      "fallbackTitle": "Add a Bottle",
+      "scanBottles": "Scan Bottles",
+      "choosePhoto": "Choose from Photos",
+      "permissionDenied": "Camera access is blocked. You can allow it in Settings or choose a photo.",
+      "notAvailable": "Camera is not available. You can choose a photo from your library.",
+      "error": "Unable to open camera. Please try again or choose a photo."
+    },
     "shareCellar": {
       "button": "Share Cellar",
       "title": "Share Your Cellar",

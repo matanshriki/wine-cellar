@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags
@@ -11,6 +11,7 @@ import { UserMenu } from './UserMenu';
 import { BottomNav } from './BottomNav';
 import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
+import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
@@ -19,8 +20,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const { showAddSheet, scanningState, scanningMessage, openAddBottleFlow, closeAddBottleFlow, handleSmartScan } = useAddBottleContext();
+  const { 
+    showAddSheet, 
+    scanningState, 
+    scanningMessage, 
+    showFallbackSheet,
+    fallbackReason,
+    openAddBottleFlow, 
+    closeAddBottleFlow,
+    openImmediateCamera,
+    closeFallbackSheet,
+    handleSmartScan 
+  } = useAddBottleContext();
   const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
+  
+  // Immediate camera input ref (hidden, for mobile/PWA)
+  const immediateCameraInputRef = useRef<HTMLInputElement>(null);
+  
+  // Detect mobile/PWA
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isSamsung = /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes('android-app://');
 
   // Show CompleteProfile modal if profile is incomplete
   useEffect(() => {
@@ -30,6 +52,54 @@ export function Layout({ children }: { children: React.ReactNode }) {
       setShowCompleteProfile(false);
     }
   }, [user, profile, profileComplete]);
+
+  // Handle immediate camera trigger (for mobile/PWA)
+  useEffect(() => {
+    const handleOpenImmediateCamera = () => {
+      if (immediateCameraInputRef.current) {
+        immediateCameraInputRef.current.click();
+      }
+    };
+
+    window.addEventListener('openImmediateCamera', handleOpenImmediateCamera);
+    return () => {
+      window.removeEventListener('openImmediateCamera', handleOpenImmediateCamera);
+    };
+  }, []);
+
+  // Handle camera file selection
+  const handleCameraFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (!file) {
+      // User cancelled camera - show fallback sheet
+      const event = new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } });
+      window.dispatchEvent(event);
+      
+      // Reset input
+      e.target.value = '';
+      return;
+    }
+
+    // File selected - proceed with smart scan
+    handleSmartScan(file);
+    
+    // Reset input for next time
+    setTimeout(() => {
+      e.target.value = '';
+    }, 500);
+  };
+
+  // Handle camera FAB click - different behavior for mobile/PWA vs desktop
+  const handleCameraFabClick = () => {
+    if (isMobile || isPWA) {
+      // Mobile/PWA: Open camera immediately
+      openImmediateCamera();
+    } else {
+      // Desktop: Show options modal (existing behavior)
+      openAddBottleFlow();
+    }
+  };
 
   /**
    * Sync document direction when language changes
@@ -256,9 +326,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile Floating Footer with Camera FAB - Replaces BottomNav on mobile */}
-      <MobileFloatingFooter onCameraClick={openAddBottleFlow} />
+      <MobileFloatingFooter onCameraClick={handleCameraFabClick} />
 
-      {/* Global Add Bottle Sheet - Accessible from Camera FAB on any page */}
+      {/* Hidden camera input for immediate capture (mobile/PWA) */}
+      <input
+        ref={immediateCameraInputRef}
+        type="file"
+        accept="image/*"
+        {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
+        onChange={handleCameraFileSelect}
+        className="hidden"
+        aria-label="Capture bottle photo"
+      />
+
+      {/* Global Add Bottle Sheet - Accessible from Camera FAB on any page (desktop) */}
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={closeAddBottleFlow}
@@ -279,6 +360,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // The file input will trigger again when user selects
         }}
         showWishlistOption={false}
+      />
+
+      {/* Camera Fallback Sheet - Shown on mobile/PWA when camera cancelled/failed */}
+      <CameraFallbackSheet
+        isOpen={showFallbackSheet}
+        onClose={closeFallbackSheet}
+        reason={fallbackReason}
+        onTryCamera={openImmediateCamera}
+        onChoosePhoto={async (file) => {
+          closeFallbackSheet();
+          await handleSmartScan(file);
+        }}
+        onManualEntry={() => {
+          closeFallbackSheet();
+          const event = new CustomEvent('openManualForm');
+          window.dispatchEvent(event);
+        }}
       />
 
       {/* Complete Profile Modal */}

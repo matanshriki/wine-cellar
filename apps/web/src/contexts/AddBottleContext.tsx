@@ -6,18 +6,23 @@
  * Provides smart scan functionality that works globally.
  */
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { toast } from '../lib/toast';
 import * as smartScanService from '../services/smartScanService';
 
 type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
+type FallbackReason = 'cancelled' | 'permission-denied' | 'not-available' | 'error';
 
 interface AddBottleContextType {
   showAddSheet: boolean;
   scanningState: ScanningState;
   scanningMessage: string;
+  showFallbackSheet: boolean;
+  fallbackReason?: FallbackReason;
   openAddBottleFlow: () => void;
   closeAddBottleFlow: () => void;
+  openImmediateCamera: () => void;
+  closeFallbackSheet: () => void;
   handleSmartScan: (file: File) => Promise<void>;
 }
 
@@ -27,11 +32,14 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [scanningState, setScanningState] = useState<ScanningState>('idle');
   const [scanningMessage, setScanningMessage] = useState('');
+  const [showFallbackSheet, setShowFallbackSheet] = useState(false);
+  const [fallbackReason, setFallbackReason] = useState<FallbackReason>();
 
   const openAddBottleFlow = () => {
     setShowAddSheet(true);
     setScanningState('idle');
     setScanningMessage('');
+    setShowFallbackSheet(false);
   };
 
   const closeAddBottleFlow = () => {
@@ -39,6 +47,42 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
     setScanningState('idle');
     setScanningMessage('');
   };
+
+  const openImmediateCamera = () => {
+    // For mobile/PWA: trigger immediate camera capture
+    // This will be handled by a hidden file input in Layout
+    setShowAddSheet(false);
+    setShowFallbackSheet(false);
+    setScanningState('idle');
+    
+    // Dispatch event to trigger camera input
+    const event = new CustomEvent('openImmediateCamera');
+    window.dispatchEvent(event);
+  };
+
+  const closeFallbackSheet = () => {
+    setShowFallbackSheet(false);
+    setFallbackReason(undefined);
+  };
+
+  // Show fallback sheet (called when camera fails or cancelled)
+  const showFallback = (reason: FallbackReason) => {
+    setShowFallbackSheet(true);
+    setFallbackReason(reason);
+    setShowAddSheet(false);
+  };
+
+  // Expose showFallback through window events for easy access
+  useEffect(() => {
+    const handleShowFallback = (e: CustomEvent<{ reason: FallbackReason }>) => {
+      showFallback(e.detail.reason);
+    };
+
+    window.addEventListener('showCameraFallback' as any, handleShowFallback);
+    return () => {
+      window.removeEventListener('showCameraFallback' as any, handleShowFallback);
+    };
+  }, []);
 
   /**
    * Handle smart scan - unified single/multi bottle detection
@@ -105,8 +149,12 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       showAddSheet, 
       scanningState,
       scanningMessage,
+      showFallbackSheet,
+      fallbackReason,
       openAddBottleFlow, 
       closeAddBottleFlow,
+      openImmediateCamera,
+      closeFallbackSheet,
       handleSmartScan,
     }}>
       {children}
