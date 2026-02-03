@@ -14,7 +14,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 
 type FallbackReason = 'cancelled' | 'permission-denied' | 'not-available' | 'error';
 
@@ -38,9 +38,17 @@ export function CameraFallbackSheet({
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Log when fallback sheet opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[CameraFallbackSheet] Opened with reason:', reason);
+    }
+  }, [isOpen, reason]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('[CameraFallbackSheet] Photo selected from library:', file.name);
       onChoosePhoto(file);
       // Reset input
       e.target.value = '';
@@ -143,7 +151,10 @@ export function CameraFallbackSheet({
               <div className="space-y-3 mt-6">
                 {/* Try Camera (primary) */}
                 <motion.button
-                  onClick={onTryCamera}
+                  onClick={() => {
+                    console.log('[CameraFallbackSheet] User selected: Scan Bottles (try camera again)');
+                    onTryCamera();
+                  }}
                   className="w-full p-4 rounded-xl flex items-center gap-4"
                   style={{
                     background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
@@ -203,7 +214,10 @@ export function CameraFallbackSheet({
 
                 {/* Manual Entry */}
                 <motion.button
-                  onClick={onManualEntry}
+                  onClick={() => {
+                    console.log('[CameraFallbackSheet] User selected: Enter Manually');
+                    onManualEntry();
+                  }}
                   className="w-full p-4 rounded-xl flex items-center gap-4"
                   style={{
                     background: 'var(--bg-surface)',

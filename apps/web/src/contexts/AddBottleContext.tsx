@@ -51,6 +51,7 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const openImmediateCamera = () => {
     // For mobile/PWA: trigger immediate camera capture
     // This will be handled by a hidden file input in Layout
+    console.log('[AddBottleContext] Opening immediate camera');
     setShowAddSheet(false);
     setShowFallbackSheet(false);
     setScanningState('idle');
@@ -67,6 +68,7 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
   // Show fallback sheet (called when camera fails or cancelled)
   const showFallback = (reason: FallbackReason) => {
+    console.log('[AddBottleContext] Showing camera fallback sheet, reason:', reason);
     setShowFallbackSheet(true);
     setFallbackReason(reason);
     setShowAddSheet(false);
@@ -75,6 +77,7 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   // Expose showFallback through window events for easy access
   useEffect(() => {
     const handleShowFallback = (e: CustomEvent<{ reason: FallbackReason }>) => {
+      console.log('[AddBottleContext] Received showCameraFallback event:', e.detail);
       showFallback(e.detail.reason);
     };
 
@@ -90,7 +93,12 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
    * Keeps the sheet open and shows loading state, then dispatches results
    */
   const handleSmartScan = useCallback(async (file: File) => {
-    if (scanningState === 'scanning') return; // Prevent double-scans
+    if (scanningState === 'scanning') {
+      console.warn('[AddBottleContext] Smart scan already in progress, ignoring');
+      return; // Prevent double-scans
+    }
+    
+    console.log('[AddBottleContext] Starting smart scan for file:', file.name, file.type);
     
     try {
       // Keep sheet OPEN and transition to scanning state

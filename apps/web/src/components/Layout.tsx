@@ -72,7 +72,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const file = e.target.files?.[0];
     
     if (!file) {
-      // User cancelled camera - show fallback sheet
+      // User cancelled camera or permission denied - show fallback sheet
+      console.log('[Camera] No file selected - user cancelled or permission denied, showing fallback sheet');
       const event = new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } });
       window.dispatchEvent(event);
       
@@ -82,6 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
 
     // File selected - proceed with smart scan
+    console.log('[Camera] File selected, starting smart scan:', file.name, file.type);
     handleSmartScan(file);
     
     // Reset input for next time
@@ -92,11 +94,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Handle camera FAB click - different behavior for mobile/PWA vs desktop
   const handleCameraFabClick = () => {
+    console.log('[Camera FAB] Click detected', { 
+      isMobile, 
+      isPWA, 
+      userAgent: navigator.userAgent.substring(0, 50) 
+    });
+    
     if (isMobile || isPWA) {
       // Mobile/PWA: Open camera immediately
+      console.log('[Camera FAB] Opening camera immediately (mobile/PWA flow)');
       openImmediateCamera();
     } else {
       // Desktop: Show options modal (existing behavior)
+      console.log('[Camera FAB] Opening options modal (desktop flow)');
       openAddBottleFlow();
     }
   };
