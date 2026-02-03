@@ -12,8 +12,10 @@ import { BottomNav } from './BottomNav';
 import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
+import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -26,21 +28,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
     scanningMessage, 
     showFallbackSheet,
     fallbackReason,
+    showPwaCamera,
     openAddBottleFlow,
     openAddBottleFlowForScanning,
     closeAddBottleFlow,
     openImmediateCamera,
+    openPwaCamera,
+    closePwaCamera,
     closeFallbackSheet,
     handleSmartScan 
   } = useAddBottleContext();
   const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
   
-  // Immediate camera input ref (hidden, for mobile/PWA)
+  // Immediate camera input ref (hidden, for non-iOS-PWA mobile)
   const immediateCameraInputRef = useRef<HTMLInputElement>(null);
   
-  // Detect mobile/PWA
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isSamsung = /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
+  // Detect device type
+  const isMobile = isMobileDevice();
+  const isSamsung = isSamsungBrowser();
+  const isIosPwa = isIosStandalonePwa();
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                 (window.navigator as any).standalone === true ||
                 document.referrer.includes('android-app://');
@@ -103,17 +109,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }, 500);
   };
 
-  // Handle camera FAB click - different behavior for mobile/PWA vs desktop
+  // Handle camera FAB click - different behavior based on platform
   const handleCameraFabClick = () => {
     console.log('[Camera FAB] Click detected', { 
       isMobile, 
-      isPWA, 
+      isPWA,
+      isIosPwa,
       userAgent: navigator.userAgent.substring(0, 50) 
     });
     
-    if (isMobile || isPWA) {
-      // Mobile/PWA: Open camera immediately
-      console.log('[Camera FAB] Opening camera immediately (mobile/PWA flow)');
+    if (isIosPwa) {
+      // iOS PWA: Open getUserMedia camera to avoid file chooser
+      console.log('[Camera FAB] Opening PWA camera (iOS standalone - getUserMedia)');
+      openPwaCamera();
+    } else if (isMobile || isPWA) {
+      // Other mobile/PWA: Open camera via file input (works fine)
+      console.log('[Camera FAB] Opening camera immediately (mobile/PWA - file input)');
       openImmediateCamera();
     } else {
       // Desktop: Show options modal (existing behavior)
@@ -388,7 +399,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         isOpen={showFallbackSheet}
         onClose={closeFallbackSheet}
         reason={fallbackReason}
-        onTryCamera={openImmediateCamera}
+        onTryCamera={() => {
+          closeFallbackSheet();
+          // Retry camera based on platform
+          if (isIosPwa) {
+            openPwaCamera();
+          } else {
+            openImmediateCamera();
+          }
+        }}
         onChoosePhoto={async (file) => {
           console.log('[CameraFallback] Photo selected from library, opening sheet and starting scan');
           closeFallbackSheet();
@@ -404,6 +423,47 @@ export function Layout({ children }: { children: React.ReactNode }) {
         onManualEntry={() => {
           closeFallbackSheet();
           const event = new CustomEvent('openManualForm');
+          window.dispatchEvent(event);
+        }}
+      />
+
+      {/* PWA Camera Capture Modal - iOS PWA getUserMedia camera */}
+      <PwaCameraCaptureModal
+        isOpen={showPwaCamera}
+        onClose={() => {
+          // User closed camera without capturing
+          console.log('[PWA Camera] User closed camera, showing fallback options');
+          closePwaCamera();
+          
+          // Show fallback options
+          const event = new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } });
+          window.dispatchEvent(event);
+        }}
+        onCapture={async (file) => {
+          // User captured photo
+          console.log('[PWA Camera] Photo captured, starting scan');
+          closePwaCamera();
+          
+          // Open AddBottleSheet to show scanning loader
+          openAddBottleFlowForScanning();
+          
+          // Start scan
+          requestAnimationFrame(async () => {
+            await handleSmartScan(file);
+          });
+        }}
+        onError={(error) => {
+          // Camera error (permission denied, not found, etc)
+          console.error('[PWA Camera] Error:', error);
+          closePwaCamera();
+          
+          // Show fallback sheet with error reason
+          const reason: 'permission-denied' | 'not-available' | 'error' = 
+            error.name === 'NotAllowedError' ? 'permission-denied' :
+            error.name === 'NotFoundError' ? 'not-available' :
+            'error';
+          
+          const event = new CustomEvent('showCameraFallback', { detail: { reason } });
           window.dispatchEvent(event);
         }}
       />

@@ -19,10 +19,13 @@ interface AddBottleContextType {
   scanningMessage: string;
   showFallbackSheet: boolean;
   fallbackReason?: FallbackReason;
+  showPwaCamera: boolean;
   openAddBottleFlow: () => void;
   openAddBottleFlowForScanning: () => void;
   closeAddBottleFlow: () => void;
   openImmediateCamera: () => void;
+  openPwaCamera: () => void;
+  closePwaCamera: () => void;
   closeFallbackSheet: () => void;
   handleSmartScan: (file: File) => Promise<void>;
 }
@@ -35,6 +38,7 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const [scanningMessage, setScanningMessage] = useState('');
   const [showFallbackSheet, setShowFallbackSheet] = useState(false);
   const [fallbackReason, setFallbackReason] = useState<FallbackReason>();
+  const [showPwaCamera, setShowPwaCamera] = useState(false);
 
   const openAddBottleFlow = () => {
     setShowAddSheet(true);
@@ -65,11 +69,26 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
     console.log('[AddBottleContext] Opening immediate camera');
     setShowAddSheet(false);
     setShowFallbackSheet(false);
+    setShowPwaCamera(false);
     setScanningState('idle');
     
     // Dispatch event to trigger camera input
     const event = new CustomEvent('openImmediateCamera');
     window.dispatchEvent(event);
+  };
+
+  const openPwaCamera = () => {
+    // For iOS PWA: open getUserMedia camera modal
+    console.log('[AddBottleContext] Opening PWA camera');
+    setShowPwaCamera(true);
+    setShowAddSheet(false);
+    setShowFallbackSheet(false);
+    setScanningState('idle');
+  };
+
+  const closePwaCamera = () => {
+    console.log('[AddBottleContext] Closing PWA camera');
+    setShowPwaCamera(false);
   };
 
   const closeFallbackSheet = () => {
@@ -170,10 +189,13 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       scanningMessage,
       showFallbackSheet,
       fallbackReason,
+      showPwaCamera,
       openAddBottleFlow,
       openAddBottleFlowForScanning,
       closeAddBottleFlow,
       openImmediateCamera,
+      openPwaCamera,
+      closePwaCamera,
       closeFallbackSheet,
       handleSmartScan,
     }}>
