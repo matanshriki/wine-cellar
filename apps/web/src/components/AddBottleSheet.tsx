@@ -60,8 +60,25 @@ export function AddBottleSheet({
     } else if (onSmartScan) {
       onSmartScan(file);
     } else {
+      // Safety fallback: No scan handler provided (should not happen in production)
       console.error('[AddBottleSheet] No scan handler provided!');
       onClose();
+      
+      // Show luxury error toast with actions
+      const toastId = toast.error('Scan is temporarily unavailable', {
+        description: 'Please try again or enter bottle details manually.',
+        duration: 5000,
+        action: {
+          label: 'Enter Manually',
+          onClick: () => {
+            if (onManualEntry) {
+              onManualEntry();
+            }
+          },
+        },
+      });
+      
+      return;
     }
     
     // Reset input so same file can be selected again

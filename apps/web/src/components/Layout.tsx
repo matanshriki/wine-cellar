@@ -19,7 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const { showAddSheet, openAddBottleFlow, closeAddBottleFlow } = useAddBottleContext();
+  const { showAddSheet, openAddBottleFlow, closeAddBottleFlow, handleSmartScan } = useAddBottleContext();
   const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
 
   // Show CompleteProfile modal if profile is incomplete
@@ -262,11 +262,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={closeAddBottleFlow}
-        onUploadPhoto={() => {
-          closeAddBottleFlow();
-          // Trigger camera/label capture
-          const event = new CustomEvent('openLabelCapture');
-          window.dispatchEvent(event);
+        onPhotoSelected={async (file) => {
+          // Call smart scan from context
+          await handleSmartScan(file);
         }}
         onManualEntry={() => {
           closeAddBottleFlow();
@@ -274,13 +272,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           const event = new CustomEvent('openManualForm');
           window.dispatchEvent(event);
         }}
-        onMultiBottleImport={() => {
-          closeAddBottleFlow();
-          // Trigger multi-bottle import
-          const event = new CustomEvent('openMultiBottleImport');
-          window.dispatchEvent(event);
-        }}
-        showMultiBottleOption={betaFlags.canMultiBottleImport} // Beta feature - enabled for specific users
+        showWishlistOption={false}
       />
 
       {/* Complete Profile Modal */}

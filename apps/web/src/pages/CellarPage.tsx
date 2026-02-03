@@ -162,15 +162,49 @@ export function CellarPage() {
     const handleOpenMultiBottleImport = () => {
       setShowMultiBottleImport(true);
     };
+    
+    // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
+    const handleSmartScanComplete = (e: CustomEvent) => {
+      const { mode, imageUrl, singleBottle, multipleBottles, detectedCount } = e.detail;
+      
+      if (mode === 'single') {
+        // Single bottle detected - show single bottle form
+        if (singleBottle?.extractedData) {
+          setExtractedData({
+            imageUrl,
+            data: singleBottle.extractedData,
+          });
+        }
+        setEditingBottle(null);
+        setShowForm(true);
+      } else if (mode === 'multi') {
+        // Multiple bottles detected - show multi-bottle import
+        setSmartScanResult({
+          mode: 'multi',
+          imageUrl,
+          detectedCount,
+          confidence: 'high',
+          singleBottle: undefined,
+          multipleBottles,
+        });
+        setShowMultiBottleImport(true);
+      } else {
+        // Unknown/fallback - open form
+        setEditingBottle(null);
+        setShowForm(true);
+      }
+    };
 
     window.addEventListener('openLabelCapture', handleOpenLabelCapture);
     window.addEventListener('openManualForm', handleOpenManualForm);
     window.addEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
+    window.addEventListener('smartScanComplete', handleSmartScanComplete as EventListener);
 
     return () => {
       window.removeEventListener('openLabelCapture', handleOpenLabelCapture);
       window.removeEventListener('openManualForm', handleOpenManualForm);
       window.removeEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
+      window.removeEventListener('smartScanComplete', handleSmartScanComplete as EventListener);
     };
   }, []);
 
