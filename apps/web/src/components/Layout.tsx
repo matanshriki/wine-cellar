@@ -26,7 +26,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     scanningMessage, 
     showFallbackSheet,
     fallbackReason,
-    openAddBottleFlow, 
+    openAddBottleFlow,
+    openAddBottleFlowForScanning,
     closeAddBottleFlow,
     openImmediateCamera,
     closeFallbackSheet,
@@ -84,7 +85,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     // File selected - proceed with smart scan
     console.log('[Camera] File selected, starting smart scan:', file.name, file.type);
-    handleSmartScan(file);
+    
+    // CRITICAL FIX: Open AddBottleSheet so loader is visible
+    // On mobile, the sheet is not open yet, so we need to open it to show the scanning state
+    console.log('[Camera] Opening AddBottleSheet for scanning');
+    openAddBottleFlowForScanning();
+    
+    // Minimal delay to ensure sheet is mounted, then begin scan
+    // The sheet animation will mask any transition to scanning state
+    requestAnimationFrame(() => {
+      handleSmartScan(file);
+    });
     
     // Reset input for next time
     setTimeout(() => {
@@ -379,8 +390,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         reason={fallbackReason}
         onTryCamera={openImmediateCamera}
         onChoosePhoto={async (file) => {
+          console.log('[CameraFallback] Photo selected from library, opening sheet and starting scan');
           closeFallbackSheet();
-          await handleSmartScan(file);
+          
+          // CRITICAL FIX: Open AddBottleSheet to show loader
+          openAddBottleFlowForScanning();
+          
+          // Minimal delay to ensure sheet is mounted, then begin scan
+          requestAnimationFrame(async () => {
+            await handleSmartScan(file);
+          });
         }}
         onManualEntry={() => {
           closeFallbackSheet();

@@ -20,6 +20,7 @@ interface AddBottleContextType {
   showFallbackSheet: boolean;
   fallbackReason?: FallbackReason;
   openAddBottleFlow: () => void;
+  openAddBottleFlowForScanning: () => void;
   closeAddBottleFlow: () => void;
   openImmediateCamera: () => void;
   closeFallbackSheet: () => void;
@@ -38,6 +39,16 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const openAddBottleFlow = () => {
     setShowAddSheet(true);
     setScanningState('idle');
+    setScanningMessage('');
+    setShowFallbackSheet(false);
+  };
+
+  const openAddBottleFlowForScanning = () => {
+    // Open sheet in preparation for scanning
+    // The scanning state will be set by handleSmartScan() immediately after
+    console.log('[AddBottleContext] Opening sheet for incoming scan');
+    setShowAddSheet(true);
+    setScanningState('idle'); // Keep idle temporarily, handleSmartScan will set to scanning
     setScanningMessage('');
     setShowFallbackSheet(false);
   };
@@ -159,7 +170,8 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       scanningMessage,
       showFallbackSheet,
       fallbackReason,
-      openAddBottleFlow, 
+      openAddBottleFlow,
+      openAddBottleFlowForScanning,
       closeAddBottleFlow,
       openImmediateCamera,
       closeFallbackSheet,
