@@ -191,21 +191,27 @@ export function AddBottleSheet({
                 </div>
               ) : scanningState === 'error' ? (
                 /* ERROR STATE: Show error with retry options */
-                <div className="py-8 text-center">
+                <div className="py-8 px-4 text-center">
                   <div 
-                    className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                    className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
                     style={{ 
-                      background: 'var(--error-bg)',
-                      color: 'var(--error-text)',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '2px solid rgba(239, 68, 68, 0.2)',
                     }}
                   >
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg 
+                      className="w-10 h-10" 
+                      fill="none" 
+                      stroke="rgb(239, 68, 68)" 
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   
                   <h3 
-                    className="text-xl font-bold mb-2"
+                    className="text-2xl font-bold mb-3"
                     style={{ 
                       color: 'var(--text-primary)',
                       fontFamily: 'var(--font-display)',
@@ -215,17 +221,24 @@ export function AddBottleSheet({
                   </h3>
                   
                   <p 
-                    className="text-sm mb-6"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="text-sm mb-8 leading-relaxed"
+                    style={{ 
+                      color: 'var(--text-secondary)',
+                      maxWidth: '320px',
+                      margin: '0 auto 2rem',
+                    }}
                   >
-                    {scanningMessage || 'Unable to process the image. Please try again.'}
+                    {scanningMessage || 'Scan failed. Please try again.'}
                   </p>
                   
-                  <div className="space-y-3">
-                    {/* Retry Button */}
+                  <div className="space-y-3 max-w-md mx-auto">
+                    {/* Retry Button - Primary (wine gradient) */}
                     <label
-                      className="btn-luxury-primary w-full cursor-pointer"
-                      style={{ minHeight: '48px' }}
+                      className="btn-luxury-primary w-full cursor-pointer flex items-center justify-center"
+                      style={{ 
+                        minHeight: '52px',
+                        display: 'flex',
+                      }}
                     >
                       <input
                         type="file"
@@ -235,19 +248,22 @@ export function AddBottleSheet({
                         className="hidden"
                         aria-label="Retry scan"
                       />
-                      <span>Try Another Photo</span>
+                      <span className="text-center">Try Another Photo</span>
                     </label>
                     
-                    {/* Manual Entry */}
+                    {/* Manual Entry - Secondary */}
                     <button
                       onClick={() => {
                         onClose();
                         onManualEntry();
                       }}
-                      className="btn-luxury-secondary w-full"
-                      style={{ minHeight: '48px' }}
+                      className="btn-luxury-secondary w-full flex items-center justify-center"
+                      style={{ 
+                        minHeight: '52px',
+                        display: 'flex',
+                      }}
                     >
-                      Enter Manually
+                      <span className="text-center">Enter Manually</span>
                     </button>
                   </div>
                 </div>
