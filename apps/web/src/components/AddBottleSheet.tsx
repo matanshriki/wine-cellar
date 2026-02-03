@@ -9,16 +9,23 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WineLoader } from './WineLoader';
+import { toast } from '../lib/toast';
+
+type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
 
 interface AddBottleSheetProps {
   isOpen: boolean;
   onClose: () => void;
+  scanningState?: ScanningState; // Current scanning state
+  scanningMessage?: string; // Message to show during scanning/error
   onUploadPhoto?: () => void; // Legacy - optional for backwards compatibility
   onManualEntry: () => void;
   onMultiBottleImport?: () => void; // Legacy - optional for backwards compatibility
   onPhotoSelected?: (file: File) => void; // Legacy - optional for backwards compatibility
   onSmartScan?: (file: File) => void; // New unified scan handler
   onPhotoSelectedForWishlist?: (file: File) => void; // Wishlist feature (feature-flagged)
+  onRetry?: () => void; // Retry button for error state
   showWishlistOption?: boolean; // Wishlist feature (feature-flagged) - controlled by parent
   showMultiBottleOption?: boolean; // DEPRECATED - Smart scan replaces this
 }
@@ -26,12 +33,15 @@ interface AddBottleSheetProps {
 export function AddBottleSheet({
   isOpen,
   onClose,
+  scanningState = 'idle',
+  scanningMessage,
   onUploadPhoto, // Legacy - kept for backwards compatibility
   onManualEntry,
   onMultiBottleImport, // Legacy - kept for backwards compatibility
   onPhotoSelected, // Legacy - kept for backwards compatibility
   onSmartScan, // New unified scan handler
   onPhotoSelectedForWishlist, // Wishlist feature (feature-flagged)
+  onRetry,
   showWishlistOption = false, // Wishlist feature (feature-flagged)
   showMultiBottleOption = false, // DEPRECATED - Smart scan replaces this
 }: AddBottleSheetProps) {
@@ -164,28 +174,108 @@ export function AddBottleSheet({
 
             {/* Content - scrollable with safe area */}
             <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom luxury-scrollbar">
-              {/* Title */}
-              <h2 
-                className="text-2xl font-bold mb-2 text-center"
-                style={{ 
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 'var(--font-bold)',
-                }}
-              >
-                {t('cellar.addBottle.title')}
-            </h2>
+              {scanningState === 'scanning' ? (
+                /* SCANNING STATE: Show wine-glass loader */
+                <div className="py-12">
+                  <WineLoader 
+                    variant="default" 
+                    size="lg"
+                    message={scanningMessage || 'AI is reading your image…'}
+                  />
+                  <p 
+                    className="text-center mt-4 text-sm"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Identifying bottle(s) and vintage
+                  </p>
+                </div>
+              ) : scanningState === 'error' ? (
+                /* ERROR STATE: Show error with retry options */
+                <div className="py-8 text-center">
+                  <div 
+                    className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                    style={{ 
+                      background: 'var(--error-bg)',
+                      color: 'var(--error-text)',
+                    }}
+                  >
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  
+                  <h3 
+                    className="text-xl font-bold mb-2"
+                    style={{ 
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-display)',
+                    }}
+                  >
+                    Scan failed
+                  </h3>
+                  
+                  <p 
+                    className="text-sm mb-6"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {scanningMessage || 'Unable to process the image. Please try again.'}
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {/* Retry Button */}
+                    <label
+                      className="btn-luxury-primary w-full cursor-pointer"
+                      style={{ minHeight: '48px' }}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
+                        onChange={(e) => handleFileSelect(e, 'library')}
+                        className="hidden"
+                        aria-label="Retry scan"
+                      />
+                      <span>Try Another Photo</span>
+                    </label>
+                    
+                    {/* Manual Entry */}
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onManualEntry();
+                      }}
+                      className="btn-luxury-secondary w-full"
+                      style={{ minHeight: '48px' }}
+                    >
+                      Enter Manually
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* IDLE STATE: Show options */
+                <>
+                  {/* Title */}
+                  <h2 
+                    className="text-2xl font-bold mb-2 text-center"
+                    style={{ 
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 'var(--font-bold)',
+                    }}
+                  >
+                    {t('cellar.addBottle.title')}
+                  </h2>
 
-            {/* Onboarding v1 – production: Helper text */}
-            <p
-              className="text-sm mb-6 text-center"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {t('cellar.addBottle.subtitle')}
-              </p>
+                  {/* Onboarding v1 – production: Helper text */}
+                  <p
+                    className="text-sm mb-6 text-center"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {t('cellar.addBottle.subtitle')}
+                  </p>
 
-              {/* Options */}
-              <div className="space-y-3">
+                  {/* Options */}
+                  <div className="space-y-3">
                 {/* PRIMARY: Smart Scan - Auto-detects single or multiple bottles */}
                 <label
                   className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
@@ -310,20 +400,22 @@ export function AddBottleSheet({
                     </svg>
                   </label>
                 )}
-              </div>
-
-              {/* Cancel */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onClose();
-                }}
-                className="btn-luxury-ghost w-full mt-6"
-                style={{ pointerEvents: 'auto' }} // Fix: Ensure button is immediately clickable
-              >
-                {t('common.cancel')}
-              </button>
+                  </div>
+                  
+                  {/* Cancel */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onClose();
+                    }}
+                    className="btn-luxury-ghost w-full mt-6"
+                    style={{ pointerEvents: 'auto' }} // Fix: Ensure button is immediately clickable
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         </>

@@ -19,7 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const { showAddSheet, openAddBottleFlow, closeAddBottleFlow, handleSmartScan } = useAddBottleContext();
+  const { showAddSheet, scanningState, scanningMessage, openAddBottleFlow, closeAddBottleFlow, handleSmartScan } = useAddBottleContext();
   const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
 
   // Show CompleteProfile modal if profile is incomplete
@@ -262,6 +262,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <AddBottleSheet
         isOpen={showAddSheet}
         onClose={closeAddBottleFlow}
+        scanningState={scanningState}
+        scanningMessage={scanningMessage}
         onPhotoSelected={async (file) => {
           // Call smart scan from context
           await handleSmartScan(file);
@@ -271,6 +273,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // Trigger manual form
           const event = new CustomEvent('openManualForm');
           window.dispatchEvent(event);
+        }}
+        onRetry={() => {
+          // Reset to idle state to allow retry
+          // The file input will trigger again when user selects
         }}
         showWishlistOption={false}
       />

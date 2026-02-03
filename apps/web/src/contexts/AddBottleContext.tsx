@@ -10,8 +10,12 @@ import { createContext, useContext, useState, ReactNode, useCallback } from 'rea
 import { toast } from '../lib/toast';
 import * as smartScanService from '../services/smartScanService';
 
+type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
+
 interface AddBottleContextType {
   showAddSheet: boolean;
+  scanningState: ScanningState;
+  scanningMessage: string;
   openAddBottleFlow: () => void;
   closeAddBottleFlow: () => void;
   handleSmartScan: (file: File) => Promise<void>;
@@ -21,36 +25,49 @@ const AddBottleContext = createContext<AddBottleContextType | undefined>(undefin
 
 export function AddBottleProvider({ children }: { children: ReactNode }) {
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const [scanningState, setScanningState] = useState<ScanningState>('idle');
+  const [scanningMessage, setScanningMessage] = useState('');
 
   const openAddBottleFlow = () => {
     setShowAddSheet(true);
+    setScanningState('idle');
+    setScanningMessage('');
   };
 
   const closeAddBottleFlow = () => {
     setShowAddSheet(false);
+    setScanningState('idle');
+    setScanningMessage('');
   };
 
   /**
    * Handle smart scan - unified single/multi bottle detection
    * This is called from the global AddBottleSheet (Layout.tsx)
-   * Dispatches events that pages (like CellarPage) listen to
+   * Keeps the sheet open and shows loading state, then dispatches results
    */
   const handleSmartScan = useCallback(async (file: File) => {
-    if (isScanning) return; // Prevent double-scans
+    if (scanningState === 'scanning') return; // Prevent double-scans
     
     try {
-      setIsScanning(true);
+      // Keep sheet OPEN and transition to scanning state
+      setScanningState('scanning');
+      setScanningMessage('AI is reading your image…');
       
-      // Close the sheet and show loading
-      setShowAddSheet(false);
-      toast.info('Identifying bottle(s)…');
-      
-      // Small delay to ensure UI updates
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Small delay to ensure UI updates smoothly
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Perform smart scan
       const result = await smartScanService.performSmartScan(file);
+
+      // Mark as complete
+      setScanningState('complete');
+
+      // Small delay to show completion, then close and dispatch
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Close the sheet now that scan is complete
+      setShowAddSheet(false);
+      setScanningState('idle');
 
       // Dispatch event with scan results for pages to handle
       const event = new CustomEvent('smartScanComplete', {
@@ -75,21 +92,19 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('[AddBottleContext] Smart scan error:', error);
       
-      // Show error toast
-      const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
-      toast.error('Scan failed' + errorDetails);
+      // Set error state and keep modal open
+      setScanningState('error');
+      setScanningMessage('Scan failed. Please try again.');
       
-      // Fallback: open manual entry
-      const event = new CustomEvent('openManualForm');
-      window.dispatchEvent(event);
-    } finally {
-      setIsScanning(false);
+      // Don't auto-close on error - let user see error state and choose action
     }
-  }, [isScanning]);
+  }, [scanningState]);
 
   return (
     <AddBottleContext.Provider value={{ 
       showAddSheet, 
+      scanningState,
+      scanningMessage,
       openAddBottleFlow, 
       closeAddBottleFlow,
       handleSmartScan,
