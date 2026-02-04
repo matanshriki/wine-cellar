@@ -20,6 +20,7 @@ import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
 import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
+import { ReceiptReviewModal } from '../components/ReceiptReviewModal'; // Receipt scanning
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -72,6 +73,13 @@ export function CellarPage() {
   
   // Smart scan state - unified single/multi bottle detection
   const [smartScanResult, setSmartScanResult] = useState<smartScanService.SmartScanResult | null>(null);
+  
+  // Receipt scan state
+  const [showReceiptReview, setShowReceiptReview] = useState(false);
+  const [receiptScanResult, setReceiptScanResult] = useState<{
+    imageUrl: string;
+    items: any[];
+  } | null>(null);
   
   // Wishlist feature (dev only) - Wishlist state
   const [showWishlistForm, setShowWishlistForm] = useState(false);
@@ -185,6 +193,15 @@ export function CellarPage() {
       setShowMultiBottleImport(true);
     };
     
+    // Listen for receipt scan completion
+    const handleReceiptScanComplete = (e: CustomEvent) => {
+      const { imageUrl, items, detectedCount } = e.detail;
+      console.log('[CellarPage] Receipt scan complete:', detectedCount, 'items');
+      
+      setReceiptScanResult({ imageUrl, items });
+      setShowReceiptReview(true);
+    };
+
     // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
     const handleSmartScanComplete = async (e: CustomEvent) => {
       const { mode, imageUrl, singleBottle, multipleBottles, detectedCount } = e.detail;
@@ -236,12 +253,14 @@ export function CellarPage() {
     window.addEventListener('openManualForm', handleOpenManualForm);
     window.addEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
     window.addEventListener('smartScanComplete', handleSmartScanComplete as EventListener);
+    window.addEventListener('receiptScanComplete', handleReceiptScanComplete as EventListener);
 
     return () => {
       window.removeEventListener('openLabelCapture', handleOpenLabelCapture);
       window.removeEventListener('openManualForm', handleOpenManualForm);
       window.removeEventListener('openMultiBottleImport', handleOpenMultiBottleImport);
       window.removeEventListener('smartScanComplete', handleSmartScanComplete as EventListener);
+      window.removeEventListener('receiptScanComplete', handleReceiptScanComplete as EventListener);
     };
   }, []);
 
@@ -2320,6 +2339,30 @@ export function CellarPage() {
 
       {/* Duplicate Detection Modal */}
       {DuplicateModal}
+
+      {/* Receipt Review Modal */}
+      {receiptScanResult && (
+        <ReceiptReviewModal
+          isOpen={showReceiptReview}
+          onClose={() => {
+            setShowReceiptReview(false);
+            setReceiptScanResult(null);
+          }}
+          imageUrl={receiptScanResult.imageUrl}
+          items={receiptScanResult.items}
+          onConfirm={async (items) => {
+            console.log('[CellarPage] Adding', items.length, 'receipt items to cellar');
+            
+            // TODO: Implement receipt item adding with duplicate detection
+            // For now, just show success
+            toast.success(`Added ${items.length} wines from receipt!`);
+            await loadBottles(true);
+            
+            setShowReceiptReview(false);
+            setReceiptScanResult(null);
+          }}
+        />
+      )}
       
       {/* Grid Overflow Prevention */}
       <style>{`

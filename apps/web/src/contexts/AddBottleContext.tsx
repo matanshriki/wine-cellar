@@ -151,25 +151,41 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       setShowAddSheet(false);
       setScanningState('idle');
 
-      // Dispatch event with scan results for pages to handle
-      const event = new CustomEvent('smartScanComplete', {
-        detail: {
-          mode: result.mode,
-          imageUrl: result.imageUrl,
-          singleBottle: result.singleBottle,
-          multipleBottles: result.multipleBottles,
-          detectedCount: result.detectedCount,
-        },
-      });
-      window.dispatchEvent(event);
-
-      // Show success toast
-      if (result.mode === 'single') {
-        toast.success('Label scanned successfully!');
-      } else if (result.mode === 'multi') {
-        toast.success(`✅ Detected ${result.detectedCount} bottles!`);
+      // Handle receipt vs label results
+      if (result.mode === 'receipt') {
+        // Receipt detected - dispatch receipt event
+        console.log('[AddBottleContext] Receipt detected, dispatching receiptScanComplete');
+        const event = new CustomEvent('receiptScanComplete', {
+          detail: {
+            imageUrl: result.imageUrl,
+            items: result.receiptItems || [],
+            detectedCount: result.detectedCount,
+          },
+        });
+        window.dispatchEvent(event);
+        
+        toast.success(`✅ Detected ${result.detectedCount} wines on receipt!`);
       } else {
-        toast.info('Please verify the details');
+        // Label detected - dispatch normal scan event
+        const event = new CustomEvent('smartScanComplete', {
+          detail: {
+            mode: result.mode,
+            imageUrl: result.imageUrl,
+            singleBottle: result.singleBottle,
+            multipleBottles: result.multipleBottles,
+            detectedCount: result.detectedCount,
+          },
+        });
+        window.dispatchEvent(event);
+
+        // Show success toast
+        if (result.mode === 'single') {
+          toast.success('Label scanned successfully!');
+        } else if (result.mode === 'multi') {
+          toast.success(`✅ Detected ${result.detectedCount} bottles!`);
+        } else {
+          toast.info('Please verify the details');
+        }
       }
     } catch (error: any) {
       console.error('[AddBottleContext] Smart scan error:', error);

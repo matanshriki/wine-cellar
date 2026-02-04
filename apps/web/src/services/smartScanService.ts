@@ -12,7 +12,7 @@ import { uploadLabelImage } from './labelScanService';
 import type { ExtractedWineData } from './labelScanService';
 import type { ExtractedBottleData } from './multiBottleService';
 
-export type ScanMode = 'single' | 'multi' | 'unknown';
+export type ScanMode = 'single' | 'multi' | 'receipt' | 'unknown';
 
 export interface SmartScanResult {
   mode: ScanMode;
@@ -25,6 +25,8 @@ export interface SmartScanResult {
   multipleBottles?: {
     bottles: ExtractedBottleData[];
   };
+  // Receipt result
+  receiptItems?: any[];
   // Metadata
   detectedCount: number;
   confidence: number;
@@ -77,6 +79,21 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
         },
         detectedCount: 0,
         confidence: 0,
+      };
+    }
+
+    const imageType = data.image_type || 'label';
+    console.log('[smartScanService] Image type:', imageType);
+
+    // Handle receipt
+    if (imageType === 'receipt' && data.receipt_items && Array.isArray(data.receipt_items)) {
+      console.log('[smartScanService] ✅ Receipt detected with', data.receipt_items.length, 'items');
+      return {
+        mode: 'receipt',
+        imageUrl,
+        receiptItems: data.receipt_items,
+        detectedCount: data.receipt_items.length,
+        confidence: 1,
       };
     }
 

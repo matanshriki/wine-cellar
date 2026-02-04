@@ -94,23 +94,36 @@ serve(async (req) => {
           {
             role: 'system',
             content: isMultiBottle 
-              ? `You are a wine label OCR and data extraction expert.
-Analyze wine bottle label images and extract structured data for MULTIPLE bottles visible in the image.
+              ? `You are a wine image classifier and data extraction expert.
+
+STEP 1 - CLASSIFY IMAGE TYPE:
+Analyze the image and determine its type:
+- "label": Wine bottle label(s) visible (bottles on shelf, in hand, close-up of labels)
+- "receipt": Invoice, receipt, or purchase document showing wine line items with prices
+- "unknown": Cannot confidently determine
+
+STEP 2 - EXTRACT DATA based on image type:
+
+If "label":
+- Detect ALL visible wine bottles in the image
+- Extract wine details for each bottle
+- Return array of bottles
+
+If "receipt":
+- Extract line items from receipt/invoice
+- Each line item should include: producer, name, vintage, quantity, price (if visible)
+- Return array of receipt_items
 
 CRITICAL RULES:
 - Return ONLY valid JSON, no markdown, no explanations
-- Detect ALL visible wine bottles in the image (look for multiple labels)
-- Return an array of bottle data, one entry per visible bottle
 - Use null for any field you cannot confidently determine
 - Do NOT hallucinate or guess missing information
 - Assign confidence: "high" (clearly visible), "medium" (partially visible), "low" (uncertain)
 - For style, choose ONLY from: "red", "white", "rose", "sparkling", or null
-- Extract vintage as a number (year) or null if not found
-- For grapes, return array of grape names or null
-- For alcohol, extract numeric percentage or null
 
-Return JSON as an array in this exact format:
+Return JSON in this exact format:
 {
+  "image_type": "label" | "receipt" | "unknown",
   "bottles": [
     {
       "producer": { "value": "Producer Name" or null, "confidence": "high"|"medium"|"low" },
@@ -121,6 +134,16 @@ Return JSON as an array in this exact format:
       "style": { "value": "red"|"white"|"rose"|"sparkling" or null, "confidence": "high"|"medium"|"low" },
       "grapes": { "value": ["Grape1", "Grape2"] or null, "confidence": "high"|"medium"|"low" },
       "alcohol": { "value": 13.5 or null, "confidence": "high"|"medium"|"low" }
+    }
+  ],
+  "receipt_items": [
+    {
+      "producer": { "value": "Producer Name" or null, "confidence": "high"|"medium"|"low" },
+      "name": { "value": "Wine Name" or null, "confidence": "high"|"medium"|"low" },
+      "vintage": { "value": 2022 or null, "confidence": "high"|"medium"|"low" },
+      "quantity": { "value": 2 or null, "confidence": "high"|"medium"|"low" },
+      "price": { "value": 45.99 or null, "confidence": "high"|"medium"|"low" },
+      "style": { "value": "red"|"white"|"rose"|"sparkling" or null, "confidence": "high"|"medium"|"low" }
     }
   ]
 }`
@@ -199,7 +222,38 @@ Return JSON in this exact format:
     const parsedData = JSON.parse(cleanContent);
     console.log('[Parse Label] Parsed data:', JSON.stringify(parsedData, null, 2));
 
-    // Handle multi-bottle mode
+    const imageType = parsedData.image_type || 'label';
+    console.log('[Parse Label] Image type detected:', imageType);
+
+    // Handle receipt mode
+    if (imageType === 'receipt' && parsedData.receipt_items && Array.isArray(parsedData.receipt_items)) {
+      const validatedItems = parsedData.receipt_items.map((item: any) => ({
+        producer: item.producer?.value ? item.producer : null,
+        name: item.name?.value ? item.name : null,
+        vintage: item.vintage?.value ? item.vintage : null,
+        quantity: item.quantity?.value ? item.quantity : null,
+        price: item.price?.value ? item.price : null,
+        style: item.style?.value ? item.style : null,
+      }));
+
+      console.log('[Parse Label] ✅ Receipt detected with', validatedItems.length, 'items');
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          image_type: 'receipt',
+          receipt_items: validatedItems,
+          count: validatedItems.length,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    // Handle multi-bottle mode (labels)
     if (isMultiBottle && parsedData.bottles && Array.isArray(parsedData.bottles)) {
       // Validate each bottle
       const validatedBottles = parsedData.bottles.map((bottle: any) => ({
@@ -220,6 +274,7 @@ Return JSON in this exact format:
       return new Response(
         JSON.stringify({
           success: true,
+          image_type: 'label',
           bottles: validatedBottles,
           count: validatedBottles.length,
           timestamp: new Date().toISOString(),
@@ -263,6 +318,7 @@ Return JSON in this exact format:
     return new Response(
       JSON.stringify({
         success: true,
+        image_type: 'label',
         data: validatedData,
         overallConfidence,
         fieldsExtracted: totalFields,
