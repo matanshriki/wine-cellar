@@ -24,6 +24,7 @@ export interface ExistingBottle {
     color: 'red' | 'white' | 'rose' | 'sparkling';
     rating?: number;
     label_image_url?: string;
+    image_url?: string; // Fallback for older schema
   };
 }
 
@@ -44,6 +45,16 @@ export async function checkForDuplicate(
 ): Promise<ExistingBottle | null> {
   console.log('[duplicateDetection] Checking for duplicate:', candidate);
   
+  // Validate candidate - need at least producer and name
+  if (!candidate.producer && !candidate.name) {
+    console.warn('[duplicateDetection] ⚠️ Candidate missing both producer and name, skipping check');
+    return null;
+  }
+  
+  if (!candidate.name) {
+    console.warn('[duplicateDetection] ⚠️ Candidate missing name (only has producer), duplicate detection may be inaccurate');
+  }
+  
   try {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,27 +64,22 @@ export async function checkForDuplicate(
     }
 
     // Fetch all user's bottles with wine info
+    // Use * to select all fields (robust against schema changes)
     const { data: bottles, error } = await supabase
       .from('bottles')
       .select(`
         id,
         wine_id,
         quantity,
-        wine:wines(
-          id,
-          wine_name,
-          producer,
-          vintage,
-          color,
-          rating,
-          label_image_url
-        )
+        wine:wines(*)
       `)
       .eq('user_id', user.id);
 
     if (error) {
       console.error('[duplicateDetection] Error fetching bottles:', error);
-      throw error;
+      console.error('[duplicateDetection] Error details:', JSON.stringify(error, null, 2));
+      // Don't throw - return null to allow adding even if check fails
+      return null;
     }
 
     if (!bottles || bottles.length === 0) {
@@ -84,13 +90,21 @@ export async function checkForDuplicate(
     console.log('[duplicateDetection] Checking against', bottles.length, 'bottles');
 
     // Map bottles to wine format for comparison
-    const wines = bottles.map(b => ({
-      id: b.wine_id,
-      producer: b.wine?.producer,
-      name: b.wine?.wine_name,
-      vintage: b.wine?.vintage,
-      bottle: b,
-    }));
+    const wines = bottles.map(b => {
+      const wine = b.wine as Wine;
+      return {
+        id: b.wine_id,
+        producer: wine?.producer || null,
+        name: wine?.wine_name || null,
+        vintage: wine?.vintage || null,
+        bottle: b,
+      };
+    });
+
+    // Log sample for debugging
+    if (wines.length > 0) {
+      console.log('[duplicateDetection] Sample cellar wine:', wines[0]);
+    }
 
     // Find duplicate using wine identity matching
     const duplicate = findDuplicateWine(candidate, wines);

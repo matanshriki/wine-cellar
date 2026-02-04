@@ -212,7 +212,7 @@ export function CellarPage() {
           // ✨ DUPLICATE DETECTION: Check before showing form
           const isDuplicate = await checkDuplicate({
             producer: singleBottle.extractedData.producer,
-            name: singleBottle.extractedData.name,
+            name: singleBottle.extractedData.wine_name, // Fix: use wine_name not name
             vintage: singleBottle.extractedData.vintage,
           });
           

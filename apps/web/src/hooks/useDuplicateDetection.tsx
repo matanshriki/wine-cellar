@@ -124,7 +124,8 @@ export function useDuplicateDetection(props?: UseDuplicateDetectionProps) {
         style: duplicateInfo.wine.color,
         rating: duplicateInfo.wine.rating || undefined,
         quantity: duplicateInfo.quantity,
-        label_image_url: duplicateInfo.wine.label_image_url || undefined,
+        // Try both label_image_url (new schema) and image_url (old schema)
+        label_image_url: duplicateInfo.wine.label_image_url || duplicateInfo.wine.image_url || undefined,
       }}
       onAddQuantity={handleAddQuantity}
       onCreateSeparate={props?.onCreateSeparate ? handleCreateSeparate : undefined}
