@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Sanitize potentially malformed JSON from AI
+ * Fixes common issues like unescaped quotes, control characters, etc.
+ */
+function sanitizeJsonString(jsonStr: string): string {
+  let sanitized = jsonStr;
+  
+  // Remove any BOM or hidden characters at start
+  sanitized = sanitized.replace(/^\uFEFF/, '');
+  
+  // Remove markdown code blocks if still present
+  sanitized = sanitized.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+  sanitized = sanitized.replace(/^```\s*/g, '').replace(/```\s*$/g, '');
+  
+  // Trim whitespace
+  sanitized = sanitized.trim();
+  
+  return sanitized;
+}
+
 interface ParsedWineData {
   producer: { value: string | null; confidence: 'low' | 'medium' | 'high' } | null;
   name: { value: string | null; confidence: 'low' | 'medium' | 'high' } | null;
@@ -210,7 +230,9 @@ If "receipt":
 - Return array of receipt_items
 
 CRITICAL RULES:
-- Return ONLY valid JSON, no markdown, no explanations
+- Return ONLY valid, well-formed JSON with properly escaped strings
+- NO markdown code blocks, NO explanations, ONLY the JSON object
+- Escape all special characters in strings (quotes, newlines, backslashes)
 - Use null for any field you cannot confidently determine
 - Do NOT hallucinate or guess missing information
 - Assign confidence: "high" (clearly visible), "medium" (partially visible), "low" (uncertain)
@@ -246,7 +268,9 @@ Return JSON in this exact format:
 Analyze wine bottle label images and extract structured data.
 
 CRITICAL RULES:
-- Return ONLY valid JSON, no markdown, no explanations
+- Return ONLY valid, well-formed JSON with properly escaped strings
+- NO markdown code blocks, NO explanations, ONLY the JSON object
+- Escape all special characters in strings (quotes, newlines, backslashes)
 - Use null for any field you cannot confidently determine
 - Do NOT hallucinate or guess missing information
 - Assign confidence: "high" (clearly visible), "medium" (partially visible), "low" (uncertain)
@@ -288,6 +312,7 @@ Return JSON in this exact format:
         ],
         max_tokens: 1000,
         temperature: 0.1, // Low temperature for consistent extraction
+        response_format: { type: 'json_object' }, // Enforce valid JSON output
         }),
       });
     } catch (e) {
@@ -349,16 +374,62 @@ Return JSON in this exact format:
       throw new Error('No content in OpenAI response');
     }
 
-    // Parse the JSON (remove markdown code blocks if present)
-    let cleanContent = aiContent.trim();
-    if (cleanContent.startsWith('```json')) {
-      cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
-    } else if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.replace(/```\n?/g, '');
-    }
+    console.log('[Parse Label] Raw AI response length:', aiContent.length);
+    console.log('[Parse Label] First 500 chars:', aiContent.substring(0, 500));
 
-    const parsedData = JSON.parse(cleanContent);
-    console.log('[Parse Label] Parsed data:', JSON.stringify(parsedData, null, 2));
+    // Sanitize and clean the JSON content
+    const cleanContent = sanitizeJsonString(aiContent);
+    console.log('[Parse Label] Cleaned content length:', cleanContent.length);
+
+    // Parse with better error handling
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanContent);
+      console.log('[Parse Label] ✅ JSON parsed successfully');
+    } catch (parseError) {
+      console.error('[Parse Label] ❌ JSON parse error:', parseError.message);
+      console.error('[Parse Label] Failed content (first 1000 chars):', cleanContent.substring(0, 1000));
+      console.error('[Parse Label] Failed content (last 500 chars):', cleanContent.substring(Math.max(0, cleanContent.length - 500)));
+      
+      // Try to extract JSON object even if there's extra text
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log('[Parse Label] Attempting to extract JSON object from response...');
+        try {
+          parsedData = JSON.parse(jsonMatch[0]);
+          console.log('[Parse Label] ✅ JSON extracted and parsed successfully');
+        } catch (e) {
+          console.error('[Parse Label] JSON extraction also failed:', e.message);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'INVALID_AI_RESPONSE',
+              message: 'AI returned malformed JSON. Please try again with a clearer image.',
+              details: parseError.message,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'INVALID_AI_RESPONSE',
+            message: 'AI returned invalid response format. Please try again.',
+            details: parseError.message,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+    }
+    
+    console.log('[Parse Label] Parsed data keys:', Object.keys(parsedData).join(', '));
 
     const imageType = parsedData.image_type || 'label';
     console.log('[Parse Label] Image type detected:', imageType);
