@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { DemoActionModal } from './DemoActionModal';
+import { MuseumViewModal } from './MuseumViewModal';
 import * as labelArtService from '../services/labelArtService';
 
 interface Props {
@@ -18,6 +19,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
   const { t } = useTranslation();
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [demoAction, setDemoAction] = useState<'edit' | 'markOpened' | 'delete'>('edit');
+  const [showMuseumView, setShowMuseumView] = useState(false);
   
   // Get display image using centralized logic (user image > AI generated > placeholder)
   const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
@@ -62,11 +64,21 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         <div className="relative mb-3 flex gap-3 md:gap-4">
           {/* Wine Image - Left Side */}
           {displayImage.imageUrl && (
-            <div className="flex-shrink-0 wine-image-container wine-image-size">
+            <div 
+              className="flex-shrink-0 wine-image-container wine-image-size cursor-pointer relative group"
+              onClick={(e) => {
+                e.stopPropagation(); // Don't trigger card details
+                console.log('[BottleCard] Opening museum view for:', bottle.wine.wine_name);
+                setShowMuseumView(true);
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={t('bottle.viewImage', 'View image in full screen')}
+            >
               <img 
                 src={displayImage.imageUrl} 
                 alt={bottle.wine.wine_name}
-                className="object-cover rounded-md transition-transform duration-300"
+                className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                 style={{
                   width: '100%',
                   height: '100%',
@@ -79,10 +91,24 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                   e.currentTarget.style.display = 'none';
                 }}
               />
+              
+              {/* Museum View Icon Overlay */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md pointer-events-none"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.5)',
+                }}
+              >
+                <svg className="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              
               {/* AI Generated Badge */}
               {displayImage.isGenerated && (
                 <div 
-                  className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1"
+                  className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 z-10"
                   style={{
                     background: 'rgba(0, 0, 0, 0.7)',
                     color: 'white',
@@ -595,6 +621,24 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       onClose={() => setShowDemoModal(false)}
       onAddBottle={handleAddBottleFromDemo}
       action={demoAction}
+    />
+
+    {/* Museum View Modal */}
+    <MuseumViewModal
+      isOpen={showMuseumView}
+      onClose={() => setShowMuseumView(false)}
+      bottle={{
+        id: bottle.id,
+        name: bottle.wine.wine_name || '',
+        producer: bottle.wine.producer || undefined,
+        vintage: bottle.wine.vintage || undefined,
+        style: bottle.wine.style || 'red',
+        rating: bottle.wine.rating || undefined,
+        region: bottle.wine.region || undefined,
+        grapes: bottle.wine.grapes || undefined,
+        label_image_url: displayImage.imageUrl || undefined,
+        readiness_status: bottle.readiness_status || undefined,
+      }}
     />
   </>
   );

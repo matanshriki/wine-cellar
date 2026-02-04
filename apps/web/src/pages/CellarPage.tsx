@@ -19,6 +19,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { MultiBottleImport } from '../components/MultiBottleImport'; // Feedback iteration (dev only)
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
+import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -139,6 +140,27 @@ export function CellarPage() {
   // Wine World Moments: Wine events state
   const [activeEvents, setActiveEvents] = useState<WineEvent[]>([]);
 
+  // Duplicate detection
+  const { checkAndHandle: checkDuplicate, DuplicateModal } = useDuplicateDetection({
+    onAddQuantity: async (bottleId, quantity) => {
+      console.log('[CellarPage] Added', quantity, 'bottles to existing entry');
+      await loadBottles(true); // Refresh list
+      toast.success(`Added ${quantity} ${quantity === 1 ? 'bottle' : 'bottles'}!`);
+    },
+    onCreateSeparate: async (candidate: any) => {
+      console.log('[CellarPage] User chose to create separate entry');
+      // Continue with normal add flow
+      if (candidate.imageUrl && candidate.extractedData) {
+        setExtractedData({
+          imageUrl: candidate.imageUrl,
+          data: candidate.extractedData,
+        });
+        setEditingBottle(null);
+        setShowForm(true);
+      }
+    },
+  });
+
   useEffect(() => {
     loadBottles(true); // Initial load with reset=true
     
@@ -164,12 +186,26 @@ export function CellarPage() {
     };
     
     // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
-    const handleSmartScanComplete = (e: CustomEvent) => {
+    const handleSmartScanComplete = async (e: CustomEvent) => {
       const { mode, imageUrl, singleBottle, multipleBottles, detectedCount } = e.detail;
       
       if (mode === 'single') {
-        // Single bottle detected - show single bottle form
+        // Single bottle detected - check for duplicate before showing form
         if (singleBottle?.extractedData) {
+          // ✨ DUPLICATE DETECTION: Check before showing form
+          const isDuplicate = await checkDuplicate({
+            producer: singleBottle.extractedData.producer,
+            name: singleBottle.extractedData.name,
+            vintage: singleBottle.extractedData.vintage,
+          });
+          
+          if (isDuplicate) {
+            // Duplicate found - modal will handle it
+            console.log('[CellarPage] Duplicate detected, showing stepper modal');
+            return;
+          }
+          
+          // No duplicate, proceed with normal flow
           setExtractedData({
             imageUrl,
             data: singleBottle.extractedData,
@@ -179,6 +215,7 @@ export function CellarPage() {
         setShowForm(true);
       } else if (mode === 'multi') {
         // Multiple bottles detected - show multi-bottle import
+        // TODO: Add duplicate check per item in MultiBottleImport
         setSmartScanResult({
           mode: 'multi',
           imageUrl,
@@ -2280,6 +2317,9 @@ export function CellarPage() {
         onClose={() => setShowFirstBottleSuccess(false)}
         bottleName={firstBottleName}
       />
+
+      {/* Duplicate Detection Modal */}
+      {DuplicateModal}
       
       {/* Grid Overflow Prevention */}
       <style>{`
