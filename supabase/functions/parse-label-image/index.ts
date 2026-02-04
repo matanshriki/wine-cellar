@@ -228,12 +228,13 @@ Return JSON in this exact format:
     // Handle receipt mode
     if (imageType === 'receipt' && parsedData.receipt_items && Array.isArray(parsedData.receipt_items)) {
       const validatedItems = parsedData.receipt_items.map((item: any) => ({
-        producer: item.producer?.value ? item.producer : null,
-        name: item.name?.value ? item.name : null,
-        vintage: item.vintage?.value ? item.vintage : null,
-        quantity: item.quantity?.value ? item.quantity : null,
-        price: item.price?.value ? item.price : null,
-        style: item.style?.value ? item.style : null,
+        producer: item.producer?.value || null,
+        name: item.name?.value || null,
+        vintage: item.vintage?.value || null,
+        quantity: item.quantity?.value || null,
+        price: item.price?.value || null,
+        color: item.style?.value || null, // Note: using 'color' for consistency with database
+        confidence: item.producer?.confidence || item.name?.confidence || 'low',
       }));
 
       console.log('[Parse Label] ✅ Receipt detected with', validatedItems.length, 'items');

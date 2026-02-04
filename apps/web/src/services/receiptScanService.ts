@@ -14,7 +14,7 @@ export interface ReceiptItem {
   vintage?: number | null;
   quantity?: number | null;
   price?: number | null;
-  style?: 'red' | 'white' | 'rose' | 'sparkling' | null;
+  color?: 'red' | 'white' | 'rose' | 'sparkling' | null;
   confidence: 'low' | 'medium' | 'high';
 }
 
