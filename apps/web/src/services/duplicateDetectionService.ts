@@ -21,7 +21,7 @@ export interface ExistingBottle {
     wine_name: string;
     producer?: string;
     vintage?: number;
-    style: 'red' | 'white' | 'rose' | 'sparkling';
+    color: 'red' | 'white' | 'rose' | 'sparkling';
     rating?: number;
     label_image_url?: string;
   };
@@ -64,7 +64,7 @@ export async function checkForDuplicate(
           wine_name,
           producer,
           vintage,
-          style,
+          color,
           rating,
           label_image_url
         )

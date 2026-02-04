@@ -121,7 +121,7 @@ export function useDuplicateDetection(props?: UseDuplicateDetectionProps) {
         name: duplicateInfo.wine.wine_name || '',
         producer: duplicateInfo.wine.producer || undefined,
         vintage: duplicateInfo.wine.vintage || undefined,
-        style: duplicateInfo.wine.style,
+        style: duplicateInfo.wine.color,
         rating: duplicateInfo.wine.rating || undefined,
         quantity: duplicateInfo.quantity,
         label_image_url: duplicateInfo.wine.label_image_url || undefined,
