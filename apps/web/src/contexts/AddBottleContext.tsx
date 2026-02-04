@@ -189,10 +189,24 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       console.error('[AddBottleContext] Smart scan error:', error);
+      console.error('[AddBottleContext] Error details:', error.message);
       
-      // Set error state and keep modal open
+      // Set error state and keep modal open with helpful message
       setScanningState('error');
-      setScanningMessage('Scan failed. Please try again.');
+      
+      // Parse error message for better UX
+      let errorMessage = 'Scan failed. Please try again.';
+      if (error.message?.includes('IMAGE_NOT_ACCESSIBLE') || error.message?.includes('IMAGE_FETCH_FAILED')) {
+        errorMessage = 'Cannot access image. Please check your connection and try again.';
+      } else if (error.message?.includes('AI_SERVICE_UNREACHABLE')) {
+        errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+      } else if (error.message?.includes('Rate limit')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      } else if (error.message?.includes('receipt') || error.message?.includes('invoice')) {
+        errorMessage = 'Receipt scanning failed. Make sure the receipt is clear and fully visible.';
+      }
+      
+      setScanningMessage(errorMessage);
       
       // Don't auto-close on error - let user see error state and choose action
     }

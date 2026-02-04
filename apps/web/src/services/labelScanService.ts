@@ -31,11 +31,15 @@ export interface ExtractedWineData {
  * 
  * Target: Reduce file size by 70-90% while maintaining readability
  * Strategy: Resize to reasonable dimensions + JPEG compression
+ * 
+ * @param file - Image file to compress
+ * @param maxWidth - Max width in pixels (default 1024 for labels, use 2048 for receipts)
+ * @param quality - JPEG quality 0-1 (default 0.8 for labels, use 0.9 for receipts)
  */
-export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> {
+export async function compressImage(file: File, maxWidth = 1024, quality = 0.8): Promise<Blob> {
   console.log('[compressImage] Starting compression:', file.name, file.size, 'bytes');
   console.log('[compressImage] File type:', file.type);
-  console.log('[compressImage] Is file valid?', file instanceof File);
+  console.log('[compressImage] Params:', { maxWidth, quality });
   
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -87,8 +91,7 @@ export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> 
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convert to blob (JPEG, 80% quality - good balance)
-        // 80% is sweet spot: much smaller files, imperceptible quality loss
+        // Convert to blob with specified quality
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -96,6 +99,7 @@ export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> 
                 originalSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
                 compressedSize: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
                 reduction: `${Math.round((1 - blob.size / file.size) * 100)}%`,
+                quality: `${(quality * 100).toFixed(0)}%`,
               });
               resolve(blob);
             } else {
@@ -103,7 +107,7 @@ export async function compressImage(file: File, maxWidth = 1024): Promise<Blob> 
             }
           },
           'image/jpeg',
-          0.80  // Reduced from 0.85 to 0.80 for smaller files
+          quality  // Use parameter (default 0.8 for labels, 0.9 for receipts)
         );
       };
       
@@ -179,14 +183,24 @@ export async function uploadLabelImage(file: File): Promise<string> {
 
   console.log('[uploadLabelImage] Upload successful:', data);
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Create signed URL (valid for 10 minutes) for reliable Edge Function access
+  // This works even if bucket is private and ensures the Edge Function can fetch the image
+  const { data: signedUrlData, error: signedError } = await supabase.storage
     .from('labels')
-    .getPublicUrl(fileName);
+    .createSignedUrl(fileName, 600); // 600 seconds = 10 minutes
 
-  console.log('[uploadLabelImage] Public URL:', publicUrl);
+  if (signedError) {
+    console.error('[uploadLabelImage] Failed to create signed URL:', signedError);
+    // Fallback to public URL if signed URL fails
+    const { data: { publicUrl } } = supabase.storage
+      .from('labels')
+      .getPublicUrl(fileName);
+    console.log('[uploadLabelImage] Using public URL as fallback:', publicUrl);
+    return publicUrl;
+  }
 
-  return publicUrl;
+  console.log('[uploadLabelImage] Created signed URL (valid 10min)');
+  return signedUrlData.signedUrl;
 }
 
 /**

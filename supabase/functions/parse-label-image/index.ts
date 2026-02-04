@@ -24,12 +24,25 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[Parse Label] Request received');
+    console.log('[Parse Label] ========== REQUEST START ==========');
+    console.log('[Parse Label] Method:', req.method);
+    console.log('[Parse Label] URL:', req.url);
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+      console.error('[Parse Label] OPENAI_API_KEY not configured');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'SERVER_CONFIG_ERROR',
+          message: 'AI service not configured',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
     // Create Supabase client (uses Authorization header automatically)
@@ -41,11 +54,23 @@ serve(async (req) => {
     // Get JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      console.error('[Parse Label] No authorization header');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'AUTH_REQUIRED',
+          message: 'Authentication required',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
     }
 
     // Extract token
     const token = authHeader.replace('Bearer ', '');
+    console.log('[Parse Label] Token received (length:', token.length, ')');
     
     // Verify the JWT token
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
@@ -58,14 +83,46 @@ serve(async (req) => {
     console.log('[Parse Label] ✅ User authenticated:', user.id);
 
     // Parse request body
-    const { imageUrl, imagePath, mode } = await req.json();
-    const isMultiBottle = mode === 'multi-bottle';
-    console.log('[Parse Label] Image URL:', imageUrl);
-    console.log('[Parse Label] Image path:', imagePath);
-    console.log('[Parse Label] Mode:', mode || 'single');
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      console.error('[Parse Label] Invalid JSON in request body:', e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'INVALID_REQUEST',
+          message: 'Request body must be valid JSON',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
 
+    const { imageUrl, imagePath, mode } = requestBody;
+    const isMultiBottle = mode === 'multi-bottle';
+    console.log('[Parse Label] Request params:', { 
+      hasImageUrl: !!imageUrl, 
+      hasImagePath: !!imagePath, 
+      mode: mode || 'single' 
+    });
+
+    // Validate input
     if (!imageUrl && !imagePath) {
-      throw new Error('Either imageUrl or imagePath is required');
+      console.error('[Parse Label] Missing required parameter: imageUrl or imagePath');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'MISSING_PARAMETER',
+          message: 'Either imageUrl or imagePath is required',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     // Get image URL (if path provided, get public URL)
@@ -77,20 +134,58 @@ serve(async (req) => {
       finalImageUrl = data.publicUrl;
     }
 
-    console.log('[Parse Label] Using image URL:', finalImageUrl);
+    console.log('[Parse Label] Final image URL:', finalImageUrl);
+
+    // Test image URL accessibility
+    try {
+      console.log('[Parse Label] Testing image URL accessibility...');
+      const testResponse = await fetch(finalImageUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        console.error('[Parse Label] Image URL not accessible:', testResponse.status, testResponse.statusText);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'IMAGE_NOT_ACCESSIBLE',
+            message: `Cannot access image (HTTP ${testResponse.status}). Please ensure the storage bucket is configured correctly.`,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+      console.log('[Parse Label] ✅ Image URL is accessible');
+    } catch (e) {
+      console.error('[Parse Label] Failed to test image URL:', e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'IMAGE_FETCH_FAILED',
+          message: 'Cannot reach image URL. Check network and storage configuration.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
 
     // Step 1: OCR + AI Parsing using OpenAI Vision
     console.log('[Parse Label] Calling OpenAI Vision API...');
+    console.log('[Parse Label] Model: gpt-4o-mini');
+    console.log('[Parse Label] Mode:', isMultiBottle ? 'multi-bottle (with receipt detection)' : 'single');
     
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
+    let openaiResponse;
+    try {
+      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
           {
             role: 'system',
             content: isMultiBottle 
@@ -193,17 +288,60 @@ Return JSON in this exact format:
         ],
         max_tokens: 1000,
         temperature: 0.1, // Low temperature for consistent extraction
-      }),
-    });
+        }),
+      });
+    } catch (e) {
+      console.error('[Parse Label] OpenAI fetch failed:', e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'AI_SERVICE_UNREACHABLE',
+          message: 'Cannot reach AI service. Please try again later.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 503,
+        }
+      );
+    }
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
-      console.error('[Parse Label] OpenAI error:', errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+      console.error('[Parse Label] OpenAI error response:', errorText);
+      console.error('[Parse Label] OpenAI status:', openaiResponse.status);
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'AI_EXTRACTION_FAILED',
+          message: `AI service error (${openaiResponse.status}). Please try again.`,
+          details: openaiResponse.status === 429 ? 'Rate limit exceeded' : undefined,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
-    const openaiData = await openaiResponse.json();
-    console.log('[Parse Label] OpenAI response:', JSON.stringify(openaiData, null, 2));
+    let openaiData;
+    try {
+      openaiData = await openaiResponse.json();
+      console.log('[Parse Label] OpenAI response received, choice count:', openaiData.choices?.length);
+    } catch (e) {
+      console.error('[Parse Label] Failed to parse OpenAI response as JSON:', e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'INVALID_AI_RESPONSE',
+          message: 'AI service returned invalid response',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
 
     // Extract the parsed data from OpenAI response
     const aiContent = openaiData.choices?.[0]?.message?.content;
@@ -332,12 +470,16 @@ Return JSON in this exact format:
     );
 
   } catch (error: any) {
-    console.error('[Parse Label] ❌ Error:', error);
+    console.error('[Parse Label] ========== UNHANDLED ERROR ==========');
+    console.error('[Parse Label] Error:', error);
+    console.error('[Parse Label] Message:', error.message);
+    console.error('[Parse Label] Stack:', error.stack);
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Failed to parse label image',
+        error: 'UNEXPECTED_ERROR',
+        message: error.message || 'Failed to parse label image',
         timestamp: new Date().toISOString(),
       }),
       {
