@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 
 interface ExistingWine {
   id: string;
-  name: string;
+  name: string; // Display name (passed from parent, can be wine_name)
   producer?: string;
   vintage?: number;
   style: 'red' | 'white' | 'rose' | 'sparkling';

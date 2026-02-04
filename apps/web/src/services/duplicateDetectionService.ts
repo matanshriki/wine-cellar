@@ -18,7 +18,7 @@ export interface ExistingBottle {
   quantity: number;
   wine: {
     id: string;
-    name: string;
+    wine_name: string;
     producer?: string;
     vintage?: number;
     style: 'red' | 'white' | 'rose' | 'sparkling';
@@ -61,7 +61,7 @@ export async function checkForDuplicate(
         quantity,
         wine:wines(
           id,
-          name,
+          wine_name,
           producer,
           vintage,
           style,
@@ -87,7 +87,7 @@ export async function checkForDuplicate(
     const wines = bottles.map(b => ({
       id: b.wine_id,
       producer: b.wine?.producer,
-      name: b.wine?.name,
+      name: b.wine?.wine_name,
       vintage: b.wine?.vintage,
       bottle: b,
     }));

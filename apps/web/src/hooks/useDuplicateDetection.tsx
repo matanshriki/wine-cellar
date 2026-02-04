@@ -118,7 +118,7 @@ export function useDuplicateDetection(props?: UseDuplicateDetectionProps) {
       onClose={handleClose}
       existingWine={{
         id: duplicateInfo.wine_id,
-        name: duplicateInfo.wine.name || '',
+        name: duplicateInfo.wine.wine_name || '',
         producer: duplicateInfo.wine.producer || undefined,
         vintage: duplicateInfo.wine.vintage || undefined,
         style: duplicateInfo.wine.style,
