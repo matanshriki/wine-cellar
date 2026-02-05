@@ -11,6 +11,7 @@ import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
+import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -292,6 +293,9 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+      
+      {/* Admin Tools */}
+      <AdminWineProfileBackfill />
     </div>
   );
 }

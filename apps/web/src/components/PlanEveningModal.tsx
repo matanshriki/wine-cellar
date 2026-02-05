@@ -17,6 +17,8 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import { EveningQueuePlayer } from './EveningQueuePlayer';
 import * as eveningPlanService from '../services/eveningPlanService';
 import type { EveningPlan } from '../services/eveningPlanService';
+import * as wineProfileService from '../services/wineProfileService';
+import type { FoodProfile, WineProfile } from '../services/wineProfileService';
 
 interface PlanEveningModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ interface WineSlot {
   position: number;
   label: string;
   isLocked: boolean;
+  wineProfile?: WineProfile;
 }
 
 export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEveningModalProps) {
@@ -49,6 +52,12 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   const [highRatingOnly, setHighRatingOnly] = useState(true);
   const [startTime, setStartTime] = useState<StartTime>('now');
   
+  // Food selection state
+  const [selectedProtein, setSelectedProtein] = useState<'beef' | 'lamb' | 'chicken' | 'fish' | 'veggie' | 'none'>('none');
+  const [selectedSauce, setSelectedSauce] = useState<'tomato' | 'bbq' | 'creamy' | 'none'>('none');
+  const [selectedSpice, setSelectedSpice] = useState<'low' | 'med' | 'high'>('low');
+  const [selectedSmoke, setSelectedSmoke] = useState<'low' | 'med' | 'high'>('low');
+  
   // Lineup state
   const [lineup, setLineup] = useState<WineSlot[]>([]);
   
@@ -61,9 +70,15 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   const [swapPosition, setSwapPosition] = useState<number | null>(null);
   const [availableAlternatives, setAvailableAlternatives] = useState<BottleWithWineInfo[]>([]);
   
-  // Generate lineup based on inputs
+  // Generate lineup based on inputs (FOOD-AWARE)
   const generateLineup = () => {
-    console.log('[PlanEvening] Generating lineup...', { occasion, groupSize, redsOnly, highRatingOnly });
+    console.log('[PlanEvening] Generating food-aware lineup...', {
+      occasion,
+      groupSize,
+      redsOnly,
+      highRatingOnly,
+      food: { selectedProtein, selectedSauce, selectedSpice, selectedSmoke },
+    });
     
     // Determine number of wines
     const wineCount = groupSize === '2-4' ? 3 : groupSize === '5-8' ? 4 : 5;
@@ -79,37 +94,80 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
       candidates = candidates.filter(b => (b.wine.rating || 0) >= 4.2);
     }
     
-    // Sort by readiness and intensity
-    candidates = candidates.sort((a, b) => {
-      const aAnalysis = a as any;
-      const bAnalysis = b as any;
+    // Build food profile
+    const foodProfile: FoodProfile = {
+      protein: selectedProtein,
+      fat: selectedProtein === 'beef' || selectedProtein === 'lamb' ? 'high' 
+         : selectedProtein === 'fish' || selectedProtein === 'veggie' ? 'low'
+         : 'med',
+      sauce: selectedSauce,
+      spice: selectedSpice,
+      smoke: selectedSmoke,
+    };
+    
+    // Score each candidate with food pairing
+    const scoredCandidates = candidates.map(bottle => {
+      const wineProfile = wineProfileService.getWineProfile(bottle.wine);
       
-      // Prioritize READY wines
-      const aReady = aAnalysis.readiness_label === 'READY' ? 100 : 0;
-      const bReady = bAnalysis.readiness_label === 'READY' ? 100 : 0;
+      let score = 0;
       
-      return (bReady - aReady) || (Math.random() - 0.5);
+      // Readiness score
+      const analysis = bottle as any;
+      if (analysis.readiness_label === 'READY') score += 100;
+      else if (analysis.readiness_label === 'PEAK_SOON') score += 50;
+      
+      // Rating score
+      if (bottle.wine.rating && bottle.wine.rating >= 4.2) score += 30;
+      
+      // Food pairing score (uses wine profiles!)
+      if (selectedProtein !== 'none') {
+        const pairingScore = wineProfileService.calculateFoodPairingScore(wineProfile, foodProfile);
+        score += pairingScore;
+      }
+      
+      // Diversity bonus
+      score += Math.random() * 10;
+      
+      return { bottle, score, wineProfile };
     });
     
-    // Take top candidates
-    const selectedBottles = candidates.slice(0, Math.min(wineCount, candidates.length));
+    // Sort by score (highest first)
+    scoredCandidates.sort((a, b) => b.score - a.score);
     
-    // Create lineup with ordering
-    const labels = [
-      'Warm-up',
-      'Mid',
-      'Main',
-      'Finale',
-      'Grand Finale',
-      'Closer'
-    ];
+    // Take top wines
+    const selectedBottles = scoredCandidates.slice(0, Math.min(wineCount, scoredCandidates.length));
     
-    const newLineup: WineSlot[] = selectedBottles.map((bottle, idx) => ({
+    // ORDER BY POWER for smooth progression (light to powerful)
+    selectedBottles.sort((a, b) => a.wineProfile.power - b.wineProfile.power);
+    
+    // Avoid back-to-back high tannin+oak if possible
+    for (let i = 1; i < selectedBottles.length - 1; i++) {
+      const prev = selectedBottles[i - 1].wineProfile;
+      const curr = selectedBottles[i].wineProfile;
+      const next = selectedBottles[i + 1]?.wineProfile;
+      
+      if (prev.tannin >= 4 && prev.oak >= 4 && curr.tannin >= 4 && curr.oak >= 4) {
+        if (next && next.tannin < 4) {
+          [selectedBottles[i], selectedBottles[i + 1]] = [selectedBottles[i + 1], selectedBottles[i]];
+        }
+      }
+    }
+    
+    // Create lineup with labels and profiles
+    const labels = ['Warm-up', 'Mid', 'Main', 'Finale', 'Grand Finale', 'Closer'];
+    
+    const newLineup: WineSlot[] = selectedBottles.map(({ bottle, wineProfile }, idx) => ({
       bottle,
       position: idx + 1,
       label: labels[idx] || `Wine ${idx + 1}`,
       isLocked: false,
+      wineProfile,
     }));
+    
+    console.log('[PlanEvening] Generated lineup with power progression:', newLineup.map(s => ({
+      name: s.bottle.wine.wine_name,
+      power: s.wineProfile?.power,
+    })));
     
     setLineup(newLineup);
     setCurrentStep('lineup');
@@ -336,6 +394,14 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                   setHighRatingOnly={setHighRatingOnly}
                   startTime={startTime}
                   setStartTime={setStartTime}
+                  selectedProtein={selectedProtein}
+                  setSelectedProtein={setSelectedProtein}
+                  selectedSauce={selectedSauce}
+                  setSelectedSauce={setSelectedSauce}
+                  selectedSpice={selectedSpice}
+                  setSelectedSpice={setSelectedSpice}
+                  selectedSmoke={selectedSmoke}
+                  setSelectedSmoke={setSelectedSmoke}
                   onGenerate={generateLineup}
                 />
               )}
@@ -574,6 +640,14 @@ function InputStep({
   setHighRatingOnly,
   startTime,
   setStartTime,
+  selectedProtein,
+  setSelectedProtein,
+  selectedSauce,
+  setSelectedSauce,
+  selectedSpice,
+  setSelectedSpice,
+  selectedSmoke,
+  setSelectedSmoke,
   onGenerate,
 }: any) {
   const occasions: { value: Occasion; label: string; icon: string }[] = [
@@ -685,6 +759,127 @@ function InputStep({
         </div>
       </div>
 
+      {/* Food Selection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🍽️</span>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            What are you eating? (optional)
+          </label>
+        </div>
+        
+        {/* Protein */}
+        <div>
+          <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+            Protein
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(['beef', 'lamb', 'chicken', 'fish', 'veggie', 'none'] as const).map(protein => (
+              <button
+                key={protein}
+                type="button"
+                onClick={() => setSelectedProtein(protein)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                style={{
+                  background: selectedProtein === protein 
+                    ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                    : 'var(--bg-surface-elevated)',
+                  color: selectedProtein === protein ? 'white' : 'var(--text-secondary)',
+                  border: `1px solid ${selectedProtein === protein ? 'var(--wine-600)' : 'var(--border-medium)'}`,
+                }}
+              >
+                {protein === 'none' ? 'No food' : protein.charAt(0).toUpperCase() + protein.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Sauce (only show if protein selected) */}
+        {selectedProtein !== 'none' && (
+          <div>
+            <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+              Sauce
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['tomato', 'bbq', 'creamy', 'none'] as const).map(sauce => (
+                <button
+                  key={sauce}
+                  type="button"
+                  onClick={() => setSelectedSauce(sauce)}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                  style={{
+                    background: selectedSauce === sauce 
+                      ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                      : 'var(--bg-surface-elevated)',
+                    color: selectedSauce === sauce ? 'white' : 'var(--text-secondary)',
+                    border: `1px solid ${selectedSauce === sauce ? 'var(--wine-600)' : 'var(--border-medium)'}`,
+                  }}
+                >
+                  {sauce === 'none' ? 'No sauce' : sauce.charAt(0).toUpperCase() + sauce.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Spice & Smoke (only show if protein selected) */}
+        {selectedProtein !== 'none' && (
+          <div className="grid grid-cols-2 gap-4">
+            {/* Spice */}
+            <div>
+              <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+                Spice
+              </div>
+              <div className="flex gap-2">
+                {(['low', 'med', 'high'] as const).map(spice => (
+                  <button
+                    key={spice}
+                    type="button"
+                    onClick={() => setSelectedSpice(spice)}
+                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      background: selectedSpice === spice 
+                        ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                        : 'var(--bg-surface-elevated)',
+                      color: selectedSpice === spice ? 'white' : 'var(--text-secondary)',
+                      border: `1px solid ${selectedSpice === spice ? 'var(--wine-600)' : 'var(--border-medium)'}`,
+                    }}
+                  >
+                    {spice === 'low' ? '🌶️' : spice === 'med' ? '🌶️🌶️' : '🌶️🌶️🌶️'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Smoke */}
+            <div>
+              <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+                Smoke
+              </div>
+              <div className="flex gap-2">
+                {(['low', 'med', 'high'] as const).map(smoke => (
+                  <button
+                    key={smoke}
+                    type="button"
+                    onClick={() => setSelectedSmoke(smoke)}
+                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      background: selectedSmoke === smoke 
+                        ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                        : 'var(--bg-surface-elevated)',
+                      color: selectedSmoke === smoke ? 'white' : 'var(--text-secondary)',
+                      border: `1px solid ${selectedSmoke === smoke ? 'var(--wine-600)' : 'var(--border-medium)'}`,
+                    }}
+                  >
+                    {smoke === 'low' ? '💨' : smoke === 'med' ? '💨💨' : '💨💨💨'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Start Time */}
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
@@ -777,6 +972,13 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
                 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   {slot.bottle.wine.vintage}
                 </span>
+              )}
+              
+              {/* Pairing explanation */}
+              {slot.wineProfile && (
+                <div className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                  {wineProfileService.getPairingExplanation(slot.wineProfile, slot.bottle.wine)}
+                </div>
               )}
             </div>
 
