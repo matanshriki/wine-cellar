@@ -168,7 +168,12 @@ Base your analysis on:
                 acidity: { type: 'integer', minimum: 1, maximum: 5 },
                 oak: { type: 'integer', minimum: 1, maximum: 5 },
                 sweetness: { type: 'integer', minimum: 0, maximum: 5 },
-                alcohol_est: { type: ['number', 'null'] },
+                alcohol_est: { 
+                  anyOf: [
+                    { type: 'number' },
+                    { type: 'null' }
+                  ]
+                },
                 style_tags: {
                   type: 'array',
                   items: { type: 'string' },
@@ -180,7 +185,7 @@ Base your analysis on:
                   enum: ['low', 'med', 'high'],
                 },
               },
-              required: ['body', 'tannin', 'acidity', 'oak', 'sweetness', 'style_tags', 'confidence'],
+              required: ['body', 'tannin', 'acidity', 'oak', 'sweetness', 'alcohol_est', 'style_tags', 'confidence'],
               additionalProperties: false,
             },
           },
