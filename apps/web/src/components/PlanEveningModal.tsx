@@ -49,6 +49,11 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   const [lineup, setLineup] = useState<WineSlot[]>([]);
   const [currentWineIndex, setCurrentWineIndex] = useState(0);
   
+  // Swap modal state
+  const [showSwapPicker, setShowSwapPicker] = useState(false);
+  const [swapPosition, setSwapPosition] = useState<number | null>(null);
+  const [availableAlternatives, setAvailableAlternatives] = useState<BottleWithWineInfo[]>([]);
+  
   // Generate lineup based on inputs
   const generateLineup = () => {
     console.log('[PlanEvening] Generating lineup...', { occasion, groupSize, redsOnly, highRatingOnly });
@@ -118,8 +123,56 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   
   // Swap wine in lineup
   const handleSwap = (position: number) => {
-    console.log('[PlanEvening] Swap wine at position', position);
-    // TODO: Show picker modal with alternative wines
+    console.log('[PlanEvening] Opening swap picker for position', position);
+    
+    // Filter candidates - exclude wines already in lineup
+    const winesInLineup = lineup.map(slot => slot.bottle.id);
+    let alternatives = [...candidateBottles].filter(b => 
+      b.quantity > 0 && !winesInLineup.includes(b.id)
+    );
+    
+    // Apply same filters as original lineup
+    if (redsOnly) {
+      alternatives = alternatives.filter(b => b.wine.color === 'red');
+    }
+    
+    if (highRatingOnly) {
+      alternatives = alternatives.filter(b => (b.wine.rating || 0) >= 4.2);
+    }
+    
+    // Sort by readiness
+    alternatives = alternatives.sort((a, b) => {
+      const aAnalysis = a as any;
+      const bAnalysis = b as any;
+      const aReady = aAnalysis.readiness_label === 'READY' ? 100 : 0;
+      const bReady = bAnalysis.readiness_label === 'READY' ? 100 : 0;
+      return (bReady - aReady) || (Math.random() - 0.5);
+    });
+    
+    setAvailableAlternatives(alternatives.slice(0, 6)); // Limit to 6 alternatives
+    setSwapPosition(position);
+    setShowSwapPicker(true);
+  };
+  
+  // Confirm swap with selected wine
+  const handleConfirmSwap = (selectedBottle: BottleWithWineInfo) => {
+    if (swapPosition === null) return;
+    
+    console.log('[PlanEvening] Swapping wine at position', swapPosition, 'with', selectedBottle.wine.wine_name);
+    
+    const newLineup = [...lineup];
+    const slotIndex = newLineup.findIndex(slot => slot.position === swapPosition);
+    
+    if (slotIndex !== -1) {
+      newLineup[slotIndex] = {
+        ...newLineup[slotIndex],
+        bottle: selectedBottle,
+      };
+      setLineup(newLineup);
+    }
+    
+    setShowSwapPicker(false);
+    setSwapPosition(null);
   };
   
   // Close and reset
@@ -254,6 +307,212 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                 />
               )}
             </AnimatePresence>
+          </div>
+        </motion.div>
+      </motion.div>
+      
+      {/* Swap Picker Modal */}
+      {showSwapPicker && (
+        <SwapPickerModal
+          isOpen={showSwapPicker}
+          onClose={() => {
+            setShowSwapPicker(false);
+            setSwapPosition(null);
+          }}
+          alternatives={availableAlternatives}
+          currentWine={lineup.find(slot => slot.position === swapPosition)?.bottle}
+          onSelect={handleConfirmSwap}
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Swap Picker Modal Component
+function SwapPickerModal({
+  isOpen,
+  onClose,
+  alternatives,
+  currentWine,
+  onSelect,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  alternatives: BottleWithWineInfo[];
+  currentWine?: BottleWithWineInfo;
+  onSelect: (bottle: BottleWithWineInfo) => void;
+}) {
+  if (!isOpen || !currentWine) return null;
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        style={{
+          background: 'var(--bg-overlay)',
+          backdropFilter: 'var(--blur-medium)',
+          WebkitBackdropFilter: 'var(--blur-medium)',
+        }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-lg rounded-2xl overflow-hidden"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--shadow-xl)',
+            maxHeight: '85vh',
+          }}
+        >
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  Swap wine
+                </h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  Choose an alternative for {currentWine.wine.wine_name}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  color: 'var(--text-tertiary)',
+                }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Alternatives List */}
+          <div className="overflow-y-auto p-6 space-y-3" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+            {alternatives.length === 0 && (
+              <div 
+                className="p-6 rounded-xl text-center"
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-medium)',
+                }}
+              >
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  No alternative wines available with current filters
+                </p>
+              </div>
+            )}
+            
+            {alternatives.map((bottle) => (
+              <motion.button
+                key={bottle.id}
+                onClick={() => onSelect(bottle)}
+                className="w-full p-4 rounded-xl flex gap-4 items-center text-left transition-all"
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-medium)',
+                }}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: '0 4px 12px rgba(164, 77, 90, 0.15)',
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* Wine Image */}
+                {bottle.wine.label_image_url ? (
+                  <img
+                    src={bottle.wine.label_image_url}
+                    alt={bottle.wine.wine_name}
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    style={{ border: '1px solid var(--border-subtle)' }}
+                  />
+                ) : (
+                  <div 
+                    className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
+                      border: '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-600)' }}>
+                      <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
+                    </svg>
+                  </div>
+                )}
+
+                {/* Wine Info */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                    {bottle.wine.wine_name}
+                  </h4>
+                  <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+                    {bottle.wine.producer}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {bottle.wine.vintage && (
+                      <span 
+                        className="text-xs px-2 py-0.5 rounded"
+                        style={{
+                          background: 'var(--wine-50)',
+                          color: 'var(--wine-700)',
+                        }}
+                      >
+                        {bottle.wine.vintage}
+                      </span>
+                    )}
+                    {bottle.wine.rating && (
+                      <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+                        ⭐ {bottle.wine.rating.toFixed(1)}
+                      </span>
+                    )}
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      {bottle.quantity} available
+                    </span>
+                  </div>
+                </div>
+
+                {/* Select Icon */}
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                    color: 'white',
+                  }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 pb-6">
+            <button
+              onClick={onClose}
+              className="btn-luxury-secondary w-full"
+            >
+              Cancel
+            </button>
           </div>
         </motion.div>
       </motion.div>
