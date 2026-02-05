@@ -412,6 +412,14 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                   onSwap={handleSwap}
                   onStart={startLivePlan}
                   onBack={() => setCurrentStep('input')}
+                  foodProfile={{
+                    protein: selectedProtein,
+                    fat: selectedProtein === 'beef' || selectedProtein === 'lamb' ? 'high' : selectedProtein === 'fish' ? 'low' : 'med',
+                    sauce: selectedSauce,
+                    spice: selectedSpice,
+                    smoke: selectedSmoke,
+                  }}
+                />
                 />
               )}
             </AnimatePresence>
@@ -922,7 +930,7 @@ function InputStep({
 }
 
 // Lineup Step Component
-function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
+function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
   return (
     <motion.div
       key="lineup"
@@ -937,7 +945,11 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
 
       {/* Wine Slots */}
       <div className="space-y-3">
-        {lineup.map((slot: WineSlot, idx: number) => (
+        {lineup.map((slot: WineSlot, idx: number) => {
+          // Determine position for pairing explanation
+          const position = idx === 0 ? 'first' : idx === lineup.length - 1 ? 'last' : 'middle';
+          
+          return (
           <div
             key={idx}
             className="p-4 rounded-xl flex gap-4"
@@ -975,9 +987,14 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
               )}
               
               {/* Pairing explanation */}
-              {slot.wineProfile && (
+              {slot.wineProfile && foodProfile && (
                 <div className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-                  {wineProfileService.getPairingExplanation(slot.wineProfile, slot.bottle.wine)}
+                  {wineProfileService.getPairingExplanation(
+                    slot.bottle,
+                    slot.wineProfile,
+                    foodProfile,
+                    position
+                  )}
                 </div>
               )}
             </div>
@@ -995,7 +1012,8 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
               Swap
             </button>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Actions */}
