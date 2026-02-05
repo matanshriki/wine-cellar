@@ -420,7 +420,6 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                     smoke: selectedSmoke,
                   }}
                 />
-                />
               )}
             </AnimatePresence>
           </div>
