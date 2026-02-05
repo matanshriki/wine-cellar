@@ -77,14 +77,19 @@ USING (
   )
 );
 
--- 3) Add is_admin flag to profiles table (if not exists)
-ALTER TABLE profiles
-ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;
-
--- Add index for admin queries
-CREATE INDEX IF NOT EXISTS idx_profiles_is_admin 
-ON profiles (is_admin) 
-WHERE is_admin = true;
+-- 3) Check if is_admin exists (it should be added by separate migration)
+-- If not exists, the profile backfill RLS policies will fail gracefully
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'profiles' 
+    AND column_name = 'is_admin'
+  ) THEN
+    RAISE WARNING 'profiles.is_admin column does not exist yet. Run 20260205_migrate_admin_to_profiles.sql first.';
+  END IF;
+END $$;
 
 -- 4) Add updated_at trigger for backfill jobs
 CREATE OR REPLACE FUNCTION update_backfill_jobs_updated_at()
