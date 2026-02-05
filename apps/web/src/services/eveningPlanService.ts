@@ -76,7 +76,12 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
     return null;
   }
 
-  console.log('[EveningPlanService] ✅ Active plan found:', data.id);
+  console.log('[EveningPlanService] ✅ Active plan found:', {
+    id: data.id,
+    queueLength: (data.queue as any[])?.length,
+    firstWineImage: (data.queue as any[])?.[0]?.image_url,
+    sampleQueue: (data.queue as any[])?.[0],
+  });
   return data as EveningPlan;
 }
 
@@ -247,6 +252,12 @@ export function lineupToQueue(lineup: Array<{
   position: number;
   label: string;
 }>): QueuedWine[] {
+  console.log('[EveningPlanService] Converting lineup to queue. Sample wine data:', {
+    wineName: lineup[0]?.bottle.wine.wine_name,
+    imageUrl: lineup[0]?.bottle.wine.image_url,
+    fullWineObject: lineup[0]?.bottle.wine,
+  });
+  
   return lineup.map((slot) => ({
     wine_id: slot.bottle.wine_id,
     bottle_id: slot.bottle.id,

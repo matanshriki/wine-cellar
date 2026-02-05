@@ -40,6 +40,13 @@ export function EveningQueuePlayer({
   const currentWine = queue[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === queue.length - 1;
+  
+  // Debug: Check image URL
+  console.log('[QueuePlayer] Current wine:', {
+    name: currentWine?.wine_name,
+    imageUrl: currentWine?.image_url,
+    hasImage: !!currentWine?.image_url,
+  });
 
   // Sync with plan changes
   useEffect(() => {
