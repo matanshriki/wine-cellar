@@ -20,7 +20,7 @@ export interface QueuedWine {
   vintage: number | null;
   color: string;
   rating: number | null;
-  label_image_url: string | null;
+  image_url: string | null;
   // Completion data
   opened?: boolean;
   opened_quantity?: number;
@@ -256,7 +256,7 @@ export function lineupToQueue(lineup: Array<{
     vintage: slot.bottle.wine.vintage,
     color: slot.bottle.wine.color,
     rating: slot.bottle.wine.rating,
-    label_image_url: slot.bottle.wine.label_image_url || null,
+    image_url: slot.bottle.wine.image_url || null,
     opened: false,
     opened_quantity: 0,
     user_rating: null,

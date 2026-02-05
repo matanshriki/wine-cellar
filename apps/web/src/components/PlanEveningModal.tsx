@@ -479,9 +479,9 @@ function SwapPickerModal({
                 whileTap={{ scale: 0.98 }}
               >
                 {/* Wine Image */}
-                {bottle.wine.label_image_url ? (
+                {bottle.wine.image_url ? (
                   <img
-                    src={bottle.wine.label_image_url}
+                    src={bottle.wine.image_url}
                     alt={bottle.wine.wine_name}
                     className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                     style={{ border: '1px solid var(--border-subtle)' }}

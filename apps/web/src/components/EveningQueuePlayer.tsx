@@ -176,10 +176,10 @@ export function EveningQueuePlayer({
                     </div>
                     
                     {/* Wine Image */}
-                    {currentWine.label_image_url ? (
+                    {currentWine.image_url ? (
                       <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
                         <img
-                          src={currentWine.label_image_url}
+                          src={currentWine.image_url}
                           alt={currentWine.wine_name}
                           className="w-full h-full object-cover"
                         />
@@ -263,17 +263,29 @@ export function EveningQueuePlayer({
                     whileHover={{ scale: idx === currentIndex ? 1 : 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                      style={{
-                        background: idx === currentIndex
-                          ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
-                          : 'var(--bg-surface)',
-                        color: idx === currentIndex ? 'white' : 'var(--text-tertiary)',
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
+                    {/* Wine Thumbnail */}
+                    {wine.image_url ? (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--border-medium)' }}>
+                        <img
+                          src={wine.image_url}
+                          alt={wine.wine_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{
+                          background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
+                          border: '1px solid var(--border-medium)',
+                        }}
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-500)' }}>
+                          <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
+                        </svg>
+                      </div>
+                    )}
+                    
                     <div className="flex-1 min-w-0">
                       <h5 className="font-semibold truncate text-sm" style={{ color: 'var(--text-primary)' }}>
                         {wine.wine_name}
@@ -489,6 +501,30 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
                     className="mt-1 w-5 h-5 rounded"
                     style={{ accentColor: 'var(--wine-600)' }}
                   />
+                  
+                  {/* Wine Thumbnail */}
+                  {wine.image_url ? (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--border-medium)' }}>
+                      <img
+                        src={wine.image_url}
+                        alt={wine.wine_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
+                        border: '1px solid var(--border-medium)',
+                      }}
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-500)' }}>
+                        <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
+                      </svg>
+                    </div>
+                  )}
+                  
                   <div className="flex-1">
                     <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {wine.wine_name}
