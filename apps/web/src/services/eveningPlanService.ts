@@ -72,6 +72,11 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
       console.log('[EveningPlanService] No active plan');
       return null;
     }
+    // Handle case where table doesn't exist yet (migration not applied)
+    if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+      console.log('[EveningPlanService] Table not found - migration not applied yet');
+      return null;
+    }
     console.error('[EveningPlanService] Error fetching plan:', error);
     return null;
   }
@@ -156,6 +161,10 @@ export async function createPlan(params: {
     .single();
 
   if (error) {
+    // Handle case where table doesn't exist yet
+    if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+      throw new Error('Evening plans table not found. Please apply the database migration first.');
+    }
     console.error('[EveningPlanService] Error creating plan:', error);
     throw error;
   }
