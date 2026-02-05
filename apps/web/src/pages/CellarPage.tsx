@@ -156,13 +156,24 @@ export function CellarPage() {
       toast.success(`Added ${quantity} ${quantity === 1 ? 'bottle' : 'bottles'}!`);
     },
     onCreateSeparate: async (candidate: any) => {
-      console.log('[CellarPage] User chose to create separate entry');
+      console.log('[CellarPage] User chose to create separate entry', candidate);
       // Continue with normal add flow
       if (candidate.imageUrl && candidate.extractedData) {
+        console.log('[CellarPage] Opening form with extracted data');
         setExtractedData({
           imageUrl: candidate.imageUrl,
           data: candidate.extractedData,
         });
+        setEditingBottle(null);
+        setShowForm(true);
+      } else {
+        console.warn('[CellarPage] Missing imageUrl or extractedData in candidate:', {
+          hasImageUrl: !!candidate.imageUrl,
+          hasExtractedData: !!candidate.extractedData,
+          candidate,
+        });
+        // Fallback: open empty form
+        setExtractedData(null);
         setEditingBottle(null);
         setShowForm(true);
       }
@@ -214,6 +225,9 @@ export function CellarPage() {
             producer: singleBottle.extractedData.producer,
             name: singleBottle.extractedData.wine_name, // Fix: use wine_name not name
             vintage: singleBottle.extractedData.vintage,
+            // Store full context for "Create separate" flow
+            imageUrl,
+            extractedData: singleBottle.extractedData,
           });
           
           if (isDuplicate) {

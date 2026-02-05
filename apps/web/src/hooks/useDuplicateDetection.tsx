@@ -41,15 +41,23 @@ export function useDuplicateDetection(props?: UseDuplicateDetectionProps) {
     producer?: string | null;
     name?: string | null;
     vintage?: number | null;
+    imageUrl?: string; // Optional: for "Create separate" flow
+    extractedData?: any; // Optional: for "Create separate" flow
+    [key: string]: any; // Allow additional context
   }): Promise<boolean> => {
     console.log('[useDuplicateDetection] Checking candidate:', candidate);
     
-    const duplicate = await checkForDuplicate(candidate);
+    // Check for duplicate using just wine identity fields
+    const duplicate = await checkForDuplicate({
+      producer: candidate.producer,
+      name: candidate.name,
+      vintage: candidate.vintage,
+    });
     
     if (duplicate) {
       console.log('[useDuplicateDetection] Duplicate found, showing modal');
       setDuplicateInfo(duplicate);
-      setPendingCandidate(candidate);
+      setPendingCandidate(candidate); // Store full candidate with context
       setShowDuplicateModal(true);
       return true; // Duplicate found
     }
@@ -90,9 +98,18 @@ export function useDuplicateDetection(props?: UseDuplicateDetectionProps) {
    */
   const handleCreateSeparate = async () => {
     console.log('[useDuplicateDetection] User chose to create separate entry');
+    console.log('[useDuplicateDetection] Pending candidate:', pendingCandidate);
+    console.log('[useDuplicateDetection] Has onCreateSeparate handler:', !!props?.onCreateSeparate);
     
     if (props?.onCreateSeparate && pendingCandidate) {
+      console.log('[useDuplicateDetection] Calling onCreateSeparate handler...');
       await props.onCreateSeparate(pendingCandidate);
+      console.log('[useDuplicateDetection] ✅ onCreateSeparate handler completed');
+    } else {
+      console.warn('[useDuplicateDetection] Cannot create separate entry:', {
+        hasHandler: !!props?.onCreateSeparate,
+        hasCandidate: !!pendingCandidate,
+      });
     }
     
     // Close modal
