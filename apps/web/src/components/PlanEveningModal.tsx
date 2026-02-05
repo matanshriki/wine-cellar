@@ -14,6 +14,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { EveningQueuePlayer } from './EveningQueuePlayer';
+import * as eveningPlanService from '../services/eveningPlanService';
+import type { EveningPlan } from '../services/eveningPlanService';
 
 interface PlanEveningModalProps {
   isOpen: boolean;
@@ -48,7 +51,10 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   
   // Lineup state
   const [lineup, setLineup] = useState<WineSlot[]>([]);
-  const [currentWineIndex, setCurrentWineIndex] = useState(0);
+  
+  // Active plan state (persistence)
+  const [activePlan, setActivePlan] = useState<EveningPlan | null>(null);
+  const [showQueuePlayer, setShowQueuePlayer] = useState(false);
   
   // Swap modal state
   const [showSwapPicker, setShowSwapPicker] = useState(false);
@@ -110,15 +116,22 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   };
   
   // Start live plan
-  const startLivePlan = () => {
-    setCurrentWineIndex(0);
-    setCurrentStep('live');
-  };
-  
-  // Next wine in live plan
-  const handleNextWine = () => {
-    if (currentWineIndex < lineup.length - 1) {
-      setCurrentWineIndex(prev => prev + 1);
+  const startLivePlan = async () => {
+    try {
+      const plan = await eveningPlanService.createPlan({
+        occasion: occasion || '',
+        group_size: groupSize || '',
+        settings: {
+          occasion: occasion || null,
+          groupSize: groupSize || null,
+        },
+        queue: eveningPlanService.lineupToQueue(lineup),
+      });
+      setActivePlan(plan);
+      setShowQueuePlayer(true);
+    } catch (error) {
+      console.error('Failed to create evening plan:', error);
+      toast.error('Failed to start evening plan. Please try again.');
     }
   };
   
@@ -188,7 +201,6 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     setTimeout(() => {
       setCurrentStep('input');
       setLineup([]);
-      setCurrentWineIndex(0);
     }, 300);
   };
   
@@ -198,11 +210,34 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     setTimeout(() => {
       setCurrentStep('input');
       setLineup([]);
-      setCurrentWineIndex(0);
+      setActivePlan(null);
     }, 300);
+  };
+  
+  // Handle queue player completion
+  const handleQueueComplete = () => {
+    setShowQueuePlayer(false);
+    setActivePlan(null);
+    handleClose();
   };
 
   if (!isOpen) return null;
+  
+  // Show Queue Player if plan is started
+  if (showQueuePlayer && activePlan) {
+    return (
+      <EveningQueuePlayer
+        isOpen={showQueuePlayer}
+        onClose={() => {
+          setShowQueuePlayer(false);
+          handleClose();
+        }}
+        plan={activePlan}
+        onPlanUpdated={setActivePlan}
+        onComplete={handleQueueComplete}
+      />
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -254,7 +289,6 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                 >
                   {currentStep === 'input' && 'Create your perfect wine lineup'}
                   {currentStep === 'lineup' && 'Review and customize your selection'}
-                  {currentStep === 'live' && 'Your evening is underway'}
                 </p>
               </div>
               <button
@@ -273,12 +307,12 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
             
             {/* Progress dots */}
             <div className="flex items-center gap-2 mt-4">
-              {['input', 'lineup', 'live'].map((step, idx) => (
+              {['input', 'lineup'].map((step, idx) => (
                 <div
                   key={step}
                   className="h-1 flex-1 rounded-full transition-all"
                   style={{
-                    background: currentStep === step || (idx < ['input', 'lineup', 'live'].indexOf(currentStep))
+                    background: currentStep === step || (idx < ['input', 'lineup'].indexOf(currentStep))
                       ? 'var(--wine-500)'
                       : 'var(--border-subtle)',
                   }}
@@ -312,16 +346,6 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                   onSwap={handleSwap}
                   onStart={startLivePlan}
                   onBack={() => setCurrentStep('input')}
-                />
-              )}
-              
-              {currentStep === 'live' && (
-                <LivePlanStep
-                  lineup={lineup}
-                  currentIndex={currentWineIndex}
-                  onNext={handleNextWine}
-                  onBack={() => setCurrentStep('lineup')}
-                  onComplete={handleCompleteEvening}
                 />
               )}
             </AnimatePresence>
@@ -786,113 +810,6 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
         >
           Start evening
         </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Live Plan Step Component
-function LivePlanStep({ lineup, currentIndex, onNext, onBack, onComplete }: any) {
-  const currentWine = lineup[currentIndex];
-  const isLast = currentIndex === lineup.length - 1;
-
-  return (
-    <motion.div
-      key="live"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="px-6 py-6 space-y-6"
-    >
-      {/* Current Wine */}
-      <div className="text-center">
-        <div
-          className="inline-block px-3 py-1.5 rounded-full text-xs font-medium mb-4"
-          style={{
-            background: 'var(--wine-100)',
-            color: 'var(--wine-700)',
-          }}
-        >
-          {currentWine.label} • Wine {currentIndex + 1} of {lineup.length}
-        </div>
-        
-        <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-          {currentWine.bottle.wine.wine_name}
-        </h3>
-        <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-          {currentWine.bottle.wine.producer}
-        </p>
-        {currentWine.bottle.wine.vintage && (
-          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            {currentWine.bottle.wine.vintage}
-          </p>
-        )}
-      </div>
-
-      {/* Instructions */}
-      <div
-        className="p-4 rounded-xl space-y-2"
-        style={{
-          background: 'var(--bg-surface-elevated)',
-          border: '1px solid var(--border-medium)',
-        }}
-      >
-        <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>
-          Serving notes:
-        </h4>
-        <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          <li>• Open now and let breathe for 10-15 minutes</li>
-          <li>• Serve at room temperature (16-18°C)</li>
-          {currentWine.bottle.wine.color === 'red' && <li>• Consider decanting for 30 minutes</li>}
-        </ul>
-      </div>
-
-      {/* Progress */}
-      <div className="flex items-center gap-2 justify-center">
-        {lineup.map((_: any, idx: number) => (
-          <div
-            key={idx}
-            className="w-2 h-2 rounded-full transition-all"
-            style={{
-              background: idx === currentIndex
-                ? 'var(--wine-600)'
-                : idx < currentIndex
-                ? 'var(--wine-300)'
-                : 'var(--border-medium)',
-              width: idx === currentIndex ? '12px' : '8px',
-              height: idx === currentIndex ? '12px' : '8px',
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3 pt-4">
-        <button
-          onClick={onBack}
-          className="btn-luxury-secondary flex-1"
-        >
-          Back to lineup
-        </button>
-        {!isLast && (
-          <button
-            onClick={onNext}
-            className="btn-luxury-primary flex-1"
-          >
-            Next wine →
-          </button>
-        )}
-        {isLast && (
-          <button
-            onClick={onComplete}
-            className="btn-luxury-primary flex-1"
-            style={{
-              background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-            }}
-          >
-            Complete evening 🎉
-          </button>
-        )}
       </div>
     </motion.div>
   );

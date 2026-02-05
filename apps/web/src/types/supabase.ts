@@ -231,6 +231,56 @@ export interface Database {
           created_at?: string
         }
       }
+      evening_plans: {
+        Row: {
+          id: string
+          user_id: string
+          status: 'active' | 'completed' | 'cancelled'
+          plan_name: string | null
+          occasion: string | null
+          group_size: string | null
+          settings: Json
+          queue: Json
+          now_playing_index: number
+          created_at: string
+          updated_at: string
+          completed_at: string | null
+          total_bottles_opened: number
+          average_rating: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          status?: 'active' | 'completed' | 'cancelled'
+          plan_name?: string | null
+          occasion?: string | null
+          group_size?: string | null
+          settings?: Json
+          queue: Json
+          now_playing_index?: number
+          created_at?: string
+          updated_at?: string
+          completed_at?: string | null
+          total_bottles_opened?: number
+          average_rating?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          status?: 'active' | 'completed' | 'cancelled'
+          plan_name?: string | null
+          occasion?: string | null
+          group_size?: string | null
+          settings?: Json
+          queue?: Json
+          now_playing_index?: number
+          created_at?: string
+          updated_at?: string
+          completed_at?: string | null
+          total_bottles_opened?: number
+          average_rating?: number | null
+        }
+      }
       recommendation_runs: {
         Row: {
           id: string

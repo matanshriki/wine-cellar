@@ -19,6 +19,9 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
 import { usePlanEveningFeature } from '../hooks/usePlanEveningFeature';
 import { PlanEveningModal } from './PlanEveningModal';
+import { EveningQueuePlayer } from './EveningQueuePlayer';
+import * as eveningPlanService from '../services/eveningPlanService';
+import type { EveningPlan } from '../services/eveningPlanService';
 
 interface TonightsOrbitCinematicProps {
   bottles: BottleWithWineInfo[];
@@ -37,6 +40,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   // Plan an evening feature
   const { isEnabled: isPlanEveningEnabled, isLoading: isPlanEveningLoading } = usePlanEveningFeature();
   const [showPlanEveningModal, setShowPlanEveningModal] = useState(false);
+  const [activePlan, setActivePlan] = useState<EveningPlan | null>(null);
+  const [checkingForPlan, setCheckingForPlan] = useState(true);
+  const [showQueuePlayer, setShowQueuePlayer] = useState(false);
 
   /**
    * Smart Selection Logic:
@@ -93,6 +99,30 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     };
   }, [topBottles.length, isPaused, reduceMotion]);
 
+  /**
+   * Check for active evening plan on mount
+   */
+  useEffect(() => {
+    async function checkActivePlan() {
+      if (!isPlanEveningEnabled) {
+        setCheckingForPlan(false);
+        return;
+      }
+      
+      try {
+        const plan = await eveningPlanService.getActivePlan();
+        setActivePlan(plan);
+        console.log('[TonightsOrbit] Active plan status:', plan ? 'Found' : 'None');
+      } catch (error) {
+        console.error('[TonightsOrbit] Error checking for active plan:', error);
+      } finally {
+        setCheckingForPlan(false);
+      }
+    }
+    
+    checkActivePlan();
+  }, [isPlanEveningEnabled]);
+  
   /**
    * Pause auto-advance on interaction
    */
@@ -227,23 +257,44 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           </div>
           
           {/* Plan an evening CTA (gated feature) */}
-          {!isPlanEveningLoading && isPlanEveningEnabled && (
-            <motion.button
-              onClick={() => setShowPlanEveningModal(true)}
-              className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
-                color: 'white',
-                border: '1px solid var(--wine-600)',
-                boxShadow: '0 2px 8px rgba(164, 77, 90, 0.15)',
-              }}
-              whileHover={{ scale: 1.03, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span>🎯</span>
-              <span className="hidden sm:inline">Plan an evening</span>
-              <span className="sm:hidden">Plan</span>
-            </motion.button>
+          {!isPlanEveningLoading && isPlanEveningEnabled && !checkingForPlan && (
+            <>
+              {activePlan ? (
+                <motion.button
+                  onClick={() => setShowQueuePlayer(true)}
+                  className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    color: 'white',
+                    border: '1px solid var(--wine-700)',
+                    boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
+                  }}
+                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span>▶️</span>
+                  <span className="hidden sm:inline">Resume evening</span>
+                  <span className="sm:hidden">Resume</span>
+                </motion.button>
+              ) : (
+                <motion.button
+                  onClick={() => setShowPlanEveningModal(true)}
+                  className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                    color: 'white',
+                    border: '1px solid var(--wine-600)',
+                    boxShadow: '0 2px 8px rgba(164, 77, 90, 0.15)',
+                  }}
+                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span>🎯</span>
+                  <span className="hidden sm:inline">Plan an evening</span>
+                  <span className="sm:hidden">Plan</span>
+                </motion.button>
+              )}
+            </>
           )}
           
           {/* Decorative icon (only show if Plan feature not enabled) */}
@@ -577,6 +628,23 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           isOpen={showPlanEveningModal}
           onClose={() => setShowPlanEveningModal(false)}
           candidateBottles={bottles}
+        />
+      )}
+      
+      {/* Queue Player for active/resumed plans */}
+      {activePlan && showQueuePlayer && (
+        <EveningQueuePlayer
+          isOpen={showQueuePlayer}
+          onClose={() => setShowQueuePlayer(false)}
+          plan={activePlan}
+          onPlanUpdated={setActivePlan}
+          onComplete={async () => {
+            setShowQueuePlayer(false);
+            setActivePlan(null);
+            // Reload to check for new active plans
+            const newPlan = await eveningPlanService.getActivePlan();
+            setActivePlan(newPlan);
+          }}
         />
       )}
     </div>

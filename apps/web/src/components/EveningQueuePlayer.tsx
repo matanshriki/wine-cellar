@@ -12,8 +12,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../lib/toast';
 import type { QueuedWine, EveningPlan } from '../services/eveningPlanService';
 import * as eveningPlanService from '../services/eveningPlanService';
+import * as historyService from '../services/historyService';
 
 interface EveningQueuePlayerProps {
   isOpen: boolean;
@@ -377,36 +379,54 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
   const handleSaveToHistory = async () => {
     console.log('[WrapUp] Saving to history...', wineStates);
     
-    // TODO: Implement actual history save logic
-    // For each opened wine:
-    // - Create history entry
-    // - Decrement cellar quantity
-    // - Save rating and notes
-    
-    // Update plan completion data
-    const openedCount = Object.values(wineStates).filter(s => s.opened).length;
-    const ratings = Object.values(wineStates).filter(s => s.opened && s.rating).map(s => s.rating!);
-    const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null;
-    
-    // Update queue with completion data
-    const updatedQueue = queue.map((wine: QueuedWine, idx: number) => ({
-      ...wine,
-      opened: wineStates[idx]?.opened || false,
-      opened_quantity: wineStates[idx]?.quantity || 0,
-      user_rating: wineStates[idx]?.rating || null,
-      notes: wineStates[idx]?.notes || undefined,
-    }));
-    
     try {
+      // For each opened wine, create history entry and update cellar
+      for (const [idx, state] of Object.entries(wineStates)) {
+        if (!state.opened) continue;
+        
+        const wine = queue[parseInt(idx)];
+        
+        // Call existing history service to mark bottle opened
+        await historyService.markBottleOpened({
+          bottle_id: wine.bottle_id,
+          opened_count: state.quantity,
+          tasting_notes: state.notes || undefined,
+          user_rating: state.rating || undefined,
+        });
+        
+        console.log('[WrapUp] ✅ Recorded:', wine.wine_name, state.quantity, 'bottles');
+      }
+      
+      // Calculate completion stats
+      const openedCount = Object.values(wineStates).filter(s => s.opened).length;
+      const ratings = Object.values(wineStates)
+        .filter(s => s.opened && s.rating)
+        .map(s => s.rating!);
+      const avgRating = ratings.length > 0 
+        ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
+        : null;
+      
+      // Update queue with completion data
+      const updatedQueue = queue.map((wine: QueuedWine, idx: number) => ({
+        ...wine,
+        opened: wineStates[idx]?.opened || false,
+        opened_quantity: wineStates[idx]?.quantity || 0,
+        user_rating: wineStates[idx]?.rating || null,
+        notes: wineStates[idx]?.notes || undefined,
+      }));
+      
+      // Complete the plan
       await eveningPlanService.completePlan(plan.id, {
         queue: updatedQueue,
         total_bottles_opened: openedCount,
         average_rating: avgRating,
       });
       
+      toast.success(`🎉 Saved! ${openedCount} ${openedCount === 1 ? 'wine' : 'wines'} added to history.`);
       onComplete();
     } catch (error) {
-      console.error('[WrapUp] Error completing plan:', error);
+      console.error('[WrapUp] Error saving to history:', error);
+      toast.error('Failed to save to history. Please try again.');
     }
   };
 
