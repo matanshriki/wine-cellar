@@ -1,0 +1,10 @@
+{
+  "name": "Chateau Margaux",
+  "producer": "Chateau Margaux",
+  "region": "Bordeaux",
+  "country": "France",
+  "grapes": ["Cabernet Sauvignon", "Merlot", "Cabernet Franc"],
+  "color": "red",
+  "vintage": 2015,
+  "regional_wine_style": "Bordeaux Blend"
+}
