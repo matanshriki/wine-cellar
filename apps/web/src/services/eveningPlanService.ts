@@ -82,7 +82,40 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
     firstWineImage: (data.queue as any[])?.[0]?.image_url,
     sampleQueue: (data.queue as any[])?.[0],
   });
-  return data as EveningPlan;
+  
+  // Enrich queue with fresh wine images if missing
+  const plan = data as EveningPlan;
+  const queue = plan.queue as QueuedWine[];
+  
+  // Check if any wines are missing images
+  const needsEnrichment = queue.some(w => !w.image_url);
+  
+  if (needsEnrichment) {
+    console.log('[EveningPlanService] Enriching queue with wine images...');
+    
+    // Fetch fresh wine data
+    const wineIds = queue.map(w => w.wine_id);
+    const { data: wines } = await supabase
+      .from('wines')
+      .select('id, image_url')
+      .in('id', wineIds);
+    
+    if (wines) {
+      // Create a map for quick lookup
+      const wineImageMap = new Map(wines.map(w => [w.id, w.image_url]));
+      
+      // Update queue with fresh images
+      const enrichedQueue = queue.map(qw => ({
+        ...qw,
+        image_url: qw.image_url || wineImageMap.get(qw.wine_id) || null,
+      }));
+      
+      plan.queue = enrichedQueue as any;
+      console.log('[EveningPlanService] ✅ Queue enriched with images');
+    }
+  }
+  
+  return plan;
 }
 
 /**
