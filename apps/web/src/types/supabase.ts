@@ -26,6 +26,7 @@ export interface Database {
           avatar_url: string | null
           preferred_language: string
           cellar_agent_enabled: boolean
+          plan_evening_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -38,6 +39,7 @@ export interface Database {
           avatar_url?: string | null
           preferred_language?: string
           cellar_agent_enabled?: boolean
+          plan_evening_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -50,6 +52,7 @@ export interface Database {
           avatar_url?: string | null
           preferred_language?: string
           cellar_agent_enabled?: boolean
+          plan_evening_enabled?: boolean
           created_at?: string
           updated_at?: string
         }

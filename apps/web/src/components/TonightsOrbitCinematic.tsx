@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
+import { usePlanEveningFeature } from '../hooks/usePlanEveningFeature';
+import { PlanEveningModal } from './PlanEveningModal';
 
 interface TonightsOrbitCinematicProps {
   bottles: BottleWithWineInfo[];
@@ -31,6 +33,10 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = shouldReduceMotion();
+  
+  // Plan an evening feature
+  const { isEnabled: isPlanEveningEnabled, isLoading: isPlanEveningLoading } = usePlanEveningFeature();
+  const [showPlanEveningModal, setShowPlanEveningModal] = useState(false);
 
   /**
    * Smart Selection Logic:
@@ -200,7 +206,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         }}
       >
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <h2 
               className="text-2xl mb-2"
               style={{ 
@@ -220,16 +226,38 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             </p>
           </div>
           
-          {/* Decorative icon */}
-          <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, var(--gold-50), var(--gold-100))',
-              border: '1px solid var(--gold-200)',
-            }}
-          >
-            <span className="text-2xl">✨</span>
-          </div>
+          {/* Plan an evening CTA (gated feature) */}
+          {!isPlanEveningLoading && isPlanEveningEnabled && (
+            <motion.button
+              onClick={() => setShowPlanEveningModal(true)}
+              className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+              style={{
+                background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                color: 'white',
+                border: '1px solid var(--wine-600)',
+                boxShadow: '0 2px 8px rgba(164, 77, 90, 0.15)',
+              }}
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span>🎯</span>
+              <span className="hidden sm:inline">Plan an evening</span>
+              <span className="sm:hidden">Plan</span>
+            </motion.button>
+          )}
+          
+          {/* Decorative icon (only show if Plan feature not enabled) */}
+          {(!isPlanEveningEnabled || isPlanEveningLoading) && (
+            <div 
+              className="w-12 h-12 rounded-full flex items-center justify-center ml-4"
+              style={{
+                background: 'linear-gradient(135deg, var(--gold-50), var(--gold-100))',
+                border: '1px solid var(--gold-200)',
+              }}
+            >
+              <span className="text-2xl">✨</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -541,6 +569,15 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         >
           {t('dashboard.tonightsOrbit.needMore', 'Add more bottles to see personalized recommendations')}
         </div>
+      )}
+      
+      {/* Plan an evening modal */}
+      {isPlanEveningEnabled && (
+        <PlanEveningModal
+          isOpen={showPlanEveningModal}
+          onClose={() => setShowPlanEveningModal(false)}
+          candidateBottles={bottles}
+        />
       )}
     </div>
   );
