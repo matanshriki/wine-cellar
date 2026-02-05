@@ -226,9 +226,13 @@ export async function generateWineProfile(wine: {
     }
   );
   
+  console.log('[WineProfileService] Response status:', response.status);
+  
   const result = await response.json();
+  console.log('[WineProfileService] Response body:', result);
   
   if (!result.success) {
+    console.error('[WineProfileService] ❌ Error:', result.error);
     throw new Error(result.error?.message || 'Failed to generate profile');
   }
   
