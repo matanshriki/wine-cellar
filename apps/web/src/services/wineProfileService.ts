@@ -347,7 +347,7 @@ export function getPairingExplanation(
       return 'Touch of sweetness tames the heat';
     }
     if (wineProfile.tannin <= 3) {
-      return 'Gentle structure won't amplify spice';
+      return 'Gentle structure won\'t amplify spice';
     }
   }
   
