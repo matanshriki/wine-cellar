@@ -82,8 +82,46 @@ serve(async (req) => {
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('Missing authorization header')
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Missing authorization header' },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      )
     }
+
+    // Create authenticated Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    // Verify the JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      )
+    }
+
+    console.log('[generate-wine-profile] ✅ User authenticated:', user.id)
 
     // Parse request body
     const input: WineProfileInput = await req.json()
@@ -220,15 +258,6 @@ Base your analysis on:
     // Persist to database if wine_id provided
     if (input.wine_id) {
       console.log('[generate-wine-profile] Persisting profile to DB for wine:', input.wine_id)
-
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-      if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error('Supabase configuration missing')
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
       const { error: updateError } = await supabase
         .from('wines')
