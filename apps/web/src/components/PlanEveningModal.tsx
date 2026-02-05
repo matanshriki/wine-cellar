@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../lib/toast';
 import type { BottleWithWineInfo } from '../services/bottleService';
 
 interface PlanEveningModalProps {
@@ -175,6 +176,22 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     setSwapPosition(null);
   };
   
+  // Complete evening
+  const handleCompleteEvening = () => {
+    console.log('[PlanEvening] Evening completed! 🎉');
+    
+    // Show celebration toast
+    toast.success('🎉 Wonderful evening! Hope you enjoyed your wines.');
+    
+    // Close modal and reset
+    onClose();
+    setTimeout(() => {
+      setCurrentStep('input');
+      setLineup([]);
+      setCurrentWineIndex(0);
+    }, 300);
+  };
+  
   // Close and reset
   const handleClose = () => {
     onClose();
@@ -304,6 +321,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                   currentIndex={currentWineIndex}
                   onNext={handleNextWine}
                   onBack={() => setCurrentStep('lineup')}
+                  onComplete={handleCompleteEvening}
                 />
               )}
             </AnimatePresence>
@@ -774,7 +792,7 @@ function LineupStep({ lineup, onSwap, onStart, onBack }: any) {
 }
 
 // Live Plan Step Component
-function LivePlanStep({ lineup, currentIndex, onNext, onBack }: any) {
+function LivePlanStep({ lineup, currentIndex, onNext, onBack, onComplete }: any) {
   const currentWine = lineup[currentIndex];
   const isLast = currentIndex === lineup.length - 1;
 
@@ -866,6 +884,7 @@ function LivePlanStep({ lineup, currentIndex, onNext, onBack }: any) {
         )}
         {isLast && (
           <button
+            onClick={onComplete}
             className="btn-luxury-primary flex-1"
             style={{
               background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
