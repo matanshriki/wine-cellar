@@ -851,6 +851,95 @@
     "source": "מקור",
     "dismiss": "סגור"
   },
+  "planEvening": {
+    "title": "תכנן ערב",
+    "subtitle": "צור את רצף היינות המושלם שלך",
+    "button": "תכנן ערב",
+    "resumeButton": "חזור לערב",
+    "input": {
+      "title": "צור את רצף היינות המושלם שלך",
+      "occasion": "אירוע",
+      "occasions": {
+        "friends": "חברים",
+        "bbq": "ברביקיו",
+        "pizza": "ערב פיצה",
+        "date": "דייט",
+        "celebration": "חגיגה"
+      },
+      "groupSize": "גודל קבוצה",
+      "preferences": "העדפות",
+      "redsOnly": "אדומים בלבד",
+      "highRatingOnly": "דירוג ≥ 4.2",
+      "food": "מה אתם אוכלים? (אופציונלי)",
+      "protein": "חלבון",
+      "proteins": {
+        "beef": "בשר בקר",
+        "lamb": "כבש",
+        "chicken": "עוף",
+        "fish": "דג",
+        "veggie": "צמחוני",
+        "none": "ללא אוכל"
+      },
+      "sauce": "רוטב",
+      "sauces": {
+        "tomato": "עגבניות",
+        "bbq": "ברביקיו",
+        "creamy": "שמנת",
+        "none": "ללא רוטב"
+      },
+      "spice": "חריפות",
+      "smoke": "עישון",
+      "startTime": "זמן התחלה",
+      "startTimes": {
+        "now": "עכשיו",
+        "1hour": "בעוד שעה",
+        "2hours": "בעוד שעתיים"
+      },
+      "generate": "צור רצף ✨"
+    },
+    "lineup": {
+      "title": "סקור והתאם את הבחירה שלך",
+      "winesSelected": "יינות נבחרו",
+      "orderOptimized": "סדר הגשה אופטימלי",
+      "swapWine": "החלף יין",
+      "chooseAlternative": "בחר אלטרנטיבה עבור",
+      "noAlternatives": "אין יינות אלטרנטיביים זמינים",
+      "noAlternativesDesc": "כל היינות המתאימים כבר בשימוש",
+      "servingNote": "הערת הגשה",
+      "back": "חזור",
+      "startEvening": "התחל ערב"
+    },
+    "queue": {
+      "title": "הערב שלך",
+      "nowPouring": "נוגס עכשיו",
+      "servingNotes": "הערות הגשה:",
+      "note1": "פתח עכשיו ותן לנשום 10-15 דקות",
+      "note2": "הגש בטמפרטורת החדר (16-18°C)",
+      "note3": "שקול דיקנטציה למשך 30 דקות",
+      "queue": "תור",
+      "previous": "קודם",
+      "next": "הבא",
+      "wrapUp": "סיים ערב 🎉",
+      "of": "מתוך"
+    },
+    "wrapUp": {
+      "title": "סיים את הערב",
+      "subtitle": "תעד את החוויה שלך",
+      "opened": "נפתחו",
+      "quantity": "כמות",
+      "rating": "דירוג",
+      "notes": "הערות",
+      "notesPlaceholder": "מה חשבת על היין הזה?",
+      "saveToHistory": "שמור להיסטוריה",
+      "saving": "שומר...",
+      "success": "הערב נשמר בהיסטוריה! 🍷",
+      "error": "שגיאה בשמירת הערב"
+    },
+    "swap": {
+      "title": "החלף יין",
+      "chooseAlternative": "בחר אלטרנטיבה עבור"
+    }
+  },
   "onboarding": {
     "welcome": {
       "title": "ברוכים הבאים למוח מרתף היין",

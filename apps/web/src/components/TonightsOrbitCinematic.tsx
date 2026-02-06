@@ -407,8 +407,8 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                   whileTap={{ scale: 0.98 }}
                 >
                   <span>▶️</span>
-                  <span className="hidden sm:inline">Resume evening</span>
-                  <span className="sm:hidden">Resume</span>
+                  <span className="hidden sm:inline">{t('planEvening.resumeButton', 'Resume evening')}</span>
+                  <span className="sm:hidden">{t('planEvening.button', 'Resume')}</span>
                 </motion.button>
               ) : (
                 <motion.button
@@ -424,8 +424,8 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                   whileTap={{ scale: 0.98 }}
                 >
                   <span>🎯</span>
-                  <span className="hidden sm:inline">Plan an evening</span>
-                  <span className="sm:hidden">Plan</span>
+                  <span className="hidden sm:inline">{t('planEvening.title', 'Plan an evening')}</span>
+                  <span className="sm:hidden">{t('planEvening.button', 'Plan')}</span>
                 </motion.button>
               )}
             </>

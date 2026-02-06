@@ -348,14 +348,14 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                   }}
                 >
                   <span>✨</span>
-                  Plan an evening
+                  {t('planEvening.title', 'Plan an evening')}
                 </h2>
                 <p 
                   className="text-sm mt-1"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  {currentStep === 'input' && 'Create your perfect wine lineup'}
-                  {currentStep === 'lineup' && 'Review and customize your selection'}
+                  {currentStep === 'input' && t('planEvening.input.title', 'Create your perfect wine lineup')}
+                  {currentStep === 'lineup' && t('planEvening.lineup.title', 'Review and customize your selection')}
                 </p>
               </div>
               <button
@@ -467,6 +467,7 @@ function SwapPickerModal({
   currentWine?: BottleWithWineInfo;
   onSelect: (bottle: BottleWithWineInfo) => void;
 }) {
+  const { t } = useTranslation();
   if (!isOpen || !currentWine) return null;
 
   return (
@@ -518,10 +519,10 @@ function SwapPickerModal({
                     fontFamily: 'var(--font-display)',
                   }}
                 >
-                  Swap wine
+                  {t('planEvening.swap.title', 'Swap wine')}
                 </h3>
                 <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  Choose an alternative for {currentWine.wine.wine_name}
+                  {t('planEvening.swap.chooseAlternative', 'Choose an alternative for')} {currentWine.wine.wine_name}
                 </p>
               </div>
               <button
@@ -550,7 +551,7 @@ function SwapPickerModal({
                 }}
               >
                 <p style={{ color: 'var(--text-secondary)' }}>
-                  No alternative wines available with current filters
+                  {t('planEvening.lineup.noAlternatives', 'No alternative wines available')}
                 </p>
               </div>
             )}
@@ -677,12 +678,13 @@ function InputStep({
   setSelectedSmoke,
   onGenerate,
 }: any) {
+  const { t } = useTranslation();
   const occasions: { value: Occasion; label: string; icon: string }[] = [
-    { value: 'friends', label: 'Friends', icon: '👥' },
-    { value: 'bbq', label: 'BBQ', icon: '🔥' },
-    { value: 'pizza', label: 'Pizza night', icon: '🍕' },
-    { value: 'date', label: 'Date night', icon: '💝' },
-    { value: 'celebration', label: 'Celebration', icon: '🎉' },
+    { value: 'friends', label: t('planEvening.input.occasions.friends', 'Friends'), icon: '👥' },
+    { value: 'bbq', label: t('planEvening.input.occasions.bbq', 'BBQ'), icon: '🔥' },
+    { value: 'pizza', label: t('planEvening.input.occasions.pizza', 'Pizza night'), icon: '🍕' },
+    { value: 'date', label: t('planEvening.input.occasions.date', 'Date night'), icon: '💝' },
+    { value: 'celebration', label: t('planEvening.input.occasions.celebration', 'Celebration'), icon: '🎉' },
   ];
 
   return (
@@ -696,7 +698,7 @@ function InputStep({
       {/* Occasion */}
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          Occasion
+          {t('planEvening.input.occasion', 'Occasion')}
         </label>
         <div className="flex flex-wrap gap-2">
           {occasions.map((occ) => (
@@ -722,7 +724,7 @@ function InputStep({
       {/* Group Size */}
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          Group size
+          {t('planEvening.input.groupSize', 'Group size')}
         </label>
         <div className="flex gap-2">
           {['2-4', '5-8', '9+'].map((size) => (
@@ -747,7 +749,7 @@ function InputStep({
       {/* Preferences */}
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          Preferences
+          {t('planEvening.input.preferences', 'Preferences')}
         </label>
         <div className="space-y-2">
           <label
@@ -764,7 +766,7 @@ function InputStep({
               className="w-5 h-5 rounded"
               style={{ accentColor: 'var(--wine-600)' }}
             />
-            <span style={{ color: 'var(--text-primary)' }}>Reds only</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('planEvening.input.redsOnly', 'Reds only')}</span>
           </label>
           
           <label
@@ -781,7 +783,7 @@ function InputStep({
               className="w-5 h-5 rounded"
               style={{ accentColor: 'var(--wine-600)' }}
             />
-            <span style={{ color: 'var(--text-primary)' }}>Rating ≥ 4.2</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('planEvening.input.highRatingOnly', 'Rating ≥ 4.2')}</span>
           </label>
         </div>
       </div>
@@ -791,14 +793,14 @@ function InputStep({
         <div className="flex items-center gap-2">
           <span className="text-lg">🍽️</span>
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            What are you eating? (optional)
+            {t('planEvening.input.food', 'What are you eating? (optional)')}
           </label>
         </div>
         
         {/* Protein */}
         <div>
           <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-            Protein
+            {t('planEvening.input.protein', 'Protein')}
           </div>
           <div className="flex flex-wrap gap-2">
             {(['beef', 'lamb', 'chicken', 'fish', 'veggie', 'none'] as const).map(protein => (
@@ -815,7 +817,7 @@ function InputStep({
                   border: `1px solid ${selectedProtein === protein ? 'var(--wine-600)' : 'var(--border-medium)'}`,
                 }}
               >
-                {protein === 'none' ? 'No food' : protein.charAt(0).toUpperCase() + protein.slice(1)}
+                {t(`planEvening.input.proteins.${protein}`, protein === 'none' ? 'No food' : protein.charAt(0).toUpperCase() + protein.slice(1))}
               </button>
             ))}
           </div>
@@ -825,7 +827,7 @@ function InputStep({
         {selectedProtein !== 'none' && (
           <div>
             <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-              Sauce
+              {t('planEvening.input.sauce', 'Sauce')}
             </div>
             <div className="flex flex-wrap gap-2">
               {(['tomato', 'bbq', 'creamy', 'none'] as const).map(sauce => (
@@ -842,7 +844,7 @@ function InputStep({
                     border: `1px solid ${selectedSauce === sauce ? 'var(--wine-600)' : 'var(--border-medium)'}`,
                   }}
                 >
-                  {sauce === 'none' ? 'No sauce' : sauce.charAt(0).toUpperCase() + sauce.slice(1)}
+                  {t(`planEvening.input.sauces.${sauce}`, sauce === 'none' ? 'No sauce' : sauce.charAt(0).toUpperCase() + sauce.slice(1))}
                 </button>
               ))}
             </div>
@@ -855,7 +857,7 @@ function InputStep({
             {/* Spice */}
             <div>
               <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                Spice
+                {t('planEvening.input.spice', 'Spice')}
               </div>
               <div className="flex gap-2">
                 {(['low', 'med', 'high'] as const).map(spice => (
@@ -881,7 +883,7 @@ function InputStep({
             {/* Smoke */}
             <div>
               <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                Smoke
+                {t('planEvening.input.smoke', 'Smoke')}
               </div>
               <div className="flex gap-2">
                 {(['low', 'med', 'high'] as const).map(smoke => (
@@ -910,13 +912,13 @@ function InputStep({
       {/* Start Time */}
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          Start time
+          {t('planEvening.input.startTime', 'Start time')}
         </label>
         <div className="flex gap-2">
           {[
-            { value: 'now', label: 'Now' },
-            { value: '1hour', label: 'In 1 hour' },
-            { value: '2hours', label: 'In 2 hours' },
+            { value: 'now', label: t('planEvening.input.startTimes.now', 'Now') },
+            { value: '1hour', label: t('planEvening.input.startTimes.1hour', 'In 1 hour') },
+            { value: '2hours', label: t('planEvening.input.startTimes.2hours', 'In 2 hours') },
           ].map((time) => (
             <button
               key={time.value}
@@ -942,7 +944,7 @@ function InputStep({
         className="btn-luxury-primary w-full"
         style={{ minHeight: '52px', marginTop: '1.5rem' }}
       >
-        Generate lineup ✨
+        {t('planEvening.input.generate', 'Generate lineup ✨')}
       </button>
     </motion.div>
   );
@@ -950,6 +952,7 @@ function InputStep({
 
 // Lineup Step Component
 function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="lineup"
@@ -959,7 +962,7 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
       className="px-6 py-6 space-y-4"
     >
       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-        {lineup.length} wines selected • Serving order optimized
+        {lineup.length} {t('planEvening.lineup.winesSelected', 'wines selected')} • {t('planEvening.lineup.orderOptimized', 'Serving order optimized')}
       </p>
 
       {/* Wine Slots */}
@@ -1028,7 +1031,7 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
                 border: '1px solid var(--border-medium)',
               }}
             >
-              Swap
+              {t('planEvening.lineup.swapWine', 'Swap')}
             </button>
           </div>
         );
@@ -1041,13 +1044,13 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
           onClick={onBack}
           className="btn-luxury-secondary flex-1"
         >
-          Back
+          {t('planEvening.lineup.back', 'Back')}
         </button>
         <button
           onClick={onStart}
           className="btn-luxury-primary flex-1"
         >
-          Start evening
+          {t('planEvening.lineup.startEvening', 'Start evening')}
         </button>
       </div>
     </motion.div>

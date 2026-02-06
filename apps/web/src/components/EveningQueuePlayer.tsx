@@ -152,10 +152,10 @@ export function EveningQueuePlayer({
             <div className="flex items-center justify-between">
               <div>
                 <h2 id="evening-queue-title" className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-                  🎯 Your Evening
+                  🎯 {t('planEvening.queue.title', 'Your Evening')}
                 </h2>
                 <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {currentIndex + 1} of {queue.length} • {plan.occasion || 'Evening'}
+                  {currentIndex + 1} {t('planEvening.queue.of', 'of')} {queue.length} • {plan.occasion || t('planEvening.queue.title', 'Evening')}
                 </p>
               </div>
               <button
@@ -187,7 +187,7 @@ export function EveningQueuePlayer({
                       className="inline-block px-3 py-1.5 rounded-full text-xs font-medium mb-4"
                       style={{ background: 'var(--wine-100)', color: 'var(--wine-700)' }}
                     >
-                      🍷 Now Pouring
+                      🍷 {t('planEvening.queue.nowPouring', 'Now Pouring')}
                     </div>
                     
                     {/* Wine Image */}
@@ -243,12 +243,12 @@ export function EveningQueuePlayer({
                     style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
                   >
                     <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      Serving notes:
+                      {t('planEvening.queue.servingNotes', 'Serving notes:')}
                     </h4>
                     <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <li>• Open now and let breathe for 10-15 minutes</li>
-                      <li>• Serve at room temperature (16-18°C)</li>
-                      {currentWine.color === 'red' && <li>• Consider decanting for 30 minutes</li>}
+                      <li>• {t('planEvening.queue.note1', 'Open now and let breathe for 10-15 minutes')}</li>
+                      <li>• {t('planEvening.queue.note2', 'Serve at room temperature (16-18°C)')}</li>
+                      {currentWine.color === 'red' && <li>• {t('planEvening.queue.note3', 'Consider decanting for 30 minutes')}</li>}
                     </ul>
                   </div>
                 </motion.div>
@@ -258,7 +258,7 @@ export function EveningQueuePlayer({
             {/* Queue List */}
             <div className="px-6 pb-6">
               <h4 className="font-medium mb-3 text-sm uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                Queue
+                {t('planEvening.queue.queue', 'Queue')}
               </h4>
               <div className="space-y-2">
                 {queue.map((wine, idx) => (
@@ -351,7 +351,7 @@ export function EveningQueuePlayer({
                   opacity: isFirst ? 0.5 : 1,
                 }}
               >
-                ← Previous
+                ← {t('planEvening.queue.previous', 'Previous')}
               </button>
               
               {!isLast && (
@@ -359,7 +359,7 @@ export function EveningQueuePlayer({
                   onClick={handleNext}
                   className="btn-luxury-primary flex-1"
                 >
-                  Next wine →
+                  {t('planEvening.queue.next', 'Next')} →
                 </button>
               )}
               
@@ -371,7 +371,7 @@ export function EveningQueuePlayer({
                     background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                   }}
                 >
-                  Wrap up evening 🎉
+                  {t('planEvening.queue.wrapUp', 'Wrap up evening 🎉')}
                 </button>
               )}
             </div>
@@ -385,6 +385,7 @@ export function EveningQueuePlayer({
 
 // Wrap Up Modal Component (imported separately to keep file size manageable)
 function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
+  const { t } = useTranslation();
   const [wineStates, setWineStates] = useState<Record<number, {
     opened: boolean;
     quantity: number;
@@ -450,11 +451,11 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
         average_rating: avgRating,
       });
       
-      toast.success(`🎉 Saved! ${openedCount} ${openedCount === 1 ? 'wine' : 'wines'} added to history.`);
+      toast.success(t('planEvening.wrapUp.success', '🎉 Saved! {{count}} wines added to history.', { count: openedCount }));
       onComplete();
     } catch (error) {
       console.error('[WrapUp] Error saving to history:', error);
-      toast.error('Failed to save to history. Please try again.');
+      toast.error(t('planEvening.wrapUp.error', 'Failed to save to history. Please try again.'));
     }
   };
 
@@ -496,10 +497,10 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
         {/* Header */}
         <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
           <h2 id="wrap-up-title" className="text-2xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-            🎉 Wrap up the evening
+            🎉 {t('planEvening.wrapUp.title', 'Wrap up the evening')}
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Mark which wines you opened and rate them
+            {t('planEvening.wrapUp.subtitle', 'Mark which wines you opened and rate them')}
           </p>
         </div>
 
@@ -562,7 +563,7 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
                         {/* Quantity */}
                         <div>
                           <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                            Bottles opened
+                            {t('planEvening.wrapUp.opened', 'Bottles opened')}
                           </label>
                           <div className="flex items-center gap-2 mt-1">
                             <button
@@ -594,7 +595,7 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
                         {/* Rating */}
                         <div>
                           <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                            Your rating (optional)
+                            {t('planEvening.wrapUp.rating', 'Your rating (optional)')}
                           </label>
                           <div className="flex gap-1 mt-1">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -626,13 +627,13 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
             onClick={handleSaveToHistory}
             className="btn-luxury-primary w-full"
           >
-            Save to history
+            {t('planEvening.wrapUp.saveToHistory', 'Save to history')}
           </button>
           <button
             onClick={onClose}
             className="btn-luxury-secondary w-full"
           >
-            Not now
+            {t('common.cancel', 'Not now')}
           </button>
         </div>
       </motion.div>
