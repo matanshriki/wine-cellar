@@ -299,18 +299,26 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
 
   return (
     <AnimatePresence mode="wait">
+      {isOpen && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[100] flex items-center justify-center"
         style={{
           background: 'var(--bg-overlay)',
           backdropFilter: 'var(--blur-medium)',
           WebkitBackdropFilter: 'var(--blur-medium)',
+          paddingTop: 'max(1rem, var(--safe-top))',
+          paddingBottom: 'max(1rem, var(--safe-bottom))',
+          paddingLeft: 'max(1rem, var(--safe-left))',
+          paddingRight: 'max(1rem, var(--safe-right))',
         }}
         onClick={handleClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plan-evening-title"
       >
         {/* Modal Container */}
         <motion.div
@@ -319,19 +327,20 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-2xl rounded-2xl overflow-hidden"
+          className="relative w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
             boxShadow: 'var(--shadow-xl)',
-            maxHeight: '90vh',
+            maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
           {/* Header */}
-          <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 
+                  id="plan-evening-title"
                   className="text-2xl font-bold flex items-center gap-2"
                   style={{ 
                     color: 'var(--text-primary)',
@@ -380,7 +389,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+          <div className="flex-1 overflow-y-auto touch-scroll">
             <AnimatePresence mode="wait">
               {currentStep === 'input' && (
                 <InputStep
@@ -425,6 +434,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
           </div>
         </motion.div>
       </motion.div>
+      )}
       
       {/* Swap Picker Modal */}
       {showSwapPicker && (
@@ -461,18 +471,26 @@ function SwapPickerModal({
 
   return (
     <AnimatePresence mode="wait">
+      {isOpen && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[110] flex items-center justify-center"
         style={{
           background: 'var(--bg-overlay)',
           backdropFilter: 'var(--blur-medium)',
           WebkitBackdropFilter: 'var(--blur-medium)',
+          paddingTop: 'max(1rem, var(--safe-top))',
+          paddingBottom: 'max(1rem, var(--safe-bottom))',
+          paddingLeft: 'max(1rem, var(--safe-left))',
+          paddingRight: 'max(1rem, var(--safe-right))',
         }}
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="swap-wine-title"
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -480,19 +498,20 @@ function SwapPickerModal({
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-lg rounded-2xl overflow-hidden"
+          className="relative w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
             boxShadow: 'var(--shadow-xl)',
-            maxHeight: '85vh',
+            maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
           {/* Header */}
-          <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 
+                  id="swap-wine-title"
                   className="text-xl font-bold"
                   style={{ 
                     color: 'var(--text-primary)',
@@ -521,7 +540,7 @@ function SwapPickerModal({
           </div>
 
           {/* Alternatives List */}
-          <div className="overflow-y-auto p-6 space-y-3" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+          <div className="flex-1 overflow-y-auto touch-scroll p-6 space-y-3">
             {alternatives.length === 0 && (
               <div 
                 className="p-6 rounded-xl text-center"
@@ -621,7 +640,7 @@ function SwapPickerModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 pb-6">
+          <div className="flex-shrink-0 px-6 pb-6">
             <button
               onClick={onClose}
               className="btn-luxury-secondary w-full"
@@ -631,6 +650,7 @@ function SwapPickerModal({
           </div>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }

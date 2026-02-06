@@ -152,17 +152,21 @@ export function AddBottleSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed left-0 right-0 z-50 ios-modal-scroll bottom-above-nav md:bottom-0"
+            className="fixed left-0 right-0 z-50 ios-modal-scroll"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
               boxShadow: 'var(--shadow-xl)',
-              maxHeight: 'calc(80dvh - var(--app-bottom-nav-total))',
+              bottom: 'max(0px, var(--safe-bottom))',
+              maxHeight: 'calc(80dvh - max(0px, var(--safe-bottom)))',
               borderTopLeftRadius: 'var(--radius-2xl)',
               borderTopRightRadius: 'var(--radius-2xl)',
               borderBottom: 'none',
               pointerEvents: 'auto', // Fix: Ensure interactions work during animation
             }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-bottle-title"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
@@ -272,6 +276,7 @@ export function AddBottleSheet({
                 <>
                   {/* Title */}
                   <h2 
+                    id="add-bottle-title"
                     className="text-2xl font-bold mb-2 text-center"
                     style={{ 
                       color: 'var(--text-primary)',

@@ -14,10 +14,11 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import React from 'react';
 
 interface MobileFloatingFooterProps {
   onCameraClick: () => void;
@@ -28,6 +29,23 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
   const { t } = useTranslation();
   const { flags } = useFeatureFlags();
   const reduceMotion = shouldReduceMotion();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+  // Check if any modal is open (hide footer to prevent overlap)
+  React.useEffect(() => {
+    const checkModalState = () => {
+      const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
+      setIsModalOpen(!!hasOpenModal);
+    };
+
+    // Check on mount and whenever DOM changes
+    checkModalState();
+    
+    const observer = new MutationObserver(checkModalState);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['role', 'aria-modal'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Navigation items - ALL 4 items always visible for instant rendering
   // Icons are inline SVGs (not lazy loaded) to prevent delayed appearance
@@ -73,14 +91,24 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
 
   return (
     <>
-      {/* Fixed container for footer + FAB */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 md:hidden pointer-events-none"
-        style={{
-          zIndex: 'var(--z-sticky)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-      >
+      {/* Fixed container for footer + FAB - Hidden when modals are open */}
+      <AnimatePresence>
+        {!isModalOpen && (
+          <motion.div 
+            className="fixed bottom-0 left-0 right-0 md:hidden pointer-events-none"
+            style={{
+              zIndex: 'var(--z-sticky)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+            initial={reduceMotion ? false : { y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{
+              type: 'tween',
+              duration: 0.2,
+              ease: 'easeInOut',
+            }}
+          >
 
         {/* Floating Footer with integrated Camera FAB */}
         <motion.div
@@ -282,15 +310,19 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
             </div>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Spacer to prevent content from being covered */}
-      <div 
-        className="md:hidden" 
-        style={{ 
-          height: 'calc(104px + env(safe-area-inset-bottom))', // Footer height + FAB protrusion + safe area
-        }} 
-      />
+      {/* Spacer to prevent content from being covered - Only shown when footer is visible */}
+      {!isModalOpen && (
+        <div 
+          className="md:hidden" 
+          style={{ 
+            height: 'calc(104px + env(safe-area-inset-bottom))', // Footer height + FAB protrusion + safe area
+          }} 
+        />
+      )}
     </>
   );
 }

@@ -116,16 +116,24 @@ export function EveningQueuePlayer({
 
   return (
     <AnimatePresence mode="wait">
+      {isOpen && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[100] flex items-center justify-center"
         style={{
           background: 'var(--bg-overlay)',
           backdropFilter: 'var(--blur-medium)',
           WebkitBackdropFilter: 'var(--blur-medium)',
+          paddingTop: 'max(1rem, var(--safe-top))',
+          paddingBottom: 'max(1rem, var(--safe-bottom))',
+          paddingLeft: 'max(1rem, var(--safe-left))',
+          paddingRight: 'max(1rem, var(--safe-right))',
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="evening-queue-title"
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
@@ -136,14 +144,14 @@ export function EveningQueuePlayer({
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
             boxShadow: 'var(--shadow-xl)',
-            maxHeight: '90vh',
+            maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+                <h2 id="evening-queue-title" className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
                   🎯 Your Evening
                 </h2>
                 <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -163,7 +171,7 @@ export function EveningQueuePlayer({
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto touch-scroll">
             {/* Now Pouring Hero */}
             <div className="px-6 py-8">
               <AnimatePresence mode="wait">
@@ -370,6 +378,7 @@ export function EveningQueuePlayer({
           </div>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }
@@ -456,29 +465,37 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center"
       style={{
         background: 'var(--bg-overlay)',
         backdropFilter: 'var(--blur-medium)',
+        WebkitBackdropFilter: 'var(--blur-medium)',
+        paddingTop: 'max(1rem, var(--safe-top))',
+        paddingBottom: 'max(1rem, var(--safe-bottom))',
+        paddingLeft: 'max(1rem, var(--safe-left))',
+        paddingRight: 'max(1rem, var(--safe-right))',
       }}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wrap-up-title"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl rounded-2xl overflow-hidden"
+        className="relative w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          maxHeight: '90vh',
+          maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <h2 id="wrap-up-title" className="text-2xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
             🎉 Wrap up the evening
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -487,7 +504,7 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
         </div>
 
         {/* Wines List (scrollable) */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto touch-scroll px-6 py-4 space-y-4">
           {queue.map((wine: QueuedWine, idx: number) => {
             const state = wineStates[idx] || { opened: false, quantity: 1, rating: null, notes: '' };
             
@@ -604,7 +621,7 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+        <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
           <button
             onClick={handleSaveToHistory}
             className="btn-luxury-primary w-full"
