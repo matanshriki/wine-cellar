@@ -360,7 +360,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   };
 
   return (
-    <div className="luxury-card overflow-visible">
+    <div className="luxury-card">
       {/* Premium Header */}
       <div 
         className="p-6 pb-8"
@@ -446,13 +446,12 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         </div>
       </div>
 
-      {/* Cinematic Carousel Container - Fixed height to prevent layout shift */}
+      {/* Cinematic Carousel Container - Auto-sized with proper spacing */}
       <div 
         ref={containerRef}
-        className="relative px-6 py-12"
+        className="relative px-6 pt-6 pb-16"
         style={{
           overflow: 'visible',
-          height: '480px', // Fixed height for stability (was minHeight)
         }}
         onMouseEnter={handleInteractionStart}
         onMouseLeave={handleInteractionEnd}
@@ -463,7 +462,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         <div 
           className="relative flex items-center justify-center"
           style={{
-            height: '400px', // Increased to accommodate card + dots
+            minHeight: '300px', // Flexible height for card content
             perspective: '1200px',
           }}
         >
