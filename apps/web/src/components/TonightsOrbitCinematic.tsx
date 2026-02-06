@@ -446,10 +446,10 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         </div>
       </div>
 
-      {/* Cinematic Carousel Container - Auto-sized with proper spacing */}
+      {/* Cinematic Carousel Container - Properly sized to contain cards */}
       <div 
         ref={containerRef}
-        className="relative px-6 pt-6 pb-16"
+        className="relative px-6 pt-8 pb-12"
         style={{
           overflow: 'visible',
         }}
@@ -462,7 +462,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         <div 
           className="relative flex items-center justify-center"
           style={{
-            minHeight: '300px', // Flexible height for card content
+            minHeight: '420px', // Tall enough to contain full wine card (~400px) + spacing
             perspective: '1200px',
           }}
         >
