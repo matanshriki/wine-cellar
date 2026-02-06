@@ -34,8 +34,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const unpauseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastManualInteractionRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = shouldReduceMotion();
+  
+  // Dev logging
+  const isDev = import.meta.env.DEV;
   
   // Plan an evening feature
   const { isEnabled: isPlanEveningEnabled, isLoading: isPlanEveningLoading } = usePlanEveningFeature();
@@ -78,26 +83,60 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const topBottles = getSmartSelection(bottles);
 
   /**
-   * Auto-advance timer
-   * Advances to next card every 3 seconds
-   * Pauses on hover/touch interaction
-   * Disabled if prefers-reduced-motion
+   * Auto-advance timer - Fixed for smooth, single-step advancement
+   * 
+   * CRITICAL FIXES:
+   * 1. Always clear existing timer before creating new one (prevents double-advance)
+   * 2. Check for recent manual interactions (5s cooldown)
+   * 3. Use functional state update to avoid stale closure
+   * 4. Single source of truth for timer lifecycle
    */
   useEffect(() => {
+    // Clear any existing timer first (prevents multiple intervals)
+    if (timerRef.current) {
+      if (isDev) console.log('[Carousel] Clearing existing timer');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    // Don't start autoplay if conditions aren't met
     if (reduceMotion || topBottles.length <= 1 || isPaused) {
+      if (isDev) console.log('[Carousel] Autoplay disabled:', { reduceMotion, count: topBottles.length, isPaused });
       return;
     }
 
+    // Check if we should respect manual interaction cooldown
+    const timeSinceManual = Date.now() - lastManualInteractionRef.current;
+    if (timeSinceManual < 5000) {
+      if (isDev) console.log('[Carousel] Waiting for manual interaction cooldown:', Math.round((5000 - timeSinceManual) / 1000) + 's remaining');
+      // Set a timeout to start autoplay after cooldown
+      const cooldownTimer = setTimeout(() => {
+        setIsPaused(false); // This will re-trigger effect
+      }, 5000 - timeSinceManual);
+      return () => clearTimeout(cooldownTimer);
+    }
+
+    if (isDev) console.log('[Carousel] Starting autoplay timer');
+
+    // Create new timer with functional state update (avoids stale closure)
     timerRef.current = setInterval(() => {
-      setActiveIndex((current) => (current + 1) % topBottles.length);
+      if (isDev) console.log('[Carousel] Auto-advance tick');
+      setActiveIndex((current) => {
+        const next = (current + 1) % topBottles.length;
+        if (isDev) console.log('[Carousel] Auto-advancing:', current, '→', next);
+        return next;
+      });
     }, 3000);
 
+    // Cleanup on unmount or when dependencies change
     return () => {
       if (timerRef.current) {
+        if (isDev) console.log('[Carousel] Cleanup: clearing timer');
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [topBottles.length, isPaused, reduceMotion]);
+  }, [topBottles.length, isPaused, reduceMotion, isDev]);
 
   /**
    * Check for active evening plan on mount
@@ -128,32 +167,123 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   }, [isPlanEveningEnabled]);
   
   /**
-   * Pause auto-advance on interaction
+   * Preload adjacent images for smooth transitions
+   * Prevents layout shift when navigating between slides
+   */
+  useEffect(() => {
+    if (topBottles.length <= 1) return;
+    
+    const preloadImages: HTMLImageElement[] = [];
+    
+    // Preload next and previous images
+    const nextIndex = (activeIndex + 1) % topBottles.length;
+    const prevIndex = (activeIndex - 1 + topBottles.length) % topBottles.length;
+    
+    [nextIndex, prevIndex].forEach(index => {
+      const bottle = topBottles[index];
+      if (!bottle) return;
+      
+      const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+      if (displayImage.imageUrl) {
+        const img = new Image();
+        img.src = displayImage.imageUrl;
+        preloadImages.push(img);
+        if (isDev) console.log('[Carousel] Preloading image for index', index);
+      }
+    });
+    
+    // Cleanup (images will stay in browser cache)
+    return () => {
+      preloadImages.length = 0;
+    };
+  }, [activeIndex, topBottles, isDev]);
+  
+  /**
+   * Pause auto-advance on hover/touch (temporary)
    */
   const handleInteractionStart = () => {
     setIsPaused(true);
   };
 
   const handleInteractionEnd = () => {
-    // Resume after a short delay
-    setTimeout(() => {
+    // Resume after a short delay (for hover/touch, not manual nav)
+    if (unpauseTimerRef.current) {
+      clearTimeout(unpauseTimerRef.current);
+    }
+    unpauseTimerRef.current = setTimeout(() => {
       setIsPaused(false);
     }, 1000);
   };
 
   /**
-   * Manual navigation
+   * Manual navigation - Fixed to prevent double-advance
+   * 
+   * CRITICAL FIXES:
+   * 1. Record timestamp to enforce 5s autoplay cooldown
+   * 2. Cancel any pending unpause timers
+   * 3. Use functional state update
+   * 4. Pause autoplay immediately
    */
-  const goToNext = () => {
-    setActiveIndex((current) => (current + 1) % topBottles.length);
-    handleInteractionStart();
-    handleInteractionEnd();
+  const goToNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation(); // Prevent event bubbling
+    
+    if (isDev) console.log('[Carousel] Manual next clicked');
+    
+    // Record manual interaction timestamp
+    lastManualInteractionRef.current = Date.now();
+    
+    // Cancel any pending unpause timers
+    if (unpauseTimerRef.current) {
+      clearTimeout(unpauseTimerRef.current);
+      unpauseTimerRef.current = null;
+    }
+    
+    // Pause autoplay (will stay paused for 5s due to cooldown check)
+    setIsPaused(true);
+    
+    // Advance slide with functional update
+    setActiveIndex((current) => {
+      const next = (current + 1) % topBottles.length;
+      if (isDev) console.log('[Carousel] Manual advance:', current, '→', next);
+      return next;
+    });
+    
+    // Resume autoplay after 5s cooldown
+    setTimeout(() => {
+      if (isDev) console.log('[Carousel] Manual cooldown ended, resuming');
+      setIsPaused(false);
+    }, 5000);
   };
 
-  const goToPrevious = () => {
-    setActiveIndex((current) => (current - 1 + topBottles.length) % topBottles.length);
-    handleInteractionStart();
-    handleInteractionEnd();
+  const goToPrevious = (e?: React.MouseEvent) => {
+    e?.stopPropagation(); // Prevent event bubbling
+    
+    if (isDev) console.log('[Carousel] Manual previous clicked');
+    
+    // Record manual interaction timestamp
+    lastManualInteractionRef.current = Date.now();
+    
+    // Cancel any pending unpause timers
+    if (unpauseTimerRef.current) {
+      clearTimeout(unpauseTimerRef.current);
+      unpauseTimerRef.current = null;
+    }
+    
+    // Pause autoplay (will stay paused for 5s due to cooldown check)
+    setIsPaused(true);
+    
+    // Go to previous slide with functional update
+    setActiveIndex((current) => {
+      const prev = (current - 1 + topBottles.length) % topBottles.length;
+      if (isDev) console.log('[Carousel] Manual previous:', current, '→', prev);
+      return prev;
+    });
+    
+    // Resume autoplay after 5s cooldown
+    setTimeout(() => {
+      if (isDev) console.log('[Carousel] Manual cooldown ended, resuming');
+      setIsPaused(false);
+    }, 5000);
   };
 
   /**
@@ -316,13 +446,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         </div>
       </div>
 
-      {/* Cinematic Carousel Container */}
+      {/* Cinematic Carousel Container - Fixed height to prevent layout shift */}
       <div 
         ref={containerRef}
         className="relative px-6 py-12"
         style={{
           overflow: 'visible',
-          minHeight: '380px',
+          height: '480px', // Fixed height for stability (was minHeight)
         }}
         onMouseEnter={handleInteractionStart}
         onMouseLeave={handleInteractionEnd}
@@ -333,7 +463,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         <div 
           className="relative flex items-center justify-center"
           style={{
-            height: '320px',
+            height: '400px', // Increased to accommodate card + dots
             perspective: '1200px',
           }}
         >
@@ -361,9 +491,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 onDragEnd={handleDragEnd}
                 transition={reduceMotion ? { duration: 0 } : {
                   type: 'spring',
-                  stiffness: 300,
-                  damping: 30,
-                  opacity: { duration: 0.3 },
+                  stiffness: 260,
+                  damping: 35,
+                  mass: 0.8,
+                  // Smooth luxury easing for non-spring properties
+                  opacity: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
+                  scale: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
+                  filter: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
                 }}
                 style={{
                   position: 'absolute',
@@ -394,23 +528,31 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                   } : {}}
                   whileTap={isActive && !reduceMotion ? { scale: 0.98 } : {}}
                 >
-                  {/* Wine Image */}
+                  {/* Wine Image - Fixed dimensions to prevent layout shift */}
                   {(() => {
                     const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
                     return (
                       <div 
                         className="relative w-full bg-gradient-to-br from-stone-50 to-stone-100"
                         style={{
-                          height: '240px',
+                          aspectRatio: '4 / 5', // Stable aspect ratio (wine bottle portrait)
                           overflow: 'hidden',
+                          willChange: 'transform', // Performance hint for animations
                         }}
                       >
                         {displayImage.imageUrl ? (
                           <img 
                             src={displayImage.imageUrl} 
                             alt={bottle.wine.wine_name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
+                            className="w-full h-full"
+                            style={{
+                              objectFit: 'cover',
+                              objectPosition: 'center',
+                            }}
+                            // Remove lazy loading - carousel images are above fold
+                            loading="eager"
+                            // Preload for smooth transitions
+                            fetchpriority={isActive ? "high" : "low"}
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                             }}
@@ -534,77 +676,115 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           })}
         </div>
 
-        {/* Navigation Arrows (Always visible if multiple bottles) */}
+        {/* Navigation Arrows - Enhanced with luxury micro-interactions */}
         {topBottles.length > 1 && (
           <>
-            <button
+            <motion.button
               onClick={goToPrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
+                width: '48px',
+                height: '48px',
                 background: 'rgba(255, 255, 255, 0.95)',
                 border: '1px solid var(--border-light)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                 color: 'var(--wine-600)',
+                // Larger hit area for mobile
+                padding: '12px',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'white';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15)';
+              whileHover={reduceMotion ? {} : {
+                background: 'white',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                scale: 1.05,
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+              whileTap={reduceMotion ? {} : {
+                scale: 0.95,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+              }}
+              transition={{
+                duration: 0.2,
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               aria-label="Previous wine"
             >
               <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               onClick={goToNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
+                width: '48px',
+                height: '48px',
                 background: 'rgba(255, 255, 255, 0.95)',
                 border: '1px solid var(--border-light)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                 color: 'var(--wine-600)',
+                // Larger hit area for mobile
+                padding: '12px',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'white';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15)';
+              whileHover={reduceMotion ? {} : {
+                background: 'white',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                scale: 1.05,
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+              whileTap={reduceMotion ? {} : {
+                scale: 0.95,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+              }}
+              transition={{
+                duration: 0.2,
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               aria-label="Next wine"
             >
               <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </motion.button>
           </>
         )}
 
-        {/* Pagination Dots (Always visible if multiple bottles) */}
+        {/* Pagination Dots - Enhanced with proper pause handling */}
         {topBottles.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
             {topBottles.map((bottle, index) => (
-              <button
+              <motion.button
                 key={`pagination-dot-${bottle.id}-${index}`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isDev) console.log('[Carousel] Dot clicked:', index);
+                  
+                  // Record manual interaction
+                  lastManualInteractionRef.current = Date.now();
+                  
+                  // Cancel pending unpause
+                  if (unpauseTimerRef.current) {
+                    clearTimeout(unpauseTimerRef.current);
+                    unpauseTimerRef.current = null;
+                  }
+                  
+                  // Pause and navigate
+                  setIsPaused(true);
                   setActiveIndex(index);
-                  handleInteractionStart();
-                  handleInteractionEnd();
+                  
+                  // Resume after cooldown
+                  setTimeout(() => {
+                    setIsPaused(false);
+                  }, 5000);
                 }}
-                className="transition-all"
+                whileTap={reduceMotion ? {} : { scale: 0.9 }}
+                transition={{ duration: 0.15 }}
                 style={{
                   width: index === activeIndex ? '24px' : '8px',
                   height: '8px',
                   borderRadius: '4px',
                   background: index === activeIndex ? 'var(--wine-600)' : 'var(--stone-300)',
                   opacity: index === activeIndex ? 1 : 0.5,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
                 }}
                 aria-label={`Go to wine ${index + 1}`}
               />
