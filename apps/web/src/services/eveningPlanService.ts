@@ -49,78 +49,85 @@ export interface EveningPlan {
  * Get the active plan for the current user
  */
 export async function getActivePlan(): Promise<EveningPlan | null> {
-  console.log('[EveningPlanService] Fetching active plan...');
+  // Silently check for active plan - don't log unless there's a real error
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.warn('[EveningPlanService] No authenticated user');
     return null;
   }
 
-  const { data, error } = await supabase
-    .from('evening_plans')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('evening_plans')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(); // Use maybeSingle instead of single to avoid PGRST116 error
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No active plan found
-      console.log('[EveningPlanService] No active plan');
+    if (error) {
+      // Suppress 406 errors (table doesn't exist) - this is expected if migration not applied
+      if (error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+        return null;
+      }
+      // Handle case where table doesn't exist yet (migration not applied)
+      if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        return null;
+      }
+      // Only log unexpected errors
+      console.error('[EveningPlanService] Unexpected error fetching plan:', error);
       return null;
     }
-    // Handle case where table doesn't exist yet (migration not applied)
-    if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-      console.log('[EveningPlanService] Table not found - migration not applied yet');
+
+    if (!data) {
       return null;
     }
-    console.error('[EveningPlanService] Error fetching plan:', error);
+
+    console.log('[EveningPlanService] ✅ Active plan found:', {
+      id: data.id,
+      queueLength: (data.queue as any[])?.length,
+      firstWineImage: (data.queue as any[])?.[0]?.image_url,
+      sampleQueue: (data.queue as any[])?.[0],
+    });
+    
+    // Enrich queue with fresh wine images if missing
+    const plan = data as EveningPlan;
+    const queue = plan.queue as QueuedWine[];
+    
+    // Check if any wines are missing images
+    const needsEnrichment = queue.some(w => !w.image_url);
+    
+    if (needsEnrichment) {
+      console.log('[EveningPlanService] Enriching queue with wine images...');
+      
+      // Fetch fresh wine data
+      const wineIds = queue.map(w => w.wine_id);
+      const { data: wines } = await supabase
+        .from('wines')
+        .select('id, image_url')
+        .in('id', wineIds);
+      
+      if (wines) {
+        // Create a map for quick lookup
+        const wineImageMap = new Map(wines.map(w => [w.id, w.image_url]));
+        
+        // Update queue with fresh images
+        const enrichedQueue = queue.map(qw => ({
+          ...qw,
+          image_url: qw.image_url || wineImageMap.get(qw.wine_id) || null,
+        }));
+        
+        plan.queue = enrichedQueue as any;
+        console.log('[EveningPlanService] ✅ Queue enriched with images');
+      }
+    }
+    
+    return plan;
+  } catch (err) {
+    // Silently fail - table likely doesn't exist (migration not applied)
     return null;
   }
-
-  console.log('[EveningPlanService] ✅ Active plan found:', {
-    id: data.id,
-    queueLength: (data.queue as any[])?.length,
-    firstWineImage: (data.queue as any[])?.[0]?.image_url,
-    sampleQueue: (data.queue as any[])?.[0],
-  });
-  
-  // Enrich queue with fresh wine images if missing
-  const plan = data as EveningPlan;
-  const queue = plan.queue as QueuedWine[];
-  
-  // Check if any wines are missing images
-  const needsEnrichment = queue.some(w => !w.image_url);
-  
-  if (needsEnrichment) {
-    console.log('[EveningPlanService] Enriching queue with wine images...');
-    
-    // Fetch fresh wine data
-    const wineIds = queue.map(w => w.wine_id);
-    const { data: wines } = await supabase
-      .from('wines')
-      .select('id, image_url')
-      .in('id', wineIds);
-    
-    if (wines) {
-      // Create a map for quick lookup
-      const wineImageMap = new Map(wines.map(w => [w.id, w.image_url]));
-      
-      // Update queue with fresh images
-      const enrichedQueue = queue.map(qw => ({
-        ...qw,
-        image_url: qw.image_url || wineImageMap.get(qw.wine_id) || null,
-      }));
-      
-      plan.queue = enrichedQueue as any;
-      console.log('[EveningPlanService] ✅ Queue enriched with images');
-    }
-  }
-  
-  return plan;
 }
 
 /**

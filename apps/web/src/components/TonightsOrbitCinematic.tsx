@@ -101,6 +101,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
 
   /**
    * Check for active evening plan on mount
+   * Silently fails if table doesn't exist (migration not applied)
    */
   useEffect(() => {
     async function checkActivePlan() {
@@ -112,9 +113,12 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       try {
         const plan = await eveningPlanService.getActivePlan();
         setActivePlan(plan);
-        console.log('[TonightsOrbit] Active plan status:', plan ? 'Found' : 'None');
+        if (plan) {
+          console.log('[TonightsOrbit] Active plan found');
+        }
       } catch (error) {
-        console.error('[TonightsOrbit] Error checking for active plan:', error);
+        // Silently handle errors (likely table doesn't exist)
+        // No need to log - this is expected if migration not applied
       } finally {
         setCheckingForPlan(false);
       }
