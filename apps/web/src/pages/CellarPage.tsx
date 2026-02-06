@@ -1931,7 +1931,7 @@ export function CellarPage() {
         isOpen={showBulkAnalysis}
         onClose={() => setShowBulkAnalysis(false)}
         onComplete={handleBulkAnalysisComplete}
-        totalBottles={bottles.length}
+        totalBottles={totalBottleCount}
         unanalyzedCount={unanalyzedCount}
       />
 
