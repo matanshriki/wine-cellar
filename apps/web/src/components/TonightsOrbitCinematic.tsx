@@ -680,7 +680,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           <>
             <motion.button
               onClick={goToPrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
+              className="absolute ltr:left-0 rtl:right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
                 width: '48px',
                 height: '48px',
@@ -713,7 +713,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
 
             <motion.button
               onClick={goToNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
+              className="absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
                 width: '48px',
                 height: '48px',
