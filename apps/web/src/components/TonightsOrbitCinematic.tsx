@@ -8,10 +8,16 @@
  * - Pauses on interaction
  * - Respects prefers-reduced-motion
  * 
- * LOCAL/STAGING ONLY - Not yet deployed to production
+ * STABILITY FIXES (Feb 2026):
+ * ✅ Stable data: useMemo prevents re-sorting on every render (no Math.random())
+ * ✅ Index clamping: activeIndex auto-adjusts when bottles array changes
+ * ✅ Navigation: preventDefault/stopPropagation prevent event interference
+ * ✅ Autoplay: Single timer pattern with 5s manual cooldown
+ * ✅ Keys: Stable unique keys prevent React remounting
+ * ✅ Images: Fixed aspect-ratio containers prevent layout shift
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
@@ -50,16 +56,28 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const [showQueuePlayer, setShowQueuePlayer] = useState(false);
 
   /**
-   * Smart Selection Logic:
-   * Same as original - prioritize READY bottles, then PEAK_SOON, then by quantity
+   * Smart Selection Logic - STABLE (no re-sorting on render)
+   * 
+   * CRITICAL FIX: Use useMemo to prevent re-sorting on every render
+   * Random seed is generated once when bottles array changes, not on every render
+   * This ensures carousel index mapping remains consistent
    */
-  const getSmartSelection = (bottles: BottleWithWineInfo[]) => {
+  const topBottles = useMemo(() => {
     const availableBottles = bottles.filter(bottle => bottle.quantity > 0);
     
-    const scored = availableBottles.map(bottle => {
+    // Generate a stable random seed based on bottle IDs
+    // This ensures consistent ordering across re-renders
+    const stableSeed = availableBottles
+      .map(b => b.id)
+      .join('-')
+      .split('')
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    const scored = availableBottles.map((bottle, index) => {
       const analysis = bottle as any;
       let score = 0;
 
+      // Prioritize READY bottles
       if (analysis.readiness_label === 'READY') {
         score += 100;
       } else if (analysis.readiness_label === 'PEAK_SOON') {
@@ -68,8 +86,11 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         score += 10;
       }
 
+      // Add quantity bonus
       score += Math.min(bottle.quantity * 5, 25);
-      score += Math.random() * 10;
+      
+      // Add stable pseudo-random component (deterministic based on seed + index)
+      score += ((stableSeed + index * 17) % 100) / 10;
 
       return { bottle, score };
     });
@@ -78,9 +99,24 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
       .map(item => item.bottle);
-  };
+  }, [bottles]);
 
-  const topBottles = getSmartSelection(bottles);
+  /**
+   * CRITICAL FIX: Clamp activeIndex when topBottles changes
+   * Prevents accessing invalid indices when bottles array updates
+   */
+  useEffect(() => {
+    if (topBottles.length === 0) return;
+    
+    setActiveIndex(current => {
+      if (current >= topBottles.length) {
+        const newIndex = Math.min(current, topBottles.length - 1);
+        if (isDev) console.log('[Carousel] 🔧 Clamping index:', current, '→', newIndex, '(length:', topBottles.length, ')');
+        return newIndex;
+      }
+      return current;
+    });
+  }, [topBottles.length, isDev]);
 
   /**
    * Auto-advance timer - Fixed for smooth, single-step advancement
@@ -219,15 +255,21 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
    * Manual navigation - Fixed to prevent double-advance
    * 
    * CRITICAL FIXES:
-   * 1. Record timestamp to enforce 5s autoplay cooldown
-   * 2. Cancel any pending unpause timers
-   * 3. Use functional state update
-   * 4. Pause autoplay immediately
+   * 1. preventDefault + stopPropagation to block all event interference
+   * 2. Record timestamp to enforce 5s autoplay cooldown
+   * 3. Cancel any pending unpause timers
+   * 4. Use functional state update
+   * 5. Pause autoplay immediately
    */
   const goToNext = (e?: React.MouseEvent) => {
-    e?.stopPropagation(); // Prevent event bubbling
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    if (isDev) console.log('[Carousel] Manual next clicked');
+    if (topBottles.length <= 1) return;
+    
+    if (isDev) console.log('[Carousel] ➡️ Manual NEXT clicked');
     
     // Record manual interaction timestamp
     lastManualInteractionRef.current = Date.now();
@@ -244,21 +286,26 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     // Advance slide with functional update
     setActiveIndex((current) => {
       const next = (current + 1) % topBottles.length;
-      if (isDev) console.log('[Carousel] Manual advance:', current, '→', next);
+      if (isDev) console.log('[Carousel] 📊 Index change:', current, '→', next, '(total:', topBottles.length, ')');
       return next;
     });
     
     // Resume autoplay after 5s cooldown
     setTimeout(() => {
-      if (isDev) console.log('[Carousel] Manual cooldown ended, resuming');
+      if (isDev) console.log('[Carousel] ⏱️ Manual cooldown ended, resuming autoplay');
       setIsPaused(false);
     }, 5000);
   };
 
   const goToPrevious = (e?: React.MouseEvent) => {
-    e?.stopPropagation(); // Prevent event bubbling
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    if (isDev) console.log('[Carousel] Manual previous clicked');
+    if (topBottles.length <= 1) return;
+    
+    if (isDev) console.log('[Carousel] ⬅️ Manual PREVIOUS clicked');
     
     // Record manual interaction timestamp
     lastManualInteractionRef.current = Date.now();
@@ -275,13 +322,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     // Go to previous slide with functional update
     setActiveIndex((current) => {
       const prev = (current - 1 + topBottles.length) % topBottles.length;
-      if (isDev) console.log('[Carousel] Manual previous:', current, '→', prev);
+      if (isDev) console.log('[Carousel] 📊 Index change:', current, '→', prev, '(total:', topBottles.length, ')');
       return prev;
     });
     
     // Resume autoplay after 5s cooldown
     setTimeout(() => {
-      if (isDev) console.log('[Carousel] Manual cooldown ended, resuming');
+      if (isDev) console.log('[Carousel] ⏱️ Manual cooldown ended, resuming autoplay');
       setIsPaused(false);
     }, 5000);
   };
@@ -303,6 +350,14 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     }
     
     setIsDragging(false);
+  };
+
+  /**
+   * Generate stable unique key for each bottle
+   * Prevents React from remounting components when order changes
+   */
+  const getBottleKey = (bottle: BottleWithWineInfo) => {
+    return bottle.id || `${bottle.wine.wine_name}-${bottle.wine.vintage || 'nv'}-${bottle.wine.producer || 'unknown'}`;
   };
 
   if (topBottles.length === 0) {
@@ -469,10 +524,11 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           {topBottles.map((bottle, index) => {
             const style = getCardStyle(index);
             const isActive = index === activeIndex;
+            const bottleKey = getBottleKey(bottle);
 
             return (
               <motion.div
-                key={bottle.id}
+                key={bottleKey}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
                   scale: style.scale,
@@ -679,7 +735,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         {topBottles.length > 1 && (
           <>
             <motion.button
+              type="button"
               onClick={goToPrevious}
+              onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
               className="absolute ltr:left-0 rtl:right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
                 width: '48px',
@@ -690,6 +748,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 color: 'var(--wine-600)',
                 // Larger hit area for mobile
                 padding: '12px',
+                cursor: 'pointer',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
               }}
               whileHover={reduceMotion ? {} : {
                 background: 'white',
@@ -712,7 +773,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             </motion.button>
 
             <motion.button
+              type="button"
               onClick={goToNext}
+              onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
               className="absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
               style={{
                 width: '48px',
@@ -723,6 +786,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 color: 'var(--wine-600)',
                 // Larger hit area for mobile
                 padding: '12px',
+                cursor: 'pointer',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
               }}
               whileHover={reduceMotion ? {} : {
                 background: 'white',
@@ -749,45 +815,54 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         {/* Pagination Dots - Enhanced with proper pause handling */}
         {topBottles.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
-            {topBottles.map((bottle, index) => (
-              <motion.button
-                key={`pagination-dot-${bottle.id}-${index}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isDev) console.log('[Carousel] Dot clicked:', index);
-                  
-                  // Record manual interaction
-                  lastManualInteractionRef.current = Date.now();
-                  
-                  // Cancel pending unpause
-                  if (unpauseTimerRef.current) {
-                    clearTimeout(unpauseTimerRef.current);
-                    unpauseTimerRef.current = null;
-                  }
-                  
-                  // Pause and navigate
-                  setIsPaused(true);
-                  setActiveIndex(index);
-                  
-                  // Resume after cooldown
-                  setTimeout(() => {
-                    setIsPaused(false);
-                  }, 5000);
-                }}
-                whileTap={reduceMotion ? {} : { scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                style={{
-                  width: index === activeIndex ? '24px' : '8px',
-                  height: '8px',
-                  borderRadius: '4px',
-                  background: index === activeIndex ? 'var(--wine-600)' : 'var(--stone-300)',
-                  opacity: index === activeIndex ? 1 : 0.5,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-                aria-label={`Go to wine ${index + 1}`}
-              />
-            ))}
+            {topBottles.map((bottle, index) => {
+              const bottleKey = getBottleKey(bottle);
+              return (
+                <motion.button
+                  key={`dot-${bottleKey}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isDev) console.log('[Carousel] 🔘 Dot clicked:', index);
+                    
+                    // Record manual interaction
+                    lastManualInteractionRef.current = Date.now();
+                    
+                    // Cancel pending unpause
+                    if (unpauseTimerRef.current) {
+                      clearTimeout(unpauseTimerRef.current);
+                      unpauseTimerRef.current = null;
+                    }
+                    
+                    // Pause and navigate
+                    setIsPaused(true);
+                    setActiveIndex(index);
+                    if (isDev) console.log('[Carousel] 📊 Direct navigation to index:', index);
+                    
+                    // Resume after cooldown
+                    setTimeout(() => {
+                      if (isDev) console.log('[Carousel] ⏱️ Dot cooldown ended, resuming');
+                      setIsPaused(false);
+                    }, 5000);
+                  }}
+                  whileTap={reduceMotion ? {} : { scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    width: index === activeIndex ? '24px' : '8px',
+                    height: '8px',
+                    borderRadius: '4px',
+                    background: index === activeIndex ? 'var(--wine-600)' : 'var(--stone-300)',
+                    opacity: index === activeIndex ? 1 : 0.5,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                  aria-label={`Go to wine ${index + 1}`}
+                />
+              );
+            })}
           </div>
         )}
       </div>
