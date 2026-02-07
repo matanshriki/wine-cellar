@@ -328,10 +328,32 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    e.stopPropagation();
     
     console.log('[BottleForm] ========== SUBMIT STARTED ==========');
     console.log('[BottleForm] Form data:', formData);
+    console.log('[BottleForm] Loading state:', loading);
+    
+    // Prevent double submissions
+    if (loading) {
+      console.log('[BottleForm] ⚠️ Already submitting, ignoring duplicate submit');
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.wine_name || !formData.wine_name.trim()) {
+      console.log('[BottleForm] ❌ Validation failed: Wine name is required');
+      toast.error(t('bottleForm.nameRequired', 'Wine name is required'));
+      return;
+    }
+    
+    if (!formData.quantity || parseInt(formData.quantity) < 1) {
+      console.log('[BottleForm] ❌ Validation failed: Invalid quantity');
+      toast.error(t('bottleForm.quantityRequired', 'Quantity must be at least 1'));
+      return;
+    }
+    
+    setLoading(true);
 
     try {
       if (bottle) {
@@ -887,12 +909,23 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 <button
                   type="submit"
                   form="bottle-form"
+                  onClick={(e) => {
+                    // Fallback: If form submission doesn't work, manually trigger it
+                    e.stopPropagation();
+                    const form = document.getElementById('bottle-form') as HTMLFormElement;
+                    if (form && !loading) {
+                      console.log('[BottleForm] Button clicked, triggering form submission');
+                      form.requestSubmit();
+                    }
+                  }}
                   className="flex-1 btn-luxury-primary text-sm sm:text-base"
                   disabled={loading}
                   style={{ 
                     minHeight: '48px',
                     touchAction: 'manipulation',
                     WebkitTapHighlightColor: 'transparent',
+                    pointerEvents: loading ? 'none' : 'auto',
+                    cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading
@@ -939,12 +972,23 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               <button
                 type="submit"
                 form="bottle-form"
+                onClick={(e) => {
+                  // Fallback: If form submission doesn't work, manually trigger it
+                  e.stopPropagation();
+                  const form = document.getElementById('bottle-form') as HTMLFormElement;
+                  if (form && !loading) {
+                    console.log('[BottleForm] Button clicked, triggering form submission');
+                    form.requestSubmit();
+                  }
+                }}
                 className="flex-1 btn-luxury-primary text-sm sm:text-base"
                 disabled={loading}
                 style={{ 
                   minHeight: '48px',
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
+                  pointerEvents: loading ? 'none' : 'auto',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >
                 {loading
