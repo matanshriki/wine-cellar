@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
+import { Footer } from '../components/Footer';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { trackAuth } from '../services/analytics';
 
@@ -201,6 +202,9 @@ export function LoginPage() {
           </div>
         </div>
       </div>
+      
+      {/* Footer with Privacy Policy Link */}
+      <Footer />
     </div>
   );
 }

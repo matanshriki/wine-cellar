@@ -21,6 +21,7 @@ import { WishlistPage } from './pages/WishlistPage'; // Wishlist feature (featur
 import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
 import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
+import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +108,10 @@ function AppRoutes() {
       <Route
         path="/login"
         element={user ? <Navigate to="/cellar" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/privacy"
+        element={<PrivacyPage />}
       />
       <Route
         path="/cellar"
