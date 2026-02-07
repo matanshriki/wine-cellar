@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
-import { Footer } from '../components/Footer';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { trackAuth } from '../services/analytics';
 
@@ -201,10 +200,22 @@ export function LoginPage() {
             </button>
           </div>
         </div>
+        
+        {/* Footer with Privacy Policy Link - Under login box */}
+        <div className="mt-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <span>© {new Date().getFullYear()} Wine Cellar Brain</span>
+            <span>•</span>
+            <a 
+              href="/privacy"
+              className="underline hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--wine-600)' }}
+            >
+              Privacy Policy
+            </a>
+          </div>
+        </div>
       </div>
-      
-      {/* Footer with Privacy Policy Link */}
-      <Footer />
     </div>
   );
 }
