@@ -55,8 +55,9 @@ async function getMatchingBottles(
     }
 
     // Check if any event tags match bottles
-    let matchCount = 0;
-    let bestMatchTag: string | null = null;
+    // CRITICAL FIX: Use Set to avoid double-counting bottles when multiple tags match the same bottle
+    const matchedBottleIds = new Set<string>();
+    const tagMatchCounts: Record<string, number> = {}; // Track which tag matches most bottles
 
     // Prioritize grape-specific tags over color tags
     const grapeTags = eventTags.filter(tag => !['red', 'white', 'rose', 'rosé', 'sparkling'].includes(tag.toLowerCase()));
@@ -68,6 +69,11 @@ async function getMatchingBottles(
     console.log('[Events] 🔍 Grape tags:', grapeTags);
     console.log('[Events] 🔍 Color tags:', colorTags);
     console.log('[Events] 🔍 Using tags for matching:', tagsToMatch);
+
+    // Initialize counts for each tag
+    for (const tag of tagsToMatch) {
+      tagMatchCounts[tag] = 0;
+    }
 
     for (const tag of tagsToMatch) {
       const tagLower = tag.toLowerCase();
@@ -95,22 +101,32 @@ async function getMatchingBottles(
           : (grapesStr.includes(tagLower) || color.includes(tagLower)); // Match both if only color tags
         
         if (matches) {
-          console.log('[Events] ✅ MATCH! Bottle', b.id?.substring(0, 8), ':', { grapes: grapesStr, color });
-          matchCount++;
-          if (!bestMatchTag) {
-            bestMatchTag = tag;
-          }
+          console.log('[Events] ✅ MATCH! Bottle', b.id?.substring(0, 8), 'for tag', tag, ':', { grapes: grapesStr, color });
+          matchedBottleIds.add(b.id); // Add to set (prevents double-counting)
+          tagMatchCounts[tag]++; // Count matches for this specific tag
         }
-      }
-      
-      // Stop after first tag finds matches (don't double-count bottles)
-      if (matchCount > 0 && !bestMatchTag) {
-        bestMatchTag = tag;
       }
     }
 
-    console.log('[Events] 🎯 Final result:', { matchCount, filterTag: bestMatchTag });
-    return { count: matchCount, filterTag: bestMatchTag };
+    // Return ALL tags that matched at least one bottle (pipe-separated for frontend multi-match)
+    // This ensures the frontend filter will find ALL matching bottles, not just one variant
+    const matchingTags = Object.entries(tagMatchCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([tag, _]) => tag);
+    
+    const filterTag = matchingTags.length > 0 
+      ? matchingTags.join('|')  // Use pipe separator so frontend can split and search for any
+      : null;
+
+    const matchCount = matchedBottleIds.size; // Count unique bottles only
+    console.log('[Events] 🎯 Tag match counts:', tagMatchCounts);
+    console.log('[Events] 🎯 Final result:', { 
+      matchCount, 
+      uniqueBottles: matchCount, 
+      filterTag, 
+      matchingTags,
+    });
+    return { count: matchCount, filterTag };
   } catch (error) {
     console.error('[Events] Error matching bottles:', error);
     return { count: 0, filterTag: null };

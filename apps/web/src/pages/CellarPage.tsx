@@ -786,7 +786,10 @@ export function CellarPage() {
 
     // Apply search query (debounced via input)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      // Handle pipe-separated queries (from wine events with multiple tag variants)
+      // E.g., "syrah|shiraz" should match bottles with either "syrah" OR "shiraz"
+      const queries = searchQuery.toLowerCase().split('|').map(q => q.trim()).filter(Boolean);
+      
       result = result.filter((bottle) => {
         // Handle grapes as either string or array
         let grapesText = '';
@@ -811,7 +814,8 @@ export function CellarPage() {
           .join(' ')
           .toLowerCase();
 
-        return searchableText.includes(query);
+        // Match if ANY of the queries match (OR logic for pipe-separated queries)
+        return queries.some(query => searchableText.includes(query));
       });
     }
 
