@@ -147,6 +147,7 @@ export function CellarPage() {
 
   // Wine World Moments: Wine events state
   const [activeEvents, setActiveEvents] = useState<WineEvent[]>([]);
+  const [isFilteringByEvent, setIsFilteringByEvent] = useState(false);
 
   // Duplicate detection
   const { checkAndHandle: checkDuplicate, DuplicateModal } = useDuplicateDetection({
@@ -962,6 +963,8 @@ export function CellarPage() {
     const willHaveFilters = !activeFilters.includes(filter) || activeFilters.length > 1;
     console.log('[CellarPage] Will have active filters after toggle:', willHaveFilters);
     
+    setIsFilteringByEvent(false); // Reset event filtering flag when user toggles filters
+    
     setActiveFilters((prev) => {
       const newFilters = prev.includes(filter)
         ? prev.filter((f) => f !== filter)
@@ -1109,6 +1112,7 @@ export function CellarPage() {
   function clearFilters() {
     setSearchQuery('');
     setActiveFilters([]);
+    setIsFilteringByEvent(false); // Reset event filtering flag
   }
 
   /**
@@ -1130,8 +1134,7 @@ export function CellarPage() {
   function handleViewEventMatches(filterTag: string) {
     console.log('[CellarPage] 🍷 Event: Filtering by tag:', filterTag);
     setSearchQuery(filterTag);
-    // Don't hide the banner - keep it visible so user can see context
-    // setActiveEvent(null); // REMOVED - banner should stay visible
+    setIsFilteringByEvent(true); // Keep banner visible when filtering by event
     
     // Scroll to bottles section after a short delay to let state update
     setTimeout(() => {
@@ -1375,7 +1378,10 @@ export function CellarPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsFilteringByEvent(false); // Reset event filtering flag on manual search
+              }}
               placeholder={t('cellar.search.placeholder')}
               className="input-luxury w-full pl-11 pr-11 py-3 text-sm sm:text-base"
               style={{
@@ -1388,6 +1394,7 @@ export function CellarPage() {
                   e.preventDefault();
                   e.stopPropagation();
                   setSearchQuery('');
+                  setIsFilteringByEvent(false); // Reset event filtering flag
                 }}
                 className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors min-w-[44px] min-h-[44px]"
                 style={{
@@ -1611,8 +1618,8 @@ export function CellarPage() {
         />
       )}
 
-      {/* Wine World Moments: Event Banner(s) - Only show if no active search/filters */}
-      {!isDemoMode && activeEvents.length > 0 && !searchQuery && activeFilters.length === 0 && (
+      {/* Wine World Moments: Event Banner(s) - Show if no filters OR if filtering by event */}
+      {!isDemoMode && activeEvents.length > 0 && (isFilteringByEvent || (!searchQuery && activeFilters.length === 0)) && (
         <WineEventBanner
           events={activeEvents}
           onDismiss={handleEventDismiss}
