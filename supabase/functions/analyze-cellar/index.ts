@@ -23,6 +23,8 @@ const MAX_CONCURRENT = 3; // Process 3 bottles at a time
 interface AnalysisRequest {
   mode: 'missing_only' | 'stale_only' | 'all';
   limit?: number;
+  pageSize?: number;
+  offset?: number;
 }
 
 interface BottleStatus {
@@ -89,10 +91,13 @@ serve(async (req) => {
     const body: AnalysisRequest = await req.json();
     const mode = body.mode || 'missing_only';
     const limit = Math.min(body.limit || MAX_BOTTLES_PER_REQUEST, MAX_BOTTLES_PER_REQUEST);
+    const pageSize = body.pageSize || 50; // Default page size for pagination
+    const offset = body.offset || 0; // Starting offset for pagination
 
-    console.log('[Analyze Cellar] Mode:', mode, 'Limit:', limit);
+    console.log('[Analyze Cellar] Mode:', mode, 'Limit:', limit, 'PageSize:', pageSize, 'Offset:', offset);
 
-    // Fetch user's bottles
+    // Fetch user's bottles with pagination
+    // This prevents memory issues with large cellars
     const { data: bottles, error: fetchError } = await supabaseAdmin
       .from('bottles')
       .select(`
@@ -111,14 +116,16 @@ serve(async (req) => {
         )
       `)
       .eq('user_id', user.id)
-      .gt('quantity', 0); // Only bottles with quantity > 0
+      .gt('quantity', 0) // Only bottles with quantity > 0
+      .order('created_at', { ascending: false }) // Stable ordering for pagination
+      .range(offset, offset + pageSize - 1); // Pagination range
 
     if (fetchError) {
       console.error('[Analyze Cellar] Fetch error:', fetchError);
       return corsResponse({ error: 'Failed to fetch bottles' }, 500);
     }
 
-    console.log('[Analyze Cellar] Total bottles:', bottles?.length || 0);
+    console.log('[Analyze Cellar] Fetched bottles:', bottles?.length || 0, 'from offset', offset);
 
     if (!bottles || bottles.length === 0) {
       return corsResponse({

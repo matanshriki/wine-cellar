@@ -34,18 +34,46 @@ export function BulkAnalysisModal({
   const { t } = useTranslation();
   const [mode, setMode] = useState<aiAnalysisService.BulkAnalysisMode>('missing_only');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [progress, setProgress] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{
+    processed: number;
+    total: number | null;
+    currentBottle?: string;
+    failed: number;
+    skipped: number;
+  }>({ processed: 0, total: null, failed: 0, skipped: 0 });
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+
+  // Progress percentage for visual bar
+  const progressPercent = progress.total && progress.total > 0
+    ? Math.round((progress.processed / progress.total) * 100)
+    : 0;
 
   async function handleAnalyze() {
     setIsAnalyzing(true);
-    setProgress(t('bulkAnalysis.analyzing', 'Analyzing bottles...'));
+    setError(null); // Clear previous errors
+    setProgress({ processed: 0, total: null, failed: 0, skipped: 0 });
+
+    // Create abort controller for cancellation
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
-      console.log('[BulkAnalysisModal] Starting analysis, mode:', mode);
+      console.log('[BulkAnalysisModal] 🚀 Starting batch analysis, mode:', mode);
+      const startTime = Date.now();
 
-      const result = await aiAnalysisService.analyzeCellarBulk(mode, 20);
+      const result = await aiAnalysisService.analyzeCellarInBatches(mode, {
+        pageSize: 50,
+        maxBottles: 1000,
+        abortSignal: controller.signal,
+        onProgress: (p) => {
+          console.log('[BulkAnalysisModal] 📊 Progress:', p);
+          setProgress(p);
+        },
+      });
 
-      console.log('[BulkAnalysisModal] Analysis complete:', result);
+      const elapsedMs = Date.now() - startTime;
+      console.log('[BulkAnalysisModal] ✅ Analysis complete:', result, 'in', elapsedMs, 'ms');
 
       // Close modal first
       onClose();
@@ -76,17 +104,40 @@ export function BulkAnalysisModal({
       }, 300);
 
     } catch (error: any) {
-      console.error('[BulkAnalysisModal] Error:', error);
-      toast.error(error.message || t('bulkAnalysis.error', 'Failed to analyze cellar'));
-      setProgress('');
+      console.error('[BulkAnalysisModal] ❌ Error:', error);
+      
+      // Check if it was cancelled
+      if (error.message === 'Analysis cancelled') {
+        toast.info('Analysis cancelled');
+        // Reset state without showing error
+        setProgress({ processed: 0, total: null, failed: 0, skipped: 0 });
+      } else {
+        // Show error in UI
+        const errorMsg = error.message || t('bulkAnalysis.error', 'Failed to analyze cellar');
+        setError(errorMsg);
+        toast.error(errorMsg);
+      }
     } finally {
       setIsAnalyzing(false);
+      setAbortController(null);
+    }
+  }
+
+  function handleCancel() {
+    if (isAnalyzing && abortController) {
+      console.log('[BulkAnalysisModal] 🛑 Cancelling analysis...');
+      abortController.abort();
+    } else {
+      onClose();
     }
   }
 
   function handleClose() {
     if (!isAnalyzing) {
       onClose();
+    } else {
+      // If analyzing, offer to cancel
+      handleCancel();
     }
   }
 
@@ -144,15 +195,14 @@ export function BulkAnalysisModal({
                     {t('bulkAnalysis.title', 'Analyze Cellar')}
                   </h2>
                 </div>
-                {!isAnalyzing && (
-                  <button
-                    onClick={handleClose}
-                    className="text-2xl leading-none opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    ×
-                  </button>
-                )}
+                <button
+                  onClick={handleClose}
+                  className="text-2xl leading-none opacity-60 hover:opacity-100 transition-opacity"
+                  style={{ color: 'var(--text-primary)' }}
+                  title={isAnalyzing ? t('common.cancel', 'Cancel') : t('common.close', 'Close')}
+                >
+                  ×
+                </button>
               </div>
             </div>
 
@@ -165,16 +215,54 @@ export function BulkAnalysisModal({
                 WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
               }}
             >
+              {/* Error Display */}
+              {error && !isAnalyzing && (
+                <div
+                  className="p-4 rounded-lg"
+                  style={{
+                    background: 'var(--wine-50)',
+                    border: '1px solid var(--wine-300)',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">⚠️</span>
+                    <div className="flex-1">
+                      <h4
+                        className="font-semibold text-sm mb-1"
+                        style={{ color: 'var(--wine-600)' }}
+                      >
+                        {t('bulkAnalysis.errorTitle', 'Analysis Error')}
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {error}
+                      </p>
+                      <button
+                        onClick={() => setError(null)}
+                        className="text-xs underline mt-2"
+                        style={{ color: 'var(--wine-500)' }}
+                      >
+                        {t('common.dismiss', 'Dismiss')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Description */}
-              <p
-                className="text-sm"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {t(
-                  'bulkAnalysis.description',
-                  'Generate sommelier notes for multiple bottles at once. This will analyze wine characteristics, readiness, and serving recommendations.'
-                )}
-              </p>
+              {!error && (
+                <p
+                  className="text-sm"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {t(
+                    'bulkAnalysis.description',
+                    'Generate sommelier notes for multiple bottles at once. This will analyze wine characteristics, readiness, and serving recommendations.'
+                  )}
+                </p>
+              )}
 
               {/* Stats */}
               <div
@@ -313,26 +401,86 @@ export function BulkAnalysisModal({
                 </label>
               </div>
 
-              {/* Progress - Wine Glass Spinner */}
+              {/* Progress - Luxury Progress UI */}
               {isAnalyzing && (
                 <div
-                  className="p-6 rounded-lg text-center"
+                  className="p-6 rounded-lg"
                   style={{
                     background: 'var(--wine-50)',
                     border: '1px solid var(--wine-200)',
                   }}
                 >
-                  <WineLoader 
-                    size={80}
-                    variant="inline"
-                    message={progress}
-                  />
-                  <p
-                    className="text-xs mt-3"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {t('bulkAnalysis.pleaseWait', 'This may take a minute...')}
-                  </p>
+                  {/* Wine Glass Spinner */}
+                  <div className="flex flex-col items-center mb-4">
+                    <WineLoader 
+                      size={80}
+                      variant="inline"
+                    />
+                  </div>
+
+                  {/* Progress Message */}
+                  <div className="text-center mb-4">
+                    <h3
+                      className="text-lg font-semibold mb-1"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {t('bulkAnalysis.analyzing', 'Analyzing your cellar…')}
+                    </h3>
+                    <p
+                      className="text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {progress.total
+                        ? t('bulkAnalysis.progressWithTotal', `Processed ${progress.processed} / ${progress.total} wines`)
+                        : t('bulkAnalysis.progressWithoutTotal', `Processed ${progress.processed} wines`)}
+                    </p>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {progress.total && (
+                    <div
+                      className="w-full h-2 rounded-full overflow-hidden mb-4"
+                      style={{
+                        background: 'var(--bg-surface)',
+                      }}
+                    >
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="h-full rounded-full"
+                        style={{
+                          background: 'linear-gradient(90deg, var(--wine-500), var(--wine-400))',
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Stats */}
+                  {(progress.failed > 0 || progress.skipped > 0) && (
+                    <div className="flex justify-center gap-4 text-xs">
+                      {progress.skipped > 0 && (
+                        <span style={{ color: 'var(--text-tertiary)' }}>
+                          {progress.skipped} skipped
+                        </span>
+                      )}
+                      {progress.failed > 0 && (
+                        <span style={{ color: 'var(--wine-500)' }}>
+                          {progress.failed} failed
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Patience message for slow progress */}
+                  {progress.processed > 20 && (
+                    <p
+                      className="text-xs mt-3 text-center"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {t('bulkAnalysis.largeCollectionNote', 'Large cellars take a bit longer…')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -346,24 +494,55 @@ export function BulkAnalysisModal({
                 paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
               }}
             >
-              <button
-                onClick={handleClose}
-                disabled={isAnalyzing}
-                className="btn-luxury-secondary flex-1"
-                style={{ minHeight: '44px' }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="btn-luxury-primary flex-1"
-                style={{ minHeight: '44px' }}
-              >
-                {isAnalyzing
-                  ? t('bulkAnalysis.analyzing', 'Analyzing...')
-                  : t('bulkAnalysis.startAnalysis', 'Start Analysis')}
-              </button>
+              {isAnalyzing ? (
+                /* Cancel button during analysis */
+                <button
+                  onClick={handleCancel}
+                  className="btn-luxury-secondary w-full"
+                  style={{ minHeight: '44px' }}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+              ) : error ? (
+                /* Retry/Close buttons after error */
+                <>
+                  <button
+                    onClick={handleClose}
+                    className="btn-luxury-secondary flex-1"
+                    style={{ minHeight: '44px' }}
+                  >
+                    {t('common.close', 'Close')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      handleAnalyze();
+                    }}
+                    className="btn-luxury-primary flex-1"
+                    style={{ minHeight: '44px' }}
+                  >
+                    {t('common.retry', 'Try Again')}
+                  </button>
+                </>
+              ) : (
+                /* Start/Cancel buttons before analysis */
+                <>
+                  <button
+                    onClick={handleClose}
+                    className="btn-luxury-secondary flex-1"
+                    style={{ minHeight: '44px' }}
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </button>
+                  <button
+                    onClick={handleAnalyze}
+                    className="btn-luxury-primary flex-1"
+                    style={{ minHeight: '44px' }}
+                  >
+                    {t('bulkAnalysis.startAnalysis', 'Start Analysis')}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

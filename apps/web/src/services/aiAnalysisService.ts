@@ -422,8 +422,9 @@ export interface BulkAnalysisResult {
 }
 
 /**
- * Analyze entire cellar in bulk
+ * Analyze entire cellar in bulk (legacy - single batch)
  * Generates sommelier notes for multiple bottles based on mode
+ * @deprecated Use analyzeCellarInBatches for large cellars
  */
 export async function analyzeCellarBulk(
   mode: BulkAnalysisMode = 'missing_only',
@@ -442,6 +443,8 @@ export async function analyzeCellarBulk(
       body: {
         mode,
         limit,
+        pageSize: 50,
+        offset: 0,
       },
     });
 
@@ -467,5 +470,188 @@ export async function analyzeCellarBulk(
     console.error('[Bulk Analysis] Failed:', error);
     throw error;
   }
+}
+
+/**
+ * Progress callback for batch analysis
+ */
+export type AnalysisProgressCallback = (progress: {
+  processed: number;
+  total: number | null; // null if total unknown
+  currentBottle?: string;
+  failed: number;
+  skipped: number;
+}) => void;
+
+/**
+ * Analyze cellar in paginated batches with progress updates and cancellation
+ * 
+ * This prevents crashes on large cellars by:
+ * - Processing wines in small batches
+ * - Yielding to browser between batches
+ * - Supporting cancellation
+ * - Providing real-time progress updates
+ */
+export async function analyzeCellarInBatches(
+  mode: BulkAnalysisMode = 'missing_only',
+  options: {
+    pageSize?: number;
+    maxBottles?: number;
+    onProgress?: AnalysisProgressCallback;
+    abortSignal?: AbortSignal;
+  } = {}
+): Promise<BulkAnalysisResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Not authenticated');
+  }
+
+  const pageSize = options.pageSize || 50;
+  const maxBottles = options.maxBottles || 1000; // Safety limit
+  const onProgress = options.onProgress;
+  const abortSignal = options.abortSignal;
+
+  console.log('[Batch Analysis] 🚀 Starting batch analysis', { mode, pageSize, maxBottles });
+  const startTime = Date.now();
+
+  // Aggregated results
+  let totalProcessed = 0;
+  let totalSkipped = 0;
+  let totalFailed = 0;
+  const allResults: Array<{
+    bottle_id: string;
+    wine_name: string;
+    status: 'success' | 'skipped' | 'failed';
+    error?: string;
+  }> = [];
+
+  // First, get total count of eligible bottles for progress tracking
+  let totalEligible: number | null = null;
+  try {
+    const countQuery = supabase
+      .from('bottles')
+      .select('id, analysis_summary, readiness_label, analyzed_at', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+      .gt('quantity', 0);
+
+    // Apply mode filters for accurate count
+    if (mode === 'missing_only') {
+      countQuery.or('analysis_summary.is.null,readiness_label.is.null');
+    }
+
+    const { count, error: countError } = await countQuery;
+
+    if (!countError && count !== null) {
+      totalEligible = Math.min(count, maxBottles);
+      console.log('[Batch Analysis] 📊 Total eligible bottles:', totalEligible);
+    }
+  } catch (error) {
+    console.warn('[Batch Analysis] ⚠️ Could not get total count, proceeding without it');
+  }
+
+  // Process in batches
+  let offset = 0;
+  let hasMore = true;
+  let batchNumber = 0;
+
+  while (hasMore && totalProcessed < maxBottles) {
+    // Check for cancellation
+    if (abortSignal?.aborted) {
+      console.log('[Batch Analysis] ❌ Cancelled by user');
+      throw new Error('Analysis cancelled');
+    }
+
+    batchNumber++;
+    console.log('[Batch Analysis] 📦 Processing batch', batchNumber, 'offset:', offset);
+    const batchStart = Date.now();
+
+    try {
+      // Call edge function with pagination
+      const { data, error } = await supabase.functions.invoke('analyze-cellar', {
+        body: {
+          mode,
+          limit: Math.min(pageSize, maxBottles - totalProcessed), // Don't exceed max
+          pageSize,
+          offset,
+        },
+      });
+
+      if (error) {
+        console.error('[Batch Analysis] ❌ Batch error:', error);
+        // Don't fail entire operation, just log and continue
+        totalFailed += pageSize;
+        break;
+      }
+
+      if (!data || !data.success) {
+        console.error('[Batch Analysis] ❌ Invalid batch response:', data);
+        break;
+      }
+
+      // Aggregate results
+      totalProcessed += data.processedCount || 0;
+      totalSkipped += data.skippedCount || 0;
+      totalFailed += data.failedCount || 0;
+      allResults.push(...(data.results || []));
+
+      const batchTime = Date.now() - batchStart;
+      console.log('[Batch Analysis] ✅ Batch complete:', {
+        batch: batchNumber,
+        processed: data.processedCount,
+        skipped: data.skippedCount,
+        failed: data.failedCount,
+        timeMs: batchTime,
+      });
+
+      // Update progress
+      if (onProgress) {
+        onProgress({
+          processed: totalProcessed,
+          total: totalEligible,
+          failed: totalFailed,
+          skipped: totalSkipped,
+        });
+      }
+
+      // Check if we should continue
+      const bottlesInBatch = (data.results || []).length;
+      hasMore = bottlesInBatch >= pageSize && totalProcessed < maxBottles;
+      
+      if (!hasMore) {
+        console.log('[Batch Analysis] 🏁 No more bottles to process');
+      }
+
+      // Move to next page
+      offset += pageSize;
+
+      // Yield to browser to keep UI responsive
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
+
+    } catch (error: any) {
+      console.error('[Batch Analysis] ❌ Batch failed:', error);
+      // Don't fail entire operation
+      totalFailed += pageSize;
+      break;
+    }
+  }
+
+  const totalTime = Date.now() - startTime;
+  console.log('[Batch Analysis] 🎉 Complete!', {
+    batches: batchNumber,
+    totalProcessed,
+    totalSkipped,
+    totalFailed,
+    totalTimeMs: totalTime,
+    avgBatchTimeMs: Math.round(totalTime / batchNumber),
+  });
+
+  return {
+    success: true,
+    processedCount: totalProcessed,
+    skippedCount: totalSkipped,
+    failedCount: totalFailed,
+    results: allResults,
+  };
 }
 
