@@ -46,6 +46,9 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
 
+// Feature flag: Wine World Moments (requires external API)
+const ENABLE_WINE_EVENTS = !!import.meta.env.VITE_API_URL; // Only enable if API URL is configured
+
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -379,12 +382,17 @@ export function CellarPage() {
   // Wine World Moments: Load active events
   useEffect(() => {
     async function fetchActiveEvents() {
-      const events = await wineEventsService.getActiveEvents();
-      setActiveEvents(events);
+      try {
+        const events = await wineEventsService.getActiveEvents();
+        setActiveEvents(events);
+      } catch (error) {
+        // Silent fail - events are optional feature
+        console.log('[CellarPage] Events unavailable, continuing without them');
+      }
     }
     
-    // Only fetch if not in demo mode and has bottles
-    if (!isDemoMode && bottles.length > 0) {
+    // Only fetch if feature is enabled, not in demo mode, and has bottles
+    if (ENABLE_WINE_EVENTS && !isDemoMode && bottles.length > 0) {
       fetchActiveEvents();
     }
   }, [isDemoMode, bottles.length]);
@@ -392,20 +400,26 @@ export function CellarPage() {
   // Wine World Moments: Periodically check for new events
   // This ensures new events appear without requiring page refresh
   useEffect(() => {
-    if (isDemoMode) return; // Don't check in demo mode
+    // Don't check if feature disabled, in demo mode, or no active events
+    if (!ENABLE_WINE_EVENTS || isDemoMode) return;
 
     // Check for new events every 5 minutes
     const intervalId = setInterval(async () => {
-      console.log('[CellarPage] 🔄 Checking for new wine events...');
-      const events = await wineEventsService.getActiveEvents();
-      
-      // Only update if events changed (different count or IDs)
-      const currentIds = activeEvents.map(e => e.id).sort().join(',');
-      const newIds = events.map(e => e.id).sort().join(',');
-      
-      if (newIds !== currentIds) {
-        console.log('[CellarPage] 🎉 Events changed:', events.length, 'events');
-        setActiveEvents(events);
+      try {
+        console.log('[CellarPage] 🔄 Checking for new wine events...');
+        const events = await wineEventsService.getActiveEvents();
+        
+        // Only update if events changed (different count or IDs)
+        const currentIds = activeEvents.map(e => e.id).sort().join(',');
+        const newIds = events.map(e => e.id).sort().join(',');
+        
+        if (newIds !== currentIds) {
+          console.log('[CellarPage] 🎉 Events changed:', events.length, 'events');
+          setActiveEvents(events);
+        }
+      } catch (error) {
+        // Silent fail - don't spam console
+        console.log('[CellarPage] Events check skipped (API unavailable)');
       }
     }, 5 * 60 * 1000); // 5 minutes
 

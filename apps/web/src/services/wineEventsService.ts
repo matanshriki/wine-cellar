@@ -26,12 +26,23 @@ export async function getActiveEvents(): Promise<WineEvent[]> {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      console.warn('[WineEvents] No session, skipping events fetch');
+      // Silent return - no session is normal on initial load
       return [];
     }
 
     const apiUrl = import.meta.env.VITE_API_URL || '';
-    const endpoint = apiUrl ? `${apiUrl}/api/events/active` : '/api/events/active';
+    
+    // If no API URL configured, skip events feature silently
+    if (!apiUrl) {
+      console.log('[WineEvents] No API URL configured, skipping events feature');
+      return [];
+    }
+    
+    const endpoint = `${apiUrl}/api/events/active`;
+
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     const response = await fetch(endpoint, {
       method: 'GET',
@@ -40,18 +51,29 @@ export async function getActiveEvents(): Promise<WineEvent[]> {
         'Authorization': `Bearer ${session.access_token}`,
       },
       credentials: 'include',
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      console.error('[WineEvents] Failed to fetch active events:', response.status);
+      // Silent fail - events are optional feature
+      console.log('[WineEvents] Events API not available (status:', response.status, ')');
       return [];
     }
 
     const data = await response.json();
-    console.log('[WineEvents] 🍷 Received events from API:', data.events);
+    console.log('[WineEvents] 🍷 Received', data.events?.length || 0, 'active events');
     return data.events || [];
-  } catch (error) {
-    console.error('[WineEvents] Error fetching active events:', error);
+  } catch (error: any) {
+    // Silent fail - events are optional, don't spam console
+    if (error.name === 'AbortError') {
+      console.log('[WineEvents] Events API timeout (network issue)');
+    } else if (error.message?.includes('CORS') || error.message?.includes('fetch')) {
+      console.log('[WineEvents] Events API not reachable (CORS or network issue)');
+    } else {
+      console.log('[WineEvents] Events API unavailable:', error.message);
+    }
     return [];
   }
 }
