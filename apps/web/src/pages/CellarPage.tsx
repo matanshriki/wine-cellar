@@ -21,6 +21,7 @@ import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (
 import { WineEventBanner, type WineEvent } from '../components/WineEventBanner'; // Wine World Moments
 import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
 import { ReceiptReviewModal } from '../components/ReceiptReviewModal'; // Receipt scanning
+import { DrinkWindowDebugPanel } from '../components/DrinkWindowDebugPanel'; // DEV: Debug drink windows
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -2399,6 +2400,9 @@ export function CellarPage() {
           min-width: 0;
         }
       `}</style>
+      
+      {/* DEV ONLY: Drink Window Debug Panel */}
+      {isDevEnvironment() && <DrinkWindowDebugPanel />}
     </div>
   );
 }
