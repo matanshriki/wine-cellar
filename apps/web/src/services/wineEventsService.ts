@@ -30,50 +30,28 @@ export async function getActiveEvents(): Promise<WineEvent[]> {
       return [];
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    
-    // If no API URL configured, skip events feature silently
-    if (!apiUrl) {
-      console.log('[WineEvents] No API URL configured, skipping events feature');
-      return [];
-    }
-    
-    const endpoint = `${apiUrl}/api/events/active`;
+    console.log('[WineEvents] Fetching active events via Supabase Edge Function');
 
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-    const response = await fetch(endpoint, {
+    // Call Supabase Edge Function (replaces Railway API)
+    const { data, error } = await supabase.functions.invoke('wine-events', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
-      signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      // Silent fail - events are optional feature
-      console.log('[WineEvents] Events API not available (status:', response.status, ')');
+    if (error) {
+      console.log('[WineEvents] Edge function error:', error.message);
       return [];
     }
 
-    const data = await response.json();
-    console.log('[WineEvents] 🍷 Received', data.events?.length || 0, 'active events');
-    return data.events || [];
-  } catch (error: any) {
-    // Silent fail - events are optional, don't spam console
-    if (error.name === 'AbortError') {
-      console.log('[WineEvents] Events API timeout (network issue)');
-    } else if (error.message?.includes('CORS') || error.message?.includes('fetch')) {
-      console.log('[WineEvents] Events API not reachable (CORS or network issue)');
-    } else {
-      console.log('[WineEvents] Events API unavailable:', error.message);
+    if (!data || !data.events) {
+      console.log('[WineEvents] No events returned');
+      return [];
     }
+
+    console.log('[WineEvents] 🍷 Received', data.events.length, 'active events');
+    return data.events;
+  } catch (error: any) {
+    // Silent fail - events are optional feature
+    console.log('[WineEvents] Error fetching events:', error.message);
     return [];
   }
 }
@@ -97,21 +75,20 @@ export async function dismissEvent(eventId: string): Promise<void> {
       throw new Error('Not authenticated');
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    const endpoint = apiUrl ? `${apiUrl}/api/events/${eventId}/dismiss` : `/api/events/${eventId}/dismiss`;
+    console.log('[WineEvents] Dismissing event:', eventId);
 
-    const response = await fetch(endpoint, {
+    // Call Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('wine-events', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
+      body: { action: 'dismiss', eventId },
     });
 
-    if (!response.ok) {
+    if (error) {
+      console.error('[WineEvents] Error dismissing event:', error);
       throw new Error('Failed to dismiss event');
     }
+
+    console.log('[WineEvents] ✅ Event dismissed');
   } catch (error) {
     console.error('[WineEvents] Error dismissing event:', error);
     throw error;
@@ -129,16 +106,12 @@ export async function markEventSeen(eventId: string): Promise<void> {
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    const endpoint = apiUrl ? `${apiUrl}/api/events/${eventId}/seen` : `/api/events/${eventId}/seen`;
+    console.log('[WineEvents] Marking event as seen:', eventId);
 
-    await fetch(endpoint, {
+    // Call Supabase Edge Function
+    await supabase.functions.invoke('wine-events', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
+      body: { action: 'seen', eventId },
     });
   } catch (error) {
     console.error('[WineEvents] Error marking event as seen:', error);

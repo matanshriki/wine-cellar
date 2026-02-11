@@ -46,9 +46,6 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
 
-// Feature flag: Wine World Moments (requires external API)
-const ENABLE_WINE_EVENTS = !!import.meta.env.VITE_API_URL; // Only enable if API URL is configured
-
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -391,8 +388,8 @@ export function CellarPage() {
       }
     }
     
-    // Only fetch if feature is enabled, not in demo mode, and has bottles
-    if (ENABLE_WINE_EVENTS && !isDemoMode && bottles.length > 0) {
+    // Only fetch if not in demo mode and has bottles
+    if (!isDemoMode && bottles.length > 0) {
       fetchActiveEvents();
     }
   }, [isDemoMode, bottles.length]);
@@ -400,8 +397,8 @@ export function CellarPage() {
   // Wine World Moments: Periodically check for new events
   // This ensures new events appear without requiring page refresh
   useEffect(() => {
-    // Don't check if feature disabled, in demo mode, or no active events
-    if (!ENABLE_WINE_EVENTS || isDemoMode) return;
+    // Don't check if in demo mode
+    if (isDemoMode) return;
 
     // Check for new events every 5 minutes
     const intervalId = setInterval(async () => {
