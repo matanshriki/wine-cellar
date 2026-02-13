@@ -12,6 +12,7 @@ import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
+import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -296,6 +297,7 @@ export function ProfilePage() {
       
       {/* Admin Tools */}
       <AdminWineProfileBackfill />
+      <AdminReadinessBackfill />
     </div>
   );
 }
