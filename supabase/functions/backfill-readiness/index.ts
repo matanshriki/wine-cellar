@@ -351,25 +351,66 @@ serve(async (req) => {
     for (let batchNum = 0; batchNum < maxBatches; batchNum++) {
       console.log(`[BackfillReadiness] Processing batch ${batchNum + 1}/${maxBatches}`);
 
-      // Build query based on mode
+      // Fetch bottles with a larger batch to account for filtering
+      const fetchSize = mode === 'force_all' ? batchSize : batchSize * 3;
+      
       let query = supabase
         .from('bottles')
-        .select('id, user_id, wine_id, drink_window_start, drink_window_end, readiness_status, readiness_score, readiness_version')
+        .select('id, user_id, wine_id, drink_window_start, drink_window_end, readiness_status, readiness_score, readiness_version, readiness_updated_at')
         .order('id', { ascending: true })
-        .limit(batchSize);
+        .limit(fetchSize);
 
       if (cursor) {
         query = query.gt('id', cursor);
       }
 
-      if (mode === 'missing_only') {
-        query = query.or('readiness_score.is.null,readiness_status.is.null,readiness_updated_at.is.null');
-      } else if (mode === 'stale_or_missing') {
-        query = query.or(`readiness_score.is.null,readiness_status.is.null,readiness_updated_at.is.null,readiness_version.neq.${READINESS_VERSION}`);
-      }
-      // force_all: no filter
+      const { data: fetchedBottles, error: bottlesError } = await query;
 
-      const { data: bottles, error: bottlesError } = await query;
+      if (bottlesError) throw bottlesError;
+
+      if (!fetchedBottles || fetchedBottles.length === 0) {
+        console.log('[BackfillReadiness] No more bottles to process');
+        break;
+      }
+
+      // Filter based on mode
+      let bottles = fetchedBottles;
+      
+      if (mode === 'missing_only') {
+        bottles = fetchedBottles.filter((b: any) => 
+          !b.readiness_score || !b.readiness_status || !b.readiness_updated_at
+        );
+      } else if (mode === 'stale_or_missing') {
+        bottles = fetchedBottles.filter((b: any) => 
+          !b.readiness_score || 
+          !b.readiness_status || 
+          !b.readiness_updated_at ||
+          b.readiness_version !== READINESS_VERSION
+        );
+      }
+      
+      // Limit to batchSize after filtering
+      bottles = bottles.slice(0, batchSize);
+
+      if (bottles.length === 0) {
+        console.log('[BackfillReadiness] No bottles match filter criteria, moving cursor');
+        // Update cursor to last fetched bottle to continue
+        if (fetchedBottles.length > 0) {
+          cursor = fetchedBottles[fetchedBottles.length - 1].id;
+          // Update job cursor
+          await supabase
+            .from('readiness_backfill_jobs')
+            .update({ cursor })
+            .eq('id', job.id);
+          
+          // If we fetched less than requested, we're done
+          if (fetchedBottles.length < fetchSize) {
+            break;
+          }
+          continue; // Try next batch
+        }
+        break;
+      }
 
       if (bottlesError) throw bottlesError;
 
@@ -454,9 +495,9 @@ serve(async (req) => {
         })
         .eq('id', job.id);
 
-      // Check if done
-      if (bottles.length < batchSize) {
-        console.log('[BackfillReadiness] Batch incomplete, job done');
+      // Check if done - we're done if we fetched less than requested
+      if (fetchedBottles.length < fetchSize) {
+        console.log('[BackfillReadiness] Reached end of bottles table');
         break;
       }
     }
