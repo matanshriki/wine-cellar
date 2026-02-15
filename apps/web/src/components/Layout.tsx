@@ -8,7 +8,6 @@ import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CompleteProfileModal } from './CompleteProfileModal';
 import { UserMenu } from './UserMenu';
-import { CompactThemeToggle } from './ThemeToggle';
 import { BottomNav } from './BottomNav';
 import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
@@ -341,7 +340,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* End side actions */}
             <div className="flex items-center gap-3">
-              <CompactThemeToggle />
               <LanguageSwitcher />
               <UserMenu />
             </div>

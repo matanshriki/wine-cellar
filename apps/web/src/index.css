@@ -1,7 +1,6 @@
 /* Import luxury design tokens */
-/* NOTE: design-tokens.css must come AFTER luxury-theme.css to ensure theme-specific variables win */
-@import './styles/luxury-theme.css';
 @import './styles/design-tokens.css';
+@import './styles/luxury-theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -30,11 +29,10 @@
 
   body {
     font-family: var(--font-body);
-    background-color: var(--bg);
-    color: var(--text-primary);
+    background-color: var(--color-stone-50);
+    color: var(--color-stone-900);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
     
     /* iOS scrolling fixes */
@@ -57,7 +55,7 @@
     font-family: var(--font-display);
     font-weight: var(--font-semibold);
     letter-spacing: -0.01em;
-    color: var(--text-heading);
+    color: var(--color-stone-950);
   }
 
   h1 {

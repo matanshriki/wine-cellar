@@ -13,7 +13,6 @@ import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
-import { ThemeToggle } from '../components/ThemeToggle';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -265,17 +264,6 @@ export function ProfilePage() {
                 <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.memberSince')}</h3>
                 <p className="text-base text-gray-900">
                   {new Date(profile.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-
-            {/* Theme Preference Section */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Theme</h3>
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <p className="text-sm text-gray-600">
-                  Switch between light and dark themes
                 </p>
               </div>
             </div>
