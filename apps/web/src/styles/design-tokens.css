@@ -207,3 +207,114 @@
   --input-border-width: 1px;
 }
 
+/* === Theme System === */
+
+/**
+ * White Theme (Light Mode) - Default
+ * Clean, elegant, classic wine cellar aesthetic
+ */
+[data-theme="white"],
+:root {
+  /* Backgrounds */
+  --bg: var(--color-stone-50);
+  --bg-elevated: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-muted: var(--color-stone-100);
+  
+  /* Text */
+  --text-primary: var(--color-stone-950);
+  --text-secondary: var(--color-stone-700);
+  --text-tertiary: var(--color-stone-500);
+  --text-inverted: #FFFFFF;
+  
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  
+  /* Interactive */
+  --interactive-hover: rgba(0, 0, 0, 0.04);
+  --interactive-active: rgba(0, 0, 0, 0.08);
+  
+  /* Wine accent */
+  --wine-500: var(--color-wine-500);
+  --wine-600: var(--color-wine-600);
+  --wine-700: var(--color-wine-700);
+  --wine-50: var(--color-wine-50);
+  
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Glow */
+  --glow: rgba(193, 68, 99, 0.15);
+  
+  /* Meta theme color for mobile */
+  --theme-color: #FFFFFF;
+}
+
+/**
+ * Red Theme (Luxury Dark Mode)
+ * Apple TV-style premium dark theme with wine-inspired accents
+ */
+[data-theme="red"] {
+  /* Backgrounds - deep blacks with subtle warmth */
+  --bg: #0B0B0D;
+  --bg-elevated: #111114;
+  --bg-surface: #16161B;
+  --bg-surface-elevated: #1C1C22;
+  --bg-muted: #0F0F11;
+  
+  /* Text - warm off-whites for luxury feel */
+  --text-primary: #F4F1EC;
+  --text-secondary: #B9B3AA;
+  --text-tertiary: #7A7770;
+  --text-inverted: #0B0B0D;
+  
+  /* Borders - subtle, soft separation */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  
+  /* Interactive */
+  --interactive-hover: rgba(255, 255, 255, 0.06);
+  --interactive-active: rgba(255, 255, 255, 0.10);
+  
+  /* Wine accent - restrained deep wine red */
+  --wine-500: #8B2741;
+  --wine-600: #7A1E2D;
+  --wine-700: #6B1729;
+  --wine-50: rgba(139, 39, 65, 0.10);
+  
+  /* Shadows - deeper but soft */
+  --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 8px 12px -2px rgb(0 0 0 / 0.4), 0 4px 6px -2px rgb(0 0 0 / 0.3);
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  
+  /* Glow - subtle wine red */
+  --glow: rgba(122, 30, 45, 0.18);
+  
+  /* Meta theme color */
+  --theme-color: #0B0B0D;
+}
+
+/* Smooth theme transitions (respect prefers-reduced-motion) */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Exclude elements that should animate differently */
+  *:where([class*="motion-"], [class*="animate-"]) {
+    transition-property: none;
+  }
+}
+
+/* Skip transitions when theme changes */
+[data-theme-transitioning] * {
+  transition: none !important;
+}

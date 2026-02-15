@@ -22,6 +22,7 @@ import { WineEventBanner, type WineEvent } from '../components/WineEventBanner';
 import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
 import { ReceiptReviewModal } from '../components/ReceiptReviewModal'; // Receipt scanning
 import { DrinkWindowDebugPanel } from '../components/DrinkWindowDebugPanel'; // DEV: Debug drink windows
+import { CompactThemeToggle } from '../components/ThemeToggle'; // Theme toggle
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -1300,27 +1301,33 @@ export function CellarPage() {
        */}
       <div className="mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-          <div>
-            <h1 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ 
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 'var(--font-bold)',
-                lineHeight: 'var(--leading-tight)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('cellar.title')}
-            </h1>
-            <p 
-              className="text-sm sm:text-base mt-1"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {filteredBottles.length === bottlesInCellar.length
-                ? t('cellar.bottleCount', { count: totalBottleCount })
-                : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
-            </p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 
+                className="text-2xl sm:text-3xl font-bold"
+                style={{ 
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 'var(--font-bold)',
+                  lineHeight: 'var(--leading-tight)',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {t('cellar.title')}
+              </h1>
+              <p 
+                className="text-sm sm:text-base mt-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {filteredBottles.length === bottlesInCellar.length
+                  ? t('cellar.bottleCount', { count: totalBottleCount })
+                  : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
+              </p>
+            </div>
+            {/* Theme Toggle */}
+            <div className="sm:hidden">
+              <CompactThemeToggle />
+            </div>
           </div>
 
           {/* Action Buttons - Always show Add Bottle, others only when cellar has bottles */}
@@ -1329,9 +1336,13 @@ export function CellarPage() {
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
-            className="flex flex-col xs:flex-row gap-2 sm:gap-2"
+            className="flex flex-col xs:flex-row gap-2 sm:gap-2 items-center"
             style={{ pointerEvents: 'auto' }} // Ensure buttons work immediately
           >
+            {/* Theme Toggle - Desktop */}
+            <div className="hidden sm:block">
+              <CompactThemeToggle />
+            </div>
             {/* Import CSV - Only show when cellar has bottles AND user has permission */}
             {bottlesInCellar.length > 0 && csvImportEnabled && (
               <button

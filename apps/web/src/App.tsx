@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
+import { ThemeProvider } from './contexts/ThemeContext'; // Theme switching
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -217,13 +218,15 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
-          <SupabaseAuthProvider>
-            <FeatureFlagsProvider>
-              <AddBottleProvider>
-                <AppRoutes />
-              </AddBottleProvider>
-            </FeatureFlagsProvider>
-          </SupabaseAuthProvider>
+          <ThemeProvider>
+            <SupabaseAuthProvider>
+              <FeatureFlagsProvider>
+                <AddBottleProvider>
+                  <AppRoutes />
+                </AddBottleProvider>
+              </FeatureFlagsProvider>
+            </SupabaseAuthProvider>
+          </ThemeProvider>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>
