@@ -228,7 +228,7 @@
   --text-heading: var(--color-stone-950);  /* Heading text (was stone-950 before theme) */
   --text-secondary: var(--color-stone-700);
   --text-tertiary: var(--color-stone-500);
-  --text-inverted: #FFFFFF;
+  --text-inverse: #FFFFFF;  /* For buttons with dark backgrounds */
   
   /* Borders */
   --border-subtle: rgba(0, 0, 0, 0.06);
@@ -274,7 +274,7 @@
   --text-heading: #F4F1EC;        /* Heading text - brightest */
   --text-secondary: #B9B3AA;
   --text-tertiary: #7A7770;
-  --text-inverted: #0B0B0D;
+  --text-inverse: #FFFFFF;        /* For buttons - use white for maximum contrast */
   
   /* Borders - subtle, soft separation */
   --border-subtle: rgba(255, 255, 255, 0.06);
