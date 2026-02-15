@@ -109,9 +109,15 @@ export function ThemeToggle() {
 export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
 
+  const handleClick = () => {
+    const newTheme = theme === 'white' ? 'red' : 'white';
+    console.log('[ThemeToggle] Button clicked! Switching from', theme, 'to', newTheme);
+    setTheme(newTheme);
+  };
+
   return (
     <motion.button
-      onClick={() => setTheme(theme === 'white' ? 'red' : 'white')}
+      onClick={handleClick}
       className="relative flex items-center justify-center rounded-full"
       style={{
         width: '36px',
