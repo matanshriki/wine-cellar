@@ -1,6 +1,7 @@
 /* Import luxury design tokens */
-@import './styles/design-tokens.css';
+/* NOTE: design-tokens.css must come AFTER luxury-theme.css to ensure theme-specific variables win */
 @import './styles/luxury-theme.css';
+@import './styles/design-tokens.css';
 
 @tailwind base;
 @tailwind components;
