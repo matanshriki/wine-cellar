@@ -23,6 +23,7 @@ import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
 import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
+import { ThemeQA } from './components/ThemeQA'; // DEV-ONLY: Theme regression checker
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -205,6 +206,11 @@ function AppRoutes() {
             <AgentPageWorking />
           </PrivateRoute>
         }
+      />
+      {/* DEV-ONLY: Theme QA - Visual regression checker for theme system */}
+      <Route
+        path="/theme-qa"
+        element={<ThemeQA />}
       />
       <Route path="/" element={<Navigate to="/cellar" replace />} />
       <Route path="*" element={<Navigate to="/cellar" replace />} />
