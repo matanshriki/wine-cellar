@@ -1,6 +1,8 @@
 /* Import luxury design tokens */
-@import './styles/design-tokens.css';
+/* CRITICAL: design-tokens.css MUST come AFTER luxury-theme.css */
+/* This ensures theme-specific [data-theme] rules override :root defaults */
 @import './styles/luxury-theme.css';
+@import './styles/design-tokens.css';
 
 @tailwind base;
 @tailwind components;

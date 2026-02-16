@@ -1,18 +1,19 @@
 /**
- * Dark Luxury Space Design System
+ * Luxury Theme Utility Variables
  * 
  * Inspired by: Apple, Rolex, Porsche, Airbnb
- * - Deep night base with subtle star-grain texture
  * - Refined glass panels (NOT sci-fi)
  * - Warm wine accents (burgundy + champagne/gold)
  * - Classic, readable, premium
+ * 
+ * NOTE: Theme-specific colors (--bg, --text-primary, etc.) are now
+ * defined in design-tokens.css to support White/Red theme toggle.
+ * This file contains only utility variables and component styles.
  */
 
 :root {
-  /* ===== BACKGROUND LAYERS (LIGHT LUXURY) ===== */
+  /* Legacy utility variables (theme-neutral) */
   --bg-base: #faf8f5;              /* Warm ivory/champagne base */
-  --bg-surface: #ffffff;           /* Pure white for cards */
-  --bg-surface-elevated: #f5f3f0;  /* Subtle warm grey for raised surfaces */
   --bg-overlay: rgba(0, 0, 0, 0.4);  /* Modal backdrop */
   
   /* Extremely subtle vignette */
@@ -22,36 +23,13 @@
     rgba(114, 47, 55, 0.02) 100%
   );
 
-  /* ===== BORDERS ===== */
-  --border-base: rgba(114, 47, 55, 0.12);    /* Standard border (more visible) */
-  --border-subtle: rgba(114, 47, 55, 0.08);
-  --border-medium: rgba(114, 47, 55, 0.15);
-  --border-strong: rgba(114, 47, 55, 0.18);
+  /* Legacy borders (use sparingly, prefer theme tokens) */
+  --border-base: rgba(114, 47, 55, 0.12);
   --border-accent: rgba(212, 175, 55, 0.35); /* Gold tint */
   
-  /* ===== ADDITIONAL BACKGROUNDS ===== */
   --bg-subtle: #f5f3f0;  /* Slightly darker than surface for nested elements */
-
-  /* ===== TEXT (HIGH CONTRAST FOR LIGHT BG) ===== */
-  --text-primary: #1a1614;
-  --text-secondary: #6b6560;
-  --text-tertiary: #9b968f;
-  --text-muted: #c4c0ba;
-  --text-inverse: #ffffff;
-
-  /* ===== WINE ACCENT (Primary) ===== */
-  --wine-50: #faf5f6;
-  --wine-100: #f5e8eb;
-  --wine-200: #ebd1d6;
-  --wine-300: #d9a8b2;
-  --wine-400: #c47889;
-  --wine-500: #a44d5a;
-  --wine-600: #8B3A47;
-  --wine-700: #722F37;
-  --wine-800: #5a242c;
-  --wine-900: #401a20;
-
-  /* ===== CHAMPAGNE/GOLD ACCENT (Highlight) ===== */
+  
+  /* Gold accent palette */
   --gold-50: #fefdfb;
   --gold-100: #fdf9f0;
   --gold-200: #f9f0d9;
