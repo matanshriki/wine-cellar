@@ -82,6 +82,9 @@ export function CompactThemeToggle() {
 
   const handleClick = () => {
     const newTheme = theme === 'white' ? 'red' : 'white';
+    console.log('[CompactThemeToggle] ===== BUTTON CLICKED =====');
+    console.log('[CompactThemeToggle] Current theme:', theme);
+    console.log('[CompactThemeToggle] Switching to:', newTheme);
     setTheme(newTheme);
   };
 
