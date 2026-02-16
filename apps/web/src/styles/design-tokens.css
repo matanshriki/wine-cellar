@@ -212,10 +212,10 @@
    ============================================ */
 
 /**
- * Light Theme (Default)
+ * White Theme (Default/Light Mode)
  * CRITICAL: These values MUST match current production exactly
  */
-[data-theme="light"],
+[data-theme="white"],
 :root {
   /* Backgrounds */
   --bg: var(--color-stone-50);           /* #faf9f7 - main background */
@@ -256,10 +256,10 @@
 }
 
 /**
- * Dark Theme (Luxury)
+ * Red Theme (Luxury Dark Mode)
  * Apple TV-style premium dark theme
  */
-[data-theme="dark"] {
+[data-theme="red"] {
   /* Backgrounds - deep blacks with subtle warmth */
   --bg: #0B0B0D;                    /* deep black */
   --bg-elevated: #111114;            /* slightly elevated */

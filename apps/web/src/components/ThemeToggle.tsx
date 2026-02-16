@@ -20,17 +20,17 @@ export function ThemeToggle() {
       background: 'var(--bg-muted)',
       border: '1px solid var(--border-subtle)',
     }}>
-      {/* Light Theme Button */}
+      {/* White Theme Button */}
       <motion.button
-        onClick={() => setTheme('light')}
+        onClick={() => setTheme('white')}
         className="relative px-6 py-2 rounded-full text-sm font-medium transition-colors"
         style={{
-          background: theme === 'light' ? 'var(--bg-surface)' : 'transparent',
-          color: theme === 'light' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: theme === 'light' ? 'var(--shadow-sm)' : 'none',
+          background: theme === 'white' ? 'var(--bg-surface)' : 'transparent',
+          color: theme === 'white' ? 'var(--text-primary)' : 'var(--text-secondary)',
+          boxShadow: theme === 'white' ? 'var(--shadow-sm)' : 'none',
         }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Light theme"
+        aria-label="White theme (light mode)"
       >
         {/* Sun icon */}
         <div className="flex items-center gap-2">
@@ -45,28 +45,28 @@ export function ThemeToggle() {
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
-          <span>Light</span>
+          <span>White</span>
         </div>
       </motion.button>
 
-      {/* Dark Theme Button */}
+      {/* Red Theme Button */}
       <motion.button
-        onClick={() => setTheme('dark')}
+        onClick={() => setTheme('red')}
         className="relative px-6 py-2 rounded-full text-sm font-medium transition-colors"
         style={{
-          background: theme === 'dark' ? 'var(--bg-surface)' : 'transparent',
-          color: theme === 'dark' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: theme === 'dark' ? 'var(--shadow-sm)' : 'none',
+          background: theme === 'red' ? 'var(--bg-surface)' : 'transparent',
+          color: theme === 'red' ? 'var(--text-primary)' : 'var(--text-secondary)',
+          boxShadow: theme === 'red' ? 'var(--shadow-sm)' : 'none',
         }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Dark theme"
+        aria-label="Red theme (luxury dark mode)"
       >
         {/* Moon icon */}
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
-          <span>Dark</span>
+          <span>Red</span>
         </div>
       </motion.button>
     </div>
@@ -81,7 +81,7 @@ export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   const handleClick = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
+    const newTheme = theme === 'white' ? 'red' : 'white';
     setTheme(newTheme);
   };
 
@@ -92,21 +92,21 @@ export function CompactThemeToggle() {
       style={{
         width: '36px',
         height: '36px',
-        background: theme === 'light'
+        background: theme === 'white'
           ? 'rgba(0, 0, 0, 0.04)'
           : 'rgba(255, 255, 255, 0.06)',
         color: 'var(--text-secondary)',
       }}
       whileTap={{ scale: 0.9 }}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+      aria-label={`Switch to ${theme === 'white' ? 'red' : 'white'} theme`}
     >
-      {theme === 'light' ? (
-        // Moon icon for light mode (click to go dark)
+      {theme === 'white' ? (
+        // Moon icon for white mode (click to go red/dark)
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
       ) : (
-        // Sun icon for dark mode (click to go light)
+        // Sun icon for red mode (click to go white/light)
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="5" />
           <line x1="12" y1="1" x2="12" y2="3" />

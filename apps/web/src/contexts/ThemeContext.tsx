@@ -13,7 +13,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'white' | 'red';
 
 interface ThemeContextType {
   theme: Theme;
@@ -36,7 +36,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, setThemeState] = useState<Theme>('white');
   const [isLoading, setIsLoading] = useState(true);
 
   // Load theme on mount
@@ -48,7 +48,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     try {
       // 1. Try localStorage first (instant)
       const stored = localStorage.getItem('theme');
-      if (stored === 'light' || stored === 'dark') {
+      if (stored === 'white' || stored === 'red') {
         setThemeState(stored);
         applyTheme(stored);
       }
@@ -63,7 +63,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
           .single();
 
         if (profile?.theme_preference && 
-            (profile.theme_preference === 'light' || profile.theme_preference === 'dark')) {
+            (profile.theme_preference === 'white' || profile.theme_preference === 'red')) {
           setThemeState(profile.theme_preference);
           applyTheme(profile.theme_preference);
           localStorage.setItem('theme', profile.theme_preference);
@@ -71,9 +71,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       }
     } catch (error) {
       console.error('[ThemeContext] Error loading theme:', error);
-      // Fallback to light theme
-      setThemeState('light');
-      applyTheme('light');
+      // Fallback to white theme
+      setThemeState('white');
+      applyTheme('white');
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +131,7 @@ function applyTheme(theme: Theme) {
   // Update meta theme-color for mobile browsers
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    metaTheme.setAttribute('content', theme === 'dark' ? '#0B0B0D' : '#FFFFFF');
+    metaTheme.setAttribute('content', theme === 'red' ? '#0B0B0D' : '#FFFFFF');
   }
   
   console.log('[ThemeContext] Theme applied successfully');
