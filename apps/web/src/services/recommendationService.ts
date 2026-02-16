@@ -2,11 +2,20 @@
  * Recommendation Service
  * 
  * Generates wine recommendations from user's Supabase cellar.
+ * 
+ * Features:
+ * - Smart variety algorithm (increased randomization)
+ * - History-aware (penalizes recently opened bottles)
+ * - Session rotation (tracks shown bottles in localStorage)
  */
 
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/supabase';
 import * as labelArtService from './labelArtService';
+
+// LocalStorage key for tracking recently shown recommendations
+const RECENT_RECOMMENDATIONS_KEY = 'wine_recent_recommendations';
+const ROTATION_DAYS = 3; // How many days to remember shown bottles
 
 type Bottle = Database['public']['Tables']['bottles']['Row'];
 type Wine = Database['public']['Tables']['wines']['Row'];
@@ -47,6 +56,11 @@ export interface Recommendation {
 
 /**
  * Generate wine recommendations from user's cellar
+ * 
+ * Improvements:
+ * - Increased randomization for variety
+ * - Penalizes recently recommended bottles
+ * - Better rotation to prevent same bottles appearing
  */
 export async function getRecommendations(input: RecommendationInput): Promise<Recommendation[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,6 +93,23 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   }
 
   console.log('[RecommendationService] Found', bottles.length, 'bottles');
+
+  // Get recently recommended bottles (last 7 days) to avoid repetition
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  const { data: recentHistory } = await supabase
+    .from('consumption_history')
+    .select('bottle_id')
+    .eq('user_id', user.id)
+    .gte('opened_at', sevenDaysAgo.toISOString());
+
+  const recentlyOpenedBottleIds = new Set(recentHistory?.map(h => h.bottle_id) || []);
+  console.log('[RecommendationService] Recently opened bottles:', recentlyOpenedBottleIds.size);
+
+  // Get recently shown recommendations from localStorage (rotation tracking)
+  const recentlyShownBottleIds = getRecentlyShownBottles();
+  console.log('[RecommendationService] Recently shown bottles:', recentlyShownBottleIds.size);
 
   // Cast to proper type
   const bottlesWithWine = bottles as unknown as BottleWithWine[];
@@ -163,14 +194,37 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     if (readinessStatus === 'inwindow') score += 15;
     if (readinessStatus === 'ready') score += 10;
 
-    // Random factor for variety
-    score += Math.random() * 10;
+    // Penalty for recently opened bottles (prevents repetition)
+    if (recentlyOpenedBottleIds.has(bottle.id)) {
+      score -= 40; // Strong penalty to ensure variety
+      console.log('[RecommendationService] Penalizing recently opened:', bottle.wine.wine_name);
+    }
+
+    // Penalty for recently shown bottles (even if not opened)
+    if (recentlyShownBottleIds.has(bottle.id)) {
+      score -= 25; // Moderate penalty to encourage rotation
+      console.log('[RecommendationService] Penalizing recently shown:', bottle.wine.wine_name);
+    }
+
+    // INCREASED random factor for more variety (was 10, now 25)
+    // This ensures different bottles can win even with similar base scores
+    score += Math.random() * 25;
 
     return { bottle, score };
   });
 
   // Sort by score and take top 3
   scoredBottles.sort((a, b) => b.score - a.score);
+  
+  // Debug: Log top 5 scores to understand selection
+  console.log('[RecommendationService] Top 5 scores:', 
+    scoredBottles.slice(0, 5).map(b => ({
+      name: b.bottle.wine.wine_name,
+      score: Math.round(b.score),
+      readiness: b.bottle.readiness_status
+    }))
+  );
+  
   const topBottles = scoredBottles.slice(0, 3);
 
   // Format recommendations
@@ -207,8 +261,65 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     };
   });
 
+  // Track these recommendations for rotation
+  trackShownBottles(recommendations.map(r => r.bottleId));
+
   console.log('[RecommendationService] Generated', recommendations.length, 'recommendations');
   return recommendations;
+}
+
+/**
+ * Get recently shown bottle IDs from localStorage
+ */
+function getRecentlyShownBottles(): Set<string> {
+  try {
+    const stored = localStorage.getItem(RECENT_RECOMMENDATIONS_KEY);
+    if (!stored) return new Set();
+
+    const data = JSON.parse(stored);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - ROTATION_DAYS);
+
+    // Filter out old entries
+    const recent = data.filter((entry: { date: string }) => 
+      new Date(entry.date) > cutoffDate
+    );
+
+    return new Set(recent.map((entry: { bottleId: string }) => entry.bottleId));
+  } catch (error) {
+    console.error('[RecommendationService] Error reading recent bottles:', error);
+    return new Set();
+  }
+}
+
+/**
+ * Track bottles shown in this recommendation session
+ */
+function trackShownBottles(bottleIds: string[]) {
+  try {
+    const stored = localStorage.getItem(RECENT_RECOMMENDATIONS_KEY);
+    const existing = stored ? JSON.parse(stored) : [];
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - ROTATION_DAYS);
+
+    // Remove old entries and add new ones
+    const filtered = existing.filter((entry: { date: string }) => 
+      new Date(entry.date) > cutoffDate
+    );
+
+    const newEntries = bottleIds.map(bottleId => ({
+      bottleId,
+      date: new Date().toISOString()
+    }));
+
+    const updated = [...filtered, ...newEntries];
+    localStorage.setItem(RECENT_RECOMMENDATIONS_KEY, JSON.stringify(updated));
+    
+    console.log('[RecommendationService] Tracked', bottleIds.length, 'shown bottles');
+  } catch (error) {
+    console.error('[RecommendationService] Error tracking shown bottles:', error);
+  }
 }
 
 function generateExplanation(bottle: BottleWithWine, wine: Wine, input: RecommendationInput, rank: number): string {
