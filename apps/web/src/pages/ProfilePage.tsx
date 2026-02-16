@@ -7,10 +7,12 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 
@@ -258,6 +260,12 @@ export function ProfilePage() {
                 <p className="text-base text-gray-900">
                   {profile.preferred_language === 'he' ? 'עברית (Hebrew)' : 'English'}
                 </p>
+              </div>
+
+              {/* Theme Preference */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Theme Preference</h3>
+                <ThemeToggle />
               </div>
 
               <div>

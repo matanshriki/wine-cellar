@@ -207,3 +207,107 @@
   --input-border-width: 1px;
 }
 
+/* ============================================
+   THEME SYSTEM - Dark Mode V2
+   ============================================ */
+
+/**
+ * Light Theme (Default)
+ * CRITICAL: These values MUST match current production exactly
+ */
+[data-theme="light"],
+:root {
+  /* Backgrounds */
+  --bg: var(--color-stone-50);           /* #faf9f7 - main background */
+  --bg-elevated: #FFFFFF;                 /* white for cards */
+  --bg-surface: #FFFFFF;                  /* white surfaces */
+  --bg-surface-elevated: #FFFFFF;         /* elevated surfaces */
+  --bg-muted: var(--color-stone-100);    /* #f0ede7 - muted areas */
+  
+  /* Text - EXACT production values */
+  --text-primary: var(--color-stone-900);   /* #2d2926 - body text */
+  --text-heading: var(--color-stone-950);   /* #1a1816 - headings */
+  --text-secondary: var(--color-stone-700); /* #57524b - secondary text */
+  --text-tertiary: var(--color-stone-500);  /* #8a8377 - tertiary text */
+  --text-inverse: #FFFFFF;                  /* white text on dark backgrounds */
+  
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  
+  /* Interactive */
+  --interactive-hover: rgba(0, 0, 0, 0.04);
+  --interactive-active: rgba(0, 0, 0, 0.08);
+  
+  /* Wine accent (keep consistent across themes) */
+  --wine-500: var(--color-wine-500);
+  --wine-600: var(--color-wine-600);
+  --wine-700: var(--color-wine-700);
+  --wine-50: var(--color-wine-50);
+  
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Glow */
+  --glow: rgba(193, 68, 99, 0.15);
+}
+
+/**
+ * Dark Theme (Luxury)
+ * Apple TV-style premium dark theme
+ */
+[data-theme="dark"] {
+  /* Backgrounds - deep blacks with subtle warmth */
+  --bg: #0B0B0D;                    /* deep black */
+  --bg-elevated: #111114;            /* slightly elevated */
+  --bg-surface: #16161B;             /* card surfaces */
+  --bg-surface-elevated: #1C1C22;    /* elevated cards */
+  --bg-muted: #0F0F11;               /* muted areas */
+  
+  /* Text - warm off-whites for luxury feel */
+  --text-primary: #E8E4DC;           /* body text - softer for readability */
+  --text-heading: #F4F1EC;           /* headings - brightest */
+  --text-secondary: #B9B3AA;         /* secondary text */
+  --text-tertiary: #7A7770;          /* tertiary text */
+  --text-inverse: #FFFFFF;           /* white text for buttons - MAX CONTRAST */
+  
+  /* Borders - subtle, soft separation */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  
+  /* Interactive */
+  --interactive-hover: rgba(255, 255, 255, 0.06);
+  --interactive-active: rgba(255, 255, 255, 0.10);
+  
+  /* Wine accent - restrained deep wine red */
+  --wine-500: #8B2741;
+  --wine-600: #7A1E2D;
+  --wine-700: #6B1729;
+  --wine-50: rgba(139, 39, 65, 0.10);
+  
+  /* Shadows - deeper but soft */
+  --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 8px 12px -2px rgb(0 0 0 / 0.4), 0 4px 6px -2px rgb(0 0 0 / 0.3);
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  
+  /* Glow - subtle wine red */
+  --glow: rgba(122, 30, 45, 0.18);
+}
+
+/* Smooth theme transitions - SELECTIVE ONLY */
+@media (prefers-reduced-motion: no-preference) {
+  /* Only apply to themeable containers */
+  body,
+  [class*="luxury-card"],
+  [class*="modal"],
+  [class*="sheet"] {
+    transition-property: background-color, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+

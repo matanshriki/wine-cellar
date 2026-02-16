@@ -13,6 +13,7 @@ import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
+import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
@@ -340,6 +341,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* End side actions */}
             <div className="flex items-center gap-3">
+              <CompactThemeToggle />
               <LanguageSwitcher />
               <UserMenu />
             </div>
