@@ -33,10 +33,13 @@
     font-family: var(--font-body);
     background-color: var(--bg);
     color: var(--text-primary);
+    /* Apple TV-style font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "kern" 1;
+    font-kerning: normal;
     
     /* iOS scrolling fixes */
     height: 100%;
@@ -59,6 +62,9 @@
     font-weight: var(--font-semibold);
     letter-spacing: -0.01em;
     color: var(--text-heading);
+    /* Enhanced rendering for dark mode */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1 {
@@ -608,3 +614,29 @@
   }
 }
 
+
+/* === DARK MODE OPTIMIZATIONS === */
+/* Apple TV/Netflix-style text rendering for dark backgrounds */
+@layer base {
+  [data-theme="red"] body {
+    /* Brighter, crisper text on dark backgrounds */
+    font-weight: 400; /* Normal weight renders better on dark */
+  }
+  
+  /* Headings need slightly more weight on dark for same perceived weight */
+  [data-theme="red"] h1,
+  [data-theme="red"] h2,
+  [data-theme="red"] h3,
+  [data-theme="red"] h4,
+  [data-theme="red"] h5,
+  [data-theme="red"] h6 {
+    font-weight: 600; /* Semibold for dark mode */
+    letter-spacing: -0.02em; /* Tighter for better readability */
+  }
+  
+  /* Prevent text from looking blurry on dark backgrounds */
+  [data-theme="red"] * {
+    text-shadow: none;
+    font-synthesis: none;
+  }
+}

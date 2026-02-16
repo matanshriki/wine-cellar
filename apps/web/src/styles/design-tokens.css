@@ -257,45 +257,45 @@
 
 /**
  * Red Theme (Luxury Dark Mode)
- * Apple TV-style premium dark theme
+ * Apple TV/Netflix/Airbnb-style premium dark theme
  */
 [data-theme="red"] {
-  /* Backgrounds - deep blacks with subtle warmth */
+  /* Backgrounds - deep blacks with subtle warmth (Apple TV inspired) */
   --bg: #0B0B0D;                    /* deep black */
   --bg-elevated: #111114;            /* slightly elevated */
   --bg-surface: #16161B;             /* card surfaces */
   --bg-surface-elevated: #1C1C22;    /* elevated cards */
   --bg-muted: #0F0F11;               /* muted areas */
   
-  /* Text - warm off-whites for luxury feel */
-  --text-primary: #E8E4DC;           /* body text - softer for readability */
-  --text-heading: #F4F1EC;           /* headings - brightest */
-  --text-secondary: #B9B3AA;         /* secondary text */
-  --text-tertiary: #7A7770;          /* tertiary text */
-  --text-inverse: #FFFFFF;           /* white text for buttons - MAX CONTRAST */
+  /* Text - Apple TV style: bright, crisp, maximum contrast */
+  --text-primary: #F5F5F7;           /* body text - Apple's standard (brighter) */
+  --text-heading: #FFFFFF;           /* headings - pure white like Netflix */
+  --text-secondary: #A1A1A6;         /* secondary text - Apple's gray */
+  --text-tertiary: #6E6E73;          /* tertiary text - Apple's muted gray */
+  --text-inverse: #000000;           /* black text for light buttons */
   
   /* Borders - subtle, soft separation */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
   
   /* Interactive */
-  --interactive-hover: rgba(255, 255, 255, 0.06);
-  --interactive-active: rgba(255, 255, 255, 0.10);
+  --interactive-hover: rgba(255, 255, 255, 0.08);
+  --interactive-active: rgba(255, 255, 255, 0.12);
   
-  /* Wine accent - restrained deep wine red */
-  --wine-500: #8B2741;
-  --wine-600: #7A1E2D;
-  --wine-700: #6B1729;
-  --wine-50: rgba(139, 39, 65, 0.10);
+  /* Wine accent - vibrant for dark mode (Airbnb-style accent) */
+  --wine-500: #A63552;               /* brighter wine red */
+  --wine-600: #8B2741;               /* medium wine */
+  --wine-700: #7A1E2D;               /* deep wine */
+  --wine-50: rgba(166, 53, 82, 0.12);
   
-  /* Shadows - deeper but soft */
-  --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
-  --shadow-card-hover: 0 8px 12px -2px rgb(0 0 0 / 0.4), 0 4px 6px -2px rgb(0 0 0 / 0.3);
-  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  /* Shadows - Apple TV style (softer, more layered) */
+  --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 8px 16px -2px rgb(0 0 0 / 0.5);
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.6);
   
   /* Glow - subtle wine red */
-  --glow: rgba(122, 30, 45, 0.18);
+  --glow: rgba(166, 53, 82, 0.20);
 }
 
 /* Smooth theme transitions - SELECTIVE ONLY */
