@@ -22,6 +22,10 @@ interface Props {
     country?: string;
     grapes?: string;
     color?: string;
+    // NEW: Stable storage paths (preferred)
+    label_image_path?: string;
+    label_image_bucket?: string;
+    // Legacy: URL for backward compatibility
     label_image_url?: string;
     vivino_url?: string;
   };
@@ -76,6 +80,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       })(),
       notes: bottle?.notes || '',
       label_image_url: prefillData?.label_image_url || '',
+      label_image_path: prefillData?.label_image_path || '',
+      label_image_bucket: prefillData?.label_image_bucket || 'labels',
       vivino_url: prefillData?.vivino_url || (bottle?.wine as any)?.vivino_url || '',
       rating: (bottle?.wine as any)?.rating?.toString() || '', // Vivino rating (0-5 scale)
     };
@@ -421,7 +427,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           storage_location: null,
           bottle_size_ml: 750,
           tags: null,
-          // Use the uploaded label image as the wine's image
+          // NEW: Save stable storage path (preferred)
+          image_path: formData.label_image_path || null,
+          // Legacy: Save URL for backward compatibility (external URLs)
           image_url: formData.label_image_url || null,
         };
         

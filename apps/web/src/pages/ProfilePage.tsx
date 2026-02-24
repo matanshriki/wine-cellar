@@ -15,6 +15,7 @@ import { AvatarUpload } from '../components/AvatarUpload';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
+import { AdminImageBackfill } from '../components/AdminImageBackfill';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -306,6 +307,7 @@ export function ProfilePage() {
       {/* Admin Tools */}
       <AdminWineProfileBackfill />
       <AdminReadinessBackfill />
+      <AdminImageBackfill />
     </div>
   );
 }

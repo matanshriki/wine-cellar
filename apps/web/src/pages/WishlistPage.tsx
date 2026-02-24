@@ -531,8 +531,19 @@ export function WishlistPage() {
             const { scanLabelImage } = await import('../services/labelScanService');
             const result = await scanLabelImage(file);
 
-            // Step 2: Parse with AI
-            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            // Step 2: Generate temporary URL for AI parsing
+            const { data: signedUrlData, error: signedError } = await supabase.storage
+              .from(result.imageBucket)
+              .createSignedUrl(result.imagePath, 600);
+
+            if (signedError) {
+              throw new Error('Failed to process image');
+            }
+
+            const tempImageUrl = signedUrlData.signedUrl;
+
+            // Step 3: Parse with AI
+            const parseResult = await labelParseService.parseLabelImage(tempImageUrl);
 
             if (parseResult.success && parseResult.data) {
               // Convert parsed data to form data
@@ -548,7 +559,7 @@ export function WishlistPage() {
               });
 
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display only
                 data: {
                   wine_name: formData.wine_name || null,
                   producer: formData.producer || null,
@@ -600,8 +611,19 @@ export function WishlistPage() {
             const { scanLabelImage } = await import('../services/labelScanService');
             const result = await scanLabelImage(file);
 
-            // Step 2: Parse with AI
-            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            // Step 2: Generate temporary URL for AI parsing
+            const { data: signedUrlData, error: signedError } = await supabase.storage
+              .from(result.imageBucket)
+              .createSignedUrl(result.imagePath, 600);
+
+            if (signedError) {
+              throw new Error('Failed to process image');
+            }
+
+            const tempImageUrl = signedUrlData.signedUrl;
+
+            // Step 3: Parse with AI
+            const parseResult = await labelParseService.parseLabelImage(tempImageUrl);
 
             if (parseResult.success && parseResult.data) {
               // Convert parsed data to form data
@@ -617,7 +639,7 @@ export function WishlistPage() {
               });
 
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display only
                 data: {
                   wine_name: formData.wine_name || null,
                   producer: formData.producer || null,

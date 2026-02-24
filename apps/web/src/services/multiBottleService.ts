@@ -166,12 +166,25 @@ function createMockMultiBottleResult(imageUrl: string): MultiBottleExtractionRes
 export async function scanMultipleBottles(file: File): Promise<MultiBottleExtractionResult> {
   console.log('[multiBottleService] Starting multi-bottle scan');
   
-  // 1. Upload image
-  const imageUrl = await uploadLabelImage(file);
-  console.log('[multiBottleService] Image uploaded:', imageUrl);
+  // 1. Upload image (returns stable path)
+  const { path, bucket } = await uploadLabelImage(file);
+  console.log('[multiBottleService] Image uploaded, path:', path);
   
-  // 2. Extract multiple bottles
-  const result = await extractMultipleBottlesFromImage(imageUrl);
+  // 2. Generate temporary signed URL for Edge Function
+  const { data: signedUrlData, error: signedError } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, 600); // 10 minutes
+
+  if (signedError) {
+    console.error('[multiBottleService] Failed to create signed URL:', signedError);
+    throw new Error('Failed to generate image URL for processing');
+  }
+
+  const tempImageUrl = signedUrlData.signedUrl;
+  console.log('[multiBottleService] Created temporary URL for AI processing');
+  
+  // 3. Extract multiple bottles
+  const result = await extractMultipleBottlesFromImage(tempImageUrl);
   console.log('[multiBottleService] Extraction complete:', result);
   
   return result;

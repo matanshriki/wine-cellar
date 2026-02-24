@@ -137,6 +137,8 @@ export function CellarPage() {
   const [labelCaptureMode, setLabelCaptureMode] = useState<'camera' | 'upload'>('camera');
   const [extractedData, setExtractedData] = useState<{
     imageUrl: string;
+    imagePath?: string;
+    imageBucket?: string;
     data: ExtractedWineData;
   } | null>(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -1908,6 +1910,10 @@ export function CellarPage() {
             country: extractedData.data?.country || '',
             grapes: extractedData.data?.grape || '',
             color: extractedData.data?.wine_color || 'red',
+            // NEW: Save stable storage path
+            label_image_path: extractedData.imagePath,
+            label_image_bucket: extractedData.imageBucket,
+            // Legacy: temporary URL for immediate display only
             label_image_url: extractedData.imageUrl,
             vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
           } : undefined}
@@ -2089,18 +2095,29 @@ export function CellarPage() {
           toast.info(t('cellar.labelParse.reading'));
           
           try {
-            // Import scanLabelImage to upload and get URL
+            // Import scanLabelImage to upload and get stable path
             const { scanLabelImage } = await import('../services/labelScanService');
             const result = await scanLabelImage(file);
             
+            // Generate temporary URL for AI parsing
+            const { data: signedUrlData, error: signedError } = await supabase.storage
+              .from(result.imageBucket)
+              .createSignedUrl(result.imagePath, 600);
+
+            if (signedError) {
+              throw new Error('Failed to process image');
+            }
+
+            const tempImageUrl = signedUrlData.signedUrl;
+            
             // Now process with AI
-            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            const parseResult = await labelParseService.parseLabelImage(tempImageUrl);
             
             if (parseResult.success && parseResult.data) {
               const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
               
               const mergedData = {
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: {
                   wine_name: formData.wine_name || '',
                   producer: formData.producer || '',
@@ -2114,7 +2131,7 @@ export function CellarPage() {
               
               // Store extracted data for wishlist form
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: parseResult.data,
               });
               
@@ -2126,7 +2143,7 @@ export function CellarPage() {
               toast.warning(t('cellar.labelParse.noData'));
               // Still open form to allow manual entry
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: parseResult.data || {} as ExtractedWineData,
               });
               setShowWishlistForm(true);

@@ -20,7 +20,13 @@ import { scanLabelImage } from '../services/labelScanService';
 import type { ExtractedWineData } from '../services/labelScanService';
 
 interface LabelCaptureProps {
-  onSuccess: (data: { imageUrl: string; extractedData: ExtractedWineData; file?: File; source?: string }) => void;
+  onSuccess: (data: { 
+    imagePath: string; 
+    imageBucket: string; 
+    extractedData: ExtractedWineData; 
+    file?: File; 
+    source?: string 
+  }) => void;
   onCancel: () => void;
   mode?: 'camera' | 'upload'; // camera = direct camera, upload = photo library
 }
