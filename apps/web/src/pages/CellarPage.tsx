@@ -164,18 +164,19 @@ export function CellarPage() {
     },
     onCreateSeparate: async (candidate: any) => {
       console.log('[CellarPage] User chose to create separate entry', candidate);
-      // Continue with normal add flow
-      if (candidate.imageUrl && candidate.extractedData) {
+      // Continue with normal add flow (prefer path so we never store signed URL)
+      if (candidate.extractedData) {
         console.log('[CellarPage] Opening form with extracted data');
         setExtractedData({
+          imagePath: candidate.imagePath,
+          imageBucket: candidate.imageBucket ?? 'labels',
           imageUrl: candidate.imageUrl,
           data: candidate.extractedData,
         });
         setEditingBottle(null);
         setShowForm(true);
       } else {
-        console.warn('[CellarPage] Missing imageUrl or extractedData in candidate:', {
-          hasImageUrl: !!candidate.imageUrl,
+        console.warn('[CellarPage] Missing extractedData in candidate:', {
           hasExtractedData: !!candidate.extractedData,
           candidate,
         });
@@ -222,7 +223,7 @@ export function CellarPage() {
 
     // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
     const handleSmartScanComplete = async (e: CustomEvent) => {
-      const { mode, imageUrl, singleBottle, multipleBottles, detectedCount } = e.detail;
+      const { mode, imageUrl, imagePath, imageBucket, singleBottle, multipleBottles, detectedCount } = e.detail;
       
       if (mode === 'single') {
         // Single bottle detected - check for duplicate before showing form
@@ -232,8 +233,10 @@ export function CellarPage() {
             producer: singleBottle.extractedData.producer,
             name: singleBottle.extractedData.wine_name, // Fix: use wine_name not name
             vintage: singleBottle.extractedData.vintage,
-            // Store full context for "Create separate" flow
+            // Store path (preferred) and URL for "Create separate" flow
             imageUrl,
+            imagePath,
+            imageBucket,
             extractedData: singleBottle.extractedData,
           });
           
@@ -243,8 +246,10 @@ export function CellarPage() {
             return;
           }
           
-          // No duplicate, proceed with normal flow
+          // No duplicate, proceed with normal flow. Store path so DB never gets signed URL.
           setExtractedData({
+            imagePath: imagePath ?? undefined,
+            imageBucket: imageBucket ?? 'labels',
             imageUrl,
             data: singleBottle.extractedData,
           });
@@ -257,6 +262,8 @@ export function CellarPage() {
         setSmartScanResult({
           mode: 'multi',
           imageUrl,
+          imagePath,
+          imageBucket,
           detectedCount,
           confidence: 'high',
           singleBottle: undefined,
@@ -725,10 +732,11 @@ export function CellarPage() {
       const result = await smartScanService.performSmartScan(file);
 
       if (result.mode === 'single') {
-        // Single bottle detected - show single bottle form
+        // Single bottle detected - show single bottle form. Pass path only (no signed URL in DB).
         if (result.singleBottle) {
           setExtractedData({
-            imageUrl: result.imageUrl,
+            imagePath: result.imagePath,
+            imageBucket: result.imageBucket ?? 'labels',
             data: result.singleBottle.extractedData,
           });
         }
@@ -1910,11 +1918,10 @@ export function CellarPage() {
             country: extractedData.data?.country || '',
             grapes: extractedData.data?.grape || '',
             color: extractedData.data?.wine_color || 'red',
-            // NEW: Save stable storage path
-            label_image_path: extractedData.imagePath,
-            label_image_bucket: extractedData.imageBucket,
-            // Legacy: temporary URL for immediate display only
-            label_image_url: extractedData.imageUrl,
+            label_image_path: extractedData.imagePath ?? '',
+            label_image_bucket: extractedData.imageBucket ?? 'labels',
+            // Do not store signed URL in DB; display URL is generated from path at runtime
+            label_image_url: '',
             vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
           } : undefined}
           showWishlistOption={!!extractedData && !editingBottle} // Wishlist feature (dev only) - Show wishlist option for scanned wines
@@ -2262,6 +2269,8 @@ export function CellarPage() {
         existingBottles={bottles}
         preScannedData={smartScanResult?.multipleBottles ? {
           imageUrl: smartScanResult.imageUrl,
+          imagePath: smartScanResult.imagePath,
+          imageBucket: smartScanResult.imageBucket,
           bottles: smartScanResult.multipleBottles.bottles,
         } : undefined}
       />

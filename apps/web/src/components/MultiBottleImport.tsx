@@ -25,6 +25,8 @@ interface Props {
   // Smart scan: Pre-scanned data from unified scan (optional)
   preScannedData?: {
     imageUrl: string;
+    imagePath?: string;
+    imageBucket?: string;
     bottles: ExtractedBottleData[];
   };
 }
@@ -44,6 +46,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
     preScannedData ? 'review' : 'upload'
   );
   const [imageUrl, setImageUrl] = useState<string>(preScannedData?.imageUrl || '');
+  const [imagePath, setImagePath] = useState<string | undefined>(preScannedData?.imagePath);
+  const [imageBucket, setImageBucket] = useState<string>(preScannedData?.imageBucket ?? 'labels');
   const [bottles, setBottles] = useState<ReviewBottle[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
@@ -69,6 +73,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
 
       setBottles(reviewBottles);
       setImageUrl(preScannedData.imageUrl);
+      setImagePath(preScannedData.imagePath);
+      setImageBucket(preScannedData.imageBucket ?? 'labels');
       setStep('review');
     }
   }, [preScannedData, isOpen, existingBottles]);
@@ -90,6 +96,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
 
       console.log('[MultiBottleImport] Detected bottles:', result.bottles.length);
       setImageUrl(result.imageUrl);
+      setImagePath(result.imagePath);
+      setImageBucket(result.imageBucket ?? 'labels');
 
       // Convert to review bottles with auto-selection logic
       const reviewBottles: ReviewBottle[] = result.bottles.map((bottle, index) => {
@@ -164,7 +172,9 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
           storage_location: null,
           bottle_size_ml: 750,
           notes: `Imported from multi-bottle photo (confidence: ${Math.round(bottle.confidence * 100)}%)`,
-          image_url: imageUrl,
+          image_path: imagePath || null,
+          label_image_path: imagePath || null,
+          image_url: null, // Never store signed URL; use path for runtime URL generation
           tags: null,
         });
         
@@ -192,6 +202,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
     setStep('upload');
     setBottles([]);
     setImageUrl('');
+    setImagePath(undefined);
+    setImageBucket('labels');
     setProgress({ current: 0, total: 0 });
     onClose();
   };

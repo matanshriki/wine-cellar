@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast';
 import { WineLoader } from './WineLoader';
 
 interface BackfillCounts {

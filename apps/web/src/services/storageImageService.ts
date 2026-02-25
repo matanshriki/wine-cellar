@@ -35,11 +35,13 @@ const PUBLIC_BUCKETS = ['labels', 'generated-labels'];
  * 
  * @param bucket - Storage bucket name (e.g., 'labels', 'generated-labels')
  * @param path - Storage object path (e.g., 'userId/uuid.jpg')
+ * @param options.skipCache - If true, bypass cache and generate fresh URL (e.g. after 401/403)
  * @returns URL string or null if path is invalid
  */
 export async function getStorageImageUrl(
   bucket: string,
-  path: string | null | undefined
+  path: string | null | undefined,
+  options?: { skipCache?: boolean }
 ): Promise<string | null> {
   if (!path || !bucket) {
     return null;
@@ -48,11 +50,14 @@ export async function getStorageImageUrl(
   const cacheKey = `${bucket}:${path}`;
   const now = Date.now();
 
-  // Check cache first
-  const cached = urlCache.get(cacheKey);
-  if (cached && cached.expiresAt > now) {
-    console.log('[storageImageService] Cache hit:', cacheKey);
-    return cached.url;
+  // Check cache first (unless skipCache for retry after expiry)
+  if (!options?.skipCache) {
+    const cached = urlCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.url;
+    }
+  } else {
+    urlCache.delete(cacheKey);
   }
 
   // Generate new URL
@@ -66,8 +71,6 @@ export async function getStorageImageUrl(
       url,
       expiresAt: now + CACHE_TTL_MS,
     });
-    
-    console.log('[storageImageService] Generated public URL:', cacheKey);
     return url;
   } else {
     // Private bucket: signed URL (1 hour)
@@ -85,8 +88,6 @@ export async function getStorageImageUrl(
       url: data.signedUrl,
       expiresAt: now + CACHE_TTL_MS,
     });
-
-    console.log('[storageImageService] Generated signed URL:', cacheKey);
     return data.signedUrl;
   }
 }

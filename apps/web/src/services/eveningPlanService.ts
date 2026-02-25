@@ -21,6 +21,8 @@ export interface QueuedWine {
   color: string;
   rating: number | null;
   image_url: string | null;
+  image_path?: string | null;
+  label_image_path?: string | null;
   // Completion data
   opened?: boolean;
   opened_quantity?: number;
@@ -101,22 +103,24 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
     if (needsEnrichment) {
       console.log('[EveningPlanService] Enriching queue with wine images...');
       
-      // Fetch fresh wine data
+      // Fetch fresh wine data (include paths for runtime URL generation)
       const wineIds = queue.map(w => w.wine_id);
       const { data: wines } = await supabase
         .from('wines')
-        .select('id, image_url')
+        .select('id, image_url, image_path, label_image_path')
         .in('id', wineIds);
       
       if (wines) {
-        // Create a map for quick lookup
-        const wineImageMap = new Map(wines.map(w => [w.id, w.image_url]));
-        
-        // Update queue with fresh images
-        const enrichedQueue = queue.map(qw => ({
-          ...qw,
-          image_url: qw.image_url || wineImageMap.get(qw.wine_id) || null,
-        }));
+        const wineMap = new Map(wines.map(w => [w.id, w]));
+        const enrichedQueue = queue.map(qw => {
+          const wine = wineMap.get(qw.wine_id) as any;
+          return {
+            ...qw,
+            image_url: qw.image_url ?? wine?.image_url ?? null,
+            image_path: qw.image_path ?? wine?.image_path ?? null,
+            label_image_path: qw.label_image_path ?? wine?.label_image_path ?? null,
+          };
+        });
         
         plan.queue = enrichedQueue as any;
         console.log('[EveningPlanService] ✅ Queue enriched with images');
@@ -317,6 +321,8 @@ export function lineupToQueue(lineup: Array<{
     color: slot.bottle.wine.color,
     rating: slot.bottle.wine.rating,
     image_url: slot.bottle.wine.image_url || null,
+    image_path: (slot.bottle.wine as any).image_path ?? null,
+    label_image_path: (slot.bottle.wine as any).label_image_path ?? null,
     opened: false,
     opened_quantity: 0,
     user_rating: null,

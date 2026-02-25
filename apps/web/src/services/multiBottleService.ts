@@ -25,6 +25,8 @@ export interface MultiBottleExtractionResult {
   success: boolean;
   bottles: ExtractedBottleData[];
   imageUrl: string;
+  imagePath?: string;
+  imageBucket?: string;
   error?: string;
 }
 
@@ -187,7 +189,8 @@ export async function scanMultipleBottles(file: File): Promise<MultiBottleExtrac
   const result = await extractMultipleBottlesFromImage(tempImageUrl);
   console.log('[multiBottleService] Extraction complete:', result);
   
-  return result;
+  // Attach stable path so DB stores path, not signed URL
+  return { ...result, imagePath: path, imageBucket: bucket };
 }
 
 /**

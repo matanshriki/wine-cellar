@@ -9,6 +9,7 @@ import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper'
 import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
+import * as storageImageService from '../services/storageImageService';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -427,10 +428,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           storage_location: null,
           bottle_size_ml: 750,
           tags: null,
-          // NEW: Save stable storage path (preferred)
+          // Save stable storage path only; never store signed URLs in DB
           image_path: formData.label_image_path || null,
-          // Legacy: Save URL for backward compatibility (external URLs)
-          image_url: formData.label_image_url || null,
+          label_image_path: formData.label_image_path || null,
+          // Only store external URLs (e.g. Vivino); never Supabase signed URLs
+          image_url: (formData.label_image_url && !storageImageService.isStorageUrl(formData.label_image_url))
+            ? formData.label_image_url
+            : null,
         };
         
         console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));

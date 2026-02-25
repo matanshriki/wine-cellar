@@ -16,6 +16,7 @@ import { toast } from '../lib/toast';
 import type { QueuedWine, EveningPlan } from '../services/eveningPlanService';
 import * as eveningPlanService from '../services/eveningPlanService';
 import * as historyService from '../services/historyService';
+import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 
 interface EveningQueuePlayerProps {
   isOpen: boolean;
@@ -40,13 +41,8 @@ export function EveningQueuePlayer({
   const currentWine = queue[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === queue.length - 1;
-  
-  // Debug: Check image URL
-  console.log('[QueuePlayer] Current wine:', {
-    name: currentWine?.wine_name,
-    imageUrl: currentWine?.image_url,
-    hasImage: !!currentWine?.image_url,
-  });
+
+  const currentDisplayImage = useWineDisplayImage(currentWine ?? null);
 
   // Sync with plan changes
   useEffect(() => {
@@ -190,11 +186,11 @@ export function EveningQueuePlayer({
                       🍷 {t('planEvening.queue.nowPouring', 'Now Pouring')}
                     </div>
                     
-                    {/* Wine Image */}
-                    {currentWine.image_url ? (
+                    {/* Wine Image - use hook so path-based images get URL at runtime */}
+                    {currentDisplayImage.imageUrl ? (
                       <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
                         <img
-                          src={currentWine.image_url}
+                          src={currentDisplayImage.imageUrl}
                           alt={currentWine.wine_name}
                           className="w-full h-full object-cover"
                         />

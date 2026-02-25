@@ -92,7 +92,7 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
         imagePath: path,
         imageBucket: bucket,
         singleBottle: {
-          extractedData: createEmptyExtractedData(),
+          extractedData: createEmptyExtractedData(path, bucket),
         },
         detectedCount: 0,
         confidence: 0,
@@ -141,7 +141,7 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
         imagePath: path,
         imageBucket: bucket,
         singleBottle: {
-          extractedData: createEmptyExtractedData(),
+          extractedData: createEmptyExtractedData(path, bucket),
         },
         detectedCount: 0,
         confidence: 0,
@@ -159,7 +159,7 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
         imagePath: path,
         imageBucket: bucket,
         singleBottle: {
-          extractedData: mapBottleToExtractedData(bottle),
+          extractedData: mapBottleToExtractedData(bottle, path, bucket),
         },
         detectedCount: 1,
         confidence: calculateBottleConfidence(bottle),
@@ -235,10 +235,8 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
 /**
  * Create empty extracted data for fallback
  */
-function createEmptyExtractedData(): ExtractedWineData {
+function createEmptyExtractedData(_path: string, _bucket: string): ExtractedWineData {
   return {
-      imagePath: path,
-      imageBucket: bucket,
     producer: null,
     wine_name: null,
     vintage: null,
@@ -260,7 +258,8 @@ function createEmptyExtractedData(): ExtractedWineData {
 /**
  * Map bottle data from AI response to ExtractedWineData format
  */
-function mapBottleToExtractedData(bottle: any): ExtractedWineData {
+function mapBottleToExtractedData(_bottle: any, _path: string, _bucket: string): ExtractedWineData {
+  const bottle = _bottle;
   const getFieldValue = (field: any) => field?.value || null;
   const getFieldConfidence = (field: any) => {
     if (!field || !field.confidence) return 'low';
@@ -275,8 +274,6 @@ function mapBottleToExtractedData(bottle: any): ExtractedWineData {
   const grape = getFieldValue(bottle.grapes);
 
   return {
-      imagePath: path,
-      imageBucket: bucket,
     producer,
     wine_name,
     vintage,
