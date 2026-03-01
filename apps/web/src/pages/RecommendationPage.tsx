@@ -107,6 +107,7 @@ export function RecommendationPage() {
         mealType: context.mealType || undefined,
         occasion: context.occasion || undefined,
         vibe: context.vibe || undefined,
+        wineType: context.wineType, // Pass wine type to service for filtering BEFORE scoring
         constraints: {
           avoidTooYoung: context.avoidTooYoung,
           preferReadyToDrink: context.preferReadyToDrink,
@@ -115,18 +116,10 @@ export function RecommendationPage() {
       };
 
       trackRecommendation.run(context.mealType, context.occasion);
-      let recs = await recommendationService.getRecommendations(requestContext);
+      const recs = await recommendationService.getRecommendations(requestContext);
 
-      // Debug: log all bottle styles
-      console.log('[RecommendationPage] All recommendations:', recs.map(r => ({
-        name: r.bottle?.name,
-        style: r.bottle?.style,
-        styleLower: (r.bottle?.style ?? '').toLowerCase()
-      })));
-      console.log('[RecommendationPage] Selected wine type:', context.wineType);
-
-      // Filter by wine type if not "mixed"
-      if (context.wineType !== 'mixed' && recs.length > 0) {
+      // Handle no results (including when no wines match the selected type)
+      if (recs.length === 0) {
         const wineTypeLabels: Record<WineType, string> = {
           red: t('recommendation.form.red'),
           white: t('recommendation.form.white'),
@@ -134,28 +127,17 @@ export function RecommendationPage() {
           mixed: t('recommendation.form.mixed'),
         };
         
-        const filtered = recs.filter((r) => {
-          const style = (r.bottle?.style ?? '').toLowerCase();
-          const matches = 
-            (context.wineType === 'red' && style === 'red') ||
-            (context.wineType === 'white' && style === 'white') ||
-            (context.wineType === 'rose' && (style.includes('rose') || style.includes('rosé')));
-          console.log(`[Filter] "${r.bottle?.name}": style="${r.bottle?.style}", lower="${style}", match=${matches}`);
-          return matches;
-        });
-        
-        if (filtered.length > 0) {
-          recs = filtered;
-        } else {
-          // No wines match the selected type - show message and return
+        if (context.wineType !== 'mixed') {
           toast.info(
             t('recommendation.results.noWineTypeMatch', { 
               wineType: wineTypeLabels[context.wineType] 
             }) || `No ${wineTypeLabels[context.wineType]} wines found in your cellar`
           );
-          setLoading(false);
-          return;
+        } else {
+          toast.info(t('recommendation.results.noResults'));
         }
+        setLoading(false);
+        return;
       }
 
       if (recs.length === 0) {

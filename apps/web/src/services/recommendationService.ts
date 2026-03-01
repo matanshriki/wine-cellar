@@ -24,6 +24,7 @@ export interface RecommendationInput {
   mealType?: string;
   occasion?: string;
   vibe?: string;
+  wineType?: 'red' | 'white' | 'rose' | 'mixed';
   constraints?: {
     avoidTooYoung?: boolean;
     preferReadyToDrink?: boolean;
@@ -117,39 +118,40 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   // Filter by constraints
   let filteredBottles = bottlesWithWine;
 
-  // Debug: log all bottles with their colors
-  console.log('[RecommendationService] All bottles in cellar:', bottlesWithWine.map(b => ({
-    name: b.wine.wine_name,
-    color: b.wine.color,
-    readinessStatus: b.readiness_status
-  })));
-
   // Filter by max price if provided
   if (input.constraints?.maxPrice && input.constraints.maxPrice > 0) {
     filteredBottles = filteredBottles.filter(b => 
       !b.purchase_price || b.purchase_price <= input.constraints!.maxPrice!
     );
-    console.log('[RecommendationService] After price filter:', filteredBottles.length);
   }
 
   // Filter by readiness if requested
   if (input.constraints?.preferReadyToDrink) {
-    console.log('[RecommendationService] Filtering by readiness (preferReadyToDrink=true)');
     filteredBottles = filteredBottles.filter(b => {
       const status = b.readiness_status?.toLowerCase();
-      const passes = status === 'inwindow' || status === 'peak' || status === 'ready';
-      if (!passes) {
-        console.log(`[RecommendationService] Filtered out: ${b.wine.wine_name} (status: ${status})`);
-      }
-      return passes;
+      return status === 'inwindow' || status === 'peak' || status === 'ready';
     });
-    console.log('[RecommendationService] After readiness filter:', filteredBottles.length);
   }
 
   // If no bottles match constraints, fall back to all bottles
   if (filteredBottles.length === 0) {
-    console.log('[RecommendationService] No bottles match constraints, falling back to all');
     filteredBottles = bottlesWithWine;
+  }
+
+  // Filter by wine type if specified (not "mixed") - MUST happen before scoring
+  if (input.wineType && input.wineType !== 'mixed') {
+    filteredBottles = filteredBottles.filter(b => {
+      const color = b.wine.color?.toLowerCase();
+      if (input.wineType === 'red') return color === 'red';
+      if (input.wineType === 'white') return color === 'white';
+      if (input.wineType === 'rose') return color === 'rose' || color === 'rosé';
+      return true;
+    });
+    
+    // If no wines match the type, return empty (let the UI handle the message)
+    if (filteredBottles.length === 0) {
+      return [];
+    }
   }
 
   // Simple scoring algorithm based on meal type and wine style
