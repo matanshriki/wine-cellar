@@ -117,6 +117,14 @@ export function RecommendationPage() {
       trackRecommendation.run(context.mealType, context.occasion);
       let recs = await recommendationService.getRecommendations(requestContext);
 
+      // Debug: log all bottle styles
+      console.log('[RecommendationPage] All recommendations:', recs.map(r => ({
+        name: r.bottle?.name,
+        style: r.bottle?.style,
+        styleLower: (r.bottle?.style ?? '').toLowerCase()
+      })));
+      console.log('[RecommendationPage] Selected wine type:', context.wineType);
+
       // Filter by wine type if not "mixed"
       if (context.wineType !== 'mixed' && recs.length > 0) {
         const wineTypeLabels: Record<WineType, string> = {
@@ -132,6 +140,7 @@ export function RecommendationPage() {
             (context.wineType === 'red' && style === 'red') ||
             (context.wineType === 'white' && style === 'white') ||
             (context.wineType === 'rose' && (style.includes('rose') || style.includes('rosé')));
+          console.log(`[Filter] "${r.bottle?.name}": style="${r.bottle?.style}", lower="${style}", match=${matches}`);
           return matches;
         });
         
