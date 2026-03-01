@@ -131,6 +131,7 @@ export function RecommendationPage() {
 
       if (recs.length === 0) {
         toast.info(t('recommendation.results.noResults'));
+        setLoading(false);
         return;
       }
 

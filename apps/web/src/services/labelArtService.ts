@@ -11,6 +11,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
+import { getWineDisplayImageSync } from '../hooks/useWineDisplayImage';
 
 // App-level feature flag check (master switch)
 export const isLabelArtFeatureAvailable = (): boolean => {
@@ -279,8 +280,6 @@ export function getWineDisplayImage(wine: BottleWithWineInfo['wine']): {
   isGenerated: boolean;
   isPlaceholder: boolean;
 } {
-  // Import the sync version from the hook file
-  const { getWineDisplayImageSync } = require('../hooks/useWineDisplayImage');
   return getWineDisplayImageSync(wine);
 }
 
