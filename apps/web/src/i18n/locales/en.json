@@ -472,6 +472,16 @@
       "noResults": "No matching bottles found. Try adjusting your preferences.",
       "noWineTypeMatch": "No {{wineType}} wines found in your cellar. Add some or select a different type."
     },
+    "noResults": {
+      "title": "No Matches Found",
+      "message": "We couldn't find wines matching your current preferences.",
+      "suggestion": "Try adjusting your filters or add more wines to your cellar.",
+      "noTypeTitle": "No {{wineType}} Wines",
+      "noTypeMessage": "We couldn't find any {{wineType}} wines in your cellar that match your preferences.",
+      "noTypeSuggestion": "Try selecting \"Mixed\" or add more wines to your cellar.",
+      "tryMixed": "Try Mixed Wines",
+      "adjustFilters": "Adjust Filters"
+    },
     "emptyCellar": {
       "title": "Your Cellar is Empty",
       "message": "To receive personalized recommendations, you'll need to add some bottles to your cellar first.",

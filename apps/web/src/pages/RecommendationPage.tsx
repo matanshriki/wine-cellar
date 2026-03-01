@@ -18,6 +18,7 @@ import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { WineDetailsModal } from '../components/WineDetailsModal';
+import { NoResultsModal } from '../components/NoResultsModal';
 import { SommelierChatButton } from '../components/SommelierChatButton';
 import { Toggle } from '../components/ui/Toggle';
 import * as historyService from '../services/historyService';
@@ -76,6 +77,8 @@ export function RecommendationPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showNoResultsModal, setShowNoResultsModal] = useState(false);
+  const [noResultsMessage, setNoResultsMessage] = useState<{ title: string; message: string; suggestion?: string } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -128,20 +131,22 @@ export function RecommendationPage() {
         };
         
         if (context.wineType !== 'mixed') {
-          toast.info(
-            t('recommendation.results.noWineTypeMatch', { 
-              wineType: wineTypeLabels[context.wineType] 
-            }) || `No ${wineTypeLabels[context.wineType]} wines found in your cellar`
-          );
+          setNoResultsMessage({
+            title: t('recommendation.noResults.noTypeTitle', { wineType: wineTypeLabels[context.wineType] }) 
+              || `No ${wineTypeLabels[context.wineType]} Wines`,
+            message: t('recommendation.noResults.noTypeMessage', { wineType: wineTypeLabels[context.wineType] }) 
+              || `We couldn't find any ${wineTypeLabels[context.wineType].toLowerCase()} wines in your cellar that match your preferences.`,
+            suggestion: t('recommendation.noResults.noTypeSuggestion') 
+              || 'Try selecting "Mixed" or add more wines to your cellar.',
+          });
         } else {
-          toast.info(t('recommendation.results.noResults'));
+          setNoResultsMessage({
+            title: t('recommendation.noResults.title') || 'No Matches Found',
+            message: t('recommendation.noResults.message') || "We couldn't find wines matching your current preferences.",
+            suggestion: t('recommendation.noResults.suggestion') || 'Try adjusting your filters or add more wines to your cellar.',
+          });
         }
-        setLoading(false);
-        return;
-      }
-
-      if (recs.length === 0) {
-        toast.info(t('recommendation.results.noResults'));
+        setShowNoResultsModal(true);
         setLoading(false);
         return;
       }
@@ -820,6 +825,27 @@ export function RecommendationPage() {
       </form>
 
       <SommelierChatButton />
+
+      {/* No Results Modal */}
+      <NoResultsModal
+        isOpen={showNoResultsModal}
+        onClose={() => setShowNoResultsModal(false)}
+        title={noResultsMessage?.title}
+        message={noResultsMessage?.message}
+        suggestion={noResultsMessage?.suggestion}
+        icon="wine"
+        primaryAction={{
+          label: t('recommendation.noResults.tryMixed') || 'Try Mixed Wines',
+          onClick: () => {
+            setContext({ ...context, wineType: 'mixed' });
+            setShowNoResultsModal(false);
+          },
+        }}
+        secondaryAction={{
+          label: t('recommendation.noResults.adjustFilters') || 'Adjust Filters',
+          onClick: () => setShowNoResultsModal(false),
+        }}
+      />
     </motion.div>
   );
 }
