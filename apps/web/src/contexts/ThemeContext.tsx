@@ -35,13 +35,22 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+// Feature flag: Set to true to enable dark mode feature
+const DARK_MODE_ENABLED = false;
+
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>('white');
   const [isLoading, setIsLoading] = useState(true);
 
   // Load theme on mount
   useEffect(() => {
-    loadTheme();
+    if (DARK_MODE_ENABLED) {
+      loadTheme();
+    } else {
+      // Force light mode when dark mode is disabled
+      applyTheme('white');
+      setIsLoading(false);
+    }
   }, []);
 
   async function loadTheme() {
@@ -80,6 +89,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }
 
   const setTheme = async (newTheme: Theme) => {
+    // Skip theme changes when dark mode is disabled
+    if (!DARK_MODE_ENABLED) {
+      return;
+    }
+
     try {
       console.log('[ThemeContext] ===== SETTING THEME =====');
       console.log('[ThemeContext] Old theme:', theme);
