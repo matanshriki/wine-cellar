@@ -117,26 +117,35 @@ export function RecommendationPage() {
       trackRecommendation.run(context.mealType, context.occasion);
       let recs = await recommendationService.getRecommendations(requestContext);
 
-      console.log('[RecommendationPage] Raw recs:', recs.length, 'bottles');
-      console.log('[RecommendationPage] Wine type filter:', context.wineType);
-      console.log('[RecommendationPage] Bottle styles:', recs.map(r => ({ name: r.bottle?.name, style: r.bottle?.style })));
-
       // Filter by wine type if not "mixed"
       if (context.wineType !== 'mixed' && recs.length > 0) {
+        const wineTypeLabels: Record<WineType, string> = {
+          red: t('recommendation.form.red'),
+          white: t('recommendation.form.white'),
+          rose: t('recommendation.form.rose'),
+          mixed: t('recommendation.form.mixed'),
+        };
+        
         const filtered = recs.filter((r) => {
           const style = (r.bottle?.style ?? '').toLowerCase();
           const matches = 
             (context.wineType === 'red' && style === 'red') ||
             (context.wineType === 'white' && style === 'white') ||
             (context.wineType === 'rose' && (style.includes('rose') || style.includes('rosé')));
-          console.log(`[Filter] ${r.bottle?.name}: style="${style}", wineType="${context.wineType}", matches=${matches}`);
           return matches;
         });
-        console.log('[RecommendationPage] Filtered count:', filtered.length);
+        
         if (filtered.length > 0) {
           recs = filtered;
         } else {
-          console.log('[RecommendationPage] No matches for filter, showing all results');
+          // No wines match the selected type - show message and return
+          toast.info(
+            t('recommendation.results.noWineTypeMatch', { 
+              wineType: wineTypeLabels[context.wineType] 
+            }) || `No ${wineTypeLabels[context.wineType]} wines found in your cellar`
+          );
+          setLoading(false);
+          return;
         }
       }
 

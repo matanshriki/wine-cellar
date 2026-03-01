@@ -469,7 +469,8 @@
       "markedAsOpened": "Bottle marked as opened",
       "markOpenedError": "Failed to mark bottle as opened",
       "inCellar": "in cellar",
-      "noResults": "No matching bottles found. Try adjusting your preferences."
+      "noResults": "No matching bottles found. Try adjusting your preferences.",
+      "noWineTypeMatch": "No {{wineType}} wines found in your cellar. Add some or select a different type."
     },
     "emptyCellar": {
       "title": "Your Cellar is Empty",
