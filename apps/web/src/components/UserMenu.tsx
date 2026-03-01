@@ -109,7 +109,8 @@ export function UserMenu() {
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity min-h-[44px] px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity min-h-[44px] px-2 sm:px-3 py-2 rounded-lg"
+        style={{ background: 'var(--interactive-hover)' }}
         aria-label={t('profile.menu.openMenu')}
         aria-expanded={isOpen}
       >
@@ -127,13 +128,17 @@ export function UserMenu() {
         </div>
 
         {/* Name (hidden on mobile) */}
-        <span className="hidden lg:inline text-sm font-medium text-gray-700 max-w-[120px] truncate">
+        <span 
+          className="hidden lg:inline text-sm font-medium max-w-[120px] truncate"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           {displayName}
         </span>
 
         {/* Dropdown arrow */}
         <svg
-          className={`hidden sm:block w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`hidden sm:block w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--text-tertiary)' }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -144,14 +149,30 @@ export function UserMenu() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 sm:w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div 
+          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 sm:w-72 rounded-lg py-2 z-50"
+          style={{
+            background: 'var(--bg-dropdown)',
+            boxShadow: 'var(--shadow-dropdown)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
           {/* User Info Header */}
-          <div className="px-4 py-3 border-b border-gray-200">
-            <p className="text-sm font-semibold text-gray-900 truncate">
+          <div 
+            className="px-4 py-3"
+            style={{ borderBottom: '1px solid var(--border-subtle)' }}
+          >
+            <p 
+              className="text-sm font-semibold truncate"
+              style={{ color: 'var(--text-heading)' }}
+            >
               {displayName}
             </p>
             {profile?.email && (
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              <p 
+                className="text-xs truncate mt-0.5"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
                 {profile.email}
               </p>
             )}
@@ -162,9 +183,10 @@ export function UserMenu() {
             <Link
               to="/profile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
             >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span>{t('profile.menu.viewProfile')}</span>
@@ -175,9 +197,10 @@ export function UserMenu() {
               <Link
                 to="/agent"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
                 <span>{t('cellarSommelier.menuButton')}</span>
@@ -188,9 +211,10 @@ export function UserMenu() {
             {betaFlags.canShareCellar && bottles.length > 0 && (
               <button
                 onClick={handleShareCellar}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
                 <span>{t('cellar.shareCellar.button')}</span>
@@ -202,7 +226,8 @@ export function UserMenu() {
                 setIsOpen(false);
                 handleLogout();
               }}
-              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+              style={{ color: 'var(--color-error)' }}
             >
               <svg className="w-5 h-5 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

@@ -36,7 +36,7 @@ interface ThemeProviderProps {
 }
 
 // Feature flag: Set to true to enable dark mode feature
-const DARK_MODE_ENABLED = false;
+const DARK_MODE_ENABLED = true;
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>('white');

@@ -1387,7 +1387,8 @@ export function CellarPage() {
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5"
+                style={{ color: 'var(--text-tertiary)' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1421,8 +1422,9 @@ export function CellarPage() {
                   setSearchQuery('');
                   setIsFilteringByEvent(false); // Reset event filtering flag
                 }}
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors min-w-[44px] min-h-[44px]"
+                className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors min-w-[44px] min-h-[44px]"
                 style={{
+                  color: 'var(--text-tertiary)',
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
                 }}
@@ -1450,11 +1452,11 @@ export function CellarPage() {
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
                 style={{
                   backgroundColor: activeFilters.includes(type)
-                    ? 'var(--color-wine-500)'
-                    : 'var(--color-stone-100)',
-                  color: activeFilters.includes(type) ? 'white' : 'var(--color-stone-700)',
+                    ? 'var(--wine-500)'
+                    : 'var(--bg-surface)',
+                  color: activeFilters.includes(type) ? 'white' : 'var(--text-secondary)',
                   border: `2px solid ${
-                    activeFilters.includes(type) ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                    activeFilters.includes(type) ? 'var(--wine-500)' : 'var(--border-medium)'
                   }`,
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
@@ -1474,11 +1476,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('ready')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('ready') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('ready') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('ready') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('ready') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1496,11 +1498,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('aging')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('aging') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('aging') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('aging') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('aging') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1518,11 +1520,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('analyzed')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('analyzed') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('analyzed') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('analyzed') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('analyzed') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1541,11 +1543,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('pastPeak')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('pastPeak') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('pastPeak') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1558,7 +1560,8 @@ export function CellarPage() {
             {(searchQuery || activeFilters.length > 0) && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 text-gray-600 hover:text-gray-800 underline"
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 underline"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 {t('cellar.filters.clear')}
               </button>

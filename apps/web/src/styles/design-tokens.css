@@ -81,7 +81,7 @@
   /* === Typography === */
   
   /* Font families */
-  --font-display: 'Georgia', 'Times New Roman', serif;  /* Elegant serif for headings */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   
   /* Font sizes - refined scale */
@@ -223,6 +223,8 @@
   --bg-surface: #FFFFFF;                  /* white surfaces */
   --bg-surface-elevated: #FFFFFF;         /* elevated surfaces */
   --bg-muted: var(--color-stone-100);    /* #f0ede7 - muted areas */
+  --bg-nav: rgba(255, 255, 255, 0.95);   /* translucent nav background */
+  --bg-dropdown: #FFFFFF;                 /* dropdown/menu background */
   
   /* Text - EXACT production values */
   --text-primary: var(--color-stone-900);   /* #2d2926 - body text */
@@ -241,6 +243,8 @@
   --interactive-active: rgba(0, 0, 0, 0.08);
   
   /* Wine accent (keep consistent across themes) */
+  --wine-300: var(--color-wine-300);
+  --wine-400: var(--color-wine-400);
   --wine-500: var(--color-wine-500);
   --wine-600: var(--color-wine-600);
   --wine-700: var(--color-wine-700);
@@ -250,9 +254,22 @@
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-nav: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-dropdown: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   
   /* Glow */
   --glow: rgba(193, 68, 99, 0.15);
+  
+  /* Status badge colors (light mode - light backgrounds, dark text) */
+  --status-ready-bg: #dcfce7;
+  --status-ready-text: #166534;
+  --status-hold-bg: #fef3c7;
+  --status-hold-text: #92400e;
+  --status-drink-soon-bg: #ffedd5;
+  --status-drink-soon-text: #c2410c;
+  
+  /* Subtle background for nested elements */
+  --bg-subtle: #f5f3f0;
 }
 
 /**
@@ -260,42 +277,59 @@
  * Apple TV/Netflix/Airbnb-style premium dark theme
  */
 [data-theme="red"] {
-  /* Backgrounds - deep blacks with subtle warmth (Apple TV inspired) */
-  --bg: #0B0B0D;                    /* deep black */
-  --bg-elevated: #111114;            /* slightly elevated */
-  --bg-surface: #16161B;             /* card surfaces */
-  --bg-surface-elevated: #1C1C22;    /* elevated cards */
-  --bg-muted: #0F0F11;               /* muted areas */
+  /* Backgrounds - rich dark grays (not pure black, more comfortable) */
+  --bg: #1A1A1F;                     /* rich dark gray - easier on eyes than pure black */
+  --bg-elevated: #222228;            /* elevated surfaces */
+  --bg-surface: #28282F;             /* card surfaces - visible separation */
+  --bg-surface-elevated: #2F2F38;    /* elevated cards */
+  --bg-muted: #1F1F24;               /* muted areas */
+  --bg-nav: rgba(26, 26, 31, 0.97);  /* translucent dark nav */
+  --bg-dropdown: #2F2F38;            /* dropdown/menu background */
   
-  /* Text - Apple TV style: bright, crisp, maximum contrast */
-  --text-primary: #F5F5F7;           /* body text - Apple's standard (brighter) */
-  --text-heading: #FFFFFF;           /* headings - pure white like Netflix */
-  --text-secondary: #A1A1A6;         /* secondary text - Apple's gray */
-  --text-tertiary: #6E6E73;          /* tertiary text - Apple's muted gray */
-  --text-inverse: #000000;           /* black text for light buttons */
+  /* Text - high contrast, comfortable reading */
+  --text-primary: #ECECEF;           /* body text - soft white, easier on eyes */
+  --text-heading: #FFFFFF;           /* headings - pure white for emphasis */
+  --text-secondary: #B8B8BE;         /* secondary text - good contrast */
+  --text-tertiary: #8A8A92;          /* tertiary text - readable muted */
+  --text-inverse: #1A1A1F;           /* dark text for light buttons */
   
-  /* Borders - subtle, soft separation */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  /* Borders - more visible for better structure */
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-medium: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.25);
   
   /* Interactive */
-  --interactive-hover: rgba(255, 255, 255, 0.08);
-  --interactive-active: rgba(255, 255, 255, 0.12);
+  --interactive-hover: rgba(255, 255, 255, 0.10);
+  --interactive-active: rgba(255, 255, 255, 0.15);
   
-  /* Wine accent - vibrant for dark mode (Airbnb-style accent) */
-  --wine-500: #A63552;               /* brighter wine red */
-  --wine-600: #8B2741;               /* medium wine */
-  --wine-700: #7A1E2D;               /* deep wine */
-  --wine-50: rgba(166, 53, 82, 0.12);
+  /* Wine accent - vibrant for dark mode */
+  --wine-500: #D4627A;               /* brighter, more vibrant wine */
+  --wine-600: #C14463;               /* medium wine - same as light mode base */
+  --wine-700: #A63552;               /* deeper wine */
+  --wine-400: #E08298;               /* lighter wine for fills */
+  --wine-300: #EBA8BA;               /* even lighter for bubbles */
+  --wine-50: rgba(212, 98, 122, 0.15);
   
-  /* Shadows - Apple TV style (softer, more layered) */
-  --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.4);
-  --shadow-card-hover: 0 8px 16px -2px rgb(0 0 0 / 0.5);
-  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+  /* Shadows - softer, with subtle wine glow */
+  --shadow-card: 0 2px 12px 0 rgb(0 0 0 / 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card-hover: 0 8px 24px -4px rgb(0 0 0 / 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --shadow-dropdown: 0 10px 30px -5px rgb(0 0 0 / 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
   
   /* Glow - subtle wine red */
-  --glow: rgba(166, 53, 82, 0.20);
+  --glow: rgba(212, 98, 122, 0.25);
+  
+  /* Status badge colors (dark mode - readable on dark backgrounds) */
+  --status-ready-bg: rgba(34, 197, 94, 0.2);
+  --status-ready-text: #86efac;
+  --status-hold-bg: rgba(245, 158, 11, 0.2);
+  --status-hold-text: #fcd34d;
+  --status-drink-soon-bg: rgba(249, 115, 22, 0.2);
+  --status-drink-soon-text: #fdba74;
+  
+  /* Subtle background for nested elements */
+  --bg-subtle: #252530;
 }
 
 /* Smooth theme transitions - SELECTIVE ONLY */

@@ -187,11 +187,11 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
           <div
             className="rounded-full"
             style={{
-              background: 'rgba(255, 255, 255, 0.9)',
+              background: 'var(--bg-nav)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(255, 255, 255, 1)',
-              border: '1px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: 'var(--shadow-card)',
+              border: '1px solid var(--border-subtle)',
             }}
           >
             <div className="flex items-center h-16 px-2">

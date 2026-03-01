@@ -498,14 +498,26 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
     >
       <div 
         ref={modalContentRef}
-        className="bg-white rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
+          background: 'var(--bg-surface)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 z-10">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('csvImport.title')}</h2>
+        <div 
+          className="sticky top-0 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 z-10"
+          style={{
+            background: 'var(--bg-surface)',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          <h2 
+            className="text-xl sm:text-2xl font-bold"
+            style={{ color: 'var(--text-heading)' }}
+          >
+            {t('csvImport.title')}
+          </h2>
         </div>
 
         <div className="p-4 sm:p-6">

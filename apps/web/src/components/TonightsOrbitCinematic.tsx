@@ -663,7 +663,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                   })()}
 
                   {/* Wine Details Panel */}
-                  <div className="p-5 bg-white">
+                  <div className="p-5" style={{ background: 'var(--bg-surface)' }}>
                     {/* Wine Name */}
                     <h3 
                       className="text-lg font-bold mb-2 line-clamp-2 leading-tight"
@@ -742,19 +742,17 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
               style={{
                 width: '48px',
                 height: '48px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                border: '1px solid var(--border-light)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                background: 'var(--bg-nav)',
+                border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--shadow-card)',
                 color: 'var(--wine-600)',
-                // Larger hit area for mobile
                 padding: '12px',
                 cursor: 'pointer',
                 touchAction: 'manipulation',
                 WebkitTapHighlightColor: 'transparent',
               }}
               whileHover={reduceMotion ? {} : {
-                background: 'white',
-                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                boxShadow: 'var(--shadow-card-hover)',
                 scale: 1.05,
               }}
               whileTap={reduceMotion ? {} : {
@@ -780,19 +778,17 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
               style={{
                 width: '48px',
                 height: '48px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                border: '1px solid var(--border-light)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                background: 'var(--bg-nav)',
+                border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--shadow-card)',
                 color: 'var(--wine-600)',
-                // Larger hit area for mobile
                 padding: '12px',
                 cursor: 'pointer',
                 touchAction: 'manipulation',
                 WebkitTapHighlightColor: 'transparent',
               }}
               whileHover={reduceMotion ? {} : {
-                background: 'white',
-                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                boxShadow: 'var(--shadow-card-hover)',
                 scale: 1.05,
               }}
               whileTap={reduceMotion ? {} : {

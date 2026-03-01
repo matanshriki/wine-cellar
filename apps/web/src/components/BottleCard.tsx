@@ -158,16 +158,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 style={{
                   background: 
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
-                      ? 'var(--color-emerald-100)'
+                      ? 'var(--status-ready-bg)'
                       : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
-                      ? 'var(--color-amber-100)'
-                      : 'var(--color-orange-100)',
+                      ? 'var(--status-hold-bg)'
+                      : 'var(--status-drink-soon-bg)',
                   color:
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
-                      ? 'var(--color-emerald-700)'
+                      ? 'var(--status-ready-text)'
                       : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
-                      ? 'var(--color-amber-700)'
-                      : 'var(--color-orange-700)',
+                      ? 'var(--status-hold-text)'
+                      : 'var(--status-drink-soon-text)',
                 }}
               >
                 {bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
@@ -342,16 +342,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
               style={{
                 backgroundColor: 
                   (bottle as any).readiness_label === 'READY' 
-                    ? 'var(--color-green-100)' 
+                    ? 'var(--status-ready-bg)' 
                     : (bottle as any).readiness_label === 'HOLD'
-                    ? 'var(--color-blue-100)'
-                    : 'var(--color-yellow-100)',
+                    ? 'var(--status-hold-bg)'
+                    : 'var(--status-drink-soon-bg)',
                 color: 
                   (bottle as any).readiness_label === 'READY' 
-                    ? 'var(--color-green-700)' 
+                    ? 'var(--status-ready-text)' 
                     : (bottle as any).readiness_label === 'HOLD'
-                    ? 'var(--color-blue-700)'
-                    : 'var(--color-yellow-700)',
+                    ? 'var(--status-hold-text)'
+                    : 'var(--status-drink-soon-text)',
               }}
             >
               {t(`cellar.sommelier.status.${((bottle as any).readiness_label || '').toLowerCase()}`, (bottle as any).readiness_label)}

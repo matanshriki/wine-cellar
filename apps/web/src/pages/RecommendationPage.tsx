@@ -228,13 +228,13 @@ export function RecommendationPage() {
             {t('recommendation.results.backToForm')}
           </button>
 
-          <h1
-            className="text-3xl sm:text-4xl font-bold mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-950)' }}
-          >
-            {t('recommendation.results.title')}
-          </h1>
-          <p style={{ color: 'var(--color-stone-600)' }}>{t('recommendation.results.subtitle')}</p>
+        <h1
+          className="text-3xl sm:text-4xl font-bold mb-2"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
+        >
+          {t('recommendation.results.title')}
+        </h1>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('recommendation.results.subtitle')}</p>
         </div>
 
         <div className="space-y-6">
@@ -245,7 +245,7 @@ export function RecommendationPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05, duration: 0.2 }}
               className="card-hover card"
-              style={{ border: '2px solid var(--color-stone-200)' }}
+              style={{ border: '2px solid var(--border-medium)' }}
             >
               <div className="flex items-start gap-4 mb-4">
                 {rec.bottle?.imageUrl && (
@@ -255,8 +255,8 @@ export function RecommendationPage() {
                       alt={rec.bottle.name}
                       className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-md"
                       style={{
-                        border: '1px solid var(--color-stone-200)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        border: '1px solid var(--border-medium)',
+                        boxShadow: 'var(--shadow-card)',
                       }}
                       loading="lazy"
                       onError={(e) => {
@@ -284,12 +284,12 @@ export function RecommendationPage() {
                           className="text-xl sm:text-2xl font-bold mb-1"
                           style={{
                             fontFamily: 'var(--font-display)',
-                            color: 'var(--color-stone-950)',
+                            color: 'var(--text-heading)',
                           }}
                         >
                           {rec.bottle.name}
                         </h3>
-                        <p className="text-sm mb-2" style={{ color: 'var(--color-stone-600)' }}>
+                        <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
                           {rec.bottle.producer && `${rec.bottle.producer} • `}
                           {rec.bottle.vintage || 'NV'} • {t(`cellar.wineStyles.${rec.bottle.style}`)}
                         </p>
@@ -311,8 +311,8 @@ export function RecommendationPage() {
                                     style={{
                                       color:
                                         filled || halfFilled
-                                          ? 'var(--color-wine-500)'
-                                          : 'var(--color-stone-300)',
+                                          ? 'var(--wine-500)'
+                                          : 'var(--border-medium)',
                                     }}
                                     aria-hidden
                                   >
@@ -322,7 +322,7 @@ export function RecommendationPage() {
                               })}
                               <span
                                 className="text-sm font-medium ms-1"
-                                style={{ color: 'var(--color-stone-600)' }}
+                                style={{ color: 'var(--text-secondary)' }}
                               >
                                 {rec.bottle.rating.toFixed(1)}
                               </span>
@@ -355,29 +355,29 @@ export function RecommendationPage() {
                 <div>
                   <h4
                     className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--color-wine-700)' }}
+                    style={{ color: 'var(--wine-700)' }}
                   >
                     <span>✨</span>
                     {t('recommendation.results.whyThisBottle')}
                   </h4>
-                  <p style={{ color: 'var(--color-stone-700)' }}>{rec.explanation}</p>
+                  <p style={{ color: 'var(--text-primary)' }}>{rec.explanation}</p>
                 </div>
 
                 <div
                   className="p-4 rounded-xl"
                   style={{
-                    backgroundColor: 'var(--color-wine-50)',
-                    borderLeft: '4px solid var(--color-wine-500)',
+                    backgroundColor: 'var(--wine-50)',
+                    borderLeft: '4px solid var(--wine-500)',
                   }}
                 >
                   <h4
                     className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--color-wine-800)' }}
+                    style={{ color: 'var(--wine-700)' }}
                   >
                     <span>🍷</span>
                     {t('recommendation.results.servingInstructions')}
                   </h4>
-                  <p style={{ color: 'var(--color-stone-700)' }}>{rec.servingInstructions}</p>
+                  <p style={{ color: 'var(--text-primary)' }}>{rec.servingInstructions}</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -388,9 +388,9 @@ export function RecommendationPage() {
                     disabled={loadingDetails}
                     className="flex-1 btn btn-secondary"
                     style={{
-                      background: 'var(--color-stone-100)',
-                      color: 'var(--color-stone-900)',
-                      border: '1px solid var(--color-stone-300)',
+                      background: 'var(--bg-muted)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)',
                     }}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -498,11 +498,11 @@ export function RecommendationPage() {
       <div className="mb-8">
         <h1
           className="text-3xl sm:text-4xl font-bold mb-2"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-950)' }}
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
         >
           {t('recommendation.title')}
         </h1>
-        <p style={{ color: 'var(--color-stone-600)' }}>{t('recommendation.subtitle')}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('recommendation.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -510,7 +510,7 @@ export function RecommendationPage() {
           <div>
             <h3
               className="text-base font-semibold mb-3"
-              style={{ color: 'var(--color-stone-900)' }}
+              style={{ color: 'var(--text-heading)' }}
             >
               {t('recommendation.form.mealType')}
             </h3>
@@ -524,11 +524,11 @@ export function RecommendationPage() {
                   className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
                   style={{
                     backgroundColor:
-                      context.mealType === meal.value ? 'var(--color-wine-50)' : 'var(--color-stone-50)',
+                      context.mealType === meal.value ? 'var(--wine-50)' : 'var(--bg-surface)',
                     border: `2px solid ${
-                      context.mealType === meal.value ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                      context.mealType === meal.value ? 'var(--wine-500)' : 'var(--border-medium)'
                     }`,
-                    boxShadow: context.mealType === meal.value ? 'var(--glow-wine)' : 'none',
+                    boxShadow: context.mealType === meal.value ? 'var(--glow)' : 'none',
                   }}
                 >
                   <span className="text-2xl">{meal.icon}</span>
@@ -537,8 +537,8 @@ export function RecommendationPage() {
                     style={{
                       color:
                         context.mealType === meal.value
-                          ? 'var(--color-wine-800)'
-                          : 'var(--color-stone-700)',
+                          ? 'var(--wine-700)'
+                          : 'var(--text-secondary)',
                     }}
                   >
                     {t(`recommendation.form.mealTypes.${meal.value}`)}
@@ -551,7 +551,7 @@ export function RecommendationPage() {
           <div>
             <h3
               className="text-base font-semibold mb-3"
-              style={{ color: 'var(--color-stone-900)' }}
+              style={{ color: 'var(--text-heading)' }}
             >
               {t('recommendation.form.occasion')}
             </h3>
@@ -565,11 +565,11 @@ export function RecommendationPage() {
                   className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
                   style={{
                     backgroundColor:
-                      context.occasion === occ.value ? 'var(--color-wine-50)' : 'var(--color-stone-50)',
+                      context.occasion === occ.value ? 'var(--wine-50)' : 'var(--bg-surface)',
                     border: `2px solid ${
-                      context.occasion === occ.value ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                      context.occasion === occ.value ? 'var(--wine-500)' : 'var(--border-medium)'
                     }`,
-                    boxShadow: context.occasion === occ.value ? 'var(--glow-wine)' : 'none',
+                    boxShadow: context.occasion === occ.value ? 'var(--glow)' : 'none',
                   }}
                 >
                   <span className="text-2xl">{occ.icon}</span>
@@ -578,8 +578,8 @@ export function RecommendationPage() {
                     style={{
                       color:
                         context.occasion === occ.value
-                          ? 'var(--color-wine-800)'
-                          : 'var(--color-stone-700)',
+                          ? 'var(--wine-700)'
+                          : 'var(--text-secondary)',
                     }}
                   >
                     {t(`recommendation.form.occasions.${occ.value}`)}
@@ -592,7 +592,7 @@ export function RecommendationPage() {
           <div>
             <h3
               className="text-base font-semibold mb-3"
-              style={{ color: 'var(--color-stone-900)' }}
+              style={{ color: 'var(--text-heading)' }}
             >
               {t('recommendation.form.vibe')}
             </h3>
@@ -606,11 +606,11 @@ export function RecommendationPage() {
                   className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
                   style={{
                     backgroundColor:
-                      context.vibe === v.value ? 'var(--color-wine-50)' : 'var(--color-stone-50)',
+                      context.vibe === v.value ? 'var(--wine-50)' : 'var(--bg-surface)',
                     border: `2px solid ${
-                      context.vibe === v.value ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                      context.vibe === v.value ? 'var(--wine-500)' : 'var(--border-medium)'
                     }`,
-                    boxShadow: context.vibe === v.value ? 'var(--glow-wine)' : 'none',
+                    boxShadow: context.vibe === v.value ? 'var(--glow)' : 'none',
                   }}
                 >
                   <span className="text-2xl">{v.icon}</span>
@@ -618,7 +618,7 @@ export function RecommendationPage() {
                     className="text-xs font-medium text-center leading-tight"
                     style={{
                       color:
-                        context.vibe === v.value ? 'var(--color-wine-800)' : 'var(--color-stone-700)',
+                        context.vibe === v.value ? 'var(--wine-700)' : 'var(--text-secondary)',
                     }}
                   >
                     {t(`recommendation.form.vibes.${v.value}`)}
@@ -634,7 +634,7 @@ export function RecommendationPage() {
         <div
           className="card overflow-hidden"
           style={{
-            border: '1px solid var(--color-stone-200)',
+            border: '1px solid var(--border-medium)',
           }}
         >
           <button
@@ -642,19 +642,19 @@ export function RecommendationPage() {
             onClick={() => setPreferencesExpanded(!preferencesExpanded)}
             className="w-full flex items-center justify-between p-4 min-h-[56px] transition-colors"
             style={{
-              backgroundColor: preferencesExpanded ? 'var(--color-stone-50)' : 'transparent',
+              backgroundColor: preferencesExpanded ? 'var(--bg-muted)' : 'transparent',
             }}
           >
             <span
               className="text-base font-semibold"
-              style={{ color: 'var(--color-stone-900)' }}
+              style={{ color: 'var(--text-heading)' }}
             >
               {t('recommendation.form.winePreferences')}
             </span>
             {preferencesExpanded ? (
-              <ChevronUp className="w-5 h-5" style={{ color: 'var(--color-stone-500)' }} strokeWidth={2} />
+              <ChevronUp className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
             ) : (
-              <ChevronDown className="w-5 h-5" style={{ color: 'var(--color-stone-500)' }} strokeWidth={2} />
+              <ChevronDown className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
             )}
           </button>
 
@@ -669,7 +669,7 @@ export function RecommendationPage() {
               >
                 <div
                   className="px-4 pb-4 space-y-5"
-                  style={{ borderTop: '1px solid var(--color-stone-100)' }}
+                  style={{ borderTop: '1px solid var(--border-subtle)' }}
                 >
                   {/* Avoid too young toggle with clock icon */}
                   <div className="pt-4">
@@ -677,7 +677,7 @@ export function RecommendationPage() {
                       <Clock
                         className="w-5 h-5 shrink-0"
                         strokeWidth={1.75}
-                        style={{ color: 'var(--color-stone-400)' }}
+                        style={{ color: 'var(--text-tertiary)' }}
                       />
                       <div className="flex-1">
                         <Toggle
@@ -694,15 +694,15 @@ export function RecommendationPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-2"
-                      style={{ color: 'var(--color-stone-700)' }}
+                      style={{ color: 'var(--text-secondary)' }}
                     >
                       {t('recommendation.form.wineType')}
                     </label>
                     <div
                       className="flex rounded-xl p-1 gap-1"
                       style={{
-                        backgroundColor: 'var(--color-stone-100)',
-                        border: '1px solid var(--color-stone-200)',
+                        backgroundColor: 'var(--bg-muted)',
+                        border: '1px solid var(--border-medium)',
                       }}
                     >
                       {(['red', 'white', 'rose', 'mixed'] as WineType[]).map((type) => {
@@ -714,8 +714,8 @@ export function RecommendationPage() {
                             onClick={() => setContext({ ...context, wineType: type })}
                             className="flex-1 min-h-[44px] rounded-lg font-medium text-sm transition-all duration-150"
                             style={{
-                              backgroundColor: selected ? 'var(--color-wine-600)' : 'transparent',
-                              color: selected ? '#fff' : 'var(--color-stone-700)',
+                              backgroundColor: selected ? 'var(--wine-600)' : 'transparent',
+                              color: selected ? '#fff' : 'var(--text-secondary)',
                             }}
                           >
                             {t(`recommendation.form.${type}`)}
@@ -729,15 +729,15 @@ export function RecommendationPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-2"
-                      style={{ color: 'var(--color-stone-700)' }}
+                      style={{ color: 'var(--text-secondary)' }}
                     >
                       {t('recommendation.form.priceRange')}
                     </label>
                     <div
                       className="flex rounded-xl p-1 gap-1"
                       style={{
-                        backgroundColor: 'var(--color-stone-100)',
-                        border: '1px solid var(--color-stone-200)',
+                        backgroundColor: 'var(--bg-muted)',
+                        border: '1px solid var(--border-medium)',
                       }}
                     >
                       {[
@@ -755,8 +755,8 @@ export function RecommendationPage() {
                             onClick={() => setContext({ ...context, priceRange: value as PriceRange })}
                             className="flex-1 min-h-[44px] rounded-lg font-medium text-sm transition-all duration-150"
                             style={{
-                              backgroundColor: selected ? 'var(--color-wine-600)' : 'transparent',
-                              color: selected ? '#fff' : 'var(--color-stone-700)',
+                              backgroundColor: selected ? 'var(--wine-600)' : 'transparent',
+                              color: selected ? '#fff' : 'var(--text-secondary)',
                             }}
                           >
                             {label}
