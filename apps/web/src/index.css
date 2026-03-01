@@ -1,6 +1,8 @@
 /* Import luxury design tokens */
-@import './styles/design-tokens.css';
+/* CRITICAL: design-tokens.css MUST come AFTER luxury-theme.css */
+/* This ensures theme-specific [data-theme] rules override :root defaults */
 @import './styles/luxury-theme.css';
+@import './styles/design-tokens.css';
 
 @tailwind base;
 @tailwind components;
@@ -29,11 +31,15 @@
 
   body {
     font-family: var(--font-body);
-    background-color: var(--color-stone-50);
-    color: var(--color-stone-900);
+    background-color: var(--bg);
+    color: var(--text-primary);
+    /* Apple TV-style font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "kern" 1;
+    font-kerning: normal;
     
     /* iOS scrolling fixes */
     height: 100%;
@@ -55,7 +61,10 @@
     font-family: var(--font-display);
     font-weight: var(--font-semibold);
     letter-spacing: -0.01em;
-    color: var(--color-stone-950);
+    color: var(--text-heading);
+    /* Enhanced rendering for dark mode */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1 {
@@ -246,40 +255,40 @@
     width: 100%;
     height: var(--input-height);
     padding: 0 var(--input-padding-x);
-    background-color: white;
-    border: 1.5px solid var(--color-stone-300);
+    background-color: var(--bg-surface);
+    border: 1.5px solid var(--border-medium);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
     font-size: 16px; /* Prevents iOS zoom */
-    color: var(--color-stone-900);
+    color: var(--text-primary);
     transition: all var(--transition-base);
   }
 
   .input::placeholder {
-    color: var(--color-stone-400);
+    color: var(--text-tertiary);
   }
 
   .input:hover {
-    border-color: var(--color-stone-400);
+    border-color: var(--border-strong);
   }
 
   .input:focus {
     outline: none;
-    border-color: var(--color-wine-500);
-    box-shadow: 0 0 0 3px var(--color-wine-100);
+    border-color: var(--wine-500);
+    box-shadow: 0 0 0 3px var(--wine-50);
   }
 
   .input:disabled {
-    background-color: var(--color-stone-100);
+    background-color: var(--bg-muted);
     cursor: not-allowed;
   }
 
   /* === Luxury Card Styles === */
   .card {
-    background-color: white;
+    background-color: var(--bg-surface);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--color-stone-200);
-    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-card);
     padding: var(--card-padding-md);
     transition: all var(--transition-base);
   }
@@ -289,9 +298,9 @@
   }
 
   .card-hover:hover {
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card-hover);
     transform: translateY(-2px);
-    border-color: var(--color-stone-300);
+    border-color: var(--border-medium);
   }
 
   @media (max-width: 640px) {
@@ -605,3 +614,29 @@
   }
 }
 
+
+/* === DARK MODE OPTIMIZATIONS === */
+/* Apple TV/Netflix-style text rendering for dark backgrounds */
+@layer base {
+  [data-theme="red"] body {
+    /* Brighter, crisper text on dark backgrounds */
+    font-weight: 400; /* Normal weight renders better on dark */
+  }
+  
+  /* Headings need slightly more weight on dark for same perceived weight */
+  [data-theme="red"] h1,
+  [data-theme="red"] h2,
+  [data-theme="red"] h3,
+  [data-theme="red"] h4,
+  [data-theme="red"] h5,
+  [data-theme="red"] h6 {
+    font-weight: 600; /* Semibold for dark mode */
+    letter-spacing: -0.02em; /* Tighter for better readability */
+  }
+  
+  /* Prevent text from looking blurry on dark backgrounds */
+  [data-theme="red"] * {
+    text-shadow: none;
+    font-synthesis: none;
+  }
+}

@@ -26,44 +26,44 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Get status styling
+  // Get status styling - theme-aware colors
   const getStatusStyle = (label: string) => {
     switch (label) {
       case 'READY':
         return {
-          bg: 'var(--color-green-50)',
-          text: 'var(--color-green-700)',
-          border: 'var(--color-green-500)',
+          bg: 'var(--status-ready-bg)',
+          text: 'var(--status-ready-text)',
+          border: 'transparent',
         };
       case 'PEAK_SOON':
         return {
-          bg: 'var(--color-yellow-50)',
-          text: 'var(--color-yellow-700)',
-          border: 'var(--color-yellow-500)',
+          bg: 'var(--status-drink-soon-bg)',
+          text: 'var(--status-drink-soon-text)',
+          border: 'transparent',
         };
       case 'HOLD':
         return {
-          bg: 'var(--color-blue-50)',
-          text: 'var(--color-blue-700)',
-          border: 'var(--color-blue-500)',
+          bg: 'var(--status-hold-bg)',
+          text: 'var(--status-hold-text)',
+          border: 'transparent',
         };
       default:
         return {
-          bg: 'var(--color-stone-100)',
-          text: 'var(--color-stone-700)',
-          border: 'var(--color-stone-400)',
+          bg: 'var(--bg-muted)',
+          text: 'var(--text-secondary)',
+          border: 'transparent',
         };
     }
   };
 
   const statusStyle = getStatusStyle(analysis.readiness_label);
 
-  // Get confidence badge styling
+  // Get confidence badge styling - theme-aware colors
   const getConfidenceBadge = () => {
     const badges = {
-      HIGH: { text: t('cellar.sommelier.confidence.high'), color: 'var(--color-green-600)' },
-      MEDIUM: { text: t('cellar.sommelier.confidence.medium'), color: 'var(--color-yellow-600)' },
-      LOW: { text: t('cellar.sommelier.confidence.low'), color: 'var(--color-orange-600)' },
+      HIGH: { text: t('cellar.sommelier.confidence.high'), color: 'var(--status-ready-text)' },
+      MEDIUM: { text: t('cellar.sommelier.confidence.medium'), color: 'var(--status-hold-text)' },
+      LOW: { text: t('cellar.sommelier.confidence.low'), color: 'var(--status-drink-soon-text)' },
     };
     return badges[analysis.confidence] || badges.MEDIUM;
   };

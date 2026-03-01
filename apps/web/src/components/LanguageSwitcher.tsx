@@ -80,7 +80,11 @@ export function LanguageSwitcher() {
        */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[44px] min-w-[44px]"
+        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[44px] min-w-[44px]"
+        style={{
+          background: 'var(--bg-surface)',
+          borderColor: 'var(--border-medium)',
+        }}
         aria-label={t('languageSwitcher.changeLanguage')}
         aria-haspopup="true"
         aria-expanded={isOpen}
@@ -91,15 +95,19 @@ export function LanguageSwitcher() {
         </span>
         
         {/* Current language code - responsive sizing */}
-        <span className="text-xs sm:text-sm font-medium text-gray-700 uppercase">
+        <span 
+          className="text-xs sm:text-sm font-medium uppercase"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           {currentLanguage.code}
         </span>
         
         {/* Dropdown arrow - responsive sizing */}
         <svg
-          className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${
+          className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
+          style={{ color: 'var(--text-tertiary)' }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -125,7 +133,12 @@ export function LanguageSwitcher() {
        */}
       {isOpen && (
         <div
-          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 animate-fadeIn"
+          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 sm:w-56 rounded-lg py-1 z-50 animate-fadeIn"
+          style={{
+            background: 'var(--bg-dropdown)',
+            boxShadow: 'var(--shadow-dropdown)',
+            border: '1px solid var(--border-subtle)',
+          }}
           role="menu"
           aria-orientation="vertical"
         >
@@ -137,11 +150,12 @@ export function LanguageSwitcher() {
               <button
                 key={code}
                 onClick={() => handleLanguageChange(code as LanguageCode)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors min-h-[48px] ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-                }`}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors min-h-[48px]"
+                style={{
+                  background: isActive ? 'var(--wine-50)' : 'transparent',
+                  color: isActive ? 'var(--wine-700)' : 'var(--text-secondary)',
+                  fontWeight: isActive ? 500 : 400,
+                }}
                 role="menuitem"
                 disabled={isActive}
               >
@@ -156,7 +170,8 @@ export function LanguageSwitcher() {
                 {/* Check mark for active language */}
                 {isActive && (
                   <svg
-                    className="w-5 h-5 text-primary-600 flex-shrink-0"
+                    className="w-5 h-5 flex-shrink-0"
+                    style={{ color: 'var(--wine-600)' }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

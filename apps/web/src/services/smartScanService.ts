@@ -16,7 +16,9 @@ export type ScanMode = 'single' | 'multi' | 'receipt' | 'unknown';
 
 export interface SmartScanResult {
   mode: ScanMode;
-  imageUrl: string;
+  imageUrl: string;  // Temporary URL for immediate display
+  imagePath?: string;  // NEW: Stable storage path
+  imageBucket?: string;  // NEW: Storage bucket name
   // Single bottle result
   singleBottle?: {
     extractedData: ExtractedWineData;
@@ -43,18 +45,31 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
   console.log('[smartScanService] File:', file.name, file.size, 'bytes', file.type);
 
   try {
-    // 1. Upload image
+    // 1. Upload image (returns stable path)
     console.log('[smartScanService] Step 1: Uploading image...');
-    const imageUrl = await uploadLabelImage(file);
-    console.log('[smartScanService] ✅ Image uploaded successfully:', imageUrl);
+    const { path, bucket } = await uploadLabelImage(file);
+    console.log('[smartScanService] ✅ Image uploaded, path:', path);
 
-    // 2. Call AI with multi-bottle mode (always returns array, which we then analyze)
+    // 2. Generate temporary signed URL for Edge Function
+    const { data: signedUrlData, error: signedError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 600); // 10 minutes
+
+    if (signedError) {
+      console.error('[smartScanService] Failed to create signed URL:', signedError);
+      throw new Error('Failed to generate image URL for processing');
+    }
+
+    const tempImageUrl = signedUrlData.signedUrl;
+    console.log('[smartScanService] Created temporary URL for AI processing');
+
+    // 3. Call AI with multi-bottle mode (always returns array, which we then analyze)
     console.log('[smartScanService] Step 2: Calling edge function...');
-    console.log('[smartScanService] Request params:', { imageUrl, mode: 'multi-bottle' });
+    console.log('[smartScanService] Request params:', { imageUrl: tempImageUrl, mode: 'multi-bottle' });
     
     const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
-        imageUrl: imageUrl,
+        imageUrl: tempImageUrl,
         mode: 'multi-bottle', // Always use multi-bottle mode to get array response
       },
     });
@@ -73,9 +88,11 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       console.warn('[smartScanService] Falling back to single mode with empty data');
       return {
         mode: 'single',
-        imageUrl,
+        imageUrl: tempImageUrl,
+        imagePath: path,
+        imageBucket: bucket,
         singleBottle: {
-          extractedData: createEmptyExtractedData(),
+          extractedData: createEmptyExtractedData(path, bucket),
         },
         detectedCount: 0,
         confidence: 0,
@@ -90,7 +107,9 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       console.log('[smartScanService] ✅ Receipt detected with', data.receipt_items.length, 'items');
       return {
         mode: 'receipt',
-        imageUrl,
+        imageUrl: tempImageUrl,
+        imagePath: path,
+        imageBucket: bucket,
         receiptItems: data.receipt_items,
         detectedCount: data.receipt_items.length,
         confidence: 1,
@@ -118,9 +137,11 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       console.log('[smartScanService] No bottles detected, defaulting to single mode');
       return {
         mode: 'single',
-        imageUrl,
+        imageUrl: tempImageUrl,
+        imagePath: path,
+        imageBucket: bucket,
         singleBottle: {
-          extractedData: createEmptyExtractedData(),
+          extractedData: createEmptyExtractedData(path, bucket),
         },
         detectedCount: 0,
         confidence: 0,
@@ -134,9 +155,11 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       
       return {
         mode: 'single',
-        imageUrl,
+        imageUrl: tempImageUrl,
+        imagePath: path,
+        imageBucket: bucket,
         singleBottle: {
-          extractedData: mapBottleToExtractedData(bottle),
+          extractedData: mapBottleToExtractedData(bottle, path, bucket),
         },
         detectedCount: 1,
         confidence: calculateBottleConfidence(bottle),
@@ -168,6 +191,8 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
         : 0.5;
       
       return {
+      imagePath: path,
+      imageBucket: bucket,
         producer: getFieldValue(b.producer) || `Unknown Producer ${index + 1}`,
         wineName: getFieldValue(b.name) || `Wine ${index + 1}`,
         vintage: getFieldValue(b.vintage),
@@ -187,7 +212,9 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
 
     return {
       mode: 'multi',
-      imageUrl,
+      imageUrl: tempImageUrl,
+      imagePath: path,
+      imageBucket: bucket,
       multipleBottles: {
         bottles: mappedBottles,
       },
@@ -208,7 +235,7 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
 /**
  * Create empty extracted data for fallback
  */
-function createEmptyExtractedData(): ExtractedWineData {
+function createEmptyExtractedData(_path: string, _bucket: string): ExtractedWineData {
   return {
     producer: null,
     wine_name: null,
@@ -231,7 +258,8 @@ function createEmptyExtractedData(): ExtractedWineData {
 /**
  * Map bottle data from AI response to ExtractedWineData format
  */
-function mapBottleToExtractedData(bottle: any): ExtractedWineData {
+function mapBottleToExtractedData(_bottle: any, _path: string, _bucket: string): ExtractedWineData {
+  const bottle = _bottle;
   const getFieldValue = (field: any) => field?.value || null;
   const getFieldConfidence = (field: any) => {
     if (!field || !field.confidence) return 'low';

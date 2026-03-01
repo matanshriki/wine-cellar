@@ -81,7 +81,7 @@
   /* === Typography === */
   
   /* Font families */
-  --font-display: 'Georgia', 'Times New Roman', serif;  /* Elegant serif for headings */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   
   /* Font sizes - refined scale */
@@ -205,5 +205,143 @@
   --input-height: 2.75rem;  /* 44px for mobile touch */
   --input-padding-x: var(--space-4);
   --input-border-width: 1px;
+}
+
+/* ============================================
+   THEME SYSTEM - Dark Mode V2
+   ============================================ */
+
+/**
+ * White Theme (Default/Light Mode)
+ * CRITICAL: These values MUST match current production exactly
+ */
+[data-theme="white"],
+:root {
+  /* Backgrounds */
+  --bg: var(--color-stone-50);           /* #faf9f7 - main background */
+  --bg-elevated: #FFFFFF;                 /* white for cards */
+  --bg-surface: #FFFFFF;                  /* white surfaces */
+  --bg-surface-elevated: #FFFFFF;         /* elevated surfaces */
+  --bg-muted: var(--color-stone-100);    /* #f0ede7 - muted areas */
+  --bg-nav: rgba(255, 255, 255, 0.95);   /* translucent nav background */
+  --bg-dropdown: #FFFFFF;                 /* dropdown/menu background */
+  
+  /* Text - EXACT production values */
+  --text-primary: var(--color-stone-900);   /* #2d2926 - body text */
+  --text-heading: var(--color-stone-950);   /* #1a1816 - headings */
+  --text-secondary: var(--color-stone-700); /* #57524b - secondary text */
+  --text-tertiary: var(--color-stone-500);  /* #8a8377 - tertiary text */
+  --text-inverse: #FFFFFF;                  /* white text on dark backgrounds */
+  
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  
+  /* Interactive */
+  --interactive-hover: rgba(0, 0, 0, 0.04);
+  --interactive-active: rgba(0, 0, 0, 0.08);
+  
+  /* Wine accent (keep consistent across themes) */
+  --wine-300: var(--color-wine-300);
+  --wine-400: var(--color-wine-400);
+  --wine-500: var(--color-wine-500);
+  --wine-600: var(--color-wine-600);
+  --wine-700: var(--color-wine-700);
+  --wine-50: var(--color-wine-50);
+  
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-nav: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-dropdown: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  
+  /* Glow */
+  --glow: rgba(193, 68, 99, 0.15);
+  
+  /* Status badge colors (light mode - light backgrounds, dark text) */
+  --status-ready-bg: #dcfce7;
+  --status-ready-text: #166534;
+  --status-hold-bg: #fef3c7;
+  --status-hold-text: #92400e;
+  --status-drink-soon-bg: #ffedd5;
+  --status-drink-soon-text: #c2410c;
+  
+  /* Subtle background for nested elements */
+  --bg-subtle: #f5f3f0;
+}
+
+/**
+ * Red Theme (Luxury Dark Mode)
+ * Apple TV/Netflix/Airbnb-style premium dark theme
+ */
+[data-theme="red"] {
+  /* Backgrounds - rich dark grays (not pure black, more comfortable) */
+  --bg: #1A1A1F;                     /* rich dark gray - easier on eyes than pure black */
+  --bg-elevated: #222228;            /* elevated surfaces */
+  --bg-surface: #28282F;             /* card surfaces - visible separation */
+  --bg-surface-elevated: #2F2F38;    /* elevated cards */
+  --bg-muted: #1F1F24;               /* muted areas */
+  --bg-nav: rgba(26, 26, 31, 0.97);  /* translucent dark nav */
+  --bg-dropdown: #2F2F38;            /* dropdown/menu background */
+  
+  /* Text - high contrast, comfortable reading */
+  --text-primary: #ECECEF;           /* body text - soft white, easier on eyes */
+  --text-heading: #FFFFFF;           /* headings - pure white for emphasis */
+  --text-secondary: #B8B8BE;         /* secondary text - good contrast */
+  --text-tertiary: #8A8A92;          /* tertiary text - readable muted */
+  --text-inverse: #1A1A1F;           /* dark text for light buttons */
+  
+  /* Borders - more visible for better structure */
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-medium: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.25);
+  
+  /* Interactive */
+  --interactive-hover: rgba(255, 255, 255, 0.10);
+  --interactive-active: rgba(255, 255, 255, 0.15);
+  
+  /* Wine accent - vibrant for dark mode */
+  --wine-500: #D4627A;               /* brighter, more vibrant wine */
+  --wine-600: #C14463;               /* medium wine - same as light mode base */
+  --wine-700: #A63552;               /* deeper wine */
+  --wine-400: #E08298;               /* lighter wine for fills */
+  --wine-300: #EBA8BA;               /* even lighter for bubbles */
+  --wine-50: rgba(212, 98, 122, 0.15);
+  
+  /* Shadows - softer, with subtle wine glow */
+  --shadow-card: 0 2px 12px 0 rgb(0 0 0 / 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card-hover: 0 8px 24px -4px rgb(0 0 0 / 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  --shadow-nav: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --shadow-dropdown: 0 10px 30px -5px rgb(0 0 0 / 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  
+  /* Glow - subtle wine red */
+  --glow: rgba(212, 98, 122, 0.25);
+  
+  /* Status badge colors (dark mode - readable on dark backgrounds) */
+  --status-ready-bg: rgba(34, 197, 94, 0.2);
+  --status-ready-text: #86efac;
+  --status-hold-bg: rgba(245, 158, 11, 0.2);
+  --status-hold-text: #fcd34d;
+  --status-drink-soon-bg: rgba(249, 115, 22, 0.2);
+  --status-drink-soon-text: #fdba74;
+  
+  /* Subtle background for nested elements */
+  --bg-subtle: #252530;
+}
+
+/* Smooth theme transitions - SELECTIVE ONLY */
+@media (prefers-reduced-motion: no-preference) {
+  /* Only apply to themeable containers */
+  body,
+  [class*="luxury-card"],
+  [class*="modal"],
+  [class*="sheet"] {
+    transition-property: background-color, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 

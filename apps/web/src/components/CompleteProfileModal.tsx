@@ -52,29 +52,43 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
       }}
     >
       <div 
-        className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
+          background: 'var(--bg-surface)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
       >
         <div className="text-center mb-6">
-          <div className="mx-auto w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div 
+            className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
+            style={{ background: 'var(--wine-50)' }}
+          >
+            <svg className="w-6 h-6" style={{ color: 'var(--wine-600)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 
+            className="text-2xl font-bold mb-2"
+            style={{ color: 'var(--text-heading)' }}
+          >
             {t('profile.complete.title')}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p 
+            className="text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             {t('profile.complete.subtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label 
+              htmlFor="displayName" 
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {t('profile.displayName')} *
             </label>
             <input
@@ -90,7 +104,10 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
               maxLength={100}
               disabled={loading}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p 
+              className="mt-1 text-xs"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
               {t('profile.complete.hint')}
             </p>
           </div>
@@ -104,7 +121,10 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-center text-gray-500">
+        <p 
+          className="mt-4 text-xs text-center"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
           {t('profile.complete.required')}
         </p>
       </div>

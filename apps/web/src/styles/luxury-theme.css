@@ -1,18 +1,19 @@
 /**
- * Dark Luxury Space Design System
+ * Luxury Theme Utility Variables
  * 
  * Inspired by: Apple, Rolex, Porsche, Airbnb
- * - Deep night base with subtle star-grain texture
  * - Refined glass panels (NOT sci-fi)
  * - Warm wine accents (burgundy + champagne/gold)
  * - Classic, readable, premium
+ * 
+ * NOTE: Theme-specific colors (--bg, --text-primary, etc.) are now
+ * defined in design-tokens.css to support White/Red theme toggle.
+ * This file contains only utility variables and component styles.
  */
 
 :root {
-  /* ===== BACKGROUND LAYERS (LIGHT LUXURY) ===== */
+  /* Legacy utility variables (theme-neutral) */
   --bg-base: #faf8f5;              /* Warm ivory/champagne base */
-  --bg-surface: #ffffff;           /* Pure white for cards */
-  --bg-surface-elevated: #f5f3f0;  /* Subtle warm grey for raised surfaces */
   --bg-overlay: rgba(0, 0, 0, 0.4);  /* Modal backdrop */
   
   /* Extremely subtle vignette */
@@ -22,36 +23,13 @@
     rgba(114, 47, 55, 0.02) 100%
   );
 
-  /* ===== BORDERS ===== */
-  --border-base: rgba(114, 47, 55, 0.12);    /* Standard border (more visible) */
-  --border-subtle: rgba(114, 47, 55, 0.08);
-  --border-medium: rgba(114, 47, 55, 0.15);
-  --border-strong: rgba(114, 47, 55, 0.18);
+  /* Legacy borders (use sparingly, prefer theme tokens) */
+  --border-base: rgba(114, 47, 55, 0.12);
   --border-accent: rgba(212, 175, 55, 0.35); /* Gold tint */
   
-  /* ===== ADDITIONAL BACKGROUNDS ===== */
   --bg-subtle: #f5f3f0;  /* Slightly darker than surface for nested elements */
-
-  /* ===== TEXT (HIGH CONTRAST FOR LIGHT BG) ===== */
-  --text-primary: #1a1614;
-  --text-secondary: #6b6560;
-  --text-tertiary: #9b968f;
-  --text-muted: #c4c0ba;
-  --text-inverse: #ffffff;
-
-  /* ===== WINE ACCENT (Primary) ===== */
-  --wine-50: #faf5f6;
-  --wine-100: #f5e8eb;
-  --wine-200: #ebd1d6;
-  --wine-300: #d9a8b2;
-  --wine-400: #c47889;
-  --wine-500: #a44d5a;
-  --wine-600: #8B3A47;
-  --wine-700: #722F37;
-  --wine-800: #5a242c;
-  --wine-900: #401a20;
-
-  /* ===== CHAMPAGNE/GOLD ACCENT (Highlight) ===== */
+  
+  /* Gold accent palette */
   --gold-50: #fefdfb;
   --gold-100: #fdf9f0;
   --gold-200: #f9f0d9;
@@ -171,18 +149,20 @@
   --z-toast: 300;
 }
 
-/* ===== DARK STARFIELD BACKGROUND ===== */
+/* ===== LUXURY BACKGROUND ===== */
 .luxury-background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg-base);
+  background: var(--bg);
   z-index: -1;
   pointer-events: none;
+  transition: background 200ms ease;
 }
 
+/* Light mode: Subtle warm texture */
 .luxury-background::before {
   content: '';
   position: absolute;
@@ -206,6 +186,19 @@
   pointer-events: none;
 }
 
+/* Dark mode: Subtle warm texture with wine accents */
+[data-theme="red"] .luxury-background::before {
+  background-image: 
+    radial-gradient(1px 1px at 20% 30%, rgba(212, 98, 122, 0.06), transparent),
+    radial-gradient(0.5px 0.5px at 60% 70%, rgba(255, 255, 255, 0.02), transparent),
+    radial-gradient(0.5px 0.5px at 50% 50%, rgba(212, 98, 122, 0.05), transparent),
+    radial-gradient(0.5px 0.5px at 80% 10%, rgba(255, 255, 255, 0.015), transparent),
+    radial-gradient(1px 1px at 90% 60%, rgba(212, 98, 122, 0.04), transparent),
+    radial-gradient(0.5px 0.5px at 33% 80%, rgba(255, 255, 255, 0.01), transparent),
+    radial-gradient(0.5px 0.5px at 70% 40%, rgba(212, 98, 122, 0.03), transparent);
+  opacity: 0.5;
+}
+
 .luxury-background::after {
   content: '';
   position: absolute;
@@ -215,6 +208,15 @@
   height: 100%;
   background: var(--subtle-vignette);
   pointer-events: none;
+}
+
+/* Dark mode vignette - subtle warm edge */
+[data-theme="red"] .luxury-background::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
 }
 
 @keyframes stars-drift {

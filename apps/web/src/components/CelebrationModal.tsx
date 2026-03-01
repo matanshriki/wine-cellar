@@ -271,8 +271,9 @@ export function CelebrationModal({
       {/* Modal Content */}
       <div
         ref={modalRef}
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="relative rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
+          background: 'var(--bg-surface)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
           zIndex: 2, // Above backdrop, below confetti canvas
@@ -281,9 +282,13 @@ export function CelebrationModal({
       >
         {/* Success Icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center">
+          <div 
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--color-success-light)' }}
+          >
             <svg
-              className="w-8 h-8 sm:w-10 sm:h-10 text-green-600"
+              className="w-8 h-8 sm:w-10 sm:h-10"
+              style={{ color: 'var(--color-success)' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -301,7 +306,8 @@ export function CelebrationModal({
         {/* Title */}
         <h2
           id="celebration-title"
-          className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-3"
+          className="text-2xl sm:text-3xl font-bold text-center mb-3"
+          style={{ color: 'var(--text-heading)' }}
         >
           {t('celebration.title')} 🍷
         </h2>
@@ -309,18 +315,25 @@ export function CelebrationModal({
         {/* Message */}
         <p
           id="celebration-description"
-          className="text-center text-gray-600 mb-2 text-sm sm:text-base"
+          className="text-center mb-2 text-sm sm:text-base"
+          style={{ color: 'var(--text-secondary)' }}
         >
           {t('celebration.message')}
         </p>
 
         {/* Bottle Name (not translated - actual wine name) */}
-        <p className="text-center font-semibold text-gray-900 mb-6 text-base sm:text-lg">
+        <p 
+          className="text-center font-semibold mb-6 text-base sm:text-lg"
+          style={{ color: 'var(--text-heading)' }}
+        >
           "{bottleName}"
         </p>
 
         {/* Encouragement Text */}
-        <p className="text-center text-gray-500 text-sm mb-6">
+        <p 
+          className="text-center text-sm mb-6"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
           {t('celebration.enjoy')}
         </p>
 

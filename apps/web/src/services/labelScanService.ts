@@ -131,8 +131,14 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
 
 /**
  * Upload label image to Supabase Storage
+ * 
+ * IMPORTANT: Returns the storage PATH, not a URL.
+ * URLs are generated at runtime to avoid expiration issues.
  */
-export async function uploadLabelImage(file: File): Promise<string> {
+export async function uploadLabelImage(file: File): Promise<{
+  path: string;
+  bucket: string;
+}> {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -181,26 +187,14 @@ export async function uploadLabelImage(file: File): Promise<string> {
     throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
   }
 
-  console.log('[uploadLabelImage] Upload successful:', data);
+  console.log('[uploadLabelImage] ✅ Upload successful, path:', fileName);
 
-  // Create signed URL (valid for 10 minutes) for reliable Edge Function access
-  // This works even if bucket is private and ensures the Edge Function can fetch the image
-  const { data: signedUrlData, error: signedError } = await supabase.storage
-    .from('labels')
-    .createSignedUrl(fileName, 600); // 600 seconds = 10 minutes
-
-  if (signedError) {
-    console.error('[uploadLabelImage] Failed to create signed URL:', signedError);
-    // Fallback to public URL if signed URL fails
-    const { data: { publicUrl } } = supabase.storage
-      .from('labels')
-      .getPublicUrl(fileName);
-    console.log('[uploadLabelImage] Using public URL as fallback:', publicUrl);
-    return publicUrl;
-  }
-
-  console.log('[uploadLabelImage] Created signed URL (valid 10min)');
-  return signedUrlData.signedUrl;
+  // Return stable storage path (not URL!)
+  // URLs will be generated at runtime to avoid expiration
+  return {
+    path: fileName,
+    bucket: 'labels',
+  };
 }
 
 /**
@@ -267,17 +261,33 @@ export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedW
  * Full flow: Upload image and extract wine data
  */
 export async function scanLabelImage(file: File): Promise<{
-  imageUrl: string;
+  imagePath: string;
+  imageBucket: string;
   extractedData: ExtractedWineData;
 }> {
-  // 1. Upload image
-  const imageUrl = await uploadLabelImage(file);
+  // 1. Upload image (returns stable path, not URL)
+  const { path, bucket } = await uploadLabelImage(file);
   
-  // 2. Extract wine data
-  const extractedData = await extractWineFromLabel(imageUrl);
+  // 2. Generate temporary signed URL for Edge Function to read
+  // (Edge Function needs a URL to fetch the image for AI processing)
+  const { data: signedUrlData, error: signedError } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, 600); // 10 minutes - enough for AI processing
+
+  if (signedError) {
+    console.error('[scanLabelImage] Failed to create signed URL for AI:', signedError);
+    throw new Error('Failed to generate image URL for processing');
+  }
+
+  const tempUrl = signedUrlData.signedUrl;
+  console.log('[scanLabelImage] Created temporary URL for AI processing');
+  
+  // 3. Extract wine data using the temporary URL
+  const extractedData = await extractWineFromLabel(tempUrl);
   
   return {
-    imageUrl,
+    imagePath: path,
+    imageBucket: bucket,
     extractedData,
   };
 }

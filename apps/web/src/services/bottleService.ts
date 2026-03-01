@@ -143,7 +143,12 @@ export interface CreateBottleInput {
   storage_location?: string | null;
   bottle_size_ml?: number;
   notes?: string | null;
-  image_url?: string | null;
+  
+  // Image storage (NEW: stable paths preferred)
+  image_path?: string | null;           // Stable storage path (e.g., "labels/userId/uuid.jpg")
+  label_image_path?: string | null;     // Stable storage path for label
+  image_url?: string | null;            // Legacy: direct URL (external or temporary)
+  
   tags?: string[] | null;
 }
 
@@ -175,6 +180,10 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     vivino_wine_id: input.vivino_wine_id || null,
     rating: input.rating || null,
     vivino_url: input.vivino_url || null,
+    // NEW: Save stable path if provided
+    image_path: input.image_path || null,
+    label_image_path: input.label_image_path || null,
+    // Legacy: still save URL for backward compatibility
     image_url: input.image_url || null,
     notes: input.wine_notes || null,
   };
@@ -211,6 +220,10 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     storage_location: input.storage_location || null,
     bottle_size_ml: input.bottle_size_ml || 750,
     notes: input.notes || null,
+    // NEW: Save stable paths if provided
+    image_path: input.image_path || null,
+    label_image_path: input.label_image_path || null,
+    // Legacy: still save URL for backward compatibility
     image_url: input.image_url || null,
     tags: input.tags ? input.tags : null,
   };

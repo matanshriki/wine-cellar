@@ -171,6 +171,8 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
           detail: {
             mode: result.mode,
             imageUrl: result.imageUrl,
+            imagePath: result.imagePath,
+            imageBucket: result.imageBucket,
             singleBottle: result.singleBottle,
             multipleBottles: result.multipleBottles,
             detectedCount: result.detectedCount,

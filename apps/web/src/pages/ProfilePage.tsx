@@ -7,12 +7,15 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
+// import { useTheme } from '../contexts/ThemeContext'; // Dark mode disabled
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
+// import { ThemeToggle } from '../components/ThemeToggle'; // Dark mode disabled
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
+import { AdminImageBackfill } from '../components/AdminImageBackfill';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -260,6 +263,12 @@ export function ProfilePage() {
                 </p>
               </div>
 
+              {/* Theme Preference - disabled for production */}
+              {/* <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Theme Preference</h3>
+                <ThemeToggle />
+              </div> */}
+
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.memberSince')}</h3>
                 <p className="text-base text-gray-900">
@@ -298,6 +307,7 @@ export function ProfilePage() {
       {/* Admin Tools */}
       <AdminWineProfileBackfill />
       <AdminReadinessBackfill />
+      <AdminImageBackfill />
     </div>
   );
 }

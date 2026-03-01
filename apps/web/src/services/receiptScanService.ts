@@ -36,18 +36,32 @@ export async function scanReceipt(file: File): Promise<ReceiptScanResult> {
   console.log('[receiptScan] File:', file.name, file.size, 'bytes', file.type);
 
   try {
-    // 1. Upload image
+    // 1. Upload image (returns stable path)
     console.log('[receiptScan] Step 1: Uploading receipt image...');
-    const imageUrl = await uploadLabelImage(file);
-    console.log('[receiptScan] ✅ Image uploaded:', imageUrl);
+    const { path, bucket } = await uploadLabelImage(file);
+    console.log('[receiptScan] ✅ Image uploaded, path:', path);
 
-    // 2. Call AI edge function with multi-bottle mode
+    // 2. Generate temporary signed URL for Edge Function
+    // (Edge Function needs URL to fetch image, but we don't store this URL)
+    const { data: signedUrlData, error: signedError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 600); // 10 minutes
+
+    if (signedError) {
+      console.error('[receiptScan] Failed to create signed URL:', signedError);
+      throw new Error('Failed to generate image URL for processing');
+    }
+
+    const tempImageUrl = signedUrlData.signedUrl;
+    console.log('[receiptScan] Created temporary URL for AI processing');
+
+    // 3. Call AI edge function with multi-bottle mode
     // The edge function will auto-detect if it's a receipt and return appropriate data
     console.log('[receiptScan] Step 2: Calling edge function...');
     
     const { data, error } = await supabase.functions.invoke('parse-label-image', {
       body: {
-        imageUrl,
+        imageUrl: tempImageUrl,
         mode: 'multi-bottle', // Will auto-detect receipt vs labels
       },
     });
@@ -63,8 +77,10 @@ export async function scanReceipt(file: File): Promise<ReceiptScanResult> {
     if (data.image_type === 'receipt' && data.receipt_items) {
       console.log('[receiptScan] ✅ Receipt detected with', data.receipt_items.length, 'items');
       
+      // Note: We don't return imageUrl anymore since it's not needed
+      // (receipt images aren't saved to DB, only the parsed items)
       return {
-        imageUrl,
+        imageUrl: tempImageUrl, // Temporary URL for immediate display if needed
         items: data.receipt_items,
         confidence: data.confidence || 'medium',
         detectedCount: data.receipt_items.length,

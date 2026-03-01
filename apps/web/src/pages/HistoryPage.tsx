@@ -229,13 +229,16 @@ export function HistoryPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div 
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'var(--color-error-light)' }}
+          >
+            <svg className="w-8 h-8" style={{ color: 'var(--color-error)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('history.error.title')}</h2>
-          <p className="text-sm text-gray-600 mb-6">{t('history.error.subtitle')}</p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>{t('history.error.title')}</h2>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{t('history.error.subtitle')}</p>
           <button
             onClick={loadData}
             className="btn btn-primary"
@@ -250,21 +253,31 @@ export function HistoryPage() {
   return (
     <div>
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('history.title')}</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">{t('history.subtitle')}</p>
+        <h1 
+          className="text-2xl sm:text-3xl font-bold"
+          style={{ color: 'var(--text-heading)' }}
+        >
+          {t('history.title')}
+        </h1>
+        <p 
+          className="text-sm sm:text-base mt-1"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {t('history.subtitle')}
+        </p>
       </div>
 
       {stats && stats.total_opens > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="card">
-            <div className="text-xs sm:text-sm text-gray-600 mb-1">{t('history.stats.totalOpens')}</div>
-            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total_opens}</div>
+            <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.totalOpens')}</div>
+            <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>{stats.total_opens}</div>
           </div>
 
           {stats.average_rating > 0 && (
             <div className="card">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">{t('history.stats.averageRating')}</div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.averageRating')}</div>
+              <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>
                 {stats.average_rating.toFixed(1)}/5
               </div>
             </div>
@@ -272,9 +285,9 @@ export function HistoryPage() {
 
           {stats.favorite_color && (
             <div className="card">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">{t('history.stats.favoriteStyle')}</div>
+              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteStyle')}</div>
               {/* Note: color value is NOT translated - translate the label */}
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>
                 {t(`cellar.wineStyles.${stats.favorite_color}`)}
               </div>
             </div>
@@ -282,9 +295,9 @@ export function HistoryPage() {
 
           {stats.favorite_region && (
             <div className="card">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">{t('history.stats.favoriteRegion')}</div>
+              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteRegion')}</div>
               {/* Note: region name is NOT translated - it's actual geographic data */}
-              <div className="text-lg sm:text-xl font-bold text-gray-900">
+              <div className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-heading)' }}>
                 {stats.favorite_region}
               </div>
             </div>
@@ -294,14 +307,17 @@ export function HistoryPage() {
 
       {stats && stats.top_regions.length > 1 && (
         <div className="card mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <h2 
+            className="text-lg sm:text-xl font-bold mb-3 sm:mb-4"
+            style={{ color: 'var(--text-heading)' }}
+          >
             {t('history.stats.topRegions')}
           </h2>
           <div className="space-y-2">
             {stats.top_regions.slice(0, 5).map((item) => (
               <div key={item.region} className="flex items-center justify-between">
                 {/* Note: region name is NOT translated - it's actual geographic data */}
-                <span className="text-sm sm:text-base text-gray-700">{item.region}</span>
+                <span className="text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>{item.region}</span>
                 <span className="badge badge-gray text-xs sm:text-sm">{item.count}</span>
               </div>
             ))}
@@ -310,19 +326,25 @@ export function HistoryPage() {
       )}
 
       <div className="card">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+        <h2 
+          className="text-lg sm:text-xl font-bold mb-3 sm:mb-4"
+          style={{ color: 'var(--text-heading)' }}
+        >
           {t('history.openingHistory')}
         </h2>
 
         {events.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'var(--bg-muted)' }}
+            >
+              <svg className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-base sm:text-lg font-semibold text-gray-900 mb-2">{t('history.empty.title')}</p>
-            <p className="text-xs sm:text-sm text-gray-500">
+            <p className="text-base sm:text-lg font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>{t('history.empty.title')}</p>
+            <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
               {t('history.empty.subtitle')}
             </p>
           </div>
@@ -331,7 +353,8 @@ export function HistoryPage() {
             {events.map((event) => (
               <div 
                 key={event.id} 
-                className="group relative border-l-4 border-primary-500 pl-3 sm:pl-4 py-3 sm:py-4 rounded-r-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                className="group relative border-l-4 border-primary-500 pl-3 sm:pl-4 py-3 sm:py-4 rounded-r-lg transition-all duration-200 cursor-pointer"
+                style={{ background: 'var(--bg-surface)' }}
                 onClick={() => handleWineClick(event)}
                 role="button"
                 tabIndex={0}
@@ -346,16 +369,19 @@ export function HistoryPage() {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
                   <div className="flex-1 pr-2">
                     {/* Note: Wine name, producer, vintage are NOT translated - they're actual wine data */}
-                    <h3 className="font-semibold text-base sm:text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
+                    <h3 
+                      className="font-semibold text-base sm:text-lg group-hover:text-primary-600 transition-colors"
+                      style={{ color: 'var(--text-heading)' }}
+                    >
                       {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
                     </h3>
-                    <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                    <div className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                       {event.bottle?.wine?.producer && `${event.bottle.wine.producer} • `}
                       <span className="font-medium">{event.bottle?.wine?.vintage || 'NV'}</span>
                       {event.bottle?.wine?.region && ` • ${event.bottle.wine.region}`}
                     </div>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-0 whitespace-nowrap font-medium">
+                  <div className="text-xs sm:text-sm mt-2 sm:mt-0 whitespace-nowrap font-medium" style={{ color: 'var(--text-tertiary)' }}>
                     {formatDate(event.opened_at)}
                   </div>
                 </div>
@@ -384,14 +410,17 @@ export function HistoryPage() {
                 {/* Tasting Notes */}
                 {/* Note: tasting_notes are user-generated content, NOT translated */}
                 {event.tasting_notes && (
-                  <p className="text-xs sm:text-sm text-gray-700 italic mb-3 pl-3 border-l-2 border-gray-200">
+                  <p 
+                    className="text-xs sm:text-sm italic mb-3 pl-3 border-l-2"
+                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border-medium)' }}
+                  >
                     "{event.tasting_notes}"
                   </p>
                 )}
 
                 {/* Rating Section */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                  <span className="text-xs text-gray-600 font-medium">{t('history.quickRating')}:</span>
+                <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{t('history.quickRating')}:</span>
                   
                   <div className="flex gap-2">
                     <button
@@ -445,14 +474,15 @@ export function HistoryPage() {
 
                 {/* Personal Notes Section */}
                 <div 
-                  className="mt-3 pt-3 border-t border-gray-200"
+                  className="mt-3 pt-3 border-t"
+                  style={{ borderColor: 'var(--border-subtle)' }}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
                   {editingNotesId === event.id ? (
                     /* Editing Mode */
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                      <label className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
                         <span>📝</span>
                         <span>{t('history.personalNotes')}</span>
                       </label>
@@ -469,13 +499,17 @@ export function HistoryPage() {
                         }}
                       />
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                           {notesText.length}/1000
                         </span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleCancelNotes()}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors min-h-[36px]"
+                            className="px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px]"
+                            style={{ 
+                              color: 'var(--text-secondary)', 
+                              background: 'var(--bg-muted)' 
+                            }}
                           >
                             {t('common.cancel')}
                           </button>
@@ -504,11 +538,11 @@ export function HistoryPage() {
                     <div>
                       {event.notes ? (
                         <div>
-                          <div className="text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                          <div className="text-xs font-medium mb-1 flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                             <span>📝</span>
                             <span>{t('history.personalNotes')}:</span>
                           </div>
-                          <p className="text-sm text-gray-700 mb-2 pl-4 whitespace-pre-wrap">
+                          <p className="text-sm mb-2 pl-4 whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
                             {event.notes}
                           </p>
                           <button
@@ -533,7 +567,8 @@ export function HistoryPage() {
 
                 {/* Send back to cellar button */}
                 <div 
-                  className="mt-3 pt-3 border-t border-gray-200"
+                  className="mt-3 pt-3 border-t"
+                  style={{ borderColor: 'var(--border-subtle)' }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -567,7 +602,7 @@ export function HistoryPage() {
                 </div>
 
                 {/* Click Indicator */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-tertiary)' }}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>

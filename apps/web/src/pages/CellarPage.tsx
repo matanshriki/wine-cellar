@@ -137,6 +137,8 @@ export function CellarPage() {
   const [labelCaptureMode, setLabelCaptureMode] = useState<'camera' | 'upload'>('camera');
   const [extractedData, setExtractedData] = useState<{
     imageUrl: string;
+    imagePath?: string;
+    imageBucket?: string;
     data: ExtractedWineData;
   } | null>(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -162,18 +164,19 @@ export function CellarPage() {
     },
     onCreateSeparate: async (candidate: any) => {
       console.log('[CellarPage] User chose to create separate entry', candidate);
-      // Continue with normal add flow
-      if (candidate.imageUrl && candidate.extractedData) {
+      // Continue with normal add flow (prefer path so we never store signed URL)
+      if (candidate.extractedData) {
         console.log('[CellarPage] Opening form with extracted data');
         setExtractedData({
+          imagePath: candidate.imagePath,
+          imageBucket: candidate.imageBucket ?? 'labels',
           imageUrl: candidate.imageUrl,
           data: candidate.extractedData,
         });
         setEditingBottle(null);
         setShowForm(true);
       } else {
-        console.warn('[CellarPage] Missing imageUrl or extractedData in candidate:', {
-          hasImageUrl: !!candidate.imageUrl,
+        console.warn('[CellarPage] Missing extractedData in candidate:', {
           hasExtractedData: !!candidate.extractedData,
           candidate,
         });
@@ -220,7 +223,7 @@ export function CellarPage() {
 
     // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
     const handleSmartScanComplete = async (e: CustomEvent) => {
-      const { mode, imageUrl, singleBottle, multipleBottles, detectedCount } = e.detail;
+      const { mode, imageUrl, imagePath, imageBucket, singleBottle, multipleBottles, detectedCount } = e.detail;
       
       if (mode === 'single') {
         // Single bottle detected - check for duplicate before showing form
@@ -230,8 +233,10 @@ export function CellarPage() {
             producer: singleBottle.extractedData.producer,
             name: singleBottle.extractedData.wine_name, // Fix: use wine_name not name
             vintage: singleBottle.extractedData.vintage,
-            // Store full context for "Create separate" flow
+            // Store path (preferred) and URL for "Create separate" flow
             imageUrl,
+            imagePath,
+            imageBucket,
             extractedData: singleBottle.extractedData,
           });
           
@@ -241,8 +246,10 @@ export function CellarPage() {
             return;
           }
           
-          // No duplicate, proceed with normal flow
+          // No duplicate, proceed with normal flow. Store path so DB never gets signed URL.
           setExtractedData({
+            imagePath: imagePath ?? undefined,
+            imageBucket: imageBucket ?? 'labels',
             imageUrl,
             data: singleBottle.extractedData,
           });
@@ -255,6 +262,8 @@ export function CellarPage() {
         setSmartScanResult({
           mode: 'multi',
           imageUrl,
+          imagePath,
+          imageBucket,
           detectedCount,
           confidence: 'high',
           singleBottle: undefined,
@@ -723,10 +732,11 @@ export function CellarPage() {
       const result = await smartScanService.performSmartScan(file);
 
       if (result.mode === 'single') {
-        // Single bottle detected - show single bottle form
+        // Single bottle detected - show single bottle form. Pass path only (no signed URL in DB).
         if (result.singleBottle) {
           setExtractedData({
-            imageUrl: result.imageUrl,
+            imagePath: result.imagePath,
+            imageBucket: result.imageBucket ?? 'labels',
             data: result.singleBottle.extractedData,
           });
         }
@@ -1377,7 +1387,8 @@ export function CellarPage() {
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5"
+                style={{ color: 'var(--text-tertiary)' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1411,8 +1422,9 @@ export function CellarPage() {
                   setSearchQuery('');
                   setIsFilteringByEvent(false); // Reset event filtering flag
                 }}
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors min-w-[44px] min-h-[44px]"
+                className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors min-w-[44px] min-h-[44px]"
                 style={{
+                  color: 'var(--text-tertiary)',
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
                 }}
@@ -1440,11 +1452,11 @@ export function CellarPage() {
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
                 style={{
                   backgroundColor: activeFilters.includes(type)
-                    ? 'var(--color-wine-500)'
-                    : 'var(--color-stone-100)',
-                  color: activeFilters.includes(type) ? 'white' : 'var(--color-stone-700)',
+                    ? 'var(--wine-500)'
+                    : 'var(--bg-surface)',
+                  color: activeFilters.includes(type) ? 'white' : 'var(--text-secondary)',
                   border: `2px solid ${
-                    activeFilters.includes(type) ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                    activeFilters.includes(type) ? 'var(--wine-500)' : 'var(--border-medium)'
                   }`,
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
@@ -1464,11 +1476,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('ready')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('ready') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('ready') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('ready') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('ready') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1486,11 +1498,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('aging')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('aging') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('aging') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('aging') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('aging') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1508,11 +1520,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('analyzed')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('analyzed') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('analyzed') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('analyzed') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('analyzed') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1531,11 +1543,11 @@ export function CellarPage() {
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
               style={{
                 backgroundColor: activeFilters.includes('pastPeak')
-                  ? 'var(--color-wine-500)'
-                  : 'var(--color-stone-100)',
-                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--color-stone-700)',
+                  ? 'var(--wine-500)'
+                  : 'var(--bg-surface)',
+                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--text-secondary)',
                 border: `2px solid ${
-                  activeFilters.includes('pastPeak') ? 'var(--color-wine-500)' : 'var(--color-stone-200)'
+                  activeFilters.includes('pastPeak') ? 'var(--wine-500)' : 'var(--border-medium)'
                 }`,
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
@@ -1548,7 +1560,8 @@ export function CellarPage() {
             {(searchQuery || activeFilters.length > 0) && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 text-gray-600 hover:text-gray-800 underline"
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 underline"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 {t('cellar.filters.clear')}
               </button>
@@ -1908,7 +1921,10 @@ export function CellarPage() {
             country: extractedData.data?.country || '',
             grapes: extractedData.data?.grape || '',
             color: extractedData.data?.wine_color || 'red',
-            label_image_url: extractedData.imageUrl,
+            label_image_path: extractedData.imagePath ?? '',
+            label_image_bucket: extractedData.imageBucket ?? 'labels',
+            // Do not store signed URL in DB; display URL is generated from path at runtime
+            label_image_url: '',
             vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
           } : undefined}
           showWishlistOption={!!extractedData && !editingBottle} // Wishlist feature (dev only) - Show wishlist option for scanned wines
@@ -2089,18 +2105,29 @@ export function CellarPage() {
           toast.info(t('cellar.labelParse.reading'));
           
           try {
-            // Import scanLabelImage to upload and get URL
+            // Import scanLabelImage to upload and get stable path
             const { scanLabelImage } = await import('../services/labelScanService');
             const result = await scanLabelImage(file);
             
+            // Generate temporary URL for AI parsing
+            const { data: signedUrlData, error: signedError } = await supabase.storage
+              .from(result.imageBucket)
+              .createSignedUrl(result.imagePath, 600);
+
+            if (signedError) {
+              throw new Error('Failed to process image');
+            }
+
+            const tempImageUrl = signedUrlData.signedUrl;
+            
             // Now process with AI
-            const parseResult = await labelParseService.parseLabelImage(result.imageUrl);
+            const parseResult = await labelParseService.parseLabelImage(tempImageUrl);
             
             if (parseResult.success && parseResult.data) {
               const formData = labelParseService.convertParsedDataToFormData(parseResult.data);
               
               const mergedData = {
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: {
                   wine_name: formData.wine_name || '',
                   producer: formData.producer || '',
@@ -2114,7 +2141,7 @@ export function CellarPage() {
               
               // Store extracted data for wishlist form
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: parseResult.data,
               });
               
@@ -2126,7 +2153,7 @@ export function CellarPage() {
               toast.warning(t('cellar.labelParse.noData'));
               // Still open form to allow manual entry
               setWishlistExtractedData({
-                imageUrl: result.imageUrl,
+                imageUrl: tempImageUrl, // Temporary URL for immediate display
                 data: parseResult.data || {} as ExtractedWineData,
               });
               setShowWishlistForm(true);
@@ -2245,6 +2272,8 @@ export function CellarPage() {
         existingBottles={bottles}
         preScannedData={smartScanResult?.multipleBottles ? {
           imageUrl: smartScanResult.imageUrl,
+          imagePath: smartScanResult.imagePath,
+          imageBucket: smartScanResult.imageBucket,
           bottles: smartScanResult.multipleBottles.bottles,
         } : undefined}
       />

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { DemoActionModal } from './DemoActionModal';
 import { MuseumViewModal } from './MuseumViewModal';
-import * as labelArtService from '../services/labelArtService';
+import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 
 interface Props {
   bottle: BottleWithWineInfo;
@@ -20,9 +20,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [demoAction, setDemoAction] = useState<'edit' | 'markOpened' | 'delete'>('edit');
   const [showMuseumView, setShowMuseumView] = useState(false);
-  
-  // Get display image using centralized logic (user image > AI generated > placeholder)
-  const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+  const [imageErrorRetried, setImageErrorRetried] = useState(false);
+
+  const displayImage = useWineDisplayImage(bottle.wine);
+
+  const handleImageError = useCallback(() => {
+    if (!imageErrorRetried) {
+      setImageErrorRetried(true);
+      displayImage.refreshImage();
+    }
+  }, [imageErrorRetried, displayImage.refreshImage]);
 
   // Onboarding v1 – production: Handle demo bottle actions
   const handleDemoAction = (action: 'edit' | 'markOpened' | 'delete') => {
@@ -62,85 +69,80 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       >
         {/* Header Section */}
         <div className="relative mb-3 flex gap-3 md:gap-4">
-          {/* Wine Image - Left Side */}
-          {displayImage.imageUrl && (
-            <div 
-              className="flex-shrink-0 wine-image-container wine-image-size cursor-pointer relative group"
-              onClick={(e) => {
-                e.stopPropagation(); // Don't trigger card details
-                console.log('[BottleCard] Opening museum view for:', bottle.wine.wine_name);
-                setShowMuseumView(true);
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label={t('bottle.viewImage', 'View image in full screen')}
-            >
-              <img 
-                src={displayImage.imageUrl} 
-                alt={bottle.wine.wine_name}
-                className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: '1px solid var(--border-base)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-                loading="lazy"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              
-              {/* Museum View Icon Overlay */}
-              <div 
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md pointer-events-none"
-                style={{
-                  background: 'rgba(0, 0, 0, 0.5)',
-                }}
-              >
-                <svg className="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-              
-              {/* AI Generated Badge */}
-              {displayImage.isGenerated && (
-                <div 
-                  className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 z-10"
+          {/* Wine Image - Left Side: skeleton while loading, image with retry, or placeholder */}
+          <div className="flex-shrink-0 wine-image-container wine-image-size cursor-pointer relative group">
+              {displayImage.isLoading && (
+                <div
+                  className="rounded-md w-full h-full animate-pulse"
                   style={{
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    backdropFilter: 'blur(4px)',
+                    background: 'linear-gradient(135deg, var(--bg-muted) 0%, var(--bg-surface) 50%, var(--bg-muted) 100%)',
+                    border: '1px solid var(--border-subtle)',
                   }}
-                  title="AI-generated label art"
+                />
+              )}
+              {!displayImage.isLoading && displayImage.imageUrl && !imageErrorRetried && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMuseumView(true);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMuseumView(true); } }}
+                  aria-label={t('bottle.viewImage', 'View image in full screen')}
+                  className="w-full h-full block"
                 >
-                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                  </svg>
-                  <span>AI</span>
+                  <img
+                    src={displayImage.imageUrl}
+                    alt={bottle.wine.wine_name}
+                    className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105 w-full h-full"
+                    style={{
+                      border: '1px solid var(--border-base)',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                    loading="lazy"
+                    onError={handleImageError}
+                  />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md pointer-events-none"
+                    style={{ background: 'rgba(0, 0, 0, 0.5)' }}
+                  >
+                    <svg className="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </div>
+                  {displayImage.isGenerated && (
+                    <div
+                      className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 z-10"
+                      style={{ background: 'rgba(0, 0, 0, 0.7)', color: 'white', backdropFilter: 'blur(4px)' }}
+                      title="AI-generated label art"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                      </svg>
+                      <span>AI</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {!displayImage.isLoading && (!displayImage.imageUrl || imageErrorRetried) && (
+                <div
+                  className="rounded-md flex flex-col items-center justify-center w-full h-full"
+                  style={{
+                    border: '1px dashed var(--border-base)',
+                    background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
+                  }}
+                >
+                  <span className="text-3xl">🍷</span>
+                  {imageErrorRetried && (
+                    <span className="text-xs mt-1 px-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                      {t('cellar.imageUnavailable', 'Image unavailable')}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
-          )}
-          
-          {/* Placeholder for no image - consistent spacing */}
-          {!displayImage.imageUrl && (
-            <div className="flex-shrink-0 wine-image-container wine-image-size">
-              <div
-                className="rounded-md flex items-center justify-center transition-transform duration-300"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: '1px dashed var(--border-base)',
-                  background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
-                }}
-              >
-                <span className="text-3xl">🍷</span>
-              </div>
-            </div>
-          )}
 
         {/* Text Content */}
         <div className="flex-1 min-w-0">
@@ -156,16 +158,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 style={{
                   background: 
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
-                      ? 'var(--color-emerald-100)'
+                      ? 'var(--status-ready-bg)'
                       : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
-                      ? 'var(--color-amber-100)'
-                      : 'var(--color-orange-100)',
+                      ? 'var(--status-hold-bg)'
+                      : 'var(--status-drink-soon-bg)',
                   color:
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
-                      ? 'var(--color-emerald-700)'
+                      ? 'var(--status-ready-text)'
                       : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
-                      ? 'var(--color-amber-700)'
-                      : 'var(--color-orange-700)',
+                      ? 'var(--status-hold-text)'
+                      : 'var(--status-drink-soon-text)',
                 }}
               >
                 {bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
@@ -340,16 +342,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
               style={{
                 backgroundColor: 
                   (bottle as any).readiness_label === 'READY' 
-                    ? 'var(--color-green-100)' 
+                    ? 'var(--status-ready-bg)' 
                     : (bottle as any).readiness_label === 'HOLD'
-                    ? 'var(--color-blue-100)'
-                    : 'var(--color-yellow-100)',
+                    ? 'var(--status-hold-bg)'
+                    : 'var(--status-drink-soon-bg)',
                 color: 
                   (bottle as any).readiness_label === 'READY' 
-                    ? 'var(--color-green-700)' 
+                    ? 'var(--status-ready-text)' 
                     : (bottle as any).readiness_label === 'HOLD'
-                    ? 'var(--color-blue-700)'
-                    : 'var(--color-yellow-700)',
+                    ? 'var(--status-hold-text)'
+                    : 'var(--status-drink-soon-text)',
               }}
             >
               {t(`cellar.sommelier.status.${((bottle as any).readiness_label || '').toLowerCase()}`, (bottle as any).readiness_label)}

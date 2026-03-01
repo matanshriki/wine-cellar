@@ -13,6 +13,7 @@ import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
+import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
@@ -210,11 +211,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <nav 
         className="fixed top-0 left-0 right-0 z-40 safe-area-top"
         style={{ 
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: 'var(--bg-nav, rgba(255, 255, 255, 0.95))',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-light)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+          borderBottom: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-nav, 0 2px 8px rgba(0, 0, 0, 0.04))',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -340,6 +341,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* End side actions */}
             <div className="flex items-center gap-3">
+              <CompactThemeToggle />
               <LanguageSwitcher />
               <UserMenu />
             </div>

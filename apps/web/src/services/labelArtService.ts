@@ -11,6 +11,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
+import { getWineDisplayImageSync } from '../hooks/useWineDisplayImage';
 
 // App-level feature flag check (master switch)
 export const isLabelArtFeatureAvailable = (): boolean => {
@@ -267,43 +268,19 @@ export async function generateLabelArt(
 }
 
 /**
- * Get display image for a wine
- * Priority: user-provided image_url > generated_image_path > placeholder
+ * Get display image for a wine (DEPRECATED - use useWineDisplayImage hook instead)
+ * 
+ * This function is kept for backward compatibility but components should
+ * migrate to the useWineDisplayImage hook for proper async handling.
+ * 
+ * Priority: user-provided path/url > generated_image_path > placeholder
  */
 export function getWineDisplayImage(wine: BottleWithWineInfo['wine']): {
   imageUrl: string | null;
   isGenerated: boolean;
   isPlaceholder: boolean;
 } {
-  // Priority 1: User-provided image
-  if (wine.image_url) {
-    return {
-      imageUrl: wine.image_url,
-      isGenerated: false,
-      isPlaceholder: false,
-    };
-  }
-
-  // Priority 2: AI-generated image
-  if ((wine as any).generated_image_path) {
-    // Convert storage path to public URL
-    const { data } = supabase.storage
-      .from('generated-labels')
-      .getPublicUrl((wine as any).generated_image_path);
-    
-    return {
-      imageUrl: data.publicUrl,
-      isGenerated: true,
-      isPlaceholder: false,
-    };
-  }
-
-  // Priority 3: Placeholder
-  return {
-    imageUrl: null,
-    isGenerated: false,
-    isPlaceholder: true,
-  };
+  return getWineDisplayImageSync(wine);
 }
 
 /**

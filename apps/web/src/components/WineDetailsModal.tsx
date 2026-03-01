@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
+import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { SommelierNotes } from './SommelierNotes';
 import { toast } from '../lib/toast';
@@ -31,6 +32,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
+
+  const displayImage = useWineDisplayImage(bottle?.wine);
 
   // Lock body scroll when modal is open (prevents iOS background shifts)
   useEffect(() => {
@@ -78,9 +81,6 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   
   // Onboarding v1 – value first: Check if this is a demo bottle
   const isDemoBottle = displayBottle.id.startsWith('demo-');
-
-  // Get display image with priority: user > generated > placeholder
-  const displayImage = labelArtService.getWineDisplayImage(wine);
 
   const handleSaveImage = async (imageUrl: string) => {
     // Onboarding v1 – value first: Prevent saving for demo bottles
@@ -359,13 +359,13 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           minHeight: '40px',
                           WebkitTapHighlightColor: 'transparent',
                         }}
-                        aria-label={wine.image_url ? 'Update wine image' : 'Add wine image'}
+                        aria-label={displayImage.imageUrl ? 'Update wine image' : 'Add wine image'}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         <span>
-                          {wine.image_url 
+                          {displayImage.imageUrl
                             ? t('wineImage.updateButton', 'Update Image')
                             : t('wineImage.addButton', 'Add Image')
                           }
@@ -373,7 +373,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       </button>
 
                       {/* Generate Label Art Button */}
-                      {userCanGenerateAI && !wine.image_url && (
+                      {userCanGenerateAI && !displayImage.imageUrl && (
                         <button
                           onClick={() => {
                             // Onboarding v1 – value first: Prevent AI generation for demo bottles
@@ -777,7 +777,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           isOpen={showImageDialog}
           onClose={() => setShowImageDialog(false)}
           onSave={handleSaveImage}
-          currentImageUrl={wine.image_url}
+          currentImageUrl={displayImage.imageUrl ?? undefined}
           wineName={wine.wine_name}
         />
       )}

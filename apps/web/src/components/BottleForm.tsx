@@ -9,6 +9,7 @@ import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper'
 import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
+import * as storageImageService from '../services/storageImageService';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -22,6 +23,10 @@ interface Props {
     country?: string;
     grapes?: string;
     color?: string;
+    // NEW: Stable storage paths (preferred)
+    label_image_path?: string;
+    label_image_bucket?: string;
+    // Legacy: URL for backward compatibility
     label_image_url?: string;
     vivino_url?: string;
   };
@@ -76,6 +81,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       })(),
       notes: bottle?.notes || '',
       label_image_url: prefillData?.label_image_url || '',
+      label_image_path: prefillData?.label_image_path || '',
+      label_image_bucket: prefillData?.label_image_bucket || 'labels',
       vivino_url: prefillData?.vivino_url || (bottle?.wine as any)?.vivino_url || '',
       rating: (bottle?.wine as any)?.rating?.toString() || '', // Vivino rating (0-5 scale)
     };
@@ -421,8 +428,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           storage_location: null,
           bottle_size_ml: 750,
           tags: null,
-          // Use the uploaded label image as the wine's image
-          image_url: formData.label_image_url || null,
+          // Save stable storage path only; never store signed URLs in DB
+          image_path: formData.label_image_path || null,
+          label_image_path: formData.label_image_path || null,
+          // Only store external URLs (e.g. Vivino); never Supabase signed URLs
+          image_url: (formData.label_image_url && !storageImageService.isStorageUrl(formData.label_image_url))
+            ? formData.label_image_url
+            : null,
         };
         
         console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));

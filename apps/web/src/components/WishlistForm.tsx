@@ -257,7 +257,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col"
+        className="rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',

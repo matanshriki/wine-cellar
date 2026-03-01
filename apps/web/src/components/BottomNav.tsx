@@ -163,9 +163,10 @@ export const BottomNav: React.FC = () => {
        * UX Fix: Always shows 4 slots (including Wishlist skeleton during load) to prevent layout shift
        */}
       <nav
-        className="fixed bottom-0 inset-x-0 bg-white border-t md:hidden safe-area-bottom"
+        className="fixed bottom-0 inset-x-0 border-t md:hidden safe-area-bottom"
         style={{
-          borderColor: 'var(--color-stone-200)',
+          background: 'var(--bg-nav)',
+          borderColor: 'var(--border-subtle)',
           zIndex: 'var(--z-sticky)',
         }}
       >
