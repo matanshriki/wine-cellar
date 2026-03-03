@@ -4,6 +4,7 @@ import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
 import { ThemeProvider } from './contexts/ThemeContext'; // Dark mode V2
+import { TimerProvider } from './contexts/TimerContext'; // Wine ritual timers
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -220,11 +221,13 @@ export function App() {
         <ToastProvider>
           <ThemeProvider>
             <SupabaseAuthProvider>
-              <FeatureFlagsProvider>
-                <AddBottleProvider>
-                  <AppRoutes />
-                </AddBottleProvider>
-              </FeatureFlagsProvider>
+              <TimerProvider>
+                <FeatureFlagsProvider>
+                  <AddBottleProvider>
+                    <AppRoutes />
+                  </AddBottleProvider>
+                </FeatureFlagsProvider>
+              </TimerProvider>
             </SupabaseAuthProvider>
           </ThemeProvider>
         </ToastProvider>

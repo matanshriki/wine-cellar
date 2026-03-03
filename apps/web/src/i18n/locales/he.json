@@ -1050,6 +1050,39 @@
       "reset": "איפוס",
       "save": "שמור העדפות"
     }
+  },
+  "ritual": {
+    "howMany": "כמה בקבוקים אתה פותח?",
+    "inCellar": "{{count}} במרתף",
+    "servingGuidance": "הנחיות הגשה",
+    "startDecantTimer": "התחל טיימר דקנטציה",
+    "startAndOpen": "התחל ופתח",
+    "openNow": "פתח עכשיו",
+    "skipTimer": "דלג על טיימר",
+    "serveNow": "הגש עכשיו",
+    "openFailed": "פתיחת הבקבוק נכשלה",
+    "enjoy": "בהנאה!",
+    "rateQuestion": "רוצה תזכורת לדרג אותו מאוחר יותר?",
+    "setReminder": "הגדר תזכורת",
+    "noThanks": "לא תודה",
+    "reminderSet": "התזכורת הוגדרה!",
+    "decanting": "דקנטציה",
+    "rateReminder": "דרג יין זה",
+    "decantReady": "הדקנטציה מוכנה!",
+    "timeToRate": "הגיע הזמן לדרג!",
+    "pourNow": "מזוג עכשיו",
+    "rateNow": "דרג עכשיו",
+    "rateThisWine": "דרג יין זה",
+    "quickTags": "תגיות מהירות (אופציונלי)",
+    "wouldBuyAgain": "אקנה שוב",
+    "specialOccasion": "אירוע מיוחד",
+    "greatWithFood": "מעולה עם אוכל",
+    "notesPlaceholder": "הוסף הערות טעימה...",
+    "saveRating": "שמור דירוג",
+    "ratingSaved": "הדירוג נשמר!",
+    "saveFailed": "שמירת הדירוג נכשלה",
+    "pleaseRate": "אנא בחר דירוג",
+    "noBottle": "לא ניתן למצוא את הבקבוק"
   }
 }
 

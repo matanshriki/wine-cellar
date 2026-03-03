@@ -14,13 +14,18 @@ import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { CompactThemeToggle } from './ThemeToggle';
+import { FloatingTimerPill } from './FloatingTimerPill';
+import { RateRitualSheet } from './RateRitualSheet';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
+import { useTimers, WineTimer } from '../contexts/TimerContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [showRateSheet, setShowRateSheet] = useState(false);
+  const [ratingTimer, setRatingTimer] = useState<WineTimer | null>(null);
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { 
@@ -39,7 +44,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
     closeFallbackSheet,
     handleSmartScan 
   } = useAddBottleContext();
+  const { hasActiveTimers } = useTimers();
   const betaFlags = useBetaFeatureFlags(); // Beta features (multi-bottle)
+  
+  // Handle opening rate sheet from timer
+  const handleRateFromTimer = (timer: WineTimer) => {
+    setRatingTimer(timer);
+    setShowRateSheet(true);
+  };
   
   // Immediate camera input ref (hidden, for non-iOS-PWA mobile)
   const immediateCameraInputRef = useRef<HTMLInputElement>(null);
@@ -468,6 +480,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           const event = new CustomEvent('showCameraFallback', { detail: { reason } });
           window.dispatchEvent(event);
         }}
+      />
+
+      {/* Floating Timer Pill - Shows active wine timers */}
+      <FloatingTimerPill onRateNow={handleRateFromTimer} />
+
+      {/* Rate Ritual Sheet - For rating wines from timer prompts */}
+      <RateRitualSheet
+        isOpen={showRateSheet}
+        onClose={() => {
+          setShowRateSheet(false);
+          setRatingTimer(null);
+        }}
+        timer={ratingTimer}
       />
 
       {/* Complete Profile Modal */}

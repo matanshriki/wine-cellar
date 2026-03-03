@@ -1011,6 +1011,39 @@
       "reset": "Reset",
       "save": "Save Preferences"
     }
+  },
+  "ritual": {
+    "howMany": "How many bottles are you opening?",
+    "inCellar": "{{count}} in cellar",
+    "servingGuidance": "Serving Guidance",
+    "startDecantTimer": "Start decant timer",
+    "startAndOpen": "Start & Open",
+    "openNow": "Open Now",
+    "skipTimer": "Skip Timer",
+    "serveNow": "Serve Now",
+    "openFailed": "Failed to open bottle",
+    "enjoy": "Enjoy!",
+    "rateQuestion": "Want a reminder to rate it later?",
+    "setReminder": "Set Reminder",
+    "noThanks": "No Thanks",
+    "reminderSet": "Reminder set!",
+    "decanting": "Decanting",
+    "rateReminder": "Rate this wine",
+    "decantReady": "Decant Ready!",
+    "timeToRate": "Time to Rate!",
+    "pourNow": "Pour Now",
+    "rateNow": "Rate Now",
+    "rateThisWine": "Rate This Wine",
+    "quickTags": "Quick Tags (optional)",
+    "wouldBuyAgain": "Would buy again",
+    "specialOccasion": "Special occasion",
+    "greatWithFood": "Great with food",
+    "notesPlaceholder": "Add tasting notes...",
+    "saveRating": "Save Rating",
+    "ratingSaved": "Rating saved!",
+    "saveFailed": "Failed to save rating",
+    "pleaseRate": "Please select a rating",
+    "noBottle": "Unable to find bottle"
   }
 }
 
