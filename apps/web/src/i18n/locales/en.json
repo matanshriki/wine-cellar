@@ -1076,6 +1076,31 @@
     "decantReadyMsg": "is ready to pour.",
     "ratePromptMsg": "— take a moment to rate it.",
     "enjoyNow": "Enjoy!"
+  },
+  "guestMode": {
+    "share": {
+      "title": "Share with guests",
+      "subtitle": "Let guests view the lineup and vote for their favorites",
+      "buttonLabel": "Share",
+      "activeLabel": "Guests",
+      "copyButton": "Copy link",
+      "copiedButton": "Copied!",
+      "openButton": "Preview",
+      "createError": "Failed to create share link",
+      "copyError": "Failed to copy",
+      "copied": "Link copied!",
+      "expires": "Link expires in 7 days · Guests do not need to log in",
+      "guestActivity": "Guest activity",
+      "refresh": "Refresh",
+      "noShareYet": "Generate a link to start collecting votes",
+      "noVotesYet": "No votes yet",
+      "shareToCollect": "Share the link and guests can start voting",
+      "totalVotes": "{{count}} vote",
+      "mostLoved": "Most loved:"
+    },
+    "wrapUp": {
+      "guestFavorites": "Tonight's guest favorites"
+    }
   }
 }
 

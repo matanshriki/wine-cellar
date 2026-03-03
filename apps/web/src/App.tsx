@@ -4,7 +4,6 @@ import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
 import { ThemeProvider } from './contexts/ThemeContext'; // Dark mode V2
-import { TimerProvider } from './contexts/TimerContext'; // Wine ritual timers
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -24,6 +23,7 @@ import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
 import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
+import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,6 +114,11 @@ function AppRoutes() {
       <Route
         path="/privacy"
         element={<PrivacyPage />}
+      />
+      {/* Public guest view for shared evening lineups — no auth required */}
+      <Route
+        path="/share/evening/:shortCode"
+        element={<GuestEveningPage />}
       />
       <Route
         path="/cellar"
@@ -221,13 +226,11 @@ export function App() {
         <ToastProvider>
           <ThemeProvider>
             <SupabaseAuthProvider>
-              <TimerProvider>
-                <FeatureFlagsProvider>
-                  <AddBottleProvider>
-                    <AppRoutes />
-                  </AddBottleProvider>
-                </FeatureFlagsProvider>
-              </TimerProvider>
+              <FeatureFlagsProvider>
+                <AddBottleProvider>
+                  <AppRoutes />
+                </AddBottleProvider>
+              </FeatureFlagsProvider>
             </SupabaseAuthProvider>
           </ThemeProvider>
         </ToastProvider>

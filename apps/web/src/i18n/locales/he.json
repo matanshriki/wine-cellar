@@ -1115,6 +1115,31 @@
     "decantReadyMsg": "מוכן לשפוך.",
     "ratePromptMsg": "— קח רגע לדרג.",
     "enjoyNow": "תהנה!"
+  },
+  "guestMode": {
+    "share": {
+      "title": "שתף עם אורחים",
+      "subtitle": "תן לאורחים לראות את ה-lineup ולהצביע על האהובים שלהם",
+      "buttonLabel": "שתף",
+      "activeLabel": "אורחים",
+      "copyButton": "העתק קישור",
+      "copiedButton": "הועתק!",
+      "openButton": "תצוגה מקדימה",
+      "createError": "יצירת קישור שיתוף נכשלה",
+      "copyError": "ההעתקה נכשלה",
+      "copied": "הקישור הועתק!",
+      "expires": "הקישור פג תוקף תוך 7 ימים · האורחים לא צריכים להתחבר",
+      "guestActivity": "פעילות אורחים",
+      "refresh": "רענן",
+      "noShareYet": "צור קישור כדי להתחיל לאסוף הצבעות",
+      "noVotesYet": "אין הצבעות עדיין",
+      "shareToCollect": "שתף את הקישור והאורחים יוכלו להתחיל להצביע",
+      "totalVotes": "{{count}} הצבעה",
+      "mostLoved": "הכי אהוב:"
+    },
+    "wrapUp": {
+      "guestFavorites": "האהובים על האורחים של הערב"
+    }
   }
 }
 

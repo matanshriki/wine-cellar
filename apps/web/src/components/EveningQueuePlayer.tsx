@@ -9,7 +9,7 @@
  * - Completion flow
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
@@ -17,6 +17,9 @@ import type { QueuedWine, EveningPlan } from '../services/eveningPlanService';
 import * as eveningPlanService from '../services/eveningPlanService';
 import * as historyService from '../services/historyService';
 import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
+import { ShareEveningSheet } from './ShareEveningSheet';
+import * as eveningShareService from '../services/eveningShareService';
+import type { VoteSummaryEntry } from '../services/eveningShareService';
 
 interface EveningQueuePlayerProps {
   isOpen: boolean;
@@ -24,6 +27,67 @@ interface EveningQueuePlayerProps {
   plan: EveningPlan;
   onPlanUpdated: (plan: EveningPlan) => void;
   onComplete: () => void;
+}
+
+// ── Guest Activity mini-card (shown inside the player while a share is active) ──
+function GuestActivityBadge({
+  shareId,
+  queue,
+}: {
+  shareId: string;
+  queue: QueuedWine[];
+}) {
+  const [summary, setSummary] = useState<VoteSummaryEntry[]>([]);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await eveningShareService.getVoteSummary(shareId, queue);
+      setSummary(data);
+      setTotalVotes(data.reduce((a, b) => a + b.vote_count, 0));
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [shareId, queue]);
+
+  useEffect(() => {
+    refresh();
+    const timer = setInterval(refresh, 30_000);
+    return () => clearInterval(timer);
+  }, [refresh]);
+
+  const topWine = summary.find((e) => e.vote_count > 0);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-6 mb-4 px-4 py-3 rounded-xl flex items-center gap-3 cursor-default"
+      style={{
+        background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
+        border: '1px solid var(--wine-200)',
+      }}
+    >
+      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--wine-600)' }}>
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+      </svg>
+      {loading ? (
+        <p className="text-sm" style={{ color: 'var(--wine-700)' }}>Loading guest votes…</p>
+      ) : totalVotes === 0 ? (
+        <p className="text-sm" style={{ color: 'var(--wine-700)' }}>
+          Guest link active · waiting for votes
+        </p>
+      ) : (
+        <p className="text-sm font-medium" style={{ color: 'var(--wine-800)' }}>
+          {totalVotes} guest vote{totalVotes !== 1 ? 's' : ''}
+          {topWine ? ` · Most loved: ${topWine.wine_name}` : ''}
+        </p>
+      )}
+    </motion.div>
+  );
 }
 
 export function EveningQueuePlayer({
@@ -37,12 +101,15 @@ export function EveningQueuePlayer({
   const [currentIndex, setCurrentIndex] = useState(plan.now_playing_index);
   const [queue, setQueue] = useState<QueuedWine[]>(plan.queue);
   const [showWrapUp, setShowWrapUp] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [activeShareId, setActiveShareId] = useState<string | null>(null);
   
   const currentWine = queue[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === queue.length - 1;
 
-  const currentDisplayImage = useWineDisplayImage(currentWine ?? null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const currentDisplayImage = useWineDisplayImage((currentWine ?? null) as any);
 
   // Sync with plan changes
   useEffect(() => {
@@ -106,11 +173,13 @@ export function EveningQueuePlayer({
         plan={plan}
         queue={queue}
         onComplete={onComplete}
+        activeShareId={activeShareId}
       />
     );
   }
 
   return (
+    <>
     <AnimatePresence mode="wait">
       {isOpen && (
       <motion.div
@@ -154,15 +223,37 @@ export function EveningQueuePlayer({
                   {currentIndex + 1} {t('planEvening.queue.of', 'of')} {queue.length} • {plan.occasion || t('planEvening.queue.title', 'Evening')}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-tertiary)' }}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Share with guests button */}
+                <motion.button
+                  onClick={() => setShowShareSheet(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: activeShareId ? 'var(--wine-100)' : 'var(--bg-surface-elevated)',
+                    color: activeShareId ? 'var(--wine-700)' : 'var(--text-secondary)',
+                    border: `1px solid ${activeShareId ? 'var(--wine-300)' : 'var(--border-medium)'}`,
+                  }}
+                  title={t('guestMode.share.title', 'Share with guests')}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  {activeShareId ? t('guestMode.share.activeLabel', 'Guests') : t('guestMode.share.buttonLabel', 'Share')}
+                </motion.button>
+
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-tertiary)' }}
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -250,6 +341,11 @@ export function EveningQueuePlayer({
                 </motion.div>
               </AnimatePresence>
             </div>
+
+            {/* Guest Activity Badge (shown when share is active) */}
+            {activeShareId && (
+              <GuestActivityBadge shareId={activeShareId} queue={queue} />
+            )}
 
             {/* Queue List */}
             <div className="px-6 pb-6">
@@ -376,11 +472,20 @@ export function EveningQueuePlayer({
       </motion.div>
       )}
     </AnimatePresence>
+
+    {/* Share with Guests sheet (rendered outside the player dialog so z-index stacks correctly) */}
+    <ShareEveningSheet
+      isOpen={showShareSheet}
+      onClose={() => setShowShareSheet(false)}
+      plan={plan}
+      onShareCreated={(shareId) => setActiveShareId(shareId)}
+    />
+    </>
   );
 }
 
 // Wrap Up Modal Component (imported separately to keep file size manageable)
-function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
+function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }: any) {
   const { t } = useTranslation();
   const [wineStates, setWineStates] = useState<Record<number, {
     opened: boolean;
@@ -388,6 +493,16 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
     rating: number | null;
     notes: string;
   }>>({});
+
+  // Guest vote summary (loaded once on open if a share is active)
+  const [guestSummary, setGuestSummary] = useState<VoteSummaryEntry[]>([]);
+  useEffect(() => {
+    if (!isOpen || !activeShareId) return;
+    eveningShareService
+      .getVoteSummary(activeShareId, queue)
+      .then((data) => setGuestSummary(data.filter((e) => e.vote_count > 0)))
+      .catch(() => {/* silent */});
+  }, [isOpen, activeShareId, queue]);
 
   const handleToggleOpened = (index: number) => {
     setWineStates(prev => ({
@@ -499,6 +614,38 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete }: any) {
             {t('planEvening.wrapUp.subtitle', 'Mark which wines you opened and rate them')}
           </p>
         </div>
+
+        {/* Guest Favorites (shown if share was active during the evening) */}
+        {guestSummary.length > 0 && (
+          <div className="flex-shrink-0 px-6 pt-4 pb-0">
+            <div
+              className="p-4 rounded-xl"
+              style={{ background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))', border: '1px solid var(--wine-200)' }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--wine-700)' }}>
+                🏆 {t('guestMode.wrapUp.guestFavorites', "Tonight's guest favorites")}
+              </p>
+              <div className="space-y-2">
+                {guestSummary.slice(0, 3).map((entry, i) => (
+                  <div key={entry.wine_id} className="flex items-center gap-2">
+                    <span className="text-base">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--wine-900)' }}>
+                        {entry.wine_name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--wine-600)' }}>
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                      <span className="text-xs font-bold" style={{ color: 'var(--wine-800)' }}>{entry.vote_count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Wines List (scrollable) */}
         <div className="flex-1 overflow-y-auto touch-scroll px-6 py-4 space-y-4">
