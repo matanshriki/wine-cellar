@@ -63,9 +63,11 @@ function edgeFunctionUrl(name: string): string {
 }
 
 function anonHeaders(): Record<string, string> {
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
   return {
     'Content-Type': 'application/json',
-    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`,
   };
 }
 
