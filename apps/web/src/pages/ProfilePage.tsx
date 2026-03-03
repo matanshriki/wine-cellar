@@ -97,14 +97,14 @@ export function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('profile.title')}</h1>
-        <p className="text-gray-600 mt-2">{t('profile.subtitle')}</p>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('profile.title')}</h1>
+        <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{t('profile.subtitle')}</p>
       </div>
 
       <div className="card">
         {/* Avatar Section */}
-        <div className="flex flex-col items-center mb-6 pb-6 border-b border-gray-200">
-          <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-3xl font-bold mb-4">
+        <div className="flex flex-col items-center mb-6 pb-6" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4" style={{ backgroundColor: 'var(--wine-100)', color: 'var(--wine-600)' }}>
             {profile.avatar_url ? (
               <img
                 src={profile.avatar_url || ''}
@@ -115,9 +115,9 @@ export function ProfilePage() {
               profile.display_name?.charAt(0).toUpperCase() || '?'
             )}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">{profile.display_name}</h2>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{profile.display_name}</h2>
           {profile.email && (
-            <p className="text-sm text-gray-600 mt-1">{profile.email}</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{profile.email}</p>
           )}
         </div>
 
@@ -126,7 +126,7 @@ export function ProfilePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="first_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                   {t('profile.firstName')}
                 </label>
                 <input
@@ -141,7 +141,7 @@ export function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="last_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                   {t('profile.lastName')}
                 </label>
                 <input
@@ -157,7 +157,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="display_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('profile.displayName')} *
               </label>
               <input
@@ -171,26 +171,27 @@ export function ProfilePage() {
                 maxLength={100}
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">{t('profile.displayNameHint')}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.displayNameHint')}</p>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('profile.email')}
               </label>
               <input
                 id="email"
                 type="email"
                 value={formData.email}
-                className="input bg-gray-50"
+                className="input"
+                style={{ backgroundColor: 'var(--bg-muted)' }}
                 disabled
                 readOnly
               />
-              <p className="text-xs text-gray-500 mt-1">{t('profile.emailReadOnly')}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.emailReadOnly')}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                 {t('profile.avatar.title')}
               </label>
               <AvatarUpload
@@ -201,7 +202,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="preferred_language" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="preferred_language" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('profile.preferredLanguage')}
               </label>
               <select
@@ -238,41 +239,41 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.firstName')}</h3>
-                <p className="text-base text-gray-900">{profile.first_name || t('profile.notProvided')}</p>
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.firstName')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.first_name || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.lastName')}</h3>
-                <p className="text-base text-gray-900">{profile.last_name || t('profile.notProvided')}</p>
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.lastName')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.last_name || t('profile.notProvided')}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.displayName')}</h3>
-                <p className="text-base text-gray-900">{profile.display_name}</p>
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.displayName')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.display_name}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.email')}</h3>
-                <p className="text-base text-gray-900">{profile.email || t('profile.notProvided')}</p>
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.email')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.email || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.preferredLanguage')}</h3>
-                <p className="text-base text-gray-900">
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredLanguage')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_language === 'he' ? 'עברית (Hebrew)' : 'English'}
                 </p>
               </div>
 
               {/* Theme Preference - disabled for production */}
               {/* <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Theme Preference</h3>
+                <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>Theme Preference</h3>
                 <ThemeToggle />
               </div> */}
 
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">{t('profile.memberSince')}</h3>
-                <p className="text-base text-gray-900">
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.memberSince')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {new Date(profile.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -295,15 +296,15 @@ export function ProfilePage() {
 
       {/* Account Information */}
       <div className="card mt-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.accountInfo')}</h2>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{t('profile.accountInfo')}</h2>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">{t('profile.userId')}</span>
-            <span className="text-gray-900 font-mono text-xs">{user?.id.slice(0, 8)}...</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('profile.userId')}</span>
+            <span className="font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{user?.id.slice(0, 8)}...</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">{t('profile.authProvider')}</span>
-            <span className="text-gray-900">{user?.app_metadata?.provider || 'email'}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('profile.authProvider')}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{user?.app_metadata?.provider || 'email'}</span>
           </div>
         </div>
       </div>
