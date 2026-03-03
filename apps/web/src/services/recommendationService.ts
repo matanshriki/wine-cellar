@@ -10,8 +10,10 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { Database } from '../types/supabase';
+import type { Database, TasteProfile } from '../types/supabase';
 import * as labelArtService from './labelArtService';
+import * as wineProfileService from './wineProfileService';
+import * as tasteProfileService from './tasteProfileService';
 
 // LocalStorage key for tracking recently shown recommendations
 const RECENT_RECOMMENDATIONS_KEY = 'wine_recent_recommendations';
@@ -53,6 +55,7 @@ export interface Recommendation {
   explanation: string;
   servingInstructions: string;
   score: number;
+  affinityReason?: string | null;
 }
 
 /**
@@ -71,6 +74,17 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   }
 
   console.log('[RecommendationService] Getting recommendations for:', input);
+
+  // Fetch user's taste profile for personalization
+  let userTasteProfile: TasteProfile | null = null;
+  try {
+    userTasteProfile = await tasteProfileService.getMyTasteProfile();
+    if (userTasteProfile) {
+      console.log('[RecommendationService] Using taste profile with confidence:', userTasteProfile.confidence);
+    }
+  } catch (e) {
+    console.log('[RecommendationService] No taste profile available, using base scoring');
+  }
 
   // Get all user's bottles with wine info and quantity > 0
   const { data: bottles, error } = await supabase
@@ -157,6 +171,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   // Simple scoring algorithm based on meal type and wine style
   const scoredBottles = filteredBottles.map(bottle => {
     let score = 50; // Base score
+    let affinityReason: string | null = null;
     
     const wineColor = bottle.wine.color.toLowerCase();
     const mealType = input.mealType?.toLowerCase() || '';
@@ -211,6 +226,22 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     if (readinessStatus === 'inwindow') score += 15;
     if (readinessStatus === 'ready') score += 10;
 
+    // TASTE PROFILE AFFINITY SCORING
+    if (userTasteProfile) {
+      const wineProfile = wineProfileService.getWineProfile(bottle.wine);
+      const affinity = tasteProfileService.calculateAffinity(wineProfile, userTasteProfile);
+      const affinityWeight = tasteProfileService.getAffinityWeight(userTasteProfile.confidence);
+      
+      const affinityBonus = affinity * affinityWeight * 50;
+      score += affinityBonus;
+      
+      affinityReason = tasteProfileService.generateAffinityReason(wineProfile, userTasteProfile);
+      
+      if (affinityBonus > 5) {
+        console.log('[RecommendationService] Affinity bonus for', bottle.wine.wine_name, ':', Math.round(affinityBonus));
+      }
+    }
+
     // Penalty for recently opened bottles (prevents repetition)
     if (recentlyOpenedBottleIds.has(bottle.id)) {
       score -= 40; // Strong penalty to ensure variety
@@ -227,7 +258,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     // This ensures different bottles can win even with similar base scores
     score += Math.random() * 25;
 
-    return { bottle, score };
+    return { bottle, score, affinityReason };
   });
 
   // Sort by score and take top 3
@@ -246,7 +277,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
 
   // Format recommendations
   const recommendations: Recommendation[] = topBottles.map((item, index) => {
-    const { bottle, score } = item;
+    const { bottle, score, affinityReason } = item;
     const wine = bottle.wine;
 
     // Generate explanation
@@ -275,6 +306,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
       explanation,
       servingInstructions,
       score: Math.round(score),
+      affinityReason,
     };
   });
 

@@ -13,6 +13,38 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export interface TasteProfileVector {
+  body: number;
+  tannin: number;
+  acidity: number;
+  oak: number;
+  sweetness: number;
+  power: number;
+}
+
+export interface TasteProfilePreferences {
+  reds_bias: number;
+  whites_bias: number;
+  sparkling_bias: number;
+  style_tags: Record<string, number>;
+  regions: Record<string, number>;
+  grapes: Record<string, number>;
+}
+
+export interface TasteProfile {
+  version: number;
+  vector: TasteProfileVector;
+  preferences: TasteProfilePreferences;
+  overrides?: {
+    vector?: Partial<TasteProfileVector>;
+  };
+  confidence: 'low' | 'med' | 'high';
+  data_points: {
+    rated_count: number;
+    last_rated_at: string | null;
+  };
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -27,6 +59,9 @@ export interface Database {
           preferred_language: string
           cellar_agent_enabled: boolean
           plan_evening_enabled: boolean
+          taste_profile: TasteProfile | null
+          taste_profile_updated_at: string | null
+          taste_profile_version: number
           created_at: string
           updated_at: string
         }
@@ -40,6 +75,9 @@ export interface Database {
           preferred_language?: string
           cellar_agent_enabled?: boolean
           plan_evening_enabled?: boolean
+          taste_profile?: TasteProfile | null
+          taste_profile_updated_at?: string | null
+          taste_profile_version?: number
           created_at?: string
           updated_at?: string
         }
@@ -53,6 +91,9 @@ export interface Database {
           preferred_language?: string
           cellar_agent_enabled?: boolean
           plan_evening_enabled?: boolean
+          taste_profile?: TasteProfile | null
+          taste_profile_updated_at?: string | null
+          taste_profile_version?: number
           created_at?: string
           updated_at?: string
         }

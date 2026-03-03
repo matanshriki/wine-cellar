@@ -9,7 +9,7 @@
  * Gated feature - only visible to flagged users
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
@@ -19,6 +19,8 @@ import * as eveningPlanService from '../services/eveningPlanService';
 import type { EveningPlan } from '../services/eveningPlanService';
 import * as wineProfileService from '../services/wineProfileService';
 import type { FoodProfile, WineProfile } from '../services/wineProfileService';
+import * as tasteProfileService from '../services/tasteProfileService';
+import type { TasteProfile } from '../types/supabase';
 
 interface PlanEveningModalProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ interface WineSlot {
   label: string;
   isLocked: boolean;
   wineProfile?: WineProfile;
+  affinityReason?: string | null;
 }
 
 export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEveningModalProps) {
@@ -70,7 +73,22 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
   const [swapPosition, setSwapPosition] = useState<number | null>(null);
   const [availableAlternatives, setAvailableAlternatives] = useState<BottleWithWineInfo[]>([]);
   
-  // Generate lineup based on inputs (FOOD-AWARE)
+  // Taste profile state
+  const [userTasteProfile, setUserTasteProfile] = useState<TasteProfile | null>(null);
+  
+  // Fetch taste profile on mount
+  useEffect(() => {
+    tasteProfileService.getMyTasteProfile()
+      .then(profile => {
+        if (profile) {
+          console.log('[PlanEvening] Loaded taste profile with confidence:', profile.confidence);
+          setUserTasteProfile(profile);
+        }
+      })
+      .catch(err => console.log('[PlanEvening] No taste profile available'));
+  }, []);
+  
+  // Generate lineup based on inputs (FOOD-AWARE + TASTE PROFILE)
   const generateLineup = () => {
     console.log('[PlanEvening] Generating food-aware lineup...', {
       occasion,
@@ -78,6 +96,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
       redsOnly,
       highRatingOnly,
       food: { selectedProtein, selectedSauce, selectedSpice, selectedSmoke },
+      hasTasteProfile: !!userTasteProfile,
     });
     
     // Determine number of wines
@@ -105,11 +124,12 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
       smoke: selectedSmoke,
     };
     
-    // Score each candidate with food pairing
+    // Score each candidate with food pairing + taste profile affinity
     const scoredCandidates = candidates.map(bottle => {
       const wineProfile = wineProfileService.getWineProfile(bottle.wine);
       
       let score = 0;
+      let affinityReason: string | null = null;
       
       // Readiness score
       const analysis = bottle as any;
@@ -125,10 +145,24 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
         score += pairingScore;
       }
       
+      // TASTE PROFILE AFFINITY SCORING
+      if (userTasteProfile) {
+        const affinity = tasteProfileService.calculateAffinity(wineProfile, userTasteProfile);
+        const affinityWeight = tasteProfileService.getAffinityWeight(userTasteProfile.confidence);
+        const affinityBonus = affinity * affinityWeight * 50;
+        score += affinityBonus;
+        
+        affinityReason = tasteProfileService.generateAffinityReason(wineProfile, userTasteProfile);
+        
+        if (affinityBonus > 5) {
+          console.log('[PlanEvening] Affinity bonus for', bottle.wine.wine_name, ':', Math.round(affinityBonus));
+        }
+      }
+      
       // Diversity bonus
       score += Math.random() * 10;
       
-      return { bottle, score, wineProfile };
+      return { bottle, score, wineProfile, affinityReason };
     });
     
     // Sort by score (highest first)
@@ -156,12 +190,13 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     // Create lineup with labels and profiles
     const labels = ['Warm-up', 'Mid', 'Main', 'Finale', 'Grand Finale', 'Closer'];
     
-    const newLineup: WineSlot[] = selectedBottles.map(({ bottle, wineProfile }, idx) => ({
+    const newLineup: WineSlot[] = selectedBottles.map(({ bottle, wineProfile, affinityReason }, idx) => ({
       bottle,
       position: idx + 1,
       label: labels[idx] || `Wine ${idx + 1}`,
       isLocked: false,
       wineProfile,
+      affinityReason,
     }));
     
     console.log('[PlanEvening] Generated lineup with power progression:', newLineup.map(s => ({
@@ -1008,8 +1043,23 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
                 </span>
               )}
               
+              {/* Affinity reason (taste profile match) */}
+              {slot.affinityReason && (
+                <div 
+                  className="mt-2 text-xs px-2 py-1 rounded-full inline-flex items-center gap-1"
+                  style={{ 
+                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
+                    color: 'var(--wine-700)',
+                    border: '1px solid var(--wine-200)',
+                  }}
+                >
+                  <span>✨</span>
+                  {slot.affinityReason}
+                </div>
+              )}
+              
               {/* Pairing explanation */}
-              {slot.wineProfile && foodProfile && (
+              {slot.wineProfile && foodProfile && !slot.affinityReason && (
                 <div className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
                   {wineProfileService.getPairingExplanation(
                     slot.bottle,

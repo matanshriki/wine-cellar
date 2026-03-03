@@ -7,6 +7,8 @@
 
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
+import * as tasteProfileService from './tasteProfileService';
+import type { TasteProfile } from '../types/supabase';
 
 export interface AgentMessage {
   role: 'user' | 'assistant';
@@ -80,6 +82,18 @@ export async function sendAgentMessage(
 
   // Build compact cellar context
   const cellarContext = buildCellarContext(bottles);
+  
+  // Fetch user taste profile for personalized recommendations
+  let tasteContext: string | undefined;
+  try {
+    const tasteProfile = await tasteProfileService.getMyTasteProfile();
+    if (tasteProfile) {
+      tasteContext = tasteProfileService.buildAgentContext(tasteProfile);
+      console.log('[AgentService] Including taste profile context');
+    }
+  } catch (e) {
+    console.log('[AgentService] No taste profile available');
+  }
 
   // Get API URL from environment variable, fallback to relative path for local dev
   const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -96,6 +110,7 @@ export async function sendAgentMessage(
       message: userMessage,
       history: conversationHistory,
       cellarContext,
+      tasteContext,
     }),
   });
 
