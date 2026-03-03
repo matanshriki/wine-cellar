@@ -69,14 +69,19 @@ export function AdminReadinessBackfill() {
     async function checkMissingCount() {
       if (!isAdmin) return;
 
-      const { data, error } = await supabase
-        .rpc('count_bottles_needing_readiness', {
-          p_mode: selectedMode,
-          p_current_version: 2,
-        });
+      try {
+        const { data, error } = await supabase
+          .rpc('count_bottles_needing_readiness', {
+            p_mode: selectedMode,
+            p_current_version: 2,
+          });
 
-      if (!error && data !== null) {
-        setMissingCount(data);
+        // Silently fail if RPC doesn't exist
+        if (!error && data !== null) {
+          setMissingCount(data);
+        }
+      } catch {
+        // Silently fail - RPC may not exist in this environment
       }
     }
 
@@ -88,15 +93,20 @@ export function AdminReadinessBackfill() {
     async function loadExistingJob() {
       if (!isAdmin) return;
 
-      const { data } = await supabase
-        .from('readiness_backfill_jobs')
-        .select('*')
-        .eq('status', 'running')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('readiness_backfill_jobs')
+          .select('*')
+          .eq('status', 'running')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-      if (data) {
+        // Silently fail if table doesn't exist (406) or no data
+        if (error || !data) {
+          return;
+        }
+
         setProgress({
           jobId: data.id,
           total: data.estimated_total || 0,
@@ -111,6 +121,8 @@ export function AdminReadinessBackfill() {
         });
         toast.info('Resuming existing backfill job...');
         resumeBackfill(data.id);
+      } catch {
+        // Silently fail - table may not exist in this environment
       }
     }
 

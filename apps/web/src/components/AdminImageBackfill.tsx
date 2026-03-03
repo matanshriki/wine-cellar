@@ -61,14 +61,18 @@ export function AdminImageBackfill() {
         body: { action: 'get-counts' },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Silently fail if edge function not deployed
+        console.warn('[AdminImageBackfill] Edge function not available:', error.message);
+        return;
+      }
 
       if (data?.counts) {
         setCounts(data.counts);
       }
     } catch (error: any) {
-      console.error('Error loading counts:', error);
-      toast.error(`Failed to load counts: ${error.message}`);
+      // Silently fail - edge function may not be deployed in this environment
+      console.warn('[AdminImageBackfill] Edge function not available:', error.message);
     }
   }
 

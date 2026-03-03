@@ -58,15 +58,20 @@ export function AdminWineProfileBackfill() {
     async function loadExistingJob() {
       if (!isAdmin) return;
 
-      const { data } = await supabase
-        .from('profile_backfill_jobs')
-        .select('*')
-        .eq('status', 'running')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('profile_backfill_jobs')
+          .select('*')
+          .eq('status', 'running')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-      if (data) {
+        // Silently fail if table doesn't exist (406) or no data
+        if (error || !data) {
+          return;
+        }
+
         setJobId(data.id);
         setProgress({
           total: data.total,
@@ -77,6 +82,8 @@ export function AdminWineProfileBackfill() {
         });
         toast.info('Resuming existing backfill job...');
         resumeBackfill(data.id, data.processed);
+      } catch {
+        // Silently fail - table may not exist in this environment
       }
     }
 
