@@ -1,306 +1,283 @@
 /**
- * Rate Ritual Sheet
- * 
- * Compact luxury sheet for rating a wine after opening.
- * Features 5-star rating, quick chips, and optional notes.
+ * RateRitualSheet
+ *
+ * A compact luxury bottom sheet for rating a bottle after opening.
+ * Updates the existing consumption_history record (no new DB row).
+ *
+ * Features:
+ *  – 5-star interactive rating
+ *  – 3 optional quick-mood chips
+ *  – Free-text notes
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { WineTimer } from '../contexts/TimerContext';
 import * as historyService from '../services/historyService';
 import { toast } from '../lib/toast';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
+const reduce = shouldReduceMotion();
+
 interface RateRitualSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  timer?: WineTimer | null;
-  bottleId?: string;
-  wineName?: string;
-  producer?: string;
-  vintage?: number;
-  imageUrl?: string;
+  historyId: string;
+  wineName: string;
+  producer: string;
 }
 
-const QUICK_CHIPS = [
-  { id: 'buy_again', emoji: '🔁', labelKey: 'ritual.wouldBuyAgain' },
-  { id: 'special_occasion', emoji: '🎉', labelKey: 'ritual.specialOccasion' },
-  { id: 'food_pairing', emoji: '🍽️', labelKey: 'ritual.greatWithFood' },
-];
+const MOOD_CHIPS = [
+  { id: 'would_buy_again', emoji: '🔁', labelKey: 'rateRitual.chips.wouldBuyAgain' },
+  { id: 'great_with_food', emoji: '🍽️', labelKey: 'rateRitual.chips.greatWithFood' },
+  { id: 'special_occasion', emoji: '✨', labelKey: 'rateRitual.chips.specialOccasion' },
+] as const;
 
-export function RateRitualSheet({ 
-  isOpen, 
-  onClose, 
-  timer, 
-  bottleId: propBottleId,
-  wineName: propWineName,
-  producer: propProducer,
-  vintage: propVintage,
-  imageUrl: propImageUrl,
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [hovered, setHovered] = useState(0);
+
+  return (
+    <div className="flex gap-1 justify-center" role="group" aria-label="Star rating">
+      {[1, 2, 3, 4, 5].map(star => {
+        const filled = star <= (hovered || value);
+        return (
+          <motion.button
+            key={star}
+            whileTap={{ scale: 0.8 }}
+            onClick={() => onChange(star)}
+            onMouseEnter={() => setHovered(star)}
+            onMouseLeave={() => setHovered(0)}
+            onTouchStart={() => setHovered(star)}
+            onTouchEnd={() => setHovered(0)}
+            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            className="p-1"
+            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+          >
+            <motion.span
+              animate={{ scale: filled ? 1.15 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className="text-3xl block"
+              style={{
+                filter: filled ? 'none' : 'grayscale(1) opacity(0.4)',
+                color: filled ? '#D4AF37' : undefined,
+              }}
+            >
+              ⭐
+            </motion.span>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function RateRitualSheet({
+  isOpen,
+  onClose,
+  historyId,
+  wineName,
+  producer,
 }: RateRitualSheetProps) {
   const { t } = useTranslation();
-  const reduceMotion = shouldReduceMotion();
-  
+
   const [rating, setRating] = useState(0);
-  const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Derive values from timer or props
-  const bottleId = timer?.bottle_id || propBottleId;
-  const wineName = timer?.wine_name || propWineName || 'Wine';
-  const producer = timer?.producer || propProducer;
-  const vintage = timer?.vintage || propVintage;
-  const imageUrl = timer?.image_url || propImageUrl;
+  function toggleChip(id: string) {
+    setSelectedChips(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
-  // Reset state when sheet opens
-  useEffect(() => {
-    if (isOpen) {
-      setRating(0);
-      setSelectedChips([]);
-      setNotes('');
-      setIsLoading(false);
-    }
-  }, [isOpen]);
-
-  // Lock body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  const toggleChip = (chipId: string) => {
-    setSelectedChips(prev => 
-      prev.includes(chipId) 
-        ? prev.filter(id => id !== chipId)
-        : [...prev, chipId]
-    );
-  };
-
-  const handleSave = async () => {
-    if (!bottleId) {
-      toast.error(t('ritual.noBottle', 'Unable to find bottle'));
-      return;
-    }
-
+  async function handleSave() {
     if (rating === 0) {
-      toast.error(t('ritual.pleaseRate', 'Please select a rating'));
+      toast.error(t('rateRitual.selectRating', 'Please select a rating'));
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     try {
-      // Build notes with chips
-      let fullNotes = notes.trim();
-      if (selectedChips.length > 0) {
-        const chipLabels = selectedChips.map(id => {
-          const chip = QUICK_CHIPS.find(c => c.id === id);
-          return chip ? `${chip.emoji} ${t(chip.labelKey, chip.id)}` : '';
-        }).filter(Boolean);
-        if (chipLabels.length > 0) {
-          fullNotes = fullNotes 
-            ? `${chipLabels.join(' · ')}\n\n${fullNotes}`
-            : chipLabels.join(' · ');
-        }
-      }
+      const chipsText =
+        selectedChips.size > 0
+          ? Array.from(selectedChips)
+              .map(id => MOOD_CHIPS.find(c => c.id === id)?.emoji)
+              .join(' ')
+          : undefined;
 
-      await historyService.updateConsumptionHistory(bottleId, {
+      const combinedNotes = [chipsText, notes.trim()].filter(Boolean).join(' · ') || undefined;
+
+      await historyService.updateConsumptionHistory(historyId, {
         user_rating: rating,
-        tasting_notes: fullNotes || undefined,
+        tasting_notes: combinedNotes,
       });
 
-      toast.success(t('ritual.ratingSaved', 'Rating saved!'));
+      toast.success(t('rateRitual.saved', 'Rating saved!'));
       onClose();
-    } catch (error: any) {
-      console.error('Failed to save rating:', error);
-      toast.error(error.message || t('ritual.saveFailed', 'Failed to save rating'));
+    } catch (err: any) {
+      toast.error(err?.message || t('rateRitual.saveFailed', 'Failed to save rating'));
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <>
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0"
+            key="rate-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60]"
             style={{
               background: 'var(--bg-overlay)',
               backdropFilter: 'var(--blur-medium)',
               WebkitBackdropFilter: 'var(--blur-medium)',
             }}
             onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
           />
 
           {/* Sheet */}
           <motion.div
-            className="relative w-full sm:max-w-md z-10 ios-modal-scroll"
+            key="rate-sheet"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'tween', duration: reduce ? 0 : 0.28, ease: [0.4, 0, 0.2, 1] }}
+            onClick={e => e.stopPropagation()}
+            className="fixed left-0 right-0 z-[61] flex flex-col"
             style={{
               background: 'var(--bg-surface)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-xl)',
+              bottom: 'max(0px, var(--safe-bottom))',
+              maxHeight: 'calc(88dvh - max(0px, var(--safe-bottom)))',
               borderTopLeftRadius: 'var(--radius-2xl)',
               borderTopRightRadius: 'var(--radius-2xl)',
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 0,
-              boxShadow: 'var(--shadow-2xl)',
-              maxHeight: 'calc(85dvh - env(safe-area-inset-bottom))',
-              marginBottom: 'env(safe-area-inset-bottom)',
+              borderBottom: 'none',
             }}
-            initial={reduceMotion ? { opacity: 0 } : { y: '100%' }}
-            animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { y: '100%' }}
-            transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('rateRitual.ariaLabel', 'Rate this wine')}
           >
             {/* Handle */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div 
-                className="w-12 h-1 rounded-full" 
-                style={{ background: 'var(--border-medium)' }}
-              />
+            <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+              <div className="w-12 h-1 rounded-full" style={{ backgroundColor: 'var(--border-medium)' }} />
             </div>
 
             {/* Content */}
-            <div className="px-6 pb-6 overflow-y-auto" style={{ maxHeight: 'calc(75dvh - 3rem)' }}>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-4 space-y-5">
               {/* Header */}
-              <div className="text-center mb-6">
-                <h3 
-                  className="text-xl font-bold mb-1"
-                  style={{ color: 'var(--text-primary)' }}
+              <div className="text-center">
+                <h2
+                  className="text-xl font-bold"
+                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
                 >
-                  {t('ritual.rateThisWine', 'Rate This Wine')}
-                </h3>
-                <p 
-                  className="text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {wineName}
-                  {producer && ` by ${producer}`}
-                  {vintage && ` · ${vintage}`}
+                  {t('rateRitual.title', 'How was it?')}
+                </h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  {producer} · {wineName}
                 </p>
               </div>
 
-              {/* Star Rating */}
-              <div className="flex justify-center gap-2 mb-6">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <motion.button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className="p-1"
-                    whileTap={{ scale: 0.9 }}
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <motion.svg
-                      className="w-10 h-10"
-                      viewBox="0 0 24 24"
-                      fill={star <= rating ? 'var(--wine-500)' : 'none'}
-                      stroke={star <= rating ? 'var(--wine-500)' : 'var(--border-medium)'}
-                      strokeWidth={1.5}
-                      initial={false}
-                      animate={star <= rating ? { scale: [1, 1.2, 1] } : {}}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                      />
-                    </motion.svg>
-                  </motion.button>
-                ))}
-              </div>
+              {/* Star rating */}
+              <StarRating value={rating} onChange={setRating} />
 
-              {/* Quick Chips */}
-              <div className="mb-5">
-                <p 
-                  className="text-sm font-medium mb-3 text-center"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  {t('ritual.quickTags', 'Quick Tags (optional)')}
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {QUICK_CHIPS.map((chip) => (
+              {/* Mood chips */}
+              <div className="flex gap-2 justify-center flex-wrap">
+                {MOOD_CHIPS.map(chip => {
+                  const active = selectedChips.has(chip.id);
+                  return (
                     <motion.button
                       key={chip.id}
+                      whileTap={{ scale: 0.93 }}
                       onClick={() => toggleChip(chip.id)}
-                      className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
                       style={{
-                        background: selectedChips.includes(chip.id) ? 'var(--wine-100)' : 'var(--bg-muted)',
-                        color: selectedChips.includes(chip.id) ? 'var(--wine-700)' : 'var(--text-secondary)',
-                        border: `2px solid ${selectedChips.includes(chip.id) ? 'var(--wine-400)' : 'transparent'}`,
+                        background: active ? 'var(--wine-50, #fdf2f5)' : 'var(--bg-muted)',
+                        color: active ? 'var(--wine-700)' : 'var(--text-secondary)',
+                        border: active ? '1px solid var(--wine-400)' : '1px solid var(--border-subtle)',
                       }}
-                      whileTap={{ scale: 0.95 }}
                     >
-                      {chip.emoji} {t(chip.labelKey, chip.id.replace('_', ' '))}
+                      <span>{chip.emoji}</span>
+                      <span>{t(chip.labelKey)}</span>
                     </motion.button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              {/* Notes */}
-              <div className="mb-6">
+              {/* Notes textarea */}
+              <div>
+                <label
+                  className="block text-xs mb-1.5 font-medium"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  htmlFor="tasting-notes"
+                >
+                  {t('rateRitual.notesLabel', 'Tasting notes (optional)')}
+                </label>
                 <textarea
+                  id="tasting-notes"
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('ritual.notesPlaceholder', 'Add tasting notes...')}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder={t('rateRitual.notesPlaceholder', 'Describe what you tasted…')}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl resize-none transition-all"
+                  maxLength={400}
+                  className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none transition-colors"
                   style={{
                     background: 'var(--bg-muted)',
+                    border: '1px solid var(--border-medium)',
                     color: 'var(--text-primary)',
-                    border: '2px solid var(--border-subtle)',
                   }}
                 />
               </div>
+            </div>
 
-              {/* CTAs */}
-              <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="flex-1 py-3.5 rounded-xl font-medium transition-all disabled:opacity-50"
-                  style={{
-                    background: 'var(--bg-muted)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-                <motion.button
-                  onClick={handleSave}
-                  disabled={isLoading || rating === 0}
-                  className="flex-1 py-3.5 rounded-xl font-semibold transition-all disabled:opacity-50"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
-                    color: 'white',
-                    boxShadow: '0 4px 12px rgba(164, 76, 104, 0.3)',
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isLoading ? t('common.saving', 'Saving...') : t('ritual.saveRating', 'Save Rating')}
-                </motion.button>
-              </div>
+            {/* Actions */}
+            <div
+              className="flex-shrink-0 px-6 pt-3 pb-4 space-y-2"
+              style={{ borderTop: '1px solid var(--border-subtle)' }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSave}
+                disabled={loading || rating === 0}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm transition-opacity"
+                style={{
+                  background:
+                    rating === 0
+                      ? 'var(--bg-muted)'
+                      : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  color: rating === 0 ? 'var(--text-tertiary)' : 'white',
+                  border: rating === 0 ? '1px solid var(--border-medium)' : '1px solid var(--wine-700)',
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading ? t('rateRitual.saving', 'Saving…') : t('rateRitual.save', 'Save rating')}
+              </motion.button>
+              <button
+                onClick={onClose}
+                className="w-full py-3 text-sm rounded-xl"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {t('rateRitual.skipRating', 'Skip for now')}
+              </button>
             </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

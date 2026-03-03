@@ -1051,38 +1051,70 @@
       "save": "שמור העדפות"
     }
   },
-  "ritual": {
-    "howMany": "כמה בקבוקים אתה פותח?",
-    "inCellar": "{{count}} במרתף",
-    "servingGuidance": "הנחיות הגשה",
-    "startDecantTimer": "התחל טיימר דקנטציה",
-    "startAndOpen": "התחל ופתח",
-    "openNow": "פתח עכשיו",
-    "skipTimer": "דלג על טיימר",
-    "serveNow": "הגש עכשיו",
-    "openFailed": "פתיחת הבקבוק נכשלה",
-    "enjoy": "בהנאה!",
-    "rateQuestion": "רוצה תזכורת לדרג אותו מאוחר יותר?",
-    "setReminder": "הגדר תזכורת",
-    "noThanks": "לא תודה",
-    "reminderSet": "התזכורת הוגדרה!",
-    "decanting": "דקנטציה",
-    "rateReminder": "דרג יין זה",
-    "decantReady": "הדקנטציה מוכנה!",
-    "timeToRate": "הגיע הזמן לדרג!",
-    "pourNow": "מזוג עכשיו",
+  "openRitual": {
+    "ariaLabel": "טקס פתיחת בקבוק",
+    "errorOpen": "שגיאה בפתיחת הבקבוק",
+    "step1": {
+      "title": "מוכן לפתוח?",
+      "subtitle": "אשר את הבקבוק שאתה פותח הלילה.",
+      "howMany": "כמה בקבוקים אתה פותח?",
+      "inCellar": "בקבוקים במרתף",
+      "continue": "המשך"
+    },
+    "step2": {
+      "title": "איך להגיש",
+      "subtitle": "קבל את המיטב מהבקבוק הזה.",
+      "tempLabel": "טמפרטורת הגשה",
+      "decantLabel": "דקנטציה",
+      "startTimer": "הפעל טיימר דקנטציה",
+      "duration": "משך",
+      "opening": "פותח...",
+      "startAndOpen": "הפעל טיימר ופתח",
+      "open": "פתח בקבוק",
+      "skipTimer": "פתח ללא טיימר"
+    },
+    "step3": {
+      "title": "תהנה",
+      "subtitle": "רוצה תזכורת לדרג מאוחר יותר?",
+      "rateLater": "הזכר לי לדרג",
+      "remindIn": "הזכר לי בעוד",
+      "setReminder": "קבע תזכורת",
+      "cheers": "לחיים!",
+      "noThanks": "לא תודה"
+    },
+    "timer": {
+      "decantLabel": "דקנטציה",
+      "rateLabel": "תזכורת לדירוג"
+    }
+  },
+  "rateRitual": {
+    "ariaLabel": "דרג יין זה",
+    "title": "איך היה?",
+    "selectRating": "אנא בחר דירוג",
+    "saved": "הדירוג נשמר!",
+    "saveFailed": "שגיאה בשמירת הדירוג",
+    "notesLabel": "הערות טעימה (אופציונלי)",
+    "notesPlaceholder": "תאר את מה שטעמת...",
+    "chips": {
+      "wouldBuyAgain": "הייתי קונה שוב",
+      "greatWithFood": "מצוין עם אוכל",
+      "specialOccasion": "אירוע מיוחד"
+    },
+    "saving": "שומר...",
+    "save": "שמור דירוג",
+    "skipRating": "דלג כרגע"
+  },
+  "timerPill": {
+    "ariaLabel": "טיימר פעיל — לחץ לניהול",
+    "activeTimers": "טיימרים פעילים",
+    "remaining": "נשאר",
     "rateNow": "דרג עכשיו",
-    "rateThisWine": "דרג יין זה",
-    "quickTags": "תגיות מהירות (אופציונלי)",
-    "wouldBuyAgain": "אקנה שוב",
-    "specialOccasion": "אירוע מיוחד",
-    "greatWithFood": "מעולה עם אוכל",
-    "notesPlaceholder": "הוסף הערות טעימה...",
-    "saveRating": "שמור דירוג",
-    "ratingSaved": "הדירוג נשמר!",
-    "saveFailed": "שמירת הדירוג נכשלה",
-    "pleaseRate": "אנא בחר דירוג",
-    "noBottle": "לא ניתן למצוא את הבקבוק"
+    "dismiss": "בטל",
+    "decantReady": "הדקנטציה הסתיימה",
+    "ratePrompt": "איך היה?",
+    "decantReadyMsg": "מוכן לשפוך.",
+    "ratePromptMsg": "— קח רגע לדרג.",
+    "enjoyNow": "תהנה!"
   }
 }
 

@@ -8,7 +8,6 @@ import { BottleForm } from '../components/BottleForm';
 import { CSVImport } from '../components/CSVImport';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { OpenBottleQuantityModal } from '../components/OpenBottleQuantityModal';
-import { OpenRitualSheet } from '../components/OpenRitualSheet';
 import { AddBottleSheet } from '../components/AddBottleSheet';
 import { LabelCapture } from '../components/LabelCapture';
 import { BulkAnalysisModal } from '../components/BulkAnalysisModal';
@@ -30,6 +29,7 @@ import { DemoRecommendationCard } from '../components/DemoRecommendationCard';
 import { FirstBottleSuccessModal } from '../components/FirstBottleSuccessModal';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
+import { useOpenRitual } from '../contexts/OpenRitualContext';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
 import * as labelParseService from '../services/labelParseService';
@@ -53,6 +53,7 @@ const ENABLE_WINE_EVENTS = !!import.meta.env.VITE_API_URL; // Only enable if API
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { openRitual } = useOpenRitual();
   const location = useLocation();
   const featureFlags = useFeatureFlags(); // Load user's feature flags (beta features)
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
@@ -69,13 +70,9 @@ export function CellarPage() {
   const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
   const [bulkAnalysisCooldown, setBulkAnalysisCooldown] = useState(false);
   
-  // Quantity modal state (for opening multiple bottles) - legacy
+  // Quantity modal state (for opening multiple bottles)
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [bottleToOpen, setBottleToOpen] = useState<bottleService.BottleWithWineInfo | null>(null);
-  
-  // Open Ritual Sheet state (new luxury flow)
-  const [showRitualSheet, setShowRitualSheet] = useState(false);
-  const [ritualBottle, setRitualBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   
   // Feedback iteration (dev only) - Multi-bottle import state
   const [showMultiBottleImport, setShowMultiBottleImport] = useState(false);
@@ -623,27 +620,20 @@ export function CellarPage() {
     }
   }
 
-  async function handleMarkOpened(bottle: bottleService.BottleWithWineInfo) {
-    // Open the ritual sheet for the premium opening experience
-    setRitualBottle(bottle);
-    setShowRitualSheet(true);
-  }
-  
-  // Called when ritual sheet completes successfully
-  function handleRitualSuccess() {
-    if (ritualBottle) {
-      trackBottle.opened(ritualBottle.wine.vintage || undefined);
-      setOpenedBottleName(ritualBottle.wine.wine_name);
-    }
-    setShowRitualSheet(false);
-    setRitualBottle(null);
-    // Reload bottles to update quantities
-    loadBottles(true);
+  function handleMarkOpened(bottle: bottleService.BottleWithWineInfo) {
+    // Delegate to the Open Ritual flow (handles quantity + timers)
+    openRitual(bottle, {
+      onComplete: () => {
+        trackBottle.opened(bottle.wine.vintage || undefined);
+        setOpenedBottleName(bottle.wine.wine_name);
+        setShowCelebration(true);
+        loadBottles(true);
+      },
+    });
   }
 
   async function markBottleOpenedWithQuantity(bottle: bottleService.BottleWithWineInfo, openedCount: number) {
     try {
-      // Mark the bottle as opened with specified quantity
       await historyService.markBottleOpened({
         bottle_id: bottle.id,
         opened_count: openedCount,
@@ -652,16 +642,10 @@ export function CellarPage() {
         vibe: undefined,
       });
 
-      trackBottle.opened(bottle.wine.vintage || undefined); // Track bottle opened
-      
-      // Store bottle name for celebration modal
+      trackBottle.opened(bottle.wine.vintage || undefined);
       setOpenedBottleName(bottle.wine.wine_name);
-      
-      // Show celebration modal
       setShowCelebration(true);
-      
-      // Reload bottles to update quantities
-      await loadBottles(true); // Reset pagination
+      await loadBottles(true);
     } catch (error: any) {
       console.error('Error marking bottle as opened:', error);
       toast.error(error.message || t('cellar.bottle.markOpenedFailed'));
@@ -2443,17 +2427,6 @@ export function CellarPage() {
           }}
         />
       )}
-
-      {/* Open Ritual Sheet - Premium bottle opening experience */}
-      <OpenRitualSheet
-        isOpen={showRitualSheet}
-        onClose={() => {
-          setShowRitualSheet(false);
-          setRitualBottle(null);
-        }}
-        bottle={ritualBottle}
-        onSuccess={handleRitualSuccess}
-      />
       
       {/* Grid Overflow Prevention */}
       <style>{`

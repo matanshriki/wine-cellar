@@ -18,13 +18,12 @@ import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { WineDetailsModal } from '../components/WineDetailsModal';
-import { OpenRitualSheet } from '../components/OpenRitualSheet';
 import { SommelierChatButton } from '../components/SommelierChatButton';
 import { Toggle } from '../components/ui/Toggle';
-import * as historyService from '../services/historyService';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
 import { trackRecommendation } from '../services/analytics';
+import { useOpenRitual } from '../contexts/OpenRitualContext';
 
 type WineType = 'red' | 'white' | 'rose' | 'mixed';
 type PriceRange = 0 | 1 | 2 | 3 | 4;
@@ -57,6 +56,7 @@ const vibes = [
 
 export function RecommendationPage() {
   const { t } = useTranslation();
+  const { openRitual } = useOpenRitual();
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
   const [checkingCellar, setCheckingCellar] = useState(false);
@@ -77,8 +77,6 @@ export function RecommendationPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [showRitualSheet, setShowRitualSheet] = useState(false);
-  const [ritualBottle, setRitualBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -151,20 +149,22 @@ export function RecommendationPage() {
 
   function handleMarkOpened(rec: Recommendation) {
     if (!rec.bottle) return;
-    
-    // Open the ritual sheet for premium opening experience
-    setRitualBottle(rec.bottle);
-    setShowRitualSheet(true);
-  }
-  
-  function handleRitualSuccess() {
-    if (ritualBottle) {
-      setCelebrationBottleName(ritualBottle.wine.wine_name);
-    }
-    setShowRitualSheet(false);
-    setRitualBottle(null);
-    // Refresh recommendations to update quantities
-    handleSubmit(new Event('submit') as any);
+
+    // Fetch the full bottle object so the ritual sheet has all wine info
+    bottleService.getBottle(rec.bottleId).then(fullBottle => {
+      if (!fullBottle) return;
+      openRitual(fullBottle, {
+        occasion: context.occasion || undefined,
+        mealType: context.mealType || undefined,
+        vibe: context.vibe || undefined,
+        onComplete: () => {
+          setCelebrationBottleName(rec.bottle!.name);
+          setShowCelebrationModal(true);
+        },
+      });
+    }).catch(() => {
+      toast.error(t('recommendation.results.markFailed'));
+    });
   }
 
   function handleCelebrationClose() {
@@ -451,16 +451,6 @@ export function RecommendationPage() {
           isOpen={showDetailsModal}
           onClose={handleCloseDetailsModal}
           bottle={selectedBottle}
-        />
-
-        <OpenRitualSheet
-          isOpen={showRitualSheet}
-          onClose={() => {
-            setShowRitualSheet(false);
-            setRitualBottle(null);
-          }}
-          bottle={ritualBottle}
-          onSuccess={handleRitualSuccess}
         />
 
         <SommelierChatButton />

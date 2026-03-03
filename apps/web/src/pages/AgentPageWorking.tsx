@@ -9,7 +9,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
 import { sendAgentMessage, transcribeAudio, type AgentMessage } from '../services/agentService';
-import { markBottleOpened } from '../services/historyService';
+import { useOpenRitual } from '../contexts/OpenRitualContext';
 import {
   listConversations,
   createConversation,
@@ -31,6 +31,7 @@ export function AgentPageWorking() {
   const { t, i18n } = useTranslation();
   const { flags } = useFeatureFlags();
   const { profile } = useAuth();
+  const { openRitual } = useOpenRitual();
   const [loading, setLoading] = useState(true);
   const [bottles, setBottles] = useState<BottleWithWineInfo[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -650,21 +651,13 @@ export function AgentPageWorking() {
 
                   const displayImage = labelArtService.getWineDisplayImage(recommendedBottle.wine);
 
-                  const handleOpenBottle = async () => {
-                    try {
-                      await markBottleOpened({
-                        bottle_id: recommendedBottle.id,
-                        opened_count: 1,
-                      });
-                      
-                      toast.success(t('cellar.markedAsOpened', 'Bottle marked as opened'));
-                      
-                      // Reload bottles to update counts
-                      await loadBottles();
-                    } catch (error) {
-                      console.error('Error marking bottle as opened:', error);
-                      toast.error(t('cellar.markOpenedError', 'Failed to mark bottle as opened'));
-                    }
+                  const handleOpenBottle = () => {
+                    openRitual(recommendedBottle, {
+                      onComplete: () => {
+                        toast.success(t('cellar.markedAsOpened', 'Bottle marked as opened'));
+                        loadBottles();
+                      },
+                    });
                   };
 
                   const handleViewDetails = () => {

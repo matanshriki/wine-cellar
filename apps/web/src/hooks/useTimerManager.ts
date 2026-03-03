@@ -1,186 +1,166 @@
 /**
- * Timer Manager Hook
- * 
- * Manages wine-related timers (decant, rating reminders) with localStorage persistence.
- * Survives app refresh/close.
+ * useTimerManager
+ *
+ * Manages in-app decant / rate-reminder timers persisted to localStorage.
+ * Survives page refresh and app-close cycles.
+ * Keyed per user: `activeTimers:<userId>`
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../contexts/SupabaseAuthContext';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
 
 export interface WineTimer {
   id: string;
+  bottle_id: string;
   wine_id: string;
   wine_name: string;
-  producer?: string;
-  vintage?: number;
-  started_at: number; // Unix timestamp ms
+  producer: string;
+  /** ID of the consumption_history row created when the bottle was opened */
+  history_id?: string;
+  /** ISO timestamp when timer was started */
+  started_at: string;
   duration_minutes: number;
   type: 'decant' | 'rate';
   label: string;
-  plan_evening_id?: string;
-  bottle_id?: string;
-  image_url?: string;
 }
 
-interface TimerState {
-  timers: WineTimer[];
-  completedTimerIds: string[];
+const STORAGE_PREFIX = 'activeTimers:';
+
+function getKey(userId: string) {
+  return `${STORAGE_PREFIX}${userId}`;
 }
 
-const STORAGE_KEY_PREFIX = 'wineTimers';
-
-function getStorageKey(userId: string): string {
-  return `${STORAGE_KEY_PREFIX}:${userId}`;
-}
-
-function loadTimersFromStorage(userId: string): TimerState {
+function loadFromStorage(userId: string): WineTimer[] {
   try {
-    const stored = localStorage.getItem(getStorageKey(userId));
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        timers: parsed.timers || [],
-        completedTimerIds: parsed.completedTimerIds || [],
-      };
-    }
-  } catch (e) {
-    console.warn('[TimerManager] Failed to load timers:', e);
+    const raw = localStorage.getItem(getKey(userId));
+    if (!raw) return [];
+    return JSON.parse(raw) as WineTimer[];
+  } catch {
+    return [];
   }
-  return { timers: [], completedTimerIds: [] };
 }
 
-function saveTimersToStorage(userId: string, state: TimerState): void {
+function saveToStorage(userId: string, timers: WineTimer[]) {
   try {
-    localStorage.setItem(getStorageKey(userId), JSON.stringify(state));
-  } catch (e) {
-    console.warn('[TimerManager] Failed to save timers:', e);
+    localStorage.setItem(getKey(userId), JSON.stringify(timers));
+  } catch {
+    // Silently ignore storage errors
   }
 }
 
 export function useTimerManager() {
-  const { user } = useAuth();
-  const [state, setState] = useState<TimerState>({ timers: [], completedTimerIds: [] });
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [timers, setTimers] = useState<WineTimer[]>([]);
+  /** Increments every second to force derived value re-evaluation */
+  const [tick, setTick] = useState(0);
 
-  // Load timers on mount
+  // Load user + timers on mount
   useEffect(() => {
-    if (user?.id) {
-      const loaded = loadTimersFromStorage(user.id);
-      setState(loaded);
-    }
-  }, [user?.id]);
-
-  // Save timers whenever state changes
-  useEffect(() => {
-    if (user?.id) {
-      saveTimersToStorage(user.id, state);
-    }
-  }, [user?.id, state]);
-
-  // Tick every second to check for completed timers
-  useEffect(() => {
-    if (state.timers.length === 0) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserId(data.user.id);
+        setTimers(loadFromStorage(data.user.id));
       }
-      return;
-    }
+    });
+  }, []);
 
-    intervalRef.current = setInterval(() => {
-      const now = Date.now();
-      const newCompleted: string[] = [];
+  // Tick every second to update countdowns
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
-      state.timers.forEach((timer) => {
-        const endTime = timer.started_at + timer.duration_minutes * 60 * 1000;
-        if (now >= endTime && !state.completedTimerIds.includes(timer.id)) {
-          newCompleted.push(timer.id);
-        }
+  /** Timers that have not yet expired */
+  const activeTimers = useMemo(() => {
+    const now = Date.now();
+    return timers.filter(t => {
+      const end = new Date(t.started_at).getTime() + t.duration_minutes * 60_000;
+      return end > now;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timers, tick]);
+
+  /** Timers that just expired (in the last 5 minutes) and haven't been cleaned */
+  const recentlyExpiredTimers = useMemo(() => {
+    const now = Date.now();
+    const fiveMin = 5 * 60_000;
+    return timers.filter(t => {
+      const end = new Date(t.started_at).getTime() + t.duration_minutes * 60_000;
+      return end <= now && now - end < fiveMin;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timers, tick]);
+
+  const createTimer = useCallback(
+    (data: Omit<WineTimer, 'id'>): WineTimer => {
+      if (!userId) throw new Error('Not authenticated');
+      const timer: WineTimer = {
+        ...data,
+        id: `tmr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      };
+      setTimers(prev => {
+        const next = [...prev, timer];
+        saveToStorage(userId, next);
+        return next;
       });
+      return timer;
+    },
+    [userId],
+  );
 
-      if (newCompleted.length > 0) {
-        setState((prev) => ({
-          ...prev,
-          completedTimerIds: [...prev.completedTimerIds, ...newCompleted],
-        }));
-      }
-    }, 1000);
+  const cancelTimer = useCallback(
+    (timerId: string) => {
+      if (!userId) return;
+      setTimers(prev => {
+        const next = prev.filter(t => t.id !== timerId);
+        saveToStorage(userId, next);
+        return next;
+      });
+    },
+    [userId],
+  );
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [state.timers, state.completedTimerIds]);
+  /** Remove a timer (used after user responds to expired notification) */
+  const dismissTimer = useCallback(
+    (timerId: string) => {
+      if (!userId) return;
+      setTimers(prev => {
+        const next = prev.filter(t => t.id !== timerId);
+        saveToStorage(userId, next);
+        return next;
+      });
+    },
+    [userId],
+  );
 
-  const createTimer = useCallback((timer: Omit<WineTimer, 'id' | 'started_at'>): WineTimer => {
-    const newTimer: WineTimer = {
-      ...timer,
-      id: `${timer.type}-${timer.wine_id}-${Date.now()}`,
-      started_at: Date.now(),
-    };
-    setState((prev) => ({
-      ...prev,
-      timers: [...prev.timers, newTimer],
-    }));
-    return newTimer;
-  }, []);
+  const getRemainingMs = useCallback(
+    (timer: WineTimer): number => {
+      const end = new Date(timer.started_at).getTime() + timer.duration_minutes * 60_000;
+      return Math.max(0, end - Date.now());
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tick],
+  );
 
-  const cancelTimer = useCallback((timerId: string) => {
-    setState((prev) => ({
-      timers: prev.timers.filter((t) => t.id !== timerId),
-      completedTimerIds: prev.completedTimerIds.filter((id) => id !== timerId),
-    }));
-  }, []);
-
-  const dismissCompletedTimer = useCallback((timerId: string) => {
-    setState((prev) => ({
-      timers: prev.timers.filter((t) => t.id !== timerId),
-      completedTimerIds: prev.completedTimerIds.filter((id) => id !== timerId),
-    }));
-  }, []);
-
-  const getActiveTimers = useCallback((): WineTimer[] => {
-    return state.timers.filter((t) => !state.completedTimerIds.includes(t.id));
-  }, [state]);
-
-  const getCompletedTimers = useCallback((): WineTimer[] => {
-    return state.timers.filter((t) => state.completedTimerIds.includes(t.id));
-  }, [state]);
-
-  const getTimerById = useCallback((timerId: string): WineTimer | undefined => {
-    return state.timers.find((t) => t.id === timerId);
-  }, [state]);
-
-  const getRemainingTime = useCallback((timer: WineTimer): number => {
-    const endTime = timer.started_at + timer.duration_minutes * 60 * 1000;
-    const remaining = endTime - Date.now();
-    return Math.max(0, remaining);
-  }, []);
-
-  const formatRemainingTime = useCallback((timer: WineTimer): string => {
-    const remaining = getRemainingTime(timer);
-    const totalSeconds = Math.floor(remaining / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, [getRemainingTime]);
-
-  const hasActiveTimers = state.timers.length > 0 && getActiveTimers().length > 0;
-  const hasCompletedTimers = getCompletedTimers().length > 0;
+  const formatCountdown = useCallback(
+    (timer: WineTimer): string => {
+      const ms = getRemainingMs(timer);
+      const totalSec = Math.ceil(ms / 1000);
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    },
+    [getRemainingMs],
+  );
 
   return {
-    timers: state.timers,
-    activeTimers: getActiveTimers(),
-    completedTimers: getCompletedTimers(),
-    hasActiveTimers,
-    hasCompletedTimers,
+    activeTimers,
+    recentlyExpiredTimers,
+    allTimers: timers,
     createTimer,
     cancelTimer,
-    dismissCompletedTimer,
-    getTimerById,
-    getRemainingTime,
-    formatRemainingTime,
+    dismissTimer,
+    getRemainingMs,
+    formatCountdown,
   };
 }

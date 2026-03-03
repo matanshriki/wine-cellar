@@ -1,305 +1,357 @@
 /**
- * Floating Timer Pill
- * 
- * Displays active wine timers (decant, rate reminders) as a floating pill above the footer.
- * Tapping opens a mini-sheet with timer details and actions.
+ * FloatingTimerPill
+ *
+ * A luxury floating pill that shows active decant / rate-reminder timers.
+ * Positioned above the mobile footer (safe-area aware).
+ *
+ * Behaviour:
+ *  – Shows the most urgent active timer's countdown
+ *  – Tap → expands to a mini options sheet
+ *  – When a timer expires → shows an in-app alert modal
+ *  – Handles multiple timers by cycling primary display
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useTimers, WineTimer } from '../contexts/TimerContext';
+import type { WineTimer } from '../hooks/useTimerManager';
+import { RateRitualSheet } from './RateRitualSheet';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
+const reduce = shouldReduceMotion();
+
 interface FloatingTimerPillProps {
-  onRateNow?: (timer: WineTimer) => void;
+  activeTimers: WineTimer[];
+  recentlyExpiredTimers: WineTimer[];
+  formatCountdown: (timer: WineTimer) => string;
+  getRemainingMs: (timer: WineTimer) => number;
+  cancelTimer: (id: string) => void;
+  dismissTimer: (id: string) => void;
 }
 
-export function FloatingTimerPill({ onRateNow }: FloatingTimerPillProps) {
+// Track which expired timers we've already alerted about this session
+const alertedTimerIds = new Set<string>();
+
+export function FloatingTimerPill({
+  activeTimers,
+  recentlyExpiredTimers,
+  formatCountdown,
+  getRemainingMs,
+  cancelTimer,
+  dismissTimer,
+}: FloatingTimerPillProps) {
   const { t } = useTranslation();
-  const { activeTimers, completedTimers, formatRemainingTime, dismissCompletedTimer, cancelTimer, tick } = useTimers();
-  const reduceMotion = shouldReduceMotion();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showCompletedModal, setShowCompletedModal] = useState(false);
-  const [completedToShow, setCompletedToShow] = useState<WineTimer | null>(null);
 
-  // Check for newly completed timers
+  const [expanded, setExpanded] = useState(false);
+  const [expiredAlert, setExpiredAlert] = useState<WineTimer | null>(null);
+  const [showRateSheet, setShowRateSheet] = useState(false);
+  const [rateTarget, setRateTarget] = useState<WineTimer | null>(null);
+
+  // Detect newly-expired timers and show alert once
   useEffect(() => {
-    if (completedTimers.length > 0 && !showCompletedModal) {
-      setCompletedToShow(completedTimers[0]);
-      setShowCompletedModal(true);
+    for (const timer of recentlyExpiredTimers) {
+      if (!alertedTimerIds.has(timer.id)) {
+        alertedTimerIds.add(timer.id);
+        setExpiredAlert(timer);
+        break; // show one at a time
+      }
     }
-  }, [completedTimers, showCompletedModal]);
+  }, [recentlyExpiredTimers]);
 
-  const hasTimers = activeTimers.length > 0;
-  const primaryTimer = activeTimers[0];
+  // Primary timer to display (earliest to expire)
+  const primaryTimer = activeTimers.length > 0
+    ? activeTimers.reduce((a, b) =>
+        getRemainingMs(a) < getRemainingMs(b) ? a : b,
+      )
+    : null;
 
-  if (!hasTimers && !showCompletedModal) return null;
+  function handleRateNow(timer: WineTimer) {
+    setRateTarget(timer);
+    setShowRateSheet(true);
+    setExpanded(false);
+    setExpiredAlert(null);
+    dismissTimer(timer.id);
+  }
 
-  const handlePillClick = () => {
-    if (activeTimers.length === 1) {
-      setIsExpanded(!isExpanded);
-    } else {
-      setIsExpanded(!isExpanded);
-    }
-  };
+  function handleDismissExpired(timer: WineTimer) {
+    dismissTimer(timer.id);
+    setExpiredAlert(null);
+  }
 
-  const handleDismissCompleted = () => {
-    if (completedToShow) {
-      dismissCompletedTimer(completedToShow.id);
-    }
-    setShowCompletedModal(false);
-    setCompletedToShow(null);
-  };
+  function handleCancelTimer(timer: WineTimer) {
+    cancelTimer(timer.id);
+    if (activeTimers.length <= 1) setExpanded(false);
+  }
 
-  const handleRateNow = () => {
-    if (completedToShow && onRateNow) {
-      onRateNow(completedToShow);
-    }
-    handleDismissCompleted();
-  };
-
-  const handleCancelTimer = (timerId: string) => {
-    cancelTimer(timerId);
-    if (activeTimers.length <= 1) {
-      setIsExpanded(false);
-    }
-  };
+  const pillColor = primaryTimer?.type === 'decant' ? 'var(--wine-600)' : '#D4AF37';
+  const pillEmoji = primaryTimer?.type === 'decant' ? '🫙' : '⭐';
 
   return (
     <>
-      {/* Active Timer Pill */}
+      {/* ── Floating pill ─────────────────────────────────────────────── */}
       <AnimatePresence>
-        {hasTimers && (
+        {primaryTimer && (
           <motion.div
-            className="fixed z-40 pointer-events-auto"
+            key="timer-pill"
+            initial={{ y: 80, opacity: 0, scale: 0.85 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 80, opacity: 0, scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            className="fixed left-1/2 -translate-x-1/2 z-[55]"
             style={{
-              bottom: 'calc(80px + env(safe-area-inset-bottom))',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              // Above mobile footer (≈80px) + safe area
+              bottom: 'calc(max(0px, var(--safe-bottom)) + 88px)',
             }}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
             <motion.button
-              onClick={handlePillClick}
-              className="flex items-center gap-3 px-5 py-3 rounded-full shadow-xl"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                boxShadow: '0 8px 32px rgba(164, 76, 104, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
-              }}
+              whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
+              onClick={() => setExpanded(v => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white font-medium text-sm shadow-lg"
+              style={{
+                background: pillColor,
+                boxShadow: `0 4px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)`,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              aria-label={t('timerPill.ariaLabel', 'Active timer — tap to manage')}
             >
-              {/* Timer Icon */}
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
-                className="text-xl"
-              >
-                {primaryTimer?.type === 'decant' ? '🍷' : '⏰'}
-              </motion.div>
-
-              {/* Timer Info */}
-              <div className="text-left">
-                <p className="text-white text-sm font-medium leading-tight">
-                  {primaryTimer?.label}
-                </p>
-                <p className="text-white/80 text-xs">
-                  {primaryTimer && formatRemainingTime(primaryTimer)}
-                  {activeTimers.length > 1 && ` +${activeTimers.length - 1}`}
-                </p>
-              </div>
-
-              {/* Expand Icon */}
-              <motion.div
-                animate={{ rotate: isExpanded ? 180 : 0 }}
+              <span className="text-base">{pillEmoji}</span>
+              <span className="font-mono text-sm tabular-nums">
+                {formatCountdown(primaryTimer)}
+              </span>
+              <span className="text-xs opacity-80 max-w-[90px] truncate">
+                {primaryTimer.wine_name}
+              </span>
+              {/* Expand indicator */}
+              <motion.span
+                animate={{ rotate: expanded ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-xs opacity-60"
               >
-                <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </motion.div>
+                ▲
+              </motion.span>
+              {/* Pulse dot for active */}
+              <motion.div
+                animate={{ scale: [1, 1.4, 1] }}
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                className="w-2 h-2 rounded-full bg-white opacity-60"
+              />
             </motion.button>
-
-            {/* Expanded Timer List */}
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 rounded-2xl overflow-hidden shadow-2xl"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <div className="p-3 space-y-2">
-                    {activeTimers.map((timer) => (
-                      <TimerRow
-                        key={timer.id}
-                        timer={timer}
-                        formatRemainingTime={formatRemainingTime}
-                        onCancel={() => handleCancelTimer(timer.id)}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Timer Completed Modal */}
+      {/* ── Expanded mini-sheet ────────────────────────────────────────── */}
       <AnimatePresence>
-        {showCompletedModal && completedToShow && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center px-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {/* Backdrop */}
+        {expanded && (
+          <>
+            {/* Tap-away backdrop */}
             <motion.div
-              className="absolute inset-0"
-              style={{
-                background: 'var(--bg-overlay)',
-                backdropFilter: 'var(--blur-medium)',
-              }}
-              onClick={handleDismissCompleted}
+              key="pill-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[53]"
+              onClick={() => setExpanded(false)}
             />
 
-            {/* Modal */}
             <motion.div
-              className="relative w-full max-w-sm rounded-2xl p-6 text-center"
+              key="pill-sheet"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'tween', duration: reduce ? 0 : 0.25, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+              className="fixed left-0 right-0 z-[54]"
               style={{
+                bottom: 'max(0px, var(--safe-bottom))',
                 background: 'var(--bg-surface)',
-                boxShadow: 'var(--shadow-2xl)',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-xl)',
+                borderTopLeftRadius: 'var(--radius-2xl)',
+                borderTopRightRadius: 'var(--radius-2xl)',
+                borderBottom: 'none',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
               }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
-              {/* Icon */}
-              <motion.div
-                className="text-5xl mb-4"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
-              >
-                {completedToShow.type === 'decant' ? '🍷' : '⭐'}
-              </motion.div>
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full" style={{ backgroundColor: 'var(--border-medium)' }} />
+              </div>
 
-              {/* Title */}
-              <h3 
-                className="text-xl font-bold mb-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {completedToShow.type === 'decant'
-                  ? t('ritual.decantReady', 'Decant Ready!')
-                  : t('ritual.timeToRate', 'Time to Rate!')}
-              </h3>
+              <div className="px-5 pb-2">
+                <h3
+                  className="text-sm font-semibold mb-3"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {t('timerPill.activeTimers', 'Active timers')}
+                </h3>
 
-              {/* Wine Name */}
-              <p 
-                className="text-base mb-1"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {completedToShow.wine_name}
-              </p>
-              {completedToShow.producer && (
-                <p 
-                  className="text-sm mb-4"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  {completedToShow.producer}
-                  {completedToShow.vintage && ` · ${completedToShow.vintage}`}
-                </p>
-              )}
+                <div className="space-y-2">
+                  {activeTimers.map(timer => (
+                    <div
+                      key={timer.id}
+                      className="flex items-center gap-3 p-3 rounded-xl"
+                      style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}
+                    >
+                      <span className="text-lg flex-shrink-0">
+                        {timer.type === 'decant' ? '🫙' : '⭐'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                          {timer.label} · {timer.wine_name}
+                        </p>
+                        <p className="text-xs mt-0.5 font-mono tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                          {formatCountdown(timer)} {t('timerPill.remaining', 'remaining')}
+                        </p>
+                      </div>
 
-              {/* CTAs */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDismissCompleted}
-                  className="flex-1 py-3 rounded-xl font-medium"
-                  style={{
-                    background: 'var(--bg-muted)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {t('common.dismiss', 'Dismiss')}
-                </button>
-                <motion.button
-                  onClick={handleRateNow}
-                  className="flex-1 py-3 rounded-xl font-semibold"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
-                    color: 'white',
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {completedToShow.type === 'decant'
-                    ? t('ritual.pourNow', 'Pour Now')
-                    : t('ritual.rateNow', 'Rate Now')}
-                </motion.button>
+                      {/* Action buttons */}
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        {timer.type === 'rate' && timer.history_id && (
+                          <motion.button
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => handleRateNow(timer)}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium"
+                            style={{
+                              background: 'var(--wine-600)',
+                              color: 'white',
+                            }}
+                          >
+                            {t('timerPill.rateNow', 'Rate now')}
+                          </motion.button>
+                        )}
+                        <motion.button
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => handleCancelTimer(timer)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs"
+                          style={{
+                            background: 'var(--bg-surface-elevated)',
+                            color: 'var(--text-tertiary)',
+                            border: '1px solid var(--border-subtle)',
+                          }}
+                        >
+                          {t('timerPill.dismiss', 'Dismiss')}
+                        </motion.button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
+
+      {/* ── Expired timer alert modal ──────────────────────────────────── */}
+      <AnimatePresence>
+        {expiredAlert && (
+          <>
+            <motion.div
+              key="expired-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[62]"
+              style={{
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+              }}
+            />
+            <motion.div
+              key="expired-modal"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className="fixed left-4 right-4 z-[63] p-6 rounded-2xl"
+              style={{
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                boxShadow: 'var(--shadow-xl)',
+              }}
+            >
+              {/* Icon */}
+              <div className="text-center mb-4">
+                <span className="text-5xl">
+                  {expiredAlert.type === 'decant' ? '🍷' : '⭐'}
+                </span>
+              </div>
+
+              {/* Message */}
+              <h3
+                className="text-lg font-bold text-center mb-1"
+                style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+              >
+                {expiredAlert.type === 'decant'
+                  ? t('timerPill.decantReady', 'Decant ready')
+                  : t('timerPill.ratePrompt', 'How was it?')}
+              </h3>
+              <p className="text-sm text-center mb-5" style={{ color: 'var(--text-secondary)' }}>
+                {expiredAlert.wine_name}
+                {expiredAlert.type === 'decant'
+                  ? ` ${t('timerPill.decantReadyMsg', 'is ready to pour.')}`
+                  : ` ${t('timerPill.ratePromptMsg', '— take a moment to rate it.')}`}
+              </p>
+
+              {/* Actions */}
+              <div className="space-y-2">
+                {expiredAlert.type === 'rate' && expiredAlert.history_id ? (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleRateNow(expiredAlert)}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      color: 'white',
+                      border: '1px solid var(--wine-700)',
+                    }}
+                  >
+                    {t('timerPill.rateNow', 'Rate now')}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleDismissExpired(expiredAlert)}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      color: 'white',
+                      border: '1px solid var(--wine-700)',
+                    }}
+                  >
+                    {t('timerPill.enjoyNow', 'Enjoy!')}
+                  </motion.button>
+                )}
+                <button
+                  onClick={() => handleDismissExpired(expiredAlert)}
+                  className="w-full py-3 text-sm rounded-xl"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {t('timerPill.dismiss', 'Dismiss')}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Rate ritual sheet (triggered from timer) ───────────────────── */}
+      {rateTarget && rateTarget.history_id && (
+        <RateRitualSheet
+          isOpen={showRateSheet}
+          onClose={() => {
+            setShowRateSheet(false);
+            setRateTarget(null);
+          }}
+          historyId={rateTarget.history_id}
+          wineName={rateTarget.wine_name}
+          producer={rateTarget.producer}
+        />
+      )}
     </>
-  );
-}
-
-// Individual timer row in expanded list
-interface TimerRowProps {
-  timer: WineTimer;
-  formatRemainingTime: (timer: WineTimer) => string;
-  onCancel: () => void;
-}
-
-function TimerRow({ timer, formatRemainingTime, onCancel }: TimerRowProps) {
-  const { t } = useTranslation();
-
-  return (
-    <div 
-      className="flex items-center gap-3 p-3 rounded-xl"
-      style={{ background: 'var(--bg-muted)' }}
-    >
-      <div className="text-2xl">
-        {timer.type === 'decant' ? '🍷' : '⏰'}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p 
-          className="text-sm font-medium truncate"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {timer.wine_name}
-        </p>
-        <p 
-          className="text-xs"
-          style={{ color: 'var(--text-tertiary)' }}
-        >
-          {timer.label} · {formatRemainingTime(timer)}
-        </p>
-      </div>
-      <button
-        onClick={onCancel}
-        className="p-1.5 rounded-lg transition-colors"
-        style={{ color: 'var(--text-tertiary)' }}
-        title={t('common.cancel', 'Cancel')}
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
   );
 }

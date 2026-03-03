@@ -1012,38 +1012,70 @@
       "save": "Save Preferences"
     }
   },
-  "ritual": {
-    "howMany": "How many bottles are you opening?",
-    "inCellar": "{{count}} in cellar",
-    "servingGuidance": "Serving Guidance",
-    "startDecantTimer": "Start decant timer",
-    "startAndOpen": "Start & Open",
-    "openNow": "Open Now",
-    "skipTimer": "Skip Timer",
-    "serveNow": "Serve Now",
-    "openFailed": "Failed to open bottle",
-    "enjoy": "Enjoy!",
-    "rateQuestion": "Want a reminder to rate it later?",
-    "setReminder": "Set Reminder",
-    "noThanks": "No Thanks",
-    "reminderSet": "Reminder set!",
-    "decanting": "Decanting",
-    "rateReminder": "Rate this wine",
-    "decantReady": "Decant Ready!",
-    "timeToRate": "Time to Rate!",
-    "pourNow": "Pour Now",
-    "rateNow": "Rate Now",
-    "rateThisWine": "Rate This Wine",
-    "quickTags": "Quick Tags (optional)",
-    "wouldBuyAgain": "Would buy again",
-    "specialOccasion": "Special occasion",
-    "greatWithFood": "Great with food",
-    "notesPlaceholder": "Add tasting notes...",
-    "saveRating": "Save Rating",
-    "ratingSaved": "Rating saved!",
+  "openRitual": {
+    "ariaLabel": "Open bottle ritual",
+    "errorOpen": "Failed to open bottle",
+    "step1": {
+      "title": "Ready to open?",
+      "subtitle": "Confirm the bottle you're opening tonight.",
+      "howMany": "How many bottles are you opening?",
+      "inCellar": "bottles in cellar",
+      "continue": "Continue"
+    },
+    "step2": {
+      "title": "How to serve",
+      "subtitle": "Get the most out of this bottle.",
+      "tempLabel": "Serving temperature",
+      "decantLabel": "Decanting",
+      "startTimer": "Start decant timer",
+      "duration": "Duration",
+      "opening": "Opening…",
+      "startAndOpen": "Start Timer & Open",
+      "open": "Open Bottle",
+      "skipTimer": "Open without timer"
+    },
+    "step3": {
+      "title": "Enjoy",
+      "subtitle": "Want a reminder to rate it later?",
+      "rateLater": "Remind me to rate it",
+      "remindIn": "Remind me in",
+      "setReminder": "Set reminder",
+      "cheers": "Cheers!",
+      "noThanks": "No thanks"
+    },
+    "timer": {
+      "decantLabel": "Decanting",
+      "rateLabel": "Rate reminder"
+    }
+  },
+  "rateRitual": {
+    "ariaLabel": "Rate this wine",
+    "title": "How was it?",
+    "selectRating": "Please select a rating",
+    "saved": "Rating saved!",
     "saveFailed": "Failed to save rating",
-    "pleaseRate": "Please select a rating",
-    "noBottle": "Unable to find bottle"
+    "notesLabel": "Tasting notes (optional)",
+    "notesPlaceholder": "Describe what you tasted…",
+    "chips": {
+      "wouldBuyAgain": "Would buy again",
+      "greatWithFood": "Great with food",
+      "specialOccasion": "Special occasion"
+    },
+    "saving": "Saving…",
+    "save": "Save rating",
+    "skipRating": "Skip for now"
+  },
+  "timerPill": {
+    "ariaLabel": "Active timer — tap to manage",
+    "activeTimers": "Active timers",
+    "remaining": "remaining",
+    "rateNow": "Rate now",
+    "dismiss": "Dismiss",
+    "decantReady": "Decant ready",
+    "ratePrompt": "How was it?",
+    "decantReadyMsg": "is ready to pour.",
+    "ratePromptMsg": "— take a moment to rate it.",
+    "enjoyNow": "Enjoy!"
   }
 }
 
