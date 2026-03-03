@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/supabase';
+import * as tasteProfileService from './tasteProfileService';
 
 type ConsumptionHistory = Database['public']['Tables']['consumption_history']['Row'];
 type ConsumptionHistoryInsert = Database['public']['Tables']['consumption_history']['Insert'];
@@ -146,6 +147,13 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
     throw new Error('Failed to update bottle quantity');
   }
 
+  // Trigger taste profile recompute if a rating was provided
+  if (input.user_rating) {
+    tasteProfileService.recomputeMyTasteProfile().catch(err => {
+      console.log('[HistoryService] Failed to recompute taste profile:', err);
+    });
+  }
+
   return history;
 }
 
@@ -183,6 +191,13 @@ export async function updateConsumptionHistory(
   if (error) {
     console.error('Error updating consumption history:', error);
     throw new Error('Failed to update consumption history');
+  }
+
+  // Trigger taste profile recompute if rating was updated
+  if (updates.user_rating !== undefined) {
+    tasteProfileService.recomputeMyTasteProfile().catch(err => {
+      console.log('[HistoryService] Failed to recompute taste profile:', err);
+    });
   }
 
   return data;

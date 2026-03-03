@@ -16,6 +16,7 @@ import { AvatarUpload } from '../components/AvatarUpload';
 import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 import { AdminImageBackfill } from '../components/AdminImageBackfill';
+import { TasteProfileCard } from '../components/TasteProfileCard';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -288,6 +289,9 @@ export function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Taste Profile */}
+      <TasteProfileCard />
 
       {/* Account Information */}
       <div className="card mt-6">

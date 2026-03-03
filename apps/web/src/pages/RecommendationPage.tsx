@@ -352,12 +352,27 @@ export function RecommendationPage() {
               </div>
 
               <div className="space-y-4">
+                {/* Taste profile affinity reason */}
+                {rec.affinityReason && (
+                  <div 
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
+                    style={{ 
+                      background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
+                      color: 'var(--wine-700)',
+                      border: '1px solid var(--wine-200)',
+                    }}
+                  >
+                    <span>✨</span>
+                    {rec.affinityReason}
+                  </div>
+                )}
+                
                 <div>
                   <h4
                     className="font-semibold mb-2 flex items-center gap-2"
                     style={{ color: 'var(--wine-700)' }}
                   >
-                    <span>✨</span>
+                    <span>🍷</span>
                     {t('recommendation.results.whyThisBottle')}
                   </h4>
                   <p style={{ color: 'var(--text-primary)' }}>{rec.explanation}</p>
