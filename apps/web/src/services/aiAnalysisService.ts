@@ -329,9 +329,9 @@ export async function analyzeCellarBulk(
   mode: BulkAnalysisMode = 'missing_only',
   limit?: number
 ): Promise<BulkAnalysisResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
+  // Use getUser() to validate + auto-refresh the session before invoking the edge function
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
     throw new Error('Not authenticated');
   }
 
@@ -477,8 +477,12 @@ export async function analyzeCellarInBatches(
     abortSignal?: AbortSignal;
   } = {}
 ): Promise<BulkAnalysisResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  
+  // Use getUser() to validate + auto-refresh the session before invoking the edge function
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+  if (authError || !authUser) {
+    throw new Error('Not authenticated');
+  }
+  const session = (await supabase.auth.getSession()).data.session;
   if (!session) {
     throw new Error('Not authenticated');
   }
