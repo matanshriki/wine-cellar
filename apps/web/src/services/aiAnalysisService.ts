@@ -515,10 +515,15 @@ export async function analyzeCellarInBatches(
       .eq('user_id', session.user.id)
       .gt('quantity', 0);
 
-    // Apply mode filters for accurate count
+    // Apply mode filters for accurate count (best-effort; stale_only is approximate since
+    // we can't filter by age in a single Supabase query without a custom RPC)
     if (mode === 'missing_only') {
       countQuery.or('analysis_summary.is.null,readiness_label.is.null');
+    } else if (mode === 'stale_only') {
+      // Approximate: count only bottles that have been analyzed (a subset will be stale)
+      countQuery.not('analyzed_at', 'is', null);
     }
+    // 'all' mode: count everything — no extra filter needed
 
     const { count, error: countError } = await countQuery;
 
@@ -594,10 +599,13 @@ export async function analyzeCellarInBatches(
         });
       }
 
-      // Check if we should continue
-      const bottlesInBatch = (data.results || []).length;
-      hasMore = bottlesInBatch >= pageSize && totalProcessed < maxBottles;
-      
+      // Check if we should continue.
+      // We use `fetchedCount` (rows returned from DB) instead of results.length,
+      // because results only contains eligible bottles (max 20 due to edge fn limit).
+      // If the DB returned fewer rows than a full page, we've reached the end.
+      const fetchedCount = data.fetchedCount ?? (data.results || []).length;
+      hasMore = fetchedCount >= pageSize && totalProcessed < maxBottles;
+
       if (!hasMore) {
         console.log('[Batch Analysis] 🏁 No more bottles to process');
       }

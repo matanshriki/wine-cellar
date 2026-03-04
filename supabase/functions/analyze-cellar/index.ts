@@ -196,6 +196,9 @@ serve(async (req) => {
       skippedCount: skippedCount + (bottles.length - eligibleBottles.length),
       failedCount: failedCount,
       results: results,
+      // How many rows were fetched from DB in this page.
+      // Client uses this to detect end-of-data: if fetchedCount < pageSize, no more pages.
+      fetchedCount: bottles.length,
     });
 
   } catch (error: any) {
@@ -233,6 +236,7 @@ async function analyzeBottle(bottle: any, supabase: any): Promise<BottleStatus> 
       readiness_label: analysis.readiness_label,
       readiness_status: mapReadinessLabel(analysis.readiness_label),
       readiness_score: mapReadinessScore(analysis.readiness_label),
+      readiness_version: 2, // Mark as analyzed by v2 logic so backfill won't re-run
       serve_temp_c: analysis.serving_temp_c,
       decant_minutes: analysis.decant_minutes,
       drink_window_start: analysis.drink_window_start,
