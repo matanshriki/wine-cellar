@@ -17,7 +17,6 @@ import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
-import { OpenRitualProvider } from '../contexts/OpenRitualContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -201,7 +200,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <OpenRitualProvider>
     <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
       {/* Luxury Background (light with subtle texture) */}
       <div className="luxury-background" />
@@ -479,7 +477,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         currentName={profile?.display_name || ''}
       />
     </div>
-    </OpenRitualProvider>
   );
 }
 

@@ -24,6 +24,7 @@ import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
 import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
+import { OpenRitualProvider } from './contexts/OpenRitualContext'; // Global open ritual + timers
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -203,14 +204,12 @@ function AppRoutes() {
           </FeatureFlagRoute>
         }
       />
-      {/* Cellar Agent */}
+      {/* Cellar Agent — full-screen, no Layout chrome */}
       <Route
         path="/agent"
         element={
           <PrivateRoute>
-            <Layout>
-              <AgentPageWorking />
-            </Layout>
+            <AgentPageWorking />
           </PrivateRoute>
         }
       />
@@ -230,7 +229,9 @@ export function App() {
             <SupabaseAuthProvider>
               <FeatureFlagsProvider>
                 <AddBottleProvider>
-                  <AppRoutes />
+                  <OpenRitualProvider>
+                    <AppRoutes />
+                  </OpenRitualProvider>
                 </AddBottleProvider>
               </FeatureFlagsProvider>
             </SupabaseAuthProvider>

@@ -168,6 +168,8 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
               filter: `id=eq.${session.user.id}`,
             },
             (payload) => {
+              try {
+              if (!payload?.new) return; // guard against system events with no data
               console.log('[FeatureFlagsContext] 🔄 Profile updated via Realtime:', payload);
               
               // Extract feature flags from the updated profile
@@ -188,6 +190,9 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
                 setFlags(updatedFlags);
                 
                 console.log('[FeatureFlagsContext] ✅ Flags updated from Realtime:', updatedFlags);
+              }
+              } catch (err) {
+                console.warn('[FeatureFlagsContext] Realtime callback error (ignored):', err);
               }
             }
           )
