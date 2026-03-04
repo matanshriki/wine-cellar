@@ -1578,7 +1578,7 @@ export function CellarPage() {
           {/* Sort Button */}
           <button
             onClick={() => setShowSortMenu(true)}
-            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
+            className="flex-1 md:flex-none px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-secondary)',
@@ -1590,7 +1590,7 @@ export function CellarPage() {
           >
             <span className="text-sm">{currentSortOption.icon}</span>
             <span style={{ color: 'var(--text-primary)' }}>{currentSortOption.label}</span>
-            <span className="ml-auto" style={{ color: 'var(--text-tertiary)' }}>›</span>
+            <span className="ml-auto md:ml-2" style={{ color: 'var(--text-tertiary)' }}>›</span>
           </button>
 
           {/* Analyze Cellar Button */}
