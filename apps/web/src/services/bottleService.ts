@@ -152,6 +152,17 @@ export interface CreateBottleInput {
   tags?: string[] | null;
 }
 
+/**
+ * Derive a permanent public URL from a label storage path.
+ * The "labels" bucket is public so this URL never expires.
+ * Falls back to null if the path is empty.
+ */
+function getLabelPublicUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  const { data } = supabase.storage.from('labels').getPublicUrl(path);
+  return data?.publicUrl ?? null;
+}
+
 export async function createBottle(input: CreateBottleInput): Promise<BottleWithWineInfo> {
   console.log('[bottleService] ========== CREATE BOTTLE ==========');
   console.log('[bottleService] Input:', JSON.stringify(input, null, 2));
@@ -164,6 +175,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   }
   
   console.log('[bottleService] User ID:', user.id);
+
+  // Resolve a permanent public URL from the storage path so it's visible in the DB.
+  // Signed URLs expire; public URLs for the "labels" bucket do not.
+  const storagePath = input.label_image_path || input.image_path || null;
+  const publicLabelUrl = getLabelPublicUrl(storagePath);
 
   // First, try to find or create the wine
   const wineData: WineInsert = {
@@ -180,11 +196,12 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     vivino_wine_id: input.vivino_wine_id || null,
     rating: input.rating || null,
     vivino_url: input.vivino_url || null,
-    // NEW: Save stable path if provided
+    // Stable storage path (preferred for runtime URL generation)
     image_path: input.image_path || null,
     label_image_path: input.label_image_path || null,
-    // Legacy: still save URL for backward compatibility
-    image_url: input.image_url || null,
+    // Permanent public URL so image is visible directly in the DB
+    // Falls back to external URL (e.g. Vivino) if no storage path
+    image_url: publicLabelUrl || input.image_url || null,
     notes: input.wine_notes || null,
   };
   
@@ -220,11 +237,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     storage_location: input.storage_location || null,
     bottle_size_ml: input.bottle_size_ml || 750,
     notes: input.notes || null,
-    // NEW: Save stable paths if provided
+    // Stable storage paths (preferred for runtime URL generation)
     image_path: input.image_path || null,
     label_image_path: input.label_image_path || null,
-    // Legacy: still save URL for backward compatibility
-    image_url: input.image_url || null,
+    // Permanent public URL — visible directly in the DB and never expires
+    image_url: publicLabelUrl || input.image_url || null,
     tags: input.tags ? input.tags : null,
   };
   
