@@ -203,12 +203,14 @@ function AppRoutes() {
           </FeatureFlagRoute>
         }
       />
-      {/* Cellar Agent (localhost only) - Dev-only AI chat assistant */}
+      {/* Cellar Agent */}
       <Route
         path="/agent"
         element={
           <PrivateRoute>
-            <AgentPageWorking />
+            <Layout>
+              <AgentPageWorking />
+            </Layout>
           </PrivateRoute>
         }
       />
