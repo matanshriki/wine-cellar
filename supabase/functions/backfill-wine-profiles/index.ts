@@ -72,7 +72,7 @@ async function generateProfile(wine: any): Promise<any> {
     grapesStr    ? `Grapes: ${grapesStr}`    : null,
     wine.regional_wine_style ? `Style: ${wine.regional_wine_style}` : null,
     wine.rating  ? `Vivino rating: ${wine.rating}/5` : null,
-    wine.analysis_summary ? `Sommelier notes: ${wine.analysis_summary}` : null,
+    wine.notes ? `Notes: ${wine.notes}` : null,
   ].filter(Boolean).join('\n')
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -216,7 +216,7 @@ serve(async (req) => {
   // ── Fetch eligible wines (across ALL users via service role) ────────────────
   let query = supabase
     .from('wines')
-    .select('id, wine_name, producer, vintage, color, region, country, grapes, regional_wine_style, rating, analysis_summary, wine_profile_source')
+    .select('id, wine_name, producer, vintage, color, region, country, grapes, regional_wine_style, rating, notes, wine_profile_source')
     .order('created_at', { ascending: true })
     .range(offset, offset + batchSize - 1)
 
