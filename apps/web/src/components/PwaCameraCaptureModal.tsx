@@ -207,9 +207,10 @@ export function PwaCameraCaptureModal({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[100]"
-        style={{
-          background: '#000',
-        }}
+        style={{ background: '#000' }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Camera"
       >
         {/* Video Preview */}
         <video
