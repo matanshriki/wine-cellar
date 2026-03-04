@@ -1562,53 +1562,23 @@ export function CellarPage() {
               </button>
             )}
 
-            {/* Bulk Analysis Button - Subtle */}
-            {bottlesInCellar.length > 0 && (
-              <button
-                onClick={handleBulkAnalysis}
-                disabled={bulkAnalysisCooldown}
-                title={bulkAnalysisCooldown ? t('bulkAnalysis.cooldownTooltip') : t('bulkAnalysis.buttonLabel')}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px] ml-auto"
-                style={{
-                  backgroundColor: bulkAnalysisCooldown ? 'var(--bg-muted)' : 'var(--wine-50)',
-                  color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--wine-600)',
-                  border: bulkAnalysisCooldown ? '2px solid var(--border-subtle)' : '2px solid var(--wine-200)',
-                  cursor: bulkAnalysisCooldown ? 'not-allowed' : 'pointer',
-                  opacity: bulkAnalysisCooldown ? 0.5 : 1,
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-              >
-                🧙‍♂️ {t('bulkAnalysis.buttonLabel')}
-                {unanalyzedCount > 0 && (
-                  <span
-                    className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-semibold"
-                    style={{
-                      background: 'var(--wine-500)',
-                      color: 'white',
-                    }}
-                  >
-                    {unanalyzedCount}
-                  </span>
-                )}
-              </button>
-            )}
           </div>
         </motion.div>
       )}
 
-      {/* Sort Button - Below Filters */}
+      {/* Sort + Analyze row - always visible, no horizontal scroll */}
       {bottlesInCellar.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }} // Removed delay for faster interactivity
-          className="mb-4"
-          style={{ pointerEvents: 'auto' }} // Fix: Ensure sort button works immediately
+          transition={{ duration: 0.2 }}
+          className="mb-4 flex items-center gap-2"
+          style={{ pointerEvents: 'auto' }}
         >
+          {/* Sort Button */}
           <button
             onClick={() => setShowSortMenu(true)}
-            className="px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
+            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-secondary)',
@@ -1621,6 +1591,34 @@ export function CellarPage() {
             <span className="text-sm">{currentSortOption.icon}</span>
             <span style={{ color: 'var(--text-primary)' }}>{currentSortOption.label}</span>
             <span className="ml-auto" style={{ color: 'var(--text-tertiary)' }}>›</span>
+          </button>
+
+          {/* Analyze Cellar Button */}
+          <button
+            onClick={handleBulkAnalysis}
+            disabled={bulkAnalysisCooldown}
+            title={bulkAnalysisCooldown ? t('bulkAnalysis.cooldownTooltip') : t('bulkAnalysis.buttonLabel')}
+            className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 min-h-[40px]"
+            style={{
+              backgroundColor: bulkAnalysisCooldown ? 'var(--bg-muted)' : 'var(--wine-50)',
+              color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--wine-600)',
+              border: bulkAnalysisCooldown ? '1px solid var(--border-subtle)' : '1px solid var(--wine-200)',
+              cursor: bulkAnalysisCooldown ? 'not-allowed' : 'pointer',
+              opacity: bulkAnalysisCooldown ? 0.5 : 1,
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
+          >
+            🧙‍♂️ {t('bulkAnalysis.buttonLabel')}
+            {unanalyzedCount > 0 && (
+              <span
+                className="px-1.5 py-0.5 rounded-full text-xs font-semibold"
+                style={{ background: 'var(--wine-500)', color: 'white' }}
+              >
+                {unanalyzedCount}
+              </span>
+            )}
           </button>
         </motion.div>
       )}
