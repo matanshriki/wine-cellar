@@ -629,6 +629,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
     <MuseumViewModal
       isOpen={showMuseumView}
       onClose={() => setShowMuseumView(false)}
+      onShowDetails={onShowDetails}
       bottle={{
         id: bottle.id,
         name: bottle.wine.wine_name || '',

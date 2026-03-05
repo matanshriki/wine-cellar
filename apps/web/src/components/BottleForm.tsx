@@ -60,15 +60,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       sessionStorage.removeItem('wine-form-vivino-flow');
     }
     
-    // Default: use prefillData or bottle data
+    // Default: use prefillData or bottle data (ensure all values are strings for controlled inputs)
     return {
-      wine_name: prefillData?.wine_name || bottle?.wine.wine_name || '',
-      producer: prefillData?.producer || bottle?.wine.producer || '',
-      vintage: prefillData?.vintage?.toString() || bottle?.wine.vintage?.toString() || '',
-      region: prefillData?.region || bottle?.wine.region || '',
-      grapes: prefillData?.grapes || (bottle?.wine.grapes ? (Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : '') : ''),
-      color: prefillData?.color || bottle?.wine.color || 'red',
-      quantity: bottle?.quantity?.toString() || '1',
+      wine_name: prefillData?.wine_name ?? bottle?.wine.wine_name ?? '',
+      producer: prefillData?.producer ?? bottle?.wine.producer ?? '',
+      vintage: (prefillData?.vintage != null ? String(prefillData.vintage) : bottle?.wine.vintage != null ? String(bottle.wine.vintage) : '') || '',
+      region: prefillData?.region ?? bottle?.wine.region ?? '',
+      grapes: (prefillData?.grapes ?? (bottle?.wine.grapes ? (Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : String(bottle.wine.grapes)) : '')) || '',
+      color: prefillData?.color ?? bottle?.wine.color ?? 'red',
+      quantity: (bottle?.quantity != null ? String(bottle.quantity) : '1') || '1',
       purchase_price: (() => {
         if (!bottle?.purchase_price) return '';
         // Convert price to current currency for display
@@ -93,6 +93,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   const [fetchingVivino, setFetchingVivino] = useState(false);
   const [autoFetchingVivino, setAutoFetchingVivino] = useState(false); // Background auto-fetch indicator
   const autoFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer
+
+  // Reset loading when form is opened for a new bottle/scan (so Save is never stuck disabled)
+  useEffect(() => {
+    setLoading(false);
+  }, [bottle?.id ?? 'new', prefillData?.data?.wine_name ?? '', prefillData?.imagePath ?? '']);
 
   // Update displayed price when language changes
   useEffect(() => {
@@ -354,12 +359,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       return;
     }
     
-    if (!formData.quantity || parseInt(formData.quantity) < 1) {
+    const qty = parseInt(String(formData.quantity || '1').trim(), 10);
+    if (Number.isNaN(qty) || qty < 1) {
       console.log('[BottleForm] ❌ Validation failed: Invalid quantity');
       toast.error(t('bottleForm.quantityRequired', 'Quantity must be at least 1'));
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -371,7 +377,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         
         // Update bottle-level fields
         const bottleUpdates = {
-          quantity: parseInt(formData.quantity),
+          quantity: qty,
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
           purchase_price_currency: currentCurrency, // Store current currency
           notes: formData.notes || null,
@@ -419,7 +425,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           wine_notes: null,
           
           // Bottle info
-          quantity: parseInt(formData.quantity) || 1,
+          quantity: qty,
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
           purchase_price_currency: currentCurrency, // Store current currency
           notes: formData.notes || null,
@@ -919,16 +925,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   {t('bottleForm.cancel')}
                 </button>
                 <button
-                  type="submit"
-                  form="bottle-form"
+                  type="button"
+                  aria-label={t('bottleForm.save')}
                   onClick={(e) => {
-                    // Fallback: If form submission doesn't work, manually trigger it
+                    e.preventDefault();
                     e.stopPropagation();
-                    const form = document.getElementById('bottle-form') as HTMLFormElement;
-                    if (form && !loading) {
-                      console.log('[BottleForm] Button clicked, triggering form submission');
-                      form.requestSubmit();
-                    }
+                    if (!loading) handleSubmit(e as unknown as React.FormEvent);
                   }}
                   className="flex-1 btn-luxury-primary text-sm sm:text-base"
                   disabled={loading}
@@ -936,7 +938,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     minHeight: '48px',
                     touchAction: 'manipulation',
                     WebkitTapHighlightColor: 'transparent',
-                    pointerEvents: loading ? 'none' : 'auto',
                     cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
@@ -982,16 +983,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 {t('bottleForm.cancel')}
               </button>
               <button
-                type="submit"
-                form="bottle-form"
+                type="button"
+                aria-label={bottle ? t('bottleForm.update') : t('bottleForm.save')}
                 onClick={(e) => {
-                  // Fallback: If form submission doesn't work, manually trigger it
+                  e.preventDefault();
                   e.stopPropagation();
-                  const form = document.getElementById('bottle-form') as HTMLFormElement;
-                  if (form && !loading) {
-                    console.log('[BottleForm] Button clicked, triggering form submission');
-                    form.requestSubmit();
-                  }
+                  if (!loading) handleSubmit(e as unknown as React.FormEvent);
                 }}
                 className="flex-1 btn-luxury-primary text-sm sm:text-base"
                 disabled={loading}
@@ -999,7 +996,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   minHeight: '48px',
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
-                  pointerEvents: loading ? 'none' : 'auto',
                   cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >

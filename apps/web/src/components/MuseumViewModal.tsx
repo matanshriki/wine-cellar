@@ -35,9 +35,10 @@ interface MuseumViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   bottle: MuseumViewBottle;
+  onShowDetails?: () => void;
 }
 
-export function MuseumViewModal({ isOpen, onClose, bottle }: MuseumViewModalProps) {
+export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: MuseumViewModalProps) {
   const { t } = useTranslation();
   const reduceMotion = shouldReduceMotion();
 
@@ -187,7 +188,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle }: MuseumViewModalProp
             )}
 
             {/* Chips */}
-            <div className="flex justify-center gap-2 flex-wrap mt-6">
+            <div className="flex justify-center gap-2 flex-wrap mt-4">
               {/* Vintage */}
               {bottle.vintage && (
                 <span
@@ -270,6 +271,37 @@ export function MuseumViewModal({ isOpen, onClose, bottle }: MuseumViewModalProp
               )}
             </div>
           </motion.div>
+
+          {/* View Full Details Button */}
+          {onShowDetails && (
+            <motion.div
+              initial={reduceMotion ? false : { y: 20, opacity: 0 }}
+              animate={reduceMotion ? false : { y: 0, opacity: 1 }}
+              transition={{ delay: 0.25, type: 'spring', damping: 25 }}
+              className="mt-6 flex justify-center"
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                  onShowDetails();
+                }}
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                {t('cellar.bottle.viewFullDetails', 'View Full Details')}
+              </button>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </AnimatePresence>
