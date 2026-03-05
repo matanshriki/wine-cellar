@@ -216,7 +216,7 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
         channelRef.current = null;
       }
     };
-  }, [flags]); // Re-subscribe if flags change (e.g., after login)
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally stable; auth listener handles re-setup after login
 
   // Refetch flags on window focus (fallback for missed updates)
   useEffect(() => {

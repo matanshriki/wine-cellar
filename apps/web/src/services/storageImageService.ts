@@ -19,6 +19,40 @@ const urlCache = new Map<string, { url: string; expiresAt: number }>();
  */
 const CACHE_TTL_MS = 50 * 60 * 1000;
 
+const SESSION_CACHE_KEY = 'wine_img_cache_v1';
+
+/**
+ * Restore the URL cache from sessionStorage on module load.
+ * This survives page refreshes within the same browser tab, eliminating
+ * the cold-start penalty of resolving all image URLs from scratch.
+ */
+function restoreCacheFromSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return;
+    const entries: [string, { url: string; expiresAt: number }][] = JSON.parse(raw);
+    const now = Date.now();
+    for (const [key, value] of entries) {
+      if (value.expiresAt > now) {
+        urlCache.set(key, value);
+      }
+    }
+  } catch {
+    // sessionStorage unavailable or corrupt — start fresh
+  }
+}
+
+function persistCacheToSession() {
+  try {
+    const entries = Array.from(urlCache.entries());
+    sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(entries));
+  } catch {
+    // Quota exceeded or unavailable — ignore
+  }
+}
+
+restoreCacheFromSession();
+
 /**
  * Public bucket configuration
  * These buckets don't need signed URLs
@@ -67,10 +101,8 @@ export async function getStorageImageUrl(
     const url = data.publicUrl;
     
     // Cache public URLs too (no harm, reduces redundant calls)
-    urlCache.set(cacheKey, {
-      url,
-      expiresAt: now + CACHE_TTL_MS,
-    });
+    urlCache.set(cacheKey, { url, expiresAt: now + CACHE_TTL_MS });
+    persistCacheToSession();
     return url;
   } else {
     // Private bucket: signed URL (1 hour)
@@ -83,11 +115,8 @@ export async function getStorageImageUrl(
       return null;
     }
 
-    // Cache signed URL
-    urlCache.set(cacheKey, {
-      url: data.signedUrl,
-      expiresAt: now + CACHE_TTL_MS,
-    });
+    urlCache.set(cacheKey, { url: data.signedUrl, expiresAt: now + CACHE_TTL_MS });
+    persistCacheToSession();
     return data.signedUrl;
   }
 }

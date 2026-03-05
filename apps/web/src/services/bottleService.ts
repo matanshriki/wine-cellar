@@ -29,7 +29,8 @@ export async function listBottles(options?: {
   offset?: number; 
   limit?: number;
 }): Promise<BottleWithWineInfo[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -64,7 +65,8 @@ export async function listBottles(options?: {
  * Get total bottle count for the current user
  */
 export async function getBottleCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -87,7 +89,8 @@ export async function getBottleCount(): Promise<number> {
  * Get a single bottle by ID
  */
 export async function getBottle(id: string): Promise<BottleWithWineInfo | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -164,17 +167,12 @@ function getLabelPublicUrl(path: string | null | undefined): string | null {
 }
 
 export async function createBottle(input: CreateBottleInput): Promise<BottleWithWineInfo> {
-  console.log('[bottleService] ========== CREATE BOTTLE ==========');
-  console.log('[bottleService] Input:', JSON.stringify(input, null, 2));
-  
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
-    console.error('[bottleService] ❌ Not authenticated');
     throw new Error('Not authenticated');
   }
-  
-  console.log('[bottleService] User ID:', user.id);
 
   // Resolve a permanent public URL from the storage path so it's visible in the DB.
   // Signed URLs expire; public URLs for the "labels" bucket do not.
@@ -205,10 +203,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     notes: input.wine_notes || null,
   };
   
-  console.log('[bottleService] Wine data:', JSON.stringify(wineData, null, 2));
-
   // Try to insert wine, or get existing if conflict
-  console.log('[bottleService] Upserting wine...');
   const { data: wine, error: wineError } = await supabase
     .from('wines')
     .upsert(wineData as any, {
@@ -219,11 +214,8 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     .single();
 
   if (wineError) {
-    console.error('[bottleService] ❌ Error creating/finding wine:', wineError);
     throw new Error('Failed to create wine entry');
   }
-  
-  console.log('[bottleService] ✅ Wine created/found, ID:', wine.id);
 
   // Now create the bottle
   const bottleData: BottleInsert = {
@@ -245,9 +237,6 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     tags: input.tags ? input.tags : null,
   };
   
-  console.log('[bottleService] Bottle data:', JSON.stringify(bottleData, null, 2));
-
-  console.log('[bottleService] Inserting bottle...');
   const { data: bottle, error: bottleError } = await supabase
     .from('bottles')
     .insert(bottleData as any)
@@ -255,26 +244,21 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     .single();
 
   if (bottleError) {
-    console.error('[bottleService] ❌ Error creating bottle:', bottleError);
     throw new Error('Failed to create bottle');
   }
-  
-  console.log('[bottleService] ✅ Bottle created successfully, ID:', bottle.id);
 
-  const result = {
+  return {
     ...(bottle as any),
     wine,
   } as BottleWithWineInfo;
-  
-  console.log('[bottleService] Returning bottle with wine info');
-  return result;
 }
 
 /**
  * Update a bottle
  */
 export async function updateBottle(id: string, updates: BottleUpdate): Promise<BottleWithWineInfo> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -304,7 +288,8 @@ export async function updateBottle(id: string, updates: BottleUpdate): Promise<B
  * Delete a bottle
  */
 export async function deleteBottle(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -363,7 +348,8 @@ export async function updateWineInfo(
   wineId: string,
   updates: UpdateWineInput
 ): Promise<Wine> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');
@@ -408,7 +394,8 @@ export async function updateWineImage(
   wineId: string,
   imageUrl: string | null
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
     throw new Error('Not authenticated');

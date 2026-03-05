@@ -473,49 +473,19 @@ export function CellarPage() {
   const PAGE_SIZE = 100; // Increased to load more bottles initially
 
   async function loadBottles(reset = false) {
-    console.log('[CellarPage] ========== LOADING BOTTLES ==========');
-    console.log('[CellarPage] Reset:', reset);
-    
     try {
-      const startTime = Date.now();
       const offset = reset ? 0 : bottles.length;
+      const data = await bottleService.listBottles({ offset, limit: PAGE_SIZE });
       
-      console.log('[CellarPage] Fetching bottles from database...');
-      console.log('[CellarPage] Offset:', offset, 'Limit:', PAGE_SIZE);
-      
-      // Load bottles with pagination
-      const data = await bottleService.listBottles({ 
-        offset, 
-        limit: PAGE_SIZE 
-      });
-      
-      console.log('[CellarPage] ✅ Bottles loaded successfully');
-      console.log('[CellarPage] Number of bottles fetched:', data.length);
-      
-      // Update bottles state (append or replace)
       if (reset) {
         setBottles(data);
       } else {
         setBottles(prev => [...prev, ...data]);
       }
       
-      // Check if there are more bottles to load
       setHasMore(data.length === PAGE_SIZE);
-      
-      console.log('[CellarPage] Bottles state updated');
-      console.log('[CellarPage] Total bottles in state:', reset ? data.length : bottles.length + data.length);
-      console.log('[CellarPage] Has more:', data.length === PAGE_SIZE);
-      
-      // Mobile UX Fix: Ensure minimum loading time to prevent tap issues
-      // This gives the browser time to fully render and make buttons interactive
-      const elapsedTime = Date.now() - startTime;
-      const minLoadingTime = 400; // 400ms minimum
-      if (elapsedTime < minLoadingTime) {
-        console.log(`[CellarPage] Waiting ${minLoadingTime - elapsedTime}ms for smooth transition...`);
-        await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsedTime));
-      }
     } catch (error: any) {
-      console.error('[CellarPage] ❌ Error loading bottles:', error);
+      console.error('[CellarPage] Error loading bottles:', error);
       toast.error(error.message || t('errors.generic'));
     } finally {
       setLoading(false);
@@ -599,12 +569,15 @@ export function CellarPage() {
 
       // Generate AI analysis
       const analysis = await aiAnalysisService.generateAIAnalysis(bottle, i18n.language);
-      trackSommelier.success(); // Track successful analysis
+      trackSommelier.success();
       
-      // Reload bottles to get fresh data
-      await loadBottles(true); // Reset pagination
-      
-      // ✅ No success toast - visual feedback is sufficient
+      // Patch only the analyzed bottle in state — avoids a full refetch
+      const updated = await bottleService.getBottle(id);
+      if (updated) {
+        setBottles(prev => prev.map(b => b.id === id ? updated : b));
+      } else {
+        await loadBottles(true);
+      }
     } catch (error: any) {
       console.error('Error analyzing bottle:', error);
       trackSommelier.error('analysis_failed'); // Track analysis error
@@ -653,37 +626,30 @@ export function CellarPage() {
   }
 
   async function handleFormSuccess() {
-    console.log('[CellarPage] ========== FORM SUCCESS ==========');
-    console.log('[CellarPage] Reloading bottles from database...');
-    
-    // Onboarding v1 – production: Check if this is the first bottle
+    // Check if this is the first bottle BEFORE reloading
     const isFirstBottle = bottles.length === 0 && !onboardingUtils.hasAddedFirstBottle();
     
-    // CRITICAL: Reload bottles FIRST to get updated data (reset pagination)
-    await loadBottles(true); // Reset pagination to load from beginning
-    console.log('[CellarPage] ✅ Bottles reloaded with latest data');
+    await loadBottles(true);
     
     // Onboarding v1 – production: Show first bottle success modal
     if (isFirstBottle) {
-      console.log('[CellarPage] First bottle added! Showing success modal');
       onboardingUtils.markFirstBottleAdded();
-      // Exit demo mode if active
       if (isDemoMode) {
         setIsDemoMode(false);
       }
-      // Get the bottle name for the modal
-      const newBottles = await bottleService.listBottles();
-      if (newBottles.length > 0) {
-        setFirstBottleName(newBottles[0].wine.wine_name);
-      }
+      // Read the first bottle name from the freshly-set state via the callback form
+      setBottles(current => {
+        if (current.length > 0) {
+          setFirstBottleName(current[0].wine.wine_name);
+        }
+        return current;
+      });
       setShowFirstBottleSuccess(true);
     }
     
-    // Then close form and clear state
     setShowForm(false);
     setEditingBottle(null);
-    setExtractedData(null); // Clear AI extraction data to prevent stale scans
-    console.log('[CellarPage] Form closed, state cleared');
+    setExtractedData(null);
   }
 
   function handleImportSuccess() {
@@ -785,10 +751,10 @@ export function CellarPage() {
   }, [bottlesInCellar]);
 
   // Calculate unanalyzed bottles count (only for bottles in cellar)
-  const unanalyzedCount = bottlesInCellar.filter(bottle => {
+  const unanalyzedCount = useMemo(() => bottlesInCellar.filter(bottle => {
     const b = bottle as any;
     return !b.analysis_summary || !b.readiness_label;
-  }).length;
+  }).length, [bottlesInCellar]);
 
   /**
    * Filter and search bottles
@@ -798,12 +764,7 @@ export function CellarPage() {
     // Start with bottles in cellar (quantity > 0)
     let result = bottlesInCellar;
     
-    console.log('[CellarPage] 🔍 Filtering bottles:', {
-      total: bottlesInCellar.length,
-      searchQuery,
-      activeFilters,
-      ratingFilter,
-    });
+    if (import.meta.env.DEV) console.log('[CellarPage] Filtering bottles:', { total: bottlesInCellar.length, searchQuery, activeFilters, ratingFilter });
 
     // Apply search query (debounced via input)
     if (searchQuery.trim()) {

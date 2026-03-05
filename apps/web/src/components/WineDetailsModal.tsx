@@ -31,6 +31,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
@@ -55,22 +56,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     }
   }, [isOpen]);
 
-  // Check if user has AI label art enabled (per-user flag)
+  // Check AI label art access once per session (result is cached in the service)
   useEffect(() => {
     if (!isOpen || !bottle) return;
-    
-    const checkUserAccess = async () => {
-      // Onboarding v1 – value first: Skip for demo bottles
-      if (bottle.id.startsWith('demo-')) {
-        setUserCanGenerateAI(false);
-        return;
-      }
-      const enabled = await labelArtService.isLabelArtEnabledForUser();
-      setUserCanGenerateAI(enabled);
-    };
-    
-    checkUserAccess();
-  }, [isOpen, bottle?.id]); // Only depend on bottle.id to avoid unnecessary re-checks
+    if (bottle.id.startsWith('demo-')) { setUserCanGenerateAI(false); return; }
+    labelArtService.isLabelArtEnabledForUser().then(setUserCanGenerateAI);
+  }, [isOpen, bottle?.id]);
 
   // Don't render anything if no bottle is available
   if (!bottle) return null;

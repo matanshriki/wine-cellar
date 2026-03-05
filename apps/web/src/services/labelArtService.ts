@@ -24,28 +24,36 @@ export const isLabelArtFeatureAvailable = (): boolean => {
 };
 
 /**
+ * Session-scoped cache for the label art access check.
+ * Avoids a redundant profiles query on every modal open.
+ */
+let _labelArtEnabledCache: boolean | null = null;
+
+// Clear cache on auth change (sign-out / sign-in)
+supabase.auth.onAuthStateChange(() => { _labelArtEnabledCache = null; });
+
+/**
  * Check if current user has AI label art enabled
- * Two-level check: App-level flag AND user-level flag
+ * Two-level check: App-level flag AND user-level flag.
+ * Result is cached for the lifetime of the session.
  */
 export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
+  if (_labelArtEnabledCache !== null) return _labelArtEnabledCache;
+
   // First check: Is feature available at app level?
   const globalEnabled = isLabelArtFeatureAvailable();
-  console.log('[AI Label Art] Global flag (VITE_FEATURE_GENERATED_LABEL_ART):', globalEnabled);
-  
   if (!globalEnabled) {
-    console.log('[AI Label Art] Feature disabled globally - button will not appear');
+    _labelArtEnabledCache = false;
     return false;
   }
 
   // Second check: Is feature enabled for this specific user?
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   
   if (!user) {
-    console.log('[AI Label Art] No user authenticated - button will not appear');
     return false;
   }
-
-  console.log('[AI Label Art] Checking user flag for user:', user.email);
 
   // Get user's profile to check their ai_label_art_enabled flag
   const { data: profile, error } = await supabase
@@ -54,18 +62,12 @@ export const isLabelArtEnabledForUser = async (): Promise<boolean> => {
     .eq('id', user.id)
     .single();
 
-  if (error) {
-    console.error('[AI Label Art] Error fetching user profile:', error);
-    return false;
-  }
-
-  if (!profile) {
-    console.error('[AI Label Art] No profile found for user');
+  if (error || !profile) {
     return false;
   }
 
   const userEnabled = profile.ai_label_art_enabled === true;
-  console.log('[AI Label Art] User flag (ai_label_art_enabled):', profile.ai_label_art_enabled, '→', userEnabled ? 'ENABLED ✅' : 'DISABLED ❌');
+  _labelArtEnabledCache = userEnabled;
   
   if (userEnabled) {
     console.log('[AI Label Art] ✅ Button WILL appear (both flags enabled)');
