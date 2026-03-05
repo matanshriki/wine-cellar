@@ -90,11 +90,14 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
         animate={reduceMotion ? false : { opacity: 1 }}
         exit={reduceMotion ? false : { opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[200]"
         style={{
           background: 'rgba(0, 0, 0, 0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
+          // Use dvh so the overlay covers the true visible area on iOS PWA
+          height: '100dvh',
+          overflow: 'hidden',
         }}
         role="dialog"
         aria-modal="true"
@@ -107,8 +110,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
           animate={reduceMotion ? false : { opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
           onClick={onClose}
-          className="absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center z-10 safe-area-inset-top"
+          className="absolute right-4 w-12 h-12 rounded-full flex items-center justify-center z-20"
           style={{
+            top: 'max(16px, env(safe-area-inset-top, 16px))',
             background: 'rgba(255, 255, 255, 0.15)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
@@ -120,25 +124,32 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
           </svg>
         </motion.button>
 
-        {/* Content Container */}
+        {/* Scrollable content — scrolls inside the modal, not the page */}
         <div
-          className="relative w-full max-w-4xl max-h-full flex flex-col"
-          onClick={(e) => e.stopPropagation()}
+          className="h-full flex flex-col"
+          style={{
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+            paddingTop: 'max(72px, calc(env(safe-area-inset-top, 0px) + 64px))',
+            paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
+          } as React.CSSProperties}
+          onClick={onClose}
         >
-          {/* Hero Image */}
+          {/* Hero Image — flex-1 so it fills remaining height naturally */}
           <motion.div
             initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
             animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
             exit={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="relative flex items-center justify-center"
-            style={{ maxHeight: '70vh' }}
+            className="flex-1 flex items-center justify-center px-4"
+            style={{ minHeight: 0 }}
+            onClick={(e) => e.stopPropagation()}
           >
             {bottle.label_image_url ? (
               <img
                 src={bottle.label_image_url}
                 alt={bottle.name}
-                className="max-h-[70vh] max-w-full object-contain rounded-lg"
+                className="max-h-full max-w-full object-contain rounded-lg"
                 style={{
                   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
                 }}
@@ -161,16 +172,17 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
             )}
           </motion.div>
 
-          {/* Info Overlay (Bottom) */}
+          {/* Info section — fixed size, never pushes image off screen */}
           <motion.div
             initial={reduceMotion ? false : { y: 30, opacity: 0 }}
             animate={reduceMotion ? false : { y: 0, opacity: 1 }}
             transition={{ delay: 0.15, type: 'spring', damping: 25 }}
-            className="mt-8 text-center safe-area-inset-bottom"
+            className="flex-shrink-0 px-4 pt-5 pb-2 text-center"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Name & Producer */}
             <h2
-              className="text-3xl md:text-4xl font-bold text-white mb-2"
+              className="text-2xl md:text-4xl font-bold text-white mb-1"
               style={{
                 fontFamily: 'var(--font-display)',
                 textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
@@ -181,7 +193,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
 
             {bottle.producer && (
               <p
-                className="text-xl md:text-2xl text-gray-300 mb-4"
+                className="text-base md:text-2xl text-gray-300 mb-2"
                 style={{
                   textShadow: '0 1px 5px rgba(0, 0, 0, 0.5)',
                 }}
@@ -191,11 +203,10 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
             )}
 
             {/* Chips */}
-            <div className="flex justify-center gap-2 flex-wrap mt-4">
-              {/* Vintage */}
+            <div className="flex justify-center gap-2 flex-wrap mt-3">
               {bottle.vintage && (
                 <span
-                  className="px-4 py-2 rounded-full text-sm font-medium"
+                  className="px-3 py-1.5 rounded-full text-sm font-medium"
                   style={{
                     background: 'rgba(255, 255, 255, 0.2)',
                     backdropFilter: 'blur(10px)',
@@ -208,10 +219,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
                 </span>
               )}
 
-              {/* Readiness Status */}
               {readiness && (
                 <span
-                  className={`px-4 py-2 rounded-full text-sm font-medium ${readiness.color}`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium ${readiness.color}`}
                   style={{
                     backdropFilter: 'blur(10px)',
                     WebkitBackdropFilter: 'blur(10px)',
@@ -222,10 +232,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
                 </span>
               )}
 
-              {/* Region */}
               {bottle.region && (
                 <span
-                  className="px-4 py-2 rounded-full text-sm font-medium"
+                  className="px-3 py-1.5 rounded-full text-sm font-medium"
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
@@ -238,10 +247,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
                 </span>
               )}
 
-              {/* Grape */}
               {bottle.grapes && (
                 <span
-                  className="px-4 py-2 rounded-full text-sm font-medium"
+                  className="px-3 py-1.5 rounded-full text-sm font-medium"
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
@@ -254,10 +262,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
                 </span>
               )}
 
-              {/* Rating */}
               {bottle.rating && bottle.rating > 0 && (
                 <span
-                  className="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1"
                   style={{
                     background: 'rgba(212, 175, 55, 0.25)',
                     backdropFilter: 'blur(10px)',
@@ -281,7 +288,8 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
               initial={reduceMotion ? false : { y: 20, opacity: 0 }}
               animate={reduceMotion ? false : { y: 0, opacity: 1 }}
               transition={{ delay: 0.25, type: 'spring', damping: 25 }}
-              className="mt-6 flex justify-center"
+              className="flex-shrink-0 flex justify-center pt-3 pb-2 px-4"
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={(e) => {
