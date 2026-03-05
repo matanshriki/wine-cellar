@@ -96,6 +96,9 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={bottle.name}
         onClick={onClose}
       >
         {/* Close Button (Top Right) */}
