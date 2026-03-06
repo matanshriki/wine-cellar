@@ -390,11 +390,13 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{
         background: 'var(--bg-overlay)',
         backdropFilter: 'var(--blur-medium)',
         WebkitBackdropFilter: 'var(--blur-medium)',
+        // Pad all edges respecting safe areas so the modal never touches screen edges
+        padding: 'max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))',
       }}
       role="dialog"
       aria-modal="true"
@@ -407,12 +409,13 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md mx-4 mb-4 sm:m-4 rounded-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-xl)',
-          maxHeight: 'calc(100dvh - 2rem)',
+          // Fill all available height within the safe-area-aware padding
+          maxHeight: '100%',
         }}
       >
         {/* Header */}
@@ -439,7 +442,7 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         </div>
         
         {/* Sliders */}
-        <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+        <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch', minHeight: 0 } as React.CSSProperties}>
           <CalibrationSlider
             label={t('tasteProfile.calibration.body', 'Body preference')}
             description={t('tasteProfile.calibration.bodyDesc', 'Light & delicate to full & bold')}
