@@ -390,12 +390,15 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
       style={{
         background: 'var(--bg-overlay)',
         backdropFilter: 'var(--blur-medium)',
         WebkitBackdropFilter: 'var(--blur-medium)',
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="calibrate-taste-title"
       onClick={onClose}
     >
       <motion.div
@@ -404,18 +407,19 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md m-4 rounded-2xl overflow-hidden"
+        className="w-full max-w-md mx-4 mb-4 sm:m-4 rounded-2xl overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-xl)',
+          maxHeight: 'calc(100dvh - 2rem)',
         }}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h3 id="calibrate-taste-title" className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {t('tasteProfile.calibration.title', 'Calibrate Your Taste')}
               </h3>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -435,7 +439,7 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         </div>
         
         {/* Sliders */}
-        <div className="px-6 py-6 space-y-6 max-h-[60vh] overflow-y-auto">
+        <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
           <CalibrationSlider
             label={t('tasteProfile.calibration.body', 'Body preference')}
             description={t('tasteProfile.calibration.bodyDesc', 'Light & delicate to full & bold')}
@@ -483,7 +487,7 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         </div>
         
         {/* Footer */}
-        <div className="px-6 pb-6 flex gap-3">
+        <div className="flex-shrink-0 px-6 pt-3 pb-6 flex gap-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           {hasExistingProfile && (
             <button
               onClick={onReset}
