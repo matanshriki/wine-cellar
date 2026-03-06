@@ -390,13 +390,13 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[100] flex items-center justify-center px-5 pt-5"
       style={{
         background: 'var(--bg-overlay)',
         backdropFilter: 'var(--blur-medium)',
         WebkitBackdropFilter: 'var(--blur-medium)',
-        // Pad all edges respecting safe areas so the modal never touches screen edges
-        padding: 'max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))',
+        // Bottom padding must clear the iPhone home indicator
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
       }}
       role="dialog"
       aria-modal="true"
@@ -414,7 +414,6 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-xl)',
-          // Fill all available height within the safe-area-aware padding
           maxHeight: '100%',
         }}
       >
