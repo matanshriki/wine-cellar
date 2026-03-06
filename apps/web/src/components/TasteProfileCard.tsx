@@ -489,26 +489,43 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
         </div>
         
         {/* Footer */}
-        <div className="flex-shrink-0 px-6 pt-3 pb-6 flex gap-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-          {hasExistingProfile && (
+        <div className="flex-shrink-0 px-4 pt-3 pb-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="flex gap-2 justify-center">
+            {hasExistingProfile && (
+              <button
+                onClick={onReset}
+                className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors"
+                style={{
+                  color: 'var(--color-error, #dc2626)',
+                  borderColor: 'var(--border-base)',
+                  background: 'var(--bg-surface)',
+                }}
+              >
+                {t('tasteProfile.calibration.reset', 'Reset')}
+              </button>
+            )}
             <button
-              onClick={onReset}
-              className="btn btn-secondary text-sm"
-              style={{ color: 'var(--error-600)' }}
+              onClick={onClose}
+              className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors"
+              style={{
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-base)',
+                background: 'var(--bg-surface)',
+              }}
             >
-              {t('tasteProfile.calibration.reset', 'Reset')}
+              {t('common.cancel', 'Cancel')}
             </button>
-          )}
-          <div className="flex-1" />
-          <button onClick={onClose} className="btn btn-secondary">
-            {t('common.cancel', 'Cancel')}
-          </button>
-          <button
-            onClick={() => onSave(values)}
-            className="btn btn-primary"
-          >
-            {t('tasteProfile.calibration.save', 'Save Preferences')}
-          </button>
+            <button
+              onClick={() => onSave(values)}
+              className="flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-colors"
+              style={{
+                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                color: 'white',
+              }}
+            >
+              {t('tasteProfile.calibration.save', 'Save Preferences')}
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
