@@ -179,11 +179,9 @@ export const AdminEnrichPage: React.FC = () => {
       `This consumes OpenAI tokens. Continue?`
     )) return;
 
-    let session = contextSession;
-    if (!session) {
-      const { data } = await supabase.auth.getSession();
-      session = data.session;
-    }
+    // Always get a fresh session to ensure access_token is not expired
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session ?? contextSession;
     if (!session) { alert('Session expired — please refresh the page.'); return; }
 
     setAnalysisRunning(true);
@@ -203,6 +201,7 @@ export const AdminEnrichPage: React.FC = () => {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${session.access_token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             },
             body: JSON.stringify({ mode: analysisMode, batchSize: analysisBatch, offset }),
           }
