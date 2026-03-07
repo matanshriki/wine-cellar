@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { isIPad } from '../utils/deviceDetection';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1312,8 +1313,8 @@ export function CellarPage() {
                 <span className="xs:hidden">{t('cellar.importCsv')}</span>
               </button>
             )}
-            {/* Add Bottle - Desktop only (mobile uses floating Camera FAB) */}
-            {bottlesInCellar.length > 0 && (
+            {/* Add Bottle - Desktop only (mobile + iPad use the floating Camera FAB) */}
+            {bottlesInCellar.length > 0 && !isIPad() && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -1321,7 +1322,7 @@ export function CellarPage() {
                   setShowAddSheet(true);
                 }}
                 className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
-                style={{ pointerEvents: 'auto' }} // Fix: Ensure button works immediately on page load/switch
+                style={{ pointerEvents: 'auto' }}
               >
                 <span>+ {t('cellar.addBottleButton')}</span>
               </button>
