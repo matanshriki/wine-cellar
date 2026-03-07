@@ -9,6 +9,7 @@ interface Wine {
   vivino_url?: string;
   rating?: number;
   region?: string;
+  country?: string;
   grapes?: string[];
   regional_wine_style?: string;
   user_id: string;
@@ -71,9 +72,9 @@ Deno.serve(async (req) => {
     // Criteria: Have vivino_url but missing other data (rating, region, grapes, or regional_wine_style)
     const { data: wines, error: fetchError } = await supabaseClient
       .from("wines")
-      .select("id, wine_name, producer, vintage, vivino_url, rating, region, grapes, regional_wine_style, user_id")
+      .select("id, wine_name, producer, vintage, vivino_url, rating, region, country, grapes, regional_wine_style, user_id")
       .not("vivino_url", "is", null)
-      .or("rating.is.null,region.is.null,grapes.is.null,regional_wine_style.is.null")
+      .or("rating.is.null,region.is.null,country.is.null,grapes.is.null,regional_wine_style.is.null")
       .limit(limit);
 
     if (fetchError) {
@@ -173,16 +174,13 @@ Deno.serve(async (req) => {
           const updateData: any = {};
           if (wineData.rating && !wine.rating) updateData.rating = wineData.rating;
           if (wineData.region && !wine.region) updateData.region = wineData.region;
+          if (wineData.country && !wine.country) updateData.country = wineData.country;
           if (wineData.grapes && (!wine.grapes || wine.grapes.length === 0)) {
             updateData.grapes = wineData.grapes;
           }
           // Map wine_style to regional_wine_style
           if (wineData.wine_style && !wine.regional_wine_style) {
             updateData.regional_wine_style = wineData.wine_style;
-          }
-          // Additional fields (if you add them to the wines table later)
-          if (wineData.alcohol_content && !wine.alcohol_content) {
-            updateData.alcohol_content = wineData.alcohol_content;
           }
 
           console.log(`[Batch Enrich] Fields to update:`, Object.keys(updateData));
