@@ -54,3 +54,19 @@ export function isMobileDevice(): boolean {
 export function isSamsungBrowser(): boolean {
   return /Samsung/i.test(navigator.userAgent) || /SamsungBrowser/i.test(navigator.userAgent);
 }
+
+/**
+ * Detect if running on an iPad.
+ *
+ * Covers two generations:
+ *  - Older iPads (pre-iOS 13): "iPad" appears in the user-agent string.
+ *  - Modern iPads (iOS 13+): Apple switched to the desktop Safari UA
+ *    ("Macintosh; Intel Mac OS X …"), but the device still reports
+ *    navigator.maxTouchPoints > 1 (unlike a real Mac).
+ */
+export function isIPad(): boolean {
+  const ua = navigator.userAgent;
+  if (/iPad/i.test(ua)) return true;
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+  return false;
+}

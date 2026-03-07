@@ -22,9 +22,11 @@ import React from 'react';
 
 interface MobileFloatingFooterProps {
   onCameraClick: () => void;
+  /** Pass true on iPad/tablet — overrides md:hidden so the footer shows on larger screens */
+  isTablet?: boolean;
 }
 
-export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProps) {
+export function MobileFloatingFooter({ onCameraClick, isTablet = false }: MobileFloatingFooterProps) {
   const location = useLocation();
   const { t } = useTranslation();
   const { flags } = useFeatureFlags();
@@ -95,7 +97,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
       <AnimatePresence>
         {!isModalOpen && (
           <motion.div 
-            className="fixed bottom-0 left-0 right-0 md:hidden pointer-events-none"
+            className={`fixed bottom-0 left-0 right-0 pointer-events-none ${isTablet ? '' : 'md:hidden'}`}
             style={{
               zIndex: 'var(--z-sticky)',
               paddingBottom: 'env(safe-area-inset-bottom)',
@@ -119,7 +121,8 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
             stiffness: 300,
             damping: 30,
           }}
-          className="relative mx-4 mb-4 pointer-events-auto"
+          className={`relative mb-4 pointer-events-auto ${isTablet ? 'mx-auto' : 'mx-4'}`}
+          style={isTablet ? { maxWidth: '520px', paddingLeft: '1rem', paddingRight: '1rem' } : undefined}
         >
           {/* Camera FAB - Centered and protruding above footer */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
@@ -317,7 +320,7 @@ export function MobileFloatingFooter({ onCameraClick }: MobileFloatingFooterProp
       {/* Spacer to prevent content from being covered - Only shown when footer is visible */}
       {!isModalOpen && (
         <div 
-          className="md:hidden" 
+          className={isTablet ? '' : 'md:hidden'}
           style={{ 
             height: 'calc(104px + env(safe-area-inset-bottom))', // Footer height + FAB protrusion + safe area
           }} 

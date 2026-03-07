@@ -16,7 +16,7 @@ import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
-import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser } from '../utils/deviceDetection';
+import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -48,6 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isMobile = isMobileDevice();
   const isSamsung = isSamsungBrowser();
   const isIosPwa = isIosStandalonePwa();
+  const isIpad = isIPad();
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                 (window.navigator as any).standalone === true ||
                 document.referrer.includes('android-app://');
@@ -119,16 +120,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       userAgent: navigator.userAgent.substring(0, 50) 
     });
     
-    if (isIosPwa) {
-      // iOS PWA: Open getUserMedia camera to avoid file chooser
-      console.log('[Camera FAB] Opening PWA camera (iOS standalone - getUserMedia)');
+    if (isIosPwa || (isIpad && isPWA)) {
+      // iOS PWA or iPad PWA: use getUserMedia (avoids file-chooser close-app issue)
+      console.log('[Camera FAB] Opening PWA camera (iOS/iPad standalone - getUserMedia)');
       openPwaCamera();
-    } else if (isMobile || isPWA) {
-      // Other mobile/PWA: Open camera via file input (works fine)
-      console.log('[Camera FAB] Opening camera immediately (mobile/PWA - file input)');
+    } else if (isMobile || isPWA || isIpad) {
+      // Other mobile / iPad / PWA: open camera via file input
+      console.log('[Camera FAB] Opening camera immediately (mobile/iPad/PWA - file input)');
       openImmediateCamera();
     } else {
-      // Desktop: Show options modal (existing behavior)
+      // Desktop: Show options modal
       console.log('[Camera FAB] Opening options modal (desktop flow)');
       openAddBottleFlow();
     }
@@ -280,20 +281,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 aria-label="Scroll to top"
                 tabIndex={0}
               >
-                <span className="text-2xl pointer-events-none">🍷</span>
-                <span 
-                  className="hidden xs:inline text-xl sm:text-2xl font-bold pointer-events-none"
-                  style={{ 
-                    fontFamily: 'var(--font-display)',
-                    color: 'var(--wine-700)',
-                  }}
+                {/* Wine glass SVG — replaces the emoji for a more refined look */}
+                <svg
+                  className="w-7 h-7 flex-shrink-0 pointer-events-none"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: 'var(--wine-600)' }}
+                  aria-hidden="true"
                 >
-                  {t('app.title')}
-                </span>
+                  {/* Bowl */}
+                  <path d="M6.5 3h11L16 11a4 4 0 01-8 0L6.5 3z" />
+                  {/* Stem */}
+                  <line x1="12" y1="15" x2="12" y2="20" />
+                  {/* Base */}
+                  <path d="M9 20h6" />
+                </svg>
+
+                {/* Title + tagline */}
+                <div className="hidden xs:flex flex-col leading-none pointer-events-none gap-0.5">
+                  <span
+                    className="text-lg sm:text-xl font-bold tracking-wide"
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      color: 'var(--wine-700)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {t('app.title')}
+                  </span>
+                  {/* Tagline — visible on iPad and desktop only */}
+                  <span
+                    className="hidden md:block text-[9px] font-medium uppercase tracking-widest"
+                    style={{ color: 'var(--wine-400)', letterSpacing: '0.18em' }}
+                  >
+                    {t('app.tagline')}
+                  </span>
+                </div>
               </button>
 
-              {/* Desktop Navigation - Light Luxury pill tabs */}
-              <div className="hidden md:flex gap-2">
+              {/* Desktop Navigation - Light Luxury pill tabs (hidden on iPad; bottom nav handles it) */}
+              <div className={isIpad ? 'hidden' : 'hidden md:flex gap-2'}>
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   
@@ -355,12 +386,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
        * Desktop: standard padding (pb-bottom-nav automatically switches at md breakpoint)
        * Top padding added to account for fixed header
        */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav" style={{ paddingTop: 'calc(4rem + 1.5rem)' }}>
+      {/* On iPad the md: CSS rule resets pb-bottom-nav to 2rem, but we're showing the footer
+          there too, so override it back to the full nav height via inline style. */}
+      <main
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav"
+        style={{
+          paddingTop: 'calc(4rem + 1.5rem)',
+          ...(isIpad ? { paddingBottom: 'calc(104px + env(safe-area-inset-bottom) + 1.5rem)' } : {}),
+        }}
+      >
         {children}
       </main>
 
-      {/* Mobile Floating Footer with Camera FAB - Replaces BottomNav on mobile */}
-      <MobileFloatingFooter onCameraClick={handleCameraFabClick} />
+      {/* Mobile Floating Footer with Camera FAB — shown on mobile AND iPad */}
+      <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
 
       {/* Hidden camera input for immediate capture (mobile/PWA) */}
       <input
