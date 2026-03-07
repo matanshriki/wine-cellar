@@ -11,6 +11,15 @@ interface BatchProgress {
   errors: Array<{ wine_id: string; error: string }>;
 }
 
+interface AnalysisProgress {
+  processedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  fetchedCount: number;
+  nextOffset: number;
+  isComplete: boolean;
+}
+
 export const AdminEnrichPage: React.FC = () => {
   const { user, session: contextSession } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
@@ -20,6 +29,14 @@ export const AdminEnrichPage: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
+
+  // ── Analyze All Cellars state ──────────────────────────────────────────────
+  const [analysisRunning, setAnalysisRunning]   = useState(false);
+  const [analysisMode,    setAnalysisMode]       = useState<'missing_only' | 'stale_only' | 'force_all'>('missing_only');
+  const [analysisBatch,   setAnalysisBatch]      = useState(50);
+  const [analysisTotals,  setAnalysisTotals]     = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
+  const [analysisLog,     setAnalysisLog]        = useState<string[]>([]);
+  const [analysisDone,    setAnalysisDone]       = useState(false);
 
   // Check if user is admin
   React.useEffect(() => {
@@ -151,6 +168,75 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  // ── Analyze All Cellars handler (loops until complete) ────────────────────
+  const runAnalysisBackfill = async () => {
+    if (!confirm(
+      `This will run AI sommelier analysis for ALL bottles across ALL users.\n\n` +
+      `Mode: ${analysisMode}\nBatch size: ${analysisBatch} bottles per page\n\n` +
+      `This consumes OpenAI tokens. Continue?`
+    )) return;
+
+    let session = contextSession;
+    if (!session) {
+      const { data } = await supabase.auth.getSession();
+      session = data.session;
+    }
+    if (!session) { alert('Session expired — please refresh the page.'); return; }
+
+    setAnalysisRunning(true);
+    setAnalysisDone(false);
+    setAnalysisTotals({ processed: 0, skipped: 0, failed: 0, pages: 0 });
+    setAnalysisLog([`[${new Date().toLocaleTimeString()}] Starting — mode: ${analysisMode}, batch: ${analysisBatch}`]);
+
+    let offset = 0;
+    let totalProcessed = 0, totalSkipped = 0, totalFailed = 0, pages = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-analysis`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ mode: analysisMode, batchSize: analysisBatch, offset }),
+          }
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+
+        const data: AnalysisProgress = await res.json();
+        pages++;
+        totalProcessed += data.processedCount;
+        totalSkipped   += data.skippedCount;
+        totalFailed    += data.failedCount;
+        offset          = data.nextOffset;
+
+        const logLine = `[${new Date().toLocaleTimeString()}] Page ${pages} — offset ${offset} | ✅ ${data.processedCount} processed, ⏭ ${data.skippedCount} skipped, ❌ ${data.failedCount} failed`;
+        setAnalysisLog(prev => [...prev, logLine]);
+        setAnalysisTotals({ processed: totalProcessed, skipped: totalSkipped, failed: totalFailed, pages });
+
+        if (data.isComplete) break;
+
+        // Small pause between pages to avoid hammering OpenAI
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ COMPLETE — ${totalProcessed} analyzed, ${totalSkipped} skipped, ${totalFailed} failed across ${pages} pages`]);
+      setAnalysisDone(true);
+    } catch (err: any) {
+      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ERROR: ${err.message}`]);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAnalysisRunning(false);
     }
   };
 
@@ -374,6 +460,121 @@ VALUES ('${user?.id}');`}
           <strong>💡 Tip:</strong> This only enriches wines with existing Vivino URLs. 
           Use the "Fetch Data" button in the bottle form to add Vivino URLs first.
         </p>
+      </div>
+
+      {/* ── Analyze All Cellars ─────────────────────────────────────────────── */}
+      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+
+      <h1>🤖 Analyze All Cellars (AI Sommelier)</h1>
+      <p style={{ color: '#666', marginBottom: '2rem' }}>
+        Run GPT-4o-mini sommelier analysis for every bottle across all users.
+        Processes in pages — you can leave this running; progress is logged below.
+      </p>
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+        <h3 style={{ marginTop: 0 }}>Settings</h3>
+
+        <label style={{ display: 'block', marginBottom: '1rem' }}>
+          <strong>Mode:</strong>
+          <select
+            value={analysisMode}
+            onChange={e => setAnalysisMode(e.target.value as any)}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+          >
+            <option value="missing_only">missing_only — only bottles without any analysis (recommended)</option>
+            <option value="stale_only">stale_only — re-analyze bottles older than 30 days</option>
+            <option value="force_all">force_all — re-analyze everything (expensive!)</option>
+          </select>
+        </label>
+
+        <label style={{ display: 'block', marginBottom: '0' }}>
+          <strong>Batch size (bottles per page):</strong>
+          <input
+            type="number"
+            value={analysisBatch}
+            onChange={e => setAnalysisBatch(Math.min(100, Math.max(1, parseInt(e.target.value) || 50)))}
+            min="1" max="100"
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '70px' }}
+          />
+          <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '0.875rem' }}>max 100</span>
+        </label>
+      </div>
+
+      <button
+        onClick={runAnalysisBackfill}
+        disabled={analysisRunning}
+        style={{
+          backgroundColor: analysisRunning ? '#6c757d' : '#7c3aed',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: '8px',
+          border: 'none',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          cursor: analysisRunning ? 'not-allowed' : 'pointer',
+          opacity: analysisRunning ? 0.7 : 1,
+          width: '100%',
+          marginBottom: '2rem',
+        }}
+      >
+        {analysisRunning ? '⏳ Running… (do not close this tab)' : '🚀 Start Analysis Backfill'}
+      </button>
+
+      {/* Totals */}
+      {(analysisRunning || analysisDone) && (
+        <div style={{
+          backgroundColor: analysisDone ? '#d4edda' : '#fff3cd',
+          border: `1px solid ${analysisDone ? '#c3e6cb' : '#ffc107'}`,
+          borderRadius: '8px',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+        }}>
+          <h3 style={{ marginTop: 0 }}>{analysisDone ? '✅ Complete!' : '⏳ In progress…'}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            {[
+              { label: 'Pages',     value: analysisTotals.pages,     color: '#495057' },
+              { label: 'Analyzed',  value: analysisTotals.processed, color: '#28a745' },
+              { label: 'Skipped',   value: analysisTotals.skipped,   color: '#6c757d' },
+              { label: 'Failed',    value: analysisTotals.failed,    color: '#dc3545' },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
+                <div style={{ fontSize: '0.875rem', color: '#666' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Live log */}
+      {analysisLog.length > 0 && (
+        <div>
+          <h4 style={{ marginBottom: '0.5rem' }}>📋 Log</h4>
+          <pre style={{
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            padding: '1rem',
+            borderRadius: '8px',
+            fontSize: '0.75rem',
+            maxHeight: '300px',
+            overflowY: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            {analysisLog.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginTop: '1.5rem' }}>
+        <h4 style={{ marginTop: 0 }}>ℹ️ Notes</h4>
+        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+          <li><strong>missing_only</strong> is cheapest — skips bottles that already have analysis</li>
+          <li>Each bottle costs ~1 OpenAI API call (gpt-4o-mini, very cheap)</li>
+          <li>Processing pauses 1 second between pages to avoid rate limits</li>
+          <li>Safe to stop and re-run — already-analyzed bottles are skipped automatically in missing_only mode</li>
+          <li>Results appear in the user's cellar immediately after each page</li>
+        </ul>
       </div>
     </div>
   );
