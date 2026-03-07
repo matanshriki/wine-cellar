@@ -228,16 +228,29 @@ async function callOpenAI(wine: any): Promise<any> {
 }
 
 function buildPrompt(w: any): string {
-  return `Analyze this wine and return a JSON object:
+  const currentYear = new Date().getFullYear();
+  const age = w.vintage ? currentYear - w.vintage : null;
+  const ageStr = age !== null ? `${age} years old` : 'Unknown age';
+
+  return `You are an expert sommelier. Analyze this wine and return a JSON object.
+
+Wine details:
 - Name: ${w.wine_name}
 - Producer: ${w.producer || 'Unknown'}
 - Vintage: ${w.vintage || 'NV'}
+- Current year: ${currentYear}
+- Age: ${ageStr}
 - Region: ${w.region || 'Unknown'}
 - Grapes: ${w.grapes || 'Unknown'}
 - Color: ${w.color}
 
+Readiness label rules — follow these strictly based on age:
+- "HOLD": Wine is too young; tannins unintegrated. Typically reds under 5 years, structured whites under 2 years.
+- "PEAK_SOON": Wine is approaching but has not yet reached optimal drinking; 5–15 years for most quality reds.
+- "READY": Wine is in its drinking window now. Use this for any wine 15+ years old. For wines 30+ years old, ALWAYS use "READY" — very old wines are either at their peak or already declining and should be drunk soon. NEVER label a wine over 20 years old as "HOLD" or "PEAK_SOON".
+
 Return JSON with keys:
-analysis_summary (2-3 sentence sommelier note),
+analysis_summary (2-3 sentence sommelier note that explicitly mentions the wine's age and current drinking status),
 analysis_reasons (array of 3-4 bullet strings),
 readiness_label ("READY" | "HOLD" | "PEAK_SOON"),
 serving_temp_c (number),

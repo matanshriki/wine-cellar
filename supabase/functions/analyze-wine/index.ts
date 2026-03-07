@@ -115,7 +115,12 @@ IMPORTANT:
 - Do NOT use generic template language
 - If data is missing, lower confidence and mention assumptions
 - Analysis must be unique per bottle
-- ${languageInstruction}`
+- ${languageInstruction}
+
+READINESS LABEL RULES — follow strictly based on the wine's actual age:
+- "HOLD": Wine is too young; tannins and structure need time. Typically reds under 5 years, structured whites under 2 years.
+- "PEAK_SOON": Wine is approaching but has not yet reached its optimal window; generally 5–15 years for most quality reds.
+- "READY": Wine is in its drinking window now. ANY wine 15 years or older must use "READY". For wines 30+ years old, ALWAYS use "READY" — they are at peak or already declining and should be consumed soon. NEVER assign "HOLD" or "PEAK_SOON" to a wine that is over 20 years old. Mention explicitly in the summary whether the wine is at its peak or may be past it.`
 
     const userPrompt = language === 'he'
       ? `נתח את היין הזה וספק הערות סומלייה:
@@ -131,7 +136,7 @@ IMPORTANT:
 
 שנה נוכחית: ${currentYear}
 
-ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. כתוב הכל בעברית.`
+ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY". כתוב הכל בעברית.`
       : `Analyze this wine and provide sommelier notes:
 
 Wine Name: ${wineData.wine_name}
@@ -145,7 +150,7 @@ User Notes: ${wineData.notes || 'None'}
 
 Current Year: ${currentYear}
 
-Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice.`
+Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".`
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
