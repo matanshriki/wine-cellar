@@ -219,7 +219,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       const bottle = topBottles[index];
       if (!bottle) return;
       
-      const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+      const mergedWine = {
+        ...bottle.wine,
+        image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+        label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+        image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+      };
+      const displayImage = labelArtService.getWineDisplayImage(mergedWine);
       if (displayImage.imageUrl) {
         const img = new Image();
         img.src = displayImage.imageUrl;
@@ -585,7 +591,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 >
                   {/* Wine Image - Fixed dimensions to prevent layout shift */}
                   {(() => {
-                    const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+                    const mergedWine = {
+                      ...bottle.wine,
+                      image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+                      label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+                      image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+                    };
+                    const displayImage = labelArtService.getWineDisplayImage(mergedWine);
                     return (
                       <div 
                         className="relative w-full bg-gradient-to-br from-stone-50 to-stone-100"

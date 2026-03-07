@@ -204,56 +204,41 @@ export function getWineDisplayImageSync(wine: BottleWithWineInfo['wine']): {
   isGenerated: boolean;
   isPlaceholder: boolean;
 } {
-  // Priority 1: User-provided path - can't generate URL synchronously
-  // Return null and let caller use the hook version
+  // Priority 1: Stable storage path.
+  // We can't generate a fresh signed URL synchronously, but image_url is always
+  // stored as a permanent public URL for the labels bucket and can be used directly.
   if ((wine as any).image_path) {
-    return {
-      imageUrl: null, // Hook version will handle this
-      isGenerated: false,
-      isPlaceholder: true, // Temporarily show placeholder
-    };
+    if (wine.image_url) {
+      return { imageUrl: wine.image_url, isGenerated: false, isPlaceholder: false };
+    }
+    // Path exists but no image_url yet — return placeholder; the async hook will resolve it.
+    return { imageUrl: null, isGenerated: false, isPlaceholder: true };
   }
 
-  // Priority 2: User-provided image_url (might be external or legacy storage URL)
+  // Priority 2: Direct image_url (external URL like Vivino, or public storage URL)
   if (wine.image_url) {
-    return {
-      imageUrl: wine.image_url, // Use as-is, might be external URL
-      isGenerated: false,
-      isPlaceholder: false,
-    };
+    return { imageUrl: wine.image_url, isGenerated: false, isPlaceholder: false };
   }
 
-  // Priority 3: label_image_path - can't generate URL synchronously
+  // Priority 3: label_image_path — same sync fallback via any available URL
   if ((wine as any).label_image_path) {
-    return {
-      imageUrl: null,
-      isGenerated: false,
-      isPlaceholder: true,
-    };
+    const fallback = (wine as any).label_image_url || wine.image_url;
+    if (fallback) {
+      return { imageUrl: fallback, isGenerated: false, isPlaceholder: false };
+    }
+    return { imageUrl: null, isGenerated: false, isPlaceholder: true };
   }
 
-  // Priority 4: label_image_url (legacy)
+  // Priority 4: label_image_url (legacy direct URL)
   if ((wine as any).label_image_url) {
-    return {
-      imageUrl: (wine as any).label_image_url,
-      isGenerated: false,
-      isPlaceholder: false,
-    };
+    return { imageUrl: (wine as any).label_image_url, isGenerated: false, isPlaceholder: false };
   }
 
-  // Priority 5: AI-generated image - can't generate URL synchronously
+  // Priority 5: AI-generated image — can't generate URL synchronously
   if ((wine as any).generated_image_path) {
-    return {
-      imageUrl: null,
-      isGenerated: true,
-      isPlaceholder: true,
-    };
+    return { imageUrl: null, isGenerated: true, isPlaceholder: true };
   }
 
   // Priority 6: Placeholder
-  return {
-    imageUrl: null,
-    isGenerated: false,
-    isPlaceholder: true,
-  };
+  return { imageUrl: null, isGenerated: false, isPlaceholder: true };
 }

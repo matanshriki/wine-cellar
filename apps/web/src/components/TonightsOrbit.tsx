@@ -152,7 +152,13 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
                 {/* Wine Image - Larger for mobile carousel */}
                 {(() => {
-                  const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+                  const mergedWine = {
+                    ...bottle.wine,
+                    image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+                    label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+                    image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+                  };
+                  const displayImage = labelArtService.getWineDisplayImage(mergedWine);
                   return displayImage.imageUrl && (
                     <div className="flex justify-center relative">
                       <img 
@@ -329,7 +335,13 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
 
                 {/* Wine Image */}
                 {(() => {
-                  const displayImage = labelArtService.getWineDisplayImage(bottle.wine);
+                  const mergedWine = {
+                    ...bottle.wine,
+                    image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+                    label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+                    image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+                  };
+                  const displayImage = labelArtService.getWineDisplayImage(mergedWine);
                   return displayImage.imageUrl && (
                     <div className="mb-3 flex justify-center relative">
                       <img 
