@@ -45,8 +45,22 @@ export function useWineDisplayImage(wine: BottleWithWineInfo['wine'] | undefined
       try {
         setIsLoading(true);
 
-        // Priority 1: User-provided image via stable path
+        // Priority 1: Stable storage path.
+        // If image_url is also set in the DB, use it directly — it always reflects
+        // the current DB state and lets admin overrides take effect immediately,
+        // bypassing any stale storage cache entries.
         if ((wine as any).image_path) {
+          if (wine.image_url) {
+            if (!cancelled) {
+              sourceRef.current = null;
+              setImageUrl(wine.image_url);
+              setIsGenerated(false);
+              setIsPlaceholder(false);
+              setIsLoading(false);
+            }
+            return;
+          }
+          // No image_url present — fall back to generating the URL from the storage path.
           const bucket = 'labels';
           const path = (wine as any).image_path;
           const url = await storageImageService.getStorageImageUrl(bucket, path);
@@ -89,8 +103,19 @@ export function useWineDisplayImage(wine: BottleWithWineInfo['wine'] | undefined
           }
         }
 
-        // Priority 3: label_image_path
+        // Priority 3: label_image_path — same DB-first approach.
         if ((wine as any).label_image_path) {
+          const directUrl = (wine as any).label_image_url || wine.image_url;
+          if (directUrl) {
+            if (!cancelled) {
+              sourceRef.current = null;
+              setImageUrl(directUrl);
+              setIsGenerated(false);
+              setIsPlaceholder(false);
+              setIsLoading(false);
+            }
+            return;
+          }
           const bucket = 'labels';
           const path = (wine as any).label_image_path;
           const url = await storageImageService.getStorageImageUrl(bucket, path);
