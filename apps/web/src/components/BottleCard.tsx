@@ -22,7 +22,18 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
   const [showMuseumView, setShowMuseumView] = useState(false);
   const [imageErrorRetried, setImageErrorRetried] = useState(false);
 
-  const displayImage = useWineDisplayImage(bottle.wine);
+  // Merge the bottle's own image fields into the wine object as a fallback.
+  // This guards against a past bug where adding a second bottle of the same wine
+  // (without a photo) could overwrite the shared wine record's image_path with null,
+  // while the first bottle's own label_image_path remained correct.
+  const wineWithBottleFallback = {
+    ...bottle.wine,
+    image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+    label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+    image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+    label_image_url: (bottle.wine as any).label_image_url || (bottle as any).label_image_url || null,
+  };
+  const displayImage = useWineDisplayImage(wineWithBottleFallback);
 
   const handleImageError = useCallback(() => {
     if (!imageErrorRetried) {

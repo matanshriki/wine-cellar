@@ -194,14 +194,17 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     vivino_wine_id: input.vivino_wine_id || null,
     rating: input.rating || null,
     vivino_url: input.vivino_url || null,
-    // Stable storage path (preferred for runtime URL generation)
-    image_path: input.image_path || null,
-    label_image_path: input.label_image_path || null,
-    // Permanent public URL so image is visible directly in the DB
-    // Falls back to external URL (e.g. Vivino) if no storage path
-    image_url: publicLabelUrl || input.image_url || null,
     notes: input.wine_notes || null,
   };
+
+  // Only include image fields when this bottle actually has an image.
+  // Omitting them from the payload prevents the upsert from overwriting an
+  // existing wine's image with null when a second bottle (without a photo)
+  // is added for the same wine.
+  if (input.image_path) (wineData as any).image_path = input.image_path;
+  if (input.label_image_path) (wineData as any).label_image_path = input.label_image_path;
+  const wineImageUrl = publicLabelUrl || input.image_url || null;
+  if (wineImageUrl) (wineData as any).image_url = wineImageUrl;
   
   // Try to insert wine, or get existing if conflict
   const { data: wine, error: wineError } = await supabase
