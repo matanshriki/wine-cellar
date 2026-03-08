@@ -48,6 +48,8 @@ export function AgentPageWorking() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const greetingInjectedRef = useRef(false);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -81,6 +83,28 @@ export function AgentPageWorking() {
     }
     load();
   }, []);
+
+  // Inject warm greeting once bottles load (only for fresh sessions with no saved conversation)
+  useEffect(() => {
+    if (loading || greetingInjectedRef.current || messages.length > 0) return;
+    const bottlesInCellar = bottles.filter(b => b.quantity > 0);
+    if (bottlesInCellar.length === 0) return;
+
+    greetingInjectedRef.current = true;
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const count = bottlesInCellar.length;
+
+    const greeting: AgentMessage = {
+      role: 'assistant',
+      content: `${timeGreeting}! 🍷 I've scanned your cellar — ${count} bottle${count !== 1 ? 's' : ''} ready to open. Tell me about tonight and I'll find your perfect match.`,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages([greeting]);
+
+    // Auto-focus input so user can type immediately
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, [loading, bottles, messages.length]);
 
   async function handleSend(text: string) {
     // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
@@ -204,6 +228,7 @@ export function AgentPageWorking() {
   }
 
   function startNewConversation() {
+    greetingInjectedRef.current = false;
     setMessages([]);
     setCurrentConversation(null);
   }
@@ -376,100 +401,74 @@ export function AgentPageWorking() {
         padding: '16px',
         position: 'relative',
       }}>
-        {/* Empty state */}
-        {messages.length === 0 && bottles.filter(b => b.quantity > 0).length > 0 && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            textAlign: 'center',
-            padding: '24px',
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-              border: '3px solid #7c3030',
-            }}>
-              <img
-                src="/assets/sommelier-icon.png"
-                alt="Sommelier"
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
-              {t('cellarSommelier.emptyTitle')}
-            </h2>
-            <p style={{ fontSize: '14px', marginBottom: '24px', color: '#666', maxWidth: '320px' }}>
-              {t('cellarSommelier.emptySubtitle')}
-            </p>
+        {/* Scenario chips — shown right after the greeting bubble when there's only 1 assistant message */}
+        {messages.length === 1 && messages[0].role === 'assistant' && bottles.filter(b => b.quantity > 0).length > 0 && (() => {
+          const scenarioChips = [
+            { emoji: '🥩', label: "Steak dinner tonight",        prompt: "I'm having steak for dinner tonight, what do you recommend from my cellar?" },
+            { emoji: '💕', label: "Romantic date night",         prompt: "Planning a romantic date night — help me pick the perfect bottle" },
+            { emoji: '🎉', label: "We're celebrating!",          prompt: "We're celebrating something special tonight, recommend your best pick" },
+            { emoji: '🍕', label: "Casual pizza night",          prompt: "Casual pizza night at home, keep it easy and delicious" },
+            { emoji: '🧀', label: "Cheese & wine evening",       prompt: "Hosting a cheese and wine evening, what pairs beautifully?" },
+            { emoji: '🎲', label: "Surprise me!",                prompt: "Surprise me — I trust you, just pick the best bottle for tonight" },
+          ];
 
-            {/* Quick prompts */}
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '12px', 
-              width: '100%', 
-              maxWidth: '320px',
-            }}>
-              {[
-                t('cellarSommelier.quickPrompts.tonight'),
-                t('cellarSommelier.quickPrompts.readyNow'),
-                t('cellarSommelier.quickPrompts.pairSteak')
-              ].map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => {
-                    console.log('Button clicked:', prompt);
-                    setInputValue(prompt);
-                    handleSend(prompt);
-                  }}
-                  style={{
-                    padding: '14px 20px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '12px',
-                    color: '#333',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    transition: 'all 0.2s',
-                    fontWeight: 500,
-                  }}
-                  onMouseDown={(e) => {
-                    e.currentTarget.style.transform = 'scale(0.98)';
-                  }}
-                  onMouseUp={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                    e.currentTarget.style.borderColor = '#7c3030';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white';
-                    e.currentTarget.style.borderColor = '#ddd';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  {prompt}
-                </button>
-              ))}
+          return (
+            <div style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+              <p style={{ fontSize: '12px', color: '#999', textAlign: 'center', marginBottom: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Quick start — or type your own below
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '10px',
+                maxWidth: '480px',
+                margin: '0 auto',
+              }}>
+                {scenarioChips.map((chip) => (
+                  <button
+                    key={chip.prompt}
+                    type="button"
+                    onClick={() => handleSend(chip.prompt)}
+                    style={{
+                      padding: '14px 12px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      backgroundColor: 'white',
+                      border: '1.5px solid #e8e0e0',
+                      borderRadius: '14px',
+                      color: '#333',
+                      boxShadow: '0 2px 8px rgba(124,48,48,0.07)',
+                      transition: 'all 0.18s ease',
+                      fontWeight: 500,
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      lineHeight: 1.3,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#7c3030';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(124,48,48,0.15)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e8e0e0';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(124,48,48,0.07)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                    onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
+                    onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onTouchStart={(e) => { e.currentTarget.style.borderColor = '#7c3030'; e.currentTarget.style.transform = 'scale(0.97)'; }}
+                    onTouchEnd={(e) => { e.currentTarget.style.borderColor = '#e8e0e0'; e.currentTarget.style.transform = 'scale(1)'; }}
+                  >
+                    <span style={{ fontSize: '20px', lineHeight: 1 }}>{chip.emoji}</span>
+                    <span>{chip.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Empty cellar warning */}
         {bottles.filter(b => b.quantity > 0).length === 0 && (
@@ -734,9 +733,9 @@ export function AgentPageWorking() {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           {/* Text input */}
           <textarea
+            ref={inputRef}
             value={inputValue}
             onChange={(e) => {
-              console.log('Input changed');
               setInputValue(e.target.value);
             }}
             onKeyDown={(e) => {
@@ -745,7 +744,13 @@ export function AgentPageWorking() {
                 handleSend(inputValue);
               }
             }}
-            placeholder={isTranscribing ? t('cellarSommelier.inputPlaceholderTranscribing') : t('cellarSommelier.inputPlaceholder')}
+            placeholder={
+              isTranscribing
+                ? t('cellarSommelier.inputPlaceholderTranscribing')
+                : messages.length <= 1
+                ? "What's the occasion tonight? 🍷"
+                : t('cellarSommelier.inputPlaceholder')
+            }
             disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isRecording || isTranscribing}
             rows={1}
             style={{

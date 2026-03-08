@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
+import { isDevEnvironment } from '../utils/devOnly';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { SommelierChatButton } from '../components/SommelierChatButton';
@@ -78,6 +79,13 @@ export function RecommendationPage() {
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
+
+  // Dev/staging: agent-first experience replaces the form
+  useEffect(() => {
+    if (isDevEnvironment()) {
+      navigate('/agent', { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     async function checkCellar() {
