@@ -147,6 +147,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         return;
       }
       
+      // Always persist the search URL to formData so it gets saved to the DB,
+      // even if we can't do a background fetch from it.
+      setFormData(prev => ({
+        ...prev,
+        vivino_url: prev.vivino_url || vivinoUrl,
+      }));
+
       // Only auto-fetch if we already have a direct wine page URL (not a search URL)
       // The fetcher requires a wine page like /w/12345 or /wines/12345
       if (!isVivinoWineUrl(vivinoUrl)) {
