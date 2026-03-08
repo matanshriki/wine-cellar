@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // user-uploaded photos or images already fetched from Vivino).
     const { data: wines, error: fetchError } = await adminClient
       .from("wines")
-      .select("id, wine_name, vivino_url, image_path, label_image_path, image_url")
+      .select("id, wine_name, producer, vintage, user_id, vivino_url, image_path, label_image_path, image_url")
       .not("vivino_url", "is", null)
       .is("image_path", null)
       .is("label_image_path", null)
@@ -89,11 +89,34 @@ Deno.serve(async (req) => {
     }
 
     const stats = { processed: 0, uploaded: 0, skipped: 0, failed: 0 };
-    const errors: Array<{ wine_id: string; error: string }> = [];
+    type WineResult = {
+      wine_id: string;
+      wine_name: string;
+      producer: string | null;
+      vintage: number | null;
+      user_id: string;
+      status: "uploaded" | "skipped" | "failed";
+      image_url: string | null;
+      skip_reason: string | null;
+      error: string | null;
+    };
+    const details: WineResult[] = [];
 
     for (const wine of (wines ?? [])) {
       stats.processed++;
       const label = `[${stats.processed}/${wines!.length}] ${wine.wine_name} (${wine.id})`;
+
+      const wineResult: WineResult = {
+        wine_id:     wine.id,
+        wine_name:   wine.wine_name,
+        producer:    wine.producer ?? null,
+        vintage:     wine.vintage  ?? null,
+        user_id:     wine.user_id,
+        status:      "skipped",
+        image_url:   null,
+        skip_reason: null,
+        error:       null,
+      };
 
       try {
         // ── Step 1: Extract Vivino ID from URL ────────────────────────────────
@@ -101,6 +124,8 @@ Deno.serve(async (req) => {
         if (!idMatch) {
           console.log(`${label} — skip: invalid vivino_url`);
           stats.skipped++;
+          wineResult.skip_reason = "Invalid Vivino URL format";
+          details.push(wineResult);
           continue;
         }
         const vivinoId = idMatch[1];
@@ -131,6 +156,8 @@ Deno.serve(async (req) => {
         if (!vivinoCdnUrl) {
           console.log(`${label} — skip: no image_url from Vivino`);
           stats.skipped++;
+          wineResult.skip_reason = "No image found on Vivino page";
+          details.push(wineResult);
           continue;
         }
 
@@ -190,10 +217,15 @@ Deno.serve(async (req) => {
 
         console.log(`${label} — ✅ uploaded to ${storagePath}`);
         stats.uploaded++;
+        wineResult.status    = "uploaded";
+        wineResult.image_url = publicUrl;
+        details.push(wineResult);
       } catch (err: any) {
         console.error(`${label} — ❌ ${err.message}`);
         stats.failed++;
-        errors.push({ wine_id: wine.id, error: err.message });
+        wineResult.status = "failed";
+        wineResult.error  = err.message;
+        details.push(wineResult);
       }
     }
 
@@ -204,7 +236,7 @@ Deno.serve(async (req) => {
     console.log(`[BatchEnrichImages] done — uploaded=${stats.uploaded} skipped=${stats.skipped} failed=${stats.failed} isComplete=${isComplete}`);
 
     return new Response(
-      JSON.stringify({ ...stats, isComplete, nextOffset, errors }),
+      JSON.stringify({ ...stats, isComplete, nextOffset, details }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {

@@ -36,6 +36,12 @@ export const AdminEnrichPage: React.FC = () => {
   const [imageTotals,   setImageTotals]   = useState({ processed: 0, uploaded: 0, skipped: 0, failed: 0, pages: 0 });
   const [imageLog,      setImageLog]      = useState<string[]>([]);
   const [imageDone,     setImageDone]     = useState(false);
+  const [imageDetails,  setImageDetails]  = useState<Array<{
+    wine_id: string; wine_name: string; producer: string | null;
+    vintage: number | null; user_id: string;
+    status: 'uploaded' | 'skipped' | 'failed';
+    image_url: string | null; skip_reason: string | null; error: string | null;
+  }>>([]);
 
   // ── Analyze All Cellars state ──────────────────────────────────────────────
   const [analysisRunning, setAnalysisRunning]   = useState(false);
@@ -195,6 +201,7 @@ export const AdminEnrichPage: React.FC = () => {
     setImageDone(false);
     setImageTotals({ processed: 0, uploaded: 0, skipped: 0, failed: 0, pages: 0 });
     setImageLog([`[${new Date().toLocaleTimeString()}] Starting — batch size: ${imageBatch} wines per chunk`]);
+    setImageDetails([]);
 
     let offset = 0;
     let totalProcessed = 0, totalUploaded = 0, totalSkipped = 0, totalFailed = 0, pages = 0;
@@ -226,6 +233,10 @@ export const AdminEnrichPage: React.FC = () => {
         totalSkipped   += data.skipped   ?? 0;
         totalFailed    += data.failed    ?? 0;
         offset          = data.nextOffset ?? (offset + imageBatch);
+
+        if (data.details?.length) {
+          setImageDetails(prev => [...prev, ...data.details]);
+        }
 
         const logLine = `[${new Date().toLocaleTimeString()}] Chunk ${pages} (offset ${offset}) | 🖼 ${data.uploaded} uploaded, ⏭ ${data.skipped} skipped, ❌ ${data.failed} failed`;
         setImageLog(prev => [...prev, logLine]);
@@ -631,6 +642,47 @@ VALUES ('${user?.id}');`}
           }}>
             {imageLog.join('\n')}
           </pre>
+        </div>
+      )}
+
+      {/* Per-wine detail table */}
+      {imageDetails.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>
+            📋 Wine Details ({imageDetails.length} processed)
+          </h4>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#343a40', color: '#fff' }}>
+                  {['Status', 'Wine', 'Producer', 'Vintage', 'User ID', 'Info'].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {imageDetails.map((row, i) => {
+                  const statusIcon = row.status === 'uploaded' ? '✅' : row.status === 'failed' ? '❌' : '⏭';
+                  const rowBg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                  const info = row.status === 'uploaded'
+                    ? <a href={row.image_url!} target="_blank" rel="noreferrer" style={{ color: '#007bff', wordBreak: 'break-all' }}>View image</a>
+                    : row.status === 'failed'
+                    ? <span style={{ color: '#dc3545' }}>{row.error}</span>
+                    : <span style={{ color: '#6c757d' }}>{row.skip_reason}</span>;
+                  return (
+                    <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid #dee2e6' }}>
+                      <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{statusIcon} {row.status}</td>
+                      <td style={{ padding: '0.4rem 0.75rem' }}>{row.wine_name}</td>
+                      <td style={{ padding: '0.4rem 0.75rem' }}>{row.producer ?? '—'}</td>
+                      <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{row.vintage ?? '—'}</td>
+                      <td style={{ padding: '0.4rem 0.75rem', fontFamily: 'monospace', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>{row.user_id}</td>
+                      <td style={{ padding: '0.4rem 0.75rem' }}>{info}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
