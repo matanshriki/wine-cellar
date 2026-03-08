@@ -1880,7 +1880,12 @@ export function CellarPage() {
             label_image_bucket: extractedData.imageBucket ?? 'labels',
             // Do not store signed URL in DB; display URL is generated from path at runtime
             label_image_url: '',
-            vivino_url: (extractedData.data as any)?.vivino_url || '', // Vivino auto-link (dev only)
+            vivino_url: generateVivinoSearchUrl({
+              producer: extractedData.data?.producer,
+              wine_name: extractedData.data?.wine_name,
+              vintage: extractedData.data?.vintage,
+              region: extractedData.data?.region,
+            }) || '',
           } : undefined}
           showWishlistOption={!!extractedData && !editingBottle} // Wishlist feature (dev only) - Show wishlist option for scanned wines
         />
