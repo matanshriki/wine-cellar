@@ -162,8 +162,8 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             <span className="badge-luxury badge-luxury-wine text-xs">
               {t(`cellar.wineStyles.${bottle.wine.color}`)}
             </span>
-            {/* Feedback iteration (dev only) - Readiness Badge */}
-            {bottle.readiness_status && bottle.readiness_status !== 'Unknown' && (
+            {/* Readiness badge — only show when no AI analysis exists yet (AI label takes over once analyzed) */}
+            {bottle.readiness_status && bottle.readiness_status !== 'Unknown' && !(bottle as any).readiness_label && (
               <span 
                 className="text-xs px-2 py-0.5 rounded-full font-medium"
                 style={{
