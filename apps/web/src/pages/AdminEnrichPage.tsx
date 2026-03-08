@@ -30,6 +30,13 @@ export const AdminEnrichPage: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
 
+  // ── Fetch Vivino Images state ──────────────────────────────────────────────
+  const [imageRunning,  setImageRunning]  = useState(false);
+  const [imageBatch,    setImageBatch]    = useState(10);
+  const [imageTotals,   setImageTotals]   = useState({ processed: 0, uploaded: 0, skipped: 0, failed: 0, pages: 0 });
+  const [imageLog,      setImageLog]      = useState<string[]>([]);
+  const [imageDone,     setImageDone]     = useState(false);
+
   // ── Analyze All Cellars state ──────────────────────────────────────────────
   const [analysisRunning, setAnalysisRunning]   = useState(false);
   const [analysisMode,    setAnalysisMode]       = useState<'missing_only' | 'stale_only' | 'force_all'>('missing_only');
@@ -168,6 +175,75 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  // ── Fetch Vivino Images handler (chunks of imageBatch, loops until done) ──
+  const runImageEnrich = async () => {
+    if (!confirm(
+      `This will download wine label images from Vivino and store them in Supabase Storage.\n\n` +
+      `Only wines with a Vivino URL and NO existing image will be processed.\n` +
+      `Batch size: ${imageBatch} wines per chunk (~${imageBatch * 4} seconds per chunk)\n\n` +
+      `Continue?`
+    )) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session ?? contextSession;
+    if (!session) { alert('Session expired — please refresh the page.'); return; }
+
+    setImageRunning(true);
+    setImageDone(false);
+    setImageTotals({ processed: 0, uploaded: 0, skipped: 0, failed: 0, pages: 0 });
+    setImageLog([`[${new Date().toLocaleTimeString()}] Starting — batch size: ${imageBatch} wines per chunk`]);
+
+    let offset = 0;
+    let totalProcessed = 0, totalUploaded = 0, totalSkipped = 0, totalFailed = 0, pages = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-images`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ offset, batchSize: imageBatch }),
+          }
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+
+        const data = await res.json();
+        pages++;
+        totalProcessed += data.processed ?? 0;
+        totalUploaded  += data.uploaded  ?? 0;
+        totalSkipped   += data.skipped   ?? 0;
+        totalFailed    += data.failed    ?? 0;
+        offset          = data.nextOffset ?? (offset + imageBatch);
+
+        const logLine = `[${new Date().toLocaleTimeString()}] Chunk ${pages} (offset ${offset}) | 🖼 ${data.uploaded} uploaded, ⏭ ${data.skipped} skipped, ❌ ${data.failed} failed`;
+        setImageLog(prev => [...prev, logLine]);
+        setImageTotals({ processed: totalProcessed, uploaded: totalUploaded, skipped: totalSkipped, failed: totalFailed, pages });
+
+        if (data.isComplete) break;
+
+        // Brief pause between chunks
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      setImageLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ COMPLETE — ${totalUploaded} images uploaded, ${totalSkipped} skipped, ${totalFailed} failed across ${pages} chunks`]);
+      setImageDone(true);
+    } catch (err: any) {
+      setImageLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ERROR: ${err.message}`]);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setImageRunning(false);
     }
   };
 
@@ -459,6 +535,115 @@ VALUES ('${user?.id}');`}
           <strong>💡 Tip:</strong> This only enriches wines with existing Vivino URLs. 
           Use the "Fetch Data" button in the bottle form to add Vivino URLs first.
         </p>
+      </div>
+
+      {/* ── Fetch Vivino Images ──────────────────────────────────────────────── */}
+      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+
+      <h1>🖼️ Fetch Vivino Images</h1>
+      <p style={{ color: '#666', marginBottom: '2rem' }}>
+        Download wine label images from Vivino and store them permanently in Supabase Storage.
+        Only processes wines that already have a Vivino URL but <strong>no existing image</strong> —
+        never overwrites user-uploaded photos.
+        Runs in small chunks to avoid timeouts.
+      </p>
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+        <h3 style={{ marginTop: 0 }}>Settings</h3>
+        <label style={{ display: 'block', marginBottom: '0' }}>
+          <strong>Wines per chunk:</strong>
+          <input
+            type="number"
+            value={imageBatch}
+            onChange={e => setImageBatch(Math.min(15, Math.max(1, parseInt(e.target.value) || 10)))}
+            min="1" max="15"
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '60px' }}
+          />
+          <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '0.875rem' }}>max 15 (recommended: 10)</span>
+        </label>
+        <p style={{ fontSize: '0.875rem', color: '#666', margin: '0.75rem 0 0 0' }}>
+          ⏱️ Each chunk takes ~<strong>{imageBatch * 4} seconds</strong> ({imageBatch} wines × ~4s each).
+          The frontend loops automatically until all wines are done.
+        </p>
+      </div>
+
+      <button
+        onClick={runImageEnrich}
+        disabled={imageRunning}
+        style={{
+          backgroundColor: imageRunning ? '#6c757d' : '#e67e22',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: '8px',
+          border: 'none',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          cursor: imageRunning ? 'not-allowed' : 'pointer',
+          opacity: imageRunning ? 0.7 : 1,
+          width: '100%',
+          marginBottom: '2rem',
+        }}
+      >
+        {imageRunning ? '⏳ Fetching images… (do not close this tab)' : '🖼️ Start Vivino Image Fetch'}
+      </button>
+
+      {/* Image enrich totals */}
+      {(imageRunning || imageDone) && (
+        <div style={{
+          backgroundColor: imageDone ? '#d4edda' : '#fff3cd',
+          border: `1px solid ${imageDone ? '#c3e6cb' : '#ffc107'}`,
+          borderRadius: '8px',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+        }}>
+          <h3 style={{ marginTop: 0 }}>{imageDone ? '✅ Complete!' : '⏳ In progress…'}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+            {[
+              { label: 'Chunks',    value: imageTotals.pages,     color: '#495057' },
+              { label: 'Processed', value: imageTotals.processed,  color: '#495057' },
+              { label: 'Uploaded',  value: imageTotals.uploaded,   color: '#28a745' },
+              { label: 'Skipped',   value: imageTotals.skipped,    color: '#6c757d' },
+              { label: 'Failed',    value: imageTotals.failed,     color: '#dc3545' },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
+                <div style={{ fontSize: '0.875rem', color: '#666' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Image enrich live log */}
+      {imageLog.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>📋 Log</h4>
+          <pre style={{
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            padding: '1rem',
+            borderRadius: '8px',
+            fontSize: '0.75rem',
+            maxHeight: '250px',
+            overflowY: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            {imageLog.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '1rem' }}>
+        <h4 style={{ marginTop: 0 }}>ℹ️ How it works</h4>
+        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+          <li>Finds wines with a Vivino URL that have <strong>no image at all</strong> (image_path, label_image_path, and image_url all null)</li>
+          <li>Scrapes the Vivino page to find the label image CDN URL</li>
+          <li>Downloads the image binary and uploads it to Supabase Storage (<code>labels/vivino/</code>)</li>
+          <li>Stores the permanent public URL back in the <code>wines</code> table</li>
+          <li>Processes {imageBatch} wines per chunk — the frontend loops automatically</li>
+          <li>Safe to re-run: already-imaged wines are automatically skipped</li>
+        </ul>
       </div>
 
       {/* ── Analyze All Cellars ─────────────────────────────────────────────── */}
