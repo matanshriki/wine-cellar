@@ -23,6 +23,7 @@ import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
 import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
+import { AboutPage } from './pages/AboutPage';
 import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
 import { OpenRitualProvider } from './contexts/OpenRitualContext'; // Global open ritual + timers
 
@@ -115,6 +116,16 @@ function AppRoutes() {
       <Route
         path="/privacy"
         element={<PrivacyPage />}
+      />
+      <Route
+        path="/about"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <AboutPage />
+            </Layout>
+          </PrivateRoute>
+        }
       />
       {/* Public guest view for shared evening lineups — no auth required */}
       <Route

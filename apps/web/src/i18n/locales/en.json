@@ -9,7 +9,8 @@
     "history": "History",
     "profile": "Profile",
     "logout": "Logout",
-    "wishlist": "Wishlist"
+    "wishlist": "Wishlist",
+    "about": "About"
   },
   "auth": {
     "login": {
@@ -1101,6 +1102,25 @@
     "wrapUp": {
       "guestFavorites": "Tonight's guest favorites"
     }
+  },
+  "about": {
+    "pageTitle": "About",
+    "heroLabel": "Wine Cellar Brain",
+    "heroTitle": "About",
+    "heroParagraph1": "Hi, I'm Matan. I fell in love with wine because it's never just \"a drink\". It's a grape, a place, a year, a person behind the label — and a memory you create when you open it. I love hosting, pairing bottles with food, and learning how different styles evolve with time.",
+    "heroParagraph2": "Wine Cellar Brain was born from that passion. I wanted a cellar app that feels premium, but also smart — one that helps me (and now you) keep track of bottles, understand drink windows, and get confident recommendations for tonight. I'm still improving it all the time, and I'd genuinely love your feedback.",
+    "whyTitle": "Why I built this",
+    "why1": "Tracking bottles shouldn't feel like a spreadsheet. It should feel like a cellar.",
+    "why2": "Drink-window guidance and smart pairings used to require a sommelier. Now they don't.",
+    "why3": "The best wines deserve to be remembered — not just collected.",
+    "contactTitle": "Get in touch",
+    "contactSubtitle": "I'd love to hear from you — feedback, questions, or just to talk wine.",
+    "emailSupport": "Email support",
+    "reportBug": "Report a bug",
+    "emailSupportSubject": "Wine Cellar Brain - Support",
+    "emailSupportBody": "Hi Matan,\n\nI have a question or need help with:\n\n[Your message here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}",
+    "bugSubject": "Wine Cellar Brain - Bug report",
+    "bugBody": "Hi Matan,\n\nWhat happened?\n[Describe what went wrong]\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n[What should have happened]\n\nScreenshot link (optional):\n[Paste a link here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}"
   }
 }
 
