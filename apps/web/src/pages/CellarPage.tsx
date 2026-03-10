@@ -48,8 +48,8 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
 
-// Feature flag: Wine World Moments (requires external API)
-const ENABLE_WINE_EVENTS = !!import.meta.env.VITE_API_URL; // Only enable if API URL is configured
+// Wine World Moments — always enabled; service queries Supabase directly
+const ENABLE_WINE_EVENTS = true;
 
 export function CellarPage() {
   const { t, i18n } = useTranslation();

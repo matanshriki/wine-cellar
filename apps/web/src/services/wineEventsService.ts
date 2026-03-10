@@ -1,7 +1,9 @@
 /**
  * Wine Events Service
- * 
- * Manages wine/grape celebration day events
+ *
+ * Fetches wine/grape celebration day events directly from Supabase.
+ * Previously called an external Railway API; now queries the DB directly
+ * via the already-deployed wine_events + user_event_states tables.
  */
 
 import { supabase } from '../lib/supabase';
@@ -18,68 +20,76 @@ export interface WineEvent {
   filterTag: string | null;
 }
 
+/** Show events within ±7 days of today (matches previous Railway API behaviour) */
+const DAYS_WINDOW = 7;
+
+function toISODate(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
 /**
- * Get all active wine events for the user
+ * Get all active wine events for the current user.
+ * Filters out events the user has already dismissed.
  */
 export async function getActiveEvents(): Promise<WineEvent[]> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      // Silent return - no session is normal on initial load
+    if (!session) return [];
+
+    const today = new Date();
+    const windowStart = new Date(today);
+    windowStart.setDate(today.getDate() - DAYS_WINDOW);
+    const windowEnd = new Date(today);
+    windowEnd.setDate(today.getDate() + DAYS_WINDOW);
+
+    // Fetch events inside the active window
+    const { data: events, error: eventsError } = await supabase
+      .from('wine_events')
+      .select('id, name, date, tags, type, description_short, source_name, source_url')
+      .gte('date', toISODate(windowStart))
+      .lte('date', toISODate(windowEnd))
+      .order('date', { ascending: true });
+
+    if (eventsError) {
+      console.log('[WineEvents] Error fetching events:', eventsError.message);
       return [];
     }
+    if (!events?.length) return [];
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    
-    // If no API URL configured, skip events feature silently
-    if (!apiUrl) {
-      console.log('[WineEvents] No API URL configured, skipping events feature');
-      return [];
-    }
-    
-    const endpoint = `${apiUrl}/api/events/active`;
+    // Fetch events the user has dismissed so we can exclude them
+    const { data: userStates } = await supabase
+      .from('user_event_states')
+      .select('event_id')
+      .eq('user_id', session.user.id)
+      .not('dismissed_at', 'is', null);
 
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const dismissedIds = new Set((userStates ?? []).map(s => s.event_id));
 
-    const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
-      signal: controller.signal,
-    });
+    const active = events
+      .filter(e => !dismissedIds.has(e.id))
+      .map(e => ({
+        id: e.id,
+        name: e.name,
+        date: e.date as string,
+        type: e.type as 'grape' | 'wine' | 'occasion',
+        description: (e.description_short as string | null) ?? '',
+        sourceName: (e.source_name as string | null) ?? null,
+        sourceUrl: (e.source_url as string | null) ?? null,
+        // matchCount is enriched client-side by CellarPage (bottle matching)
+        matchCount: 0,
+        filterTag: Array.isArray(e.tags) && e.tags.length > 0 ? String(e.tags[0]) : null,
+      }));
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      // Silent fail - events are optional feature
-      console.log('[WineEvents] Events API not available (status:', response.status, ')');
-      return [];
-    }
-
-    const data = await response.json();
-    console.log('[WineEvents] 🍷 Received', data.events?.length || 0, 'active events');
-    return data.events || [];
-  } catch (error: any) {
-    // Silent fail - events are optional, don't spam console
-    if (error.name === 'AbortError') {
-      console.log('[WineEvents] Events API timeout (network issue)');
-    } else if (error.message?.includes('CORS') || error.message?.includes('fetch')) {
-      console.log('[WineEvents] Events API not reachable (CORS or network issue)');
-    } else {
-      console.log('[WineEvents] Events API unavailable:', error.message);
-    }
+    console.log('[WineEvents] 🍷', active.length, 'active event(s) this week');
+    return active;
+  } catch (error) {
+    console.log('[WineEvents] Events unavailable:', error);
     return [];
   }
 }
 
 /**
- * Get the currently active wine event for the user (legacy - returns first event)
+ * Get the first active event (legacy helper used by some callers).
  */
 export async function getActiveEvent(): Promise<WineEvent | null> {
   const events = await getActiveEvents();
@@ -87,31 +97,25 @@ export async function getActiveEvent(): Promise<WineEvent | null> {
 }
 
 /**
- * Dismiss an event (user clicked "Don't show again")
+ * Dismiss an event — user will not see it again.
  */
 export async function dismissEvent(eventId: string): Promise<void> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
+    if (!session) throw new Error('Not authenticated');
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    const endpoint = apiUrl ? `${apiUrl}/api/events/${eventId}/dismiss` : `/api/events/${eventId}/dismiss`;
+    const { error } = await supabase
+      .from('user_event_states')
+      .upsert(
+        {
+          user_id: session.user.id,
+          event_id: eventId,
+          dismissed_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,event_id' },
+      );
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to dismiss event');
-    }
+    if (error) throw error;
   } catch (error) {
     console.error('[WineEvents] Error dismissing event:', error);
     throw error;
@@ -119,27 +123,25 @@ export async function dismissEvent(eventId: string): Promise<void> {
 }
 
 /**
- * Mark event as seen
+ * Record that the user has seen an event (throttles re-display).
  */
 export async function markEventSeen(eventId: string): Promise<void> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      return;
-    }
+    if (!session) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    const endpoint = apiUrl ? `${apiUrl}/api/events/${eventId}/seen` : `/api/events/${eventId}/seen`;
-
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      credentials: 'include',
-    });
+    const now = new Date().toISOString();
+    await supabase
+      .from('user_event_states')
+      .upsert(
+        {
+          user_id: session.user.id,
+          event_id: eventId,
+          seen_at: now,
+          last_shown_at: now,
+        },
+        { onConflict: 'user_id,event_id' },
+      );
   } catch (error) {
     console.error('[WineEvents] Error marking event as seen:', error);
   }
