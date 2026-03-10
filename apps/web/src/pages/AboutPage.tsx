@@ -1,13 +1,14 @@
 /**
- * About Page
+ * About Page — Premium editorial redesign
  *
- * A single luxury page describing the app and creator, with an
- * embedded "Contact us" section using mailto links. Supports both
- * White and Red themes and EN / HE (RTL) layouts.
+ * Layout: Hero → Founder story (prose) → Support action rows → Footer note
+ * Supports White + Red themes via CSS variables. RTL-safe.
  */
 
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+
+// ── Environment helpers ───────────────────────────────────────────────────────
 
 const SUPPORT_EMAIL =
   import.meta.env.VITE_SUPPORT_EMAIL ?? 'matan.shriki3@gmail.com';
@@ -19,38 +20,75 @@ function getPlatform(): string {
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true;
-
   if (isPWA) return isIOS ? 'iOS PWA' : isAndroid ? 'Android PWA' : 'PWA';
   if (isIOS) return 'iOS Safari';
   if (isAndroid) return 'Android';
   return 'Desktop';
 }
 
-function getVersion(): string {
-  return import.meta.env.VITE_APP_VERSION ?? '—';
-}
-
 function buildMailto(subject: string, body: string): string {
-  const version = getVersion();
-  const platform = getPlatform();
-  const filledBody = body
+  const version = import.meta.env.VITE_APP_VERSION ?? '—';
+  const filled = body
     .replace('{{version}}', version)
-    .replace('{{platform}}', platform);
-  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(filledBody)}`;
+    .replace('{{platform}}', getPlatform());
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(filled)}`;
 }
 
-// Reduced-motion check (inline, no extra import needed)
-const prefersReducedMotion =
+// ── Motion helpers (respect prefers-reduced-motion) ───────────────────────────
+
+const rm =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const fadeUp = prefersReducedMotion
+const container = rm
   ? {}
-  : { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
+  : {
+      initial: 'hidden',
+      animate: 'show',
+      variants: {
+        hidden: {},
+        show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+      },
+    };
 
-const staggerContainer = prefersReducedMotion
+const item = rm
   ? {}
-  : { animate: { transition: { staggerChildren: 0.08 } } };
+  : {
+      variants: {
+        hidden: { opacity: 0, y: 18 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } },
+      },
+    };
+
+// ── Inline SVG icons ──────────────────────────────────────────────────────────
+
+function IconEnvelope() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function IconBug() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 6a4 4 0 018 0M4 10h16M4 10a2 2 0 00-2 2v2a6 6 0 0012 0v-2a2 2 0 00-2-2M4 10l-2-3M20 10l2-3M6 18l-2 2M18 18l2 2" />
+    </svg>
+  );
+}
+
+function IconChevron() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true" className="flip-rtl flex-shrink-0">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+const PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
 
 export function AboutPage() {
   const { t } = useTranslation();
@@ -65,150 +103,181 @@ export function AboutPage() {
   );
 
   return (
-    <motion.div
-      className="max-w-2xl mx-auto"
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
-      {/* ── Hero ───────────────────────────────────────────── */}
-      <motion.div className="mb-8" variants={fadeUp} transition={{ duration: 0.3 }}>
-        {/* Eyebrow label */}
+    <motion.div className="max-w-2xl mx-auto pb-4" {...container}>
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <motion.header className="pt-2 pb-10 sm:pb-12" {...item}>
+        {/* App name eyebrow */}
         <p
-          className="text-xs font-semibold uppercase tracking-widest mb-3"
+          className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-5"
           style={{ color: 'var(--wine-500)' }}
         >
-          {t('about.heroLabel')}
+          Wine Cellar Brain
         </p>
 
+        {/* Title */}
         <h1
-          className="text-3xl sm:text-4xl font-bold mb-5 leading-tight"
-          style={{
-            color: 'var(--text-heading)',
-            fontFamily: 'var(--font-display)',
-          }}
+          className="text-[2.6rem] sm:text-5xl font-bold tracking-tight leading-[1.1] mb-4"
+          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
         >
-          {t('about.heroTitle')}
+          {t('about.title')}
         </h1>
 
-        <div
-          className="space-y-4 text-base leading-relaxed"
-          style={{ color: 'var(--text-secondary)', maxWidth: '60ch' }}
+        {/* Subtitle */}
+        <p
+          className="text-[1.1rem] sm:text-xl leading-relaxed"
+          style={{
+            color: 'var(--text-tertiary)',
+            fontStyle: 'italic',
+            letterSpacing: '0.01em',
+          }}
         >
-          <p>{t('about.heroParagraph1')}</p>
-          <p>{t('about.heroParagraph2')}</p>
-        </div>
-      </motion.div>
+          {t('about.subtitle')}
+        </p>
+      </motion.header>
 
-      {/* ── Divider ────────────────────────────────────────── */}
-      <motion.hr
-        variants={fadeUp}
-        transition={{ duration: 0.3 }}
-        style={{ borderColor: 'var(--border-subtle)' }}
-        className="mb-8"
+      {/* ── Thin divider ─────────────────────────────────────────────────── */}
+      <motion.div
+        {...item}
+        className="mb-10"
+        style={{ height: '1px', background: 'var(--border-subtle)' }}
       />
 
-      {/* ── Why I built this ───────────────────────────────── */}
-      <motion.div
-        className="card mb-6"
-        variants={fadeUp}
-        transition={{ duration: 0.3 }}
-      >
-        <h2
-          className="text-lg font-semibold mb-4"
-          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-        >
-          {t('about.whyTitle')}
-        </h2>
+      {/* ── Founder story ────────────────────────────────────────────────── */}
+      <motion.section className="mb-12 sm:mb-14" {...item}>
+        {PARAGRAPHS.map((key, i) => (
+          <p
+            key={key}
+            className={i === 0 ? 'mb-7' : 'mt-6'}
+            style={{
+              color: i === 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+              fontSize: i === 0 ? '1.15rem' : '1rem',
+              fontWeight: i === 0 ? 600 : 400,
+              lineHeight: i === 0 ? 1.5 : 1.85,
+              // p5 ("That's how Wine Cellar Brain was born.") gets a subtle emphasis
+              ...(i === 4 && {
+                color: 'var(--text-primary)',
+                fontWeight: 500,
+              }),
+            }}
+          >
+            {t(`about.${key}`)}
+          </p>
+        ))}
+      </motion.section>
 
-        <ul className="space-y-3">
-          {(['why1', 'why2', 'why3'] as const).map((key) => (
-            <li key={key} className="flex items-start gap-3">
-              {/* Decorative wine dot */}
-              <span
-                className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full"
-                style={{ background: 'var(--wine-500)' }}
-              />
-              <span
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {t(`about.${key}`)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </motion.div>
-
-      {/* ── Contact ────────────────────────────────────────── */}
-      <motion.div
-        className="card"
-        variants={fadeUp}
-        transition={{ duration: 0.3 }}
-      >
-        <h2
-          className="text-lg font-semibold mb-1"
-          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-        >
-          {t('about.contactTitle')}
-        </h2>
+      {/* ── Support section ──────────────────────────────────────────────── */}
+      <motion.section {...item}>
+        {/* Section label */}
         <p
-          className="text-sm mb-6"
-          style={{ color: 'var(--text-secondary)' }}
+          className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-3 px-1"
+          style={{ color: 'var(--text-tertiary)' }}
         >
-          {t('about.contactSubtitle')}
+          {t('about.supportTitle')}
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Primary — Email support */}
-          <motion.a
+        {/* Action card */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          {/* Row 1 — Email support */}
+          <ActionRow
             href={supportHref}
-            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
-            whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
-            className="btn btn-primary flex items-center justify-center gap-2 flex-1"
-          >
-            <svg
-              className="w-4 h-4 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            {t('about.emailSupport')}
-          </motion.a>
+            icon={<IconEnvelope />}
+            label={t('about.emailSupport')}
+            desc={t('about.emailSupportDesc')}
+          />
 
-          {/* Secondary — Report a bug */}
-          <motion.a
+          {/* Separator */}
+          <div
+            className="mx-5"
+            style={{ height: '1px', background: 'var(--border-subtle)' }}
+          />
+
+          {/* Row 2 — Report a bug */}
+          <ActionRow
             href={bugHref}
-            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
-            whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
-            className="btn btn-secondary flex items-center justify-center gap-2 flex-1"
-          >
-            <svg
-              className="w-4 h-4 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-              />
-            </svg>
-            {t('about.reportBug')}
-          </motion.a>
+            icon={<IconBug />}
+            label={t('about.reportBug')}
+            desc={t('about.reportBugDesc')}
+          />
         </div>
-      </motion.div>
+      </motion.section>
+
+      {/* ── Footer note ──────────────────────────────────────────────────── */}
+      <motion.p
+        {...item}
+        className="text-center text-xs mt-12 mb-2"
+        style={{ color: 'var(--text-tertiary)', letterSpacing: '0.02em' }}
+      >
+        {t('about.footerNote')}
+      </motion.p>
     </motion.div>
+  );
+}
+
+// ── ActionRow sub-component ───────────────────────────────────────────────────
+
+interface ActionRowProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+}
+
+function ActionRow({ href, icon, label, desc }: ActionRowProps) {
+  return (
+    <motion.a
+      href={href}
+      whileTap={rm ? {} : { scale: 0.985, opacity: 0.85 }}
+      className="flex items-center gap-4 px-5 py-4 w-full transition-colors"
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background = 'var(--interactive-hover)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = '';
+      }}
+    >
+      {/* Icon badge */}
+      <div
+        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{
+          background: 'var(--wine-50)',
+          color: 'var(--wine-600)',
+        }}
+      >
+        {icon}
+      </div>
+
+      {/* Text */}
+      <div className="flex-1 min-w-0">
+        <p
+          className="text-sm font-semibold leading-snug"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {label}
+        </p>
+        <p
+          className="text-xs mt-0.5 leading-snug"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          {desc}
+        </p>
+      </div>
+
+      {/* Chevron */}
+      <span style={{ color: 'var(--text-tertiary)' }}>
+        <IconChevron />
+      </span>
+    </motion.a>
   );
 }
