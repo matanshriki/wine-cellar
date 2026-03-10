@@ -16,7 +16,7 @@ import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
-import { isIosStandalonePwa, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
+import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -52,6 +52,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                 (window.navigator as any).standalone === true ||
                 document.referrer.includes('android-app://');
+  // Android PWA: use getUserMedia in-app camera (same as iOS PWA) to avoid
+  // the OS gallery chooser which causes scroll-lock and poor UX.
+  const isAndroidPwa = isAndroidPwaCheck();
 
   // Show CompleteProfile modal if profile is incomplete
   useEffect(() => {
@@ -62,12 +65,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [user, profile, profileComplete]);
 
-  // Handle immediate camera trigger (for mobile/PWA)
+  // Handle immediate camera trigger (for mobile/PWA fallback)
   useEffect(() => {
     const handleOpenImmediateCamera = () => {
-      if (immediateCameraInputRef.current) {
-        immediateCameraInputRef.current.click();
+      if (!immediateCameraInputRef.current) return;
+
+      // ── Scroll-lock fix for Android (and any platform) ────────────────────
+      // When the OS file-chooser/gallery opens, Android can pause the JS
+      // lifecycle. Any body scroll-lock applied by an open modal stays locked
+      // when the chooser is dismissed, causing a "stuck scroll" bug.
+      // Solution: release the lock before clicking, then restore it (only if
+      // a modal is still open) when the window regains focus.
+      const prevOverflow = document.body.style.overflow;
+      const prevPosition = document.body.style.position;
+      const prevWidth    = document.body.style.width;
+      const scrollY      = window.scrollY;
+
+      if (prevOverflow === 'hidden') {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width    = '';
+        // position:fixed snaps the page to top — restore the real scroll pos
+        if (prevPosition === 'fixed') window.scrollTo(0, scrollY);
       }
+
+      // Restore scroll state when chooser is dismissed
+      const restoreScrollState = () => {
+        const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
+        if (hasOpenModal && prevOverflow === 'hidden') {
+          document.body.style.overflow = prevOverflow;
+          document.body.style.position = prevPosition;
+          document.body.style.width    = prevWidth;
+        }
+      };
+
+      // window 'focus' fires when returning from the OS chooser on most Android
+      window.addEventListener('focus', restoreScrollState, { once: true });
+
+      // visibilitychange is the backup (some Android WebViews prefer this)
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          restoreScrollState();
+          document.removeEventListener('visibilitychange', onVisibilityChange);
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      immediateCameraInputRef.current.click();
     };
 
     window.addEventListener('openImmediateCamera', handleOpenImmediateCamera);
@@ -113,24 +157,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Handle camera FAB click - different behavior based on platform
   const handleCameraFabClick = () => {
-    console.log('[Camera FAB] Click detected', { 
-      isMobile, 
-      isPWA,
-      isIosPwa,
-      userAgent: navigator.userAgent.substring(0, 50) 
-    });
-    
-    if (isIosPwa || (isIpad && isPWA)) {
-      // iOS PWA or iPad PWA: use getUserMedia (avoids file-chooser close-app issue)
-      console.log('[Camera FAB] Opening PWA camera (iOS/iPad standalone - getUserMedia)');
+    if (isIosPwa || isAndroidPwa || (isIpad && isPWA)) {
+      // iOS PWA, Android PWA, or iPad PWA:
+      // Use getUserMedia in-app camera — avoids the OS file-chooser entirely,
+      // which prevents scroll-lock issues and opens the camera directly.
       openPwaCamera();
     } else if (isMobile || isPWA || isIpad) {
-      // Other mobile / iPad / PWA: open camera via file input
-      console.log('[Camera FAB] Opening camera immediately (mobile/iPad/PWA - file input)');
+      // Non-PWA mobile / iPad: open camera via file input (capture="environment")
       openImmediateCamera();
     } else {
       // Desktop: Show options modal
-      console.log('[Camera FAB] Opening options modal (desktop flow)');
       openAddBottleFlow();
     }
   };
@@ -442,8 +478,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         reason={fallbackReason}
         onTryCamera={() => {
           closeFallbackSheet();
-          // Retry camera based on platform
-          if (isIosPwa) {
+          // Retry camera: PWA platforms use getUserMedia in-app camera
+          if (isIosPwa || isAndroidPwa || (isIpad && isPWA)) {
             openPwaCamera();
           } else {
             openImmediateCamera();

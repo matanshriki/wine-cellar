@@ -42,6 +42,21 @@ export function isIosStandalonePwa(): boolean {
 }
 
 /**
+ * Detect if running on Android
+ */
+export function isAndroid(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
+/**
+ * Detect if running as Android PWA (standalone)
+ * Like iOS PWA, we prefer getUserMedia over the file-input OS chooser.
+ */
+export function isAndroidPwa(): boolean {
+  return isAndroid() && isStandalonePwa();
+}
+
+/**
  * Detect if running on mobile (any mobile device)
  */
 export function isMobileDevice(): boolean {
