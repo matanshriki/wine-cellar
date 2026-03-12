@@ -38,6 +38,7 @@
     },
     "welcome": "Welcome back!",
     "accountCreated": "Account created successfully!",
+    "confirmEmailSent": "Check your email to confirm your account before signing in.",
     "authFailed": "Authentication failed",
     "loggedOut": "Logged out successfully"
   },

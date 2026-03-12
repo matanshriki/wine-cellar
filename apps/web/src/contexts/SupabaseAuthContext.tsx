@@ -27,7 +27,7 @@ interface AuthContextType {
   profile: Profile | null;
   profileComplete: boolean;
   loading: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -240,9 +240,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
+  const signUp = async (email: string, password: string, displayName?: string): Promise<{ needsEmailConfirmation: boolean }> => {
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: {
         data: {
@@ -255,17 +255,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       throw new Error(error.message);
     }
 
-    // Note: User will need to confirm email if email confirmation is enabled
-    // For local dev, email confirmation is typically disabled
-    if (data.user) {
+    // When email confirmation is required, Supabase returns a user but null session.
+    // We must NOT navigate to the app in this case — the user must confirm first.
+    const needsEmailConfirmation = !!data.user && !data.session;
+
+    if (data.user && data.session) {
       setUser(data.user);
       setSession(data.session);
     }
+
+    return { needsEmailConfirmation };
   };
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 

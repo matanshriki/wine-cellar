@@ -20,11 +20,14 @@ export function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
+    const trimmedEmail = email.trim();
+
     try {
       if (isLogin) {
-        await signIn(email, password);
+        await signIn(trimmedEmail, password);
         trackAuth.login(); // Track successful login
         toast.success(t('auth.welcome'));
+        navigate('/cellar');
       } else {
         // Ensure name is provided for signup
         if (!name.trim()) {
@@ -32,11 +35,16 @@ export function LoginPage() {
           setLoading(false);
           return;
         }
-        await signUp(email, password, name.trim());
+        const { needsEmailConfirmation } = await signUp(trimmedEmail, password, name.trim());
         trackAuth.signUp(); // Track successful signup
-        toast.success(t('auth.accountCreated'));
+        if (needsEmailConfirmation) {
+          toast.success(t('auth.confirmEmailSent'));
+          // Stay on login page — user must confirm email before they can sign in
+        } else {
+          toast.success(t('auth.accountCreated'));
+          navigate('/cellar');
+        }
       }
-      navigate('/cellar');
     } catch (error: any) {
       toast.error(error.message || t('auth.authFailed'));
     } finally {
@@ -128,7 +136,7 @@ export function LoginPage() {
                 className="input"
                 required
                 placeholder={t('auth.login.passwordPlaceholder')}
-                minLength={6}
+                minLength={isLogin ? undefined : 6}
               />
             </div>
 
