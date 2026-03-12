@@ -112,6 +112,9 @@ export function CameraFallbackSheet({
               borderBottom: 'none',
               maxHeight: '60vh',
             }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="camera-fallback-title"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
@@ -125,6 +128,7 @@ export function CameraFallbackSheet({
             <div className="px-6 pb-6 safe-area-inset-bottom">
               {/* Title */}
               <h3 
+                id="camera-fallback-title"
                 className="text-xl font-bold mb-2 text-center"
                 style={{ 
                   color: 'var(--text-primary)',

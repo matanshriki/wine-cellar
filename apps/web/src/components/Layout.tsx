@@ -46,6 +46,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const immediateCameraInputRef = useRef<HTMLInputElement>(null);
   // Flag used to detect iOS camera cancellation (onChange doesn't fire on iOS when user cancels)
   const awaitingCameraResult = useRef(false);
+  // Monotonic counter — incremented on every new camera session so stale timeouts are no-ops
+  const cameraSessionId = useRef(0);
   
   // Detect device type
   const isMobile = isMobileDevice();
@@ -106,13 +108,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
       // On iOS, cancelling the native camera does NOT fire onChange on the
       // file input. We use focus/visibilitychange (which DO fire when the user
       // returns from the OS camera) to show the fallback sheet instead.
+      const sessionId = ++cameraSessionId.current;
       awaitingCameraResult.current = true;
 
       const dispatchFallbackIfCancelled = () => {
         // Give onChange a short window to fire (Android fires it synchronously
         // before focus, but a small delay is safe for all platforms).
         setTimeout(() => {
-          if (awaitingCameraResult.current) {
+          // sessionId guard: if the user quickly re-opens the camera within this
+          // 400ms window, cameraSessionId will have been incremented and this
+          // stale timer becomes a no-op — preventing a false-positive fallback.
+          if (awaitingCameraResult.current && cameraSessionId.current === sessionId) {
             console.log('[Camera] Returned from OS camera without file (iOS cancel?) — showing fallback');
             awaitingCameraResult.current = false;
             window.dispatchEvent(
