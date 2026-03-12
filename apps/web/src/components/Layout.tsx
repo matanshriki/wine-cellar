@@ -44,6 +44,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   
   // Immediate camera input ref (hidden, for non-iOS-PWA mobile)
   const immediateCameraInputRef = useRef<HTMLInputElement>(null);
+  // Flag used to detect iOS camera cancellation (onChange doesn't fire on iOS when user cancels)
+  const awaitingCameraResult = useRef(false);
   
   // Detect device type
   const isMobile = isMobileDevice();
@@ -100,14 +102,36 @@ export function Layout({ children }: { children: React.ReactNode }) {
         }
       };
 
+      // ── iOS camera-cancellation detection ─────────────────────────────────
+      // On iOS, cancelling the native camera does NOT fire onChange on the
+      // file input. We use focus/visibilitychange (which DO fire when the user
+      // returns from the OS camera) to show the fallback sheet instead.
+      awaitingCameraResult.current = true;
+
+      const dispatchFallbackIfCancelled = () => {
+        // Give onChange a short window to fire (Android fires it synchronously
+        // before focus, but a small delay is safe for all platforms).
+        setTimeout(() => {
+          if (awaitingCameraResult.current) {
+            console.log('[Camera] Returned from OS camera without file (iOS cancel?) — showing fallback');
+            awaitingCameraResult.current = false;
+            window.dispatchEvent(
+              new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } })
+            );
+          }
+        }, 400);
+      };
+
       // window 'focus' fires when returning from the OS chooser on most Android
       window.addEventListener('focus', restoreScrollState, { once: true });
+      window.addEventListener('focus', dispatchFallbackIfCancelled, { once: true });
 
       // visibilitychange is the backup (some Android WebViews prefer this)
       const onVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
           restoreScrollState();
           document.removeEventListener('visibilitychange', onVisibilityChange);
+          dispatchFallbackIfCancelled();
         }
       };
       document.addEventListener('visibilitychange', onVisibilityChange);
@@ -123,6 +147,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Handle camera file selection
   const handleCameraFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // onChange fired — clear the iOS cancellation-detection flag regardless of whether
+    // a file was selected. The timeout in dispatchFallbackIfCancelled will be a no-op.
+    awaitingCameraResult.current = false;
+
     const file = e.target.files?.[0];
     
     if (!file) {
