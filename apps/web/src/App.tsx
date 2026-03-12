@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
@@ -35,6 +36,90 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * Global Error Boundary
+ * Catches any unhandled rendering error and shows a friendly recovery UI
+ * instead of a blank white page. Without this, any thrown error in any
+ * component silently unmounts the entire React tree.
+ */
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+    // Navigate to cellar as a safe landing page
+    window.location.href = '/cellar';
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            minHeight: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+            textAlign: 'center',
+            background: 'var(--bg-surface, #fff)',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍷</div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary, #111)' }}>
+            Something went wrong
+          </h1>
+          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary, #555)', marginBottom: '1.5rem', maxWidth: '360px' }}>
+            An unexpected error occurred. Your cellar data is safe — tap below to reload.
+          </p>
+          {this.state.error && (
+            <details style={{ fontSize: '0.75rem', color: '#999', marginBottom: '1.5rem', maxWidth: '480px', textAlign: 'left' }}>
+              <summary style={{ cursor: 'pointer' }}>Error details</summary>
+              <pre style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {this.state.error.message}
+              </pre>
+            </details>
+          )}
+          <button
+            onClick={this.handleReset}
+            style={{
+              padding: '0.75rem 2rem',
+              borderRadius: '9999px',
+              background: 'linear-gradient(135deg, #a44c68, #7d3450)',
+              color: '#fff',
+              fontWeight: 600,
+              fontSize: '1rem',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -233,23 +318,25 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ToastProvider>
-          <ThemeProvider>
-            <SupabaseAuthProvider>
-              <FeatureFlagsProvider>
-                <AddBottleProvider>
-                  <OpenRitualProvider>
-                    <AppRoutes />
-                  </OpenRitualProvider>
-                </AddBottleProvider>
-              </FeatureFlagsProvider>
-            </SupabaseAuthProvider>
-          </ThemeProvider>
-        </ToastProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ToastProvider>
+            <ThemeProvider>
+              <SupabaseAuthProvider>
+                <FeatureFlagsProvider>
+                  <AddBottleProvider>
+                    <OpenRitualProvider>
+                      <AppRoutes />
+                    </OpenRitualProvider>
+                  </AddBottleProvider>
+                </FeatureFlagsProvider>
+              </SupabaseAuthProvider>
+            </ThemeProvider>
+          </ToastProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

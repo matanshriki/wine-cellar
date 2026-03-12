@@ -36,22 +36,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
   const displayImage = useWineDisplayImage(bottle?.wine);
 
-  // Lock body scroll when modal is open (prevents iOS background shifts)
+  // Lock body scroll when modal is open.
+  // Uses the negative-top trick so the page doesn't visually snap to y=0
+  // (which can make the cellar behind the modal look "blank" to users).
   useEffect(() => {
     if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      const originalPosition = document.body.style.position;
-      
-      // Lock scroll
+      const scrollY = window.scrollY;
+
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
-      
+
       return () => {
-        // Restore scroll
-        document.body.style.overflow = originalOverflow || '';
-        document.body.style.position = originalPosition || '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
         document.body.style.width = '';
+        // Restore the exact scroll position the user was at
+        window.scrollTo(0, scrollY);
       };
     }
   }, [isOpen]);

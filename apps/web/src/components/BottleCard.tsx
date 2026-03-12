@@ -649,7 +649,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         style: bottle.wine.style || 'red',
         rating: bottle.wine.rating || undefined,
         region: bottle.wine.region || undefined,
-        grapes: bottle.wine.grapes || undefined,
+        grapes: Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0
+          ? bottle.wine.grapes.join(', ')
+          : undefined,
         label_image_url: displayImage.imageUrl || undefined,
         readiness_status: bottle.readiness_status || undefined,
       }}
