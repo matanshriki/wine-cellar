@@ -13,6 +13,7 @@ import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
+import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { CompactThemeToggle } from './ThemeToggle';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
@@ -551,6 +552,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         onComplete={handleProfileComplete}
         currentName={profile?.display_name || ''}
       />
+
+      {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}
+      <PwaInstallPrompt />
     </div>
   );
 }

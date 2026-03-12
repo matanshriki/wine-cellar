@@ -250,6 +250,12 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     throw new Error('Failed to create bottle');
   }
 
+  // Notify the PWA install prompt that the user now has at least one bottle.
+  // Dispatched after a successful creation so the prompt can show for the first time.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bottleCreated'));
+  }
+
   return {
     ...(bottle as any),
     wine,

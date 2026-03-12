@@ -1103,6 +1103,28 @@
       "guestFavorites": "Tonight's guest favorites"
     }
   },
+  "pwaPrompt": {
+    "ios": {
+      "title": "Add to Home Screen",
+      "subtitle": "Get the full Wine Cellar Brain experience — instant access, no browser bar, and a faster feel.",
+      "step1Label": "Tap the Share button",
+      "step1Hint": "The ↑ icon in Safari's toolbar at the bottom of the screen",
+      "step2Label": "Tap \"Add to Home Screen\"",
+      "step2Hint": "Scroll through the share sheet and tap the option with the + icon",
+      "dismiss": "Maybe later"
+    },
+    "android": {
+      "title": "Install the App",
+      "subtitle": "Get the full Wine Cellar Brain experience — instant access, faster load, and always at your fingertips.",
+      "install": "Add to Home Screen",
+      "dismiss": "Maybe later"
+    },
+    "desktop": {
+      "title": "Open on your phone",
+      "subtitle": "Scan with your phone's camera to open Wine Cellar Brain and add it to your home screen.",
+      "dismiss": "Close"
+    }
+  },
   "about": {
     "pageTitle": "About",
     "title": "About",
