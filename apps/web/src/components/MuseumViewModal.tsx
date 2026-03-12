@@ -28,6 +28,8 @@ interface MuseumViewBottle {
   region?: string;
   grapes?: string;
   label_image_url?: string;
+  /** AI-generated readiness label — takes priority over readiness_status when present */
+  readiness_label?: 'READY' | 'HOLD' | 'PEAK_SOON';
   readiness_status?: 'TooYoung' | 'Approaching' | 'InWindow' | 'Peak' | 'PastPeak' | 'Unknown';
 }
 
@@ -62,9 +64,26 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
     };
   }, [isOpen, onClose]);
 
-  // Get readiness label
-  const getReadinessLabel = (status?: string) => {
-    switch (status) {
+  // Determine the readiness chip to show.
+  // Priority: AI readiness_label > DB readiness_status.
+  // This ensures the museum view always agrees with the card grid and the
+  // full details modal, which both use the AI label when available.
+  const getReadinessChip = (): { text: string; color: string } | null => {
+    // AI label takes priority — use the same i18n keys as SommelierNotes/BottleCard
+    if (bottle.readiness_label) {
+      switch (bottle.readiness_label) {
+        case 'READY':
+          return { text: t('cellar.sommelier.status.ready', 'Ready to Drink'), color: 'bg-green-500/30 text-green-100' };
+        case 'PEAK_SOON':
+          return { text: t('cellar.sommelier.status.peak_soon', 'Peak Soon'), color: 'bg-yellow-500/30 text-yellow-100' };
+        case 'HOLD':
+          return { text: t('cellar.sommelier.status.hold', 'Hold for Aging'), color: 'bg-blue-500/30 text-blue-100' };
+        default:
+          return null;
+      }
+    }
+    // Fall back to DB-computed readiness_status (no AI analysis yet)
+    switch (bottle.readiness_status) {
       case 'InWindow':
       case 'Peak':
         return { text: t('readiness.readyNow', 'Ready Now'), color: 'bg-green-500/30 text-green-100' };
@@ -79,7 +98,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
     }
   };
 
-  const readiness = getReadinessLabel(bottle.readiness_status);
+  const readiness = getReadinessChip();
 
   if (!isOpen) return null;
 

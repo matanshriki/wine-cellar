@@ -170,22 +170,24 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                   background: 
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
                       ? 'var(--status-ready-bg)'
-                      : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                      : bottle.readiness_status === 'TooYoung'
                       ? 'var(--status-hold-bg)'
                       : 'var(--status-drink-soon-bg)',
                   color:
                     bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
                       ? 'var(--status-ready-text)'
-                      : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                      : bottle.readiness_status === 'TooYoung'
                       ? 'var(--status-hold-text)'
                       : 'var(--status-drink-soon-text)',
                 }}
               >
                 {bottle.readiness_status === 'InWindow' || bottle.readiness_status === 'Peak'
                   ? '✓ Ready'
-                  : bottle.readiness_status === 'TooYoung' || bottle.readiness_status === 'Approaching'
+                  : bottle.readiness_status === 'TooYoung'
                   ? '⏳ Hold'
-                  : '🍷 Drink Soon'}
+                  : bottle.readiness_status === 'Approaching'
+                  ? '⏳ Peak Soon'
+                  : '🍷 Past Peak'}
               </span>
             )}
           </div>
@@ -653,6 +655,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           ? bottle.wine.grapes.join(', ')
           : undefined,
         label_image_url: displayImage.imageUrl || undefined,
+        readiness_label: (bottle as any).readiness_label || undefined,
         readiness_status: bottle.readiness_status || undefined,
       }}
     />
