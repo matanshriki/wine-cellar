@@ -20,8 +20,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { trackSommelier } from '../services/analytics';
 
 const INTRO_SEEN_KEY = 'sommelier-fab-intro-seen';
 
@@ -36,6 +37,7 @@ interface SommelierChatButtonProps {
 
 export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const [showIntro, setShowIntro] = useState(false);
@@ -91,8 +93,11 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
   const handleClick = useCallback(() => {
     dismissIntro();
+    // Track which page the user clicked from (strip leading slash → 'cellar', 'history', …)
+    const source = location.pathname.replace(/^\//, '') || 'unknown';
+    trackSommelier.agentButtonClick(source);
     navigate('/agent');
-  }, [dismissIntro, navigate]);
+  }, [dismissIntro, navigate, location.pathname]);
 
   // ── Rendering ───────────────────────────────────────────────────────────────
   if (isGlobal && isModalOpen) return null;

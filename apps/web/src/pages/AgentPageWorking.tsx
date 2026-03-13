@@ -25,6 +25,7 @@ import { BotRichResultCard } from '../components/BotRichResultCard';
 import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
 import { BotSingleWineResultCard } from '../components/BotSingleWineResultCard';
 import * as labelArtService from '../services/labelArtService';
+import { trackSommelier } from '../services/analytics';
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
@@ -50,6 +51,11 @@ export function AgentPageWorking() {
   const audioChunksRef = useRef<Blob[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const greetingInjectedRef = useRef(false);
+
+  // Track agent page open (once on mount)
+  useEffect(() => {
+    trackSommelier.agentOpen();
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {

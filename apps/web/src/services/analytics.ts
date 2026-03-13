@@ -14,6 +14,13 @@
  * - Never pass PII in event parameters
  */
 
+import {
+  isIos,
+  isAndroid,
+  isIPad,
+  isStandalonePwa,
+} from '../utils/deviceDetection';
+
 // Global gtag types
 declare global {
   interface Window {
@@ -122,6 +129,11 @@ export function initializeAnalytics(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
   document.head.appendChild(script);
+
+  // Tag every session with the user's platform as a persistent user property
+  const platform = detectPlatform();
+  window.gtag('set', 'user_properties', { platform });
+  console.log('[Analytics] 🖥️ Platform detected:', platform);
   
   console.log('[Analytics] ✅ GA4 initialized successfully');
 }
@@ -219,12 +231,68 @@ function sanitizeEventParams(params?: Record<string, any>): Record<string, any> 
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Platform detection
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AppPlatform =
+  | 'ios_pwa'
+  | 'android_pwa'
+  | 'ipad_pwa'
+  | 'ios_mobile_web'
+  | 'android_mobile_web'
+  | 'ipad_web'
+  | 'desktop_web';
+
+/**
+ * Returns a clean platform slug for the current device/browser context.
+ * Priority: PWA > tablet > phone > desktop
+ */
+export function detectPlatform(): AppPlatform {
+  const pwa  = isStandalonePwa();
+  const ios  = isIos();
+  const android = isAndroid();
+  const ipad = isIPad();
+
+  if (pwa) {
+    if (ipad)    return 'ipad_pwa';
+    if (ios)     return 'ios_pwa';
+    if (android) return 'android_pwa';
+    return 'desktop_web'; // Desktop PWA (rare)
+  }
+
+  if (ipad)    return 'ipad_web';
+  if (ios)     return 'ios_mobile_web';
+  if (android) return 'android_mobile_web';
+  return 'desktop_web';
+}
+
+/**
+ * Platform tracking — call once after analytics is initialised.
+ * Sets `platform` as a GA4 user property so every subsequent event
+ * from this session is tagged with it automatically.
+ */
+export const trackPlatform = {
+  identify: () => {
+    if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
+
+    const platform = detectPlatform();
+
+    // Set as a persistent user property (attached to all future events)
+    window.gtag('set', 'user_properties', { platform });
+
+    // Also emit a discrete event so the platform breakdown appears in
+    // GA4 realtime reports and can be used as a conversion dimension.
+    trackEvent('platform_identified', { platform });
+  },
+};
+
 /**
  * Track authentication events
  */
 export const trackAuth = {
-  signUp: () => trackEvent('sign_up'),
-  login: () => trackEvent('login'),
+  signUp: () => trackEvent('sign_up', { platform: detectPlatform() }),
+  login:  () => trackEvent('login',   { platform: detectPlatform() }),
   logout: () => trackEvent('logout'),
 };
 
@@ -342,12 +410,26 @@ export const trackError = {
 };
 
 /**
- * Track sommelier AI analysis events
+ * Track sommelier / AI agent events
  */
 export const trackSommelier = {
   generate: () => trackEvent('sommelier_notes_generate'),
-  success: () => trackEvent('sommelier_notes_success'),
+  success:  () => trackEvent('sommelier_notes_success'),
   error: (errorType: string) => trackEvent('sommelier_notes_error', { error_type: errorType }),
+
+  /**
+   * Fired when the user taps the sommelier FAB or menu button.
+   * @param source  The page the button was on (e.g. 'cellar', 'history', 'recommendation')
+   */
+  agentButtonClick: (source: string) =>
+    trackEvent('sommelier_agent_click', { source, platform: detectPlatform() }),
+
+  /**
+   * Fired when the agent conversation page finishes loading.
+   * Tells you how many unique users actually reached the chat.
+   */
+  agentOpen: () =>
+    trackEvent('sommelier_agent_open', { platform: detectPlatform() }),
 };
 
 /**
