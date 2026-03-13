@@ -475,7 +475,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Global Sommelier FAB — shown on content pages that don't already have it.
           Hidden on /recommendation (has its own), /agent (IS the agent), and admin/auth pages. */}
-      {['/cellar', '/history', '/wishlist', '/community'].includes(location.pathname) && (
+      {['/cellar', '/history', '/community'].includes(location.pathname) && (
         <SommelierChatButton isGlobal />
       )}
 
