@@ -233,7 +233,16 @@ export const trackAuth = {
  */
 export const trackBottle = {
   addManual: () => trackEvent('bottle_add_manual'),
-  addScan: () => trackEvent('bottle_add_scan'),
+  /**
+   * Fired after a successful scan that results in bottle(s) being added.
+   * @param mode     'single' | 'multi' | 'receipt'
+   * @param count    Number of bottles / receipt items detected
+   */
+  addScan: (mode?: string, count?: number) =>
+    trackEvent('bottle_add_scan', {
+      scan_mode: mode,
+      detected_count: count,
+    }),
   edit: () => trackEvent('bottle_edit'),
   delete: () => trackEvent('bottle_delete'),
   opened: (vintage?: number) => 
@@ -272,21 +281,36 @@ export const trackAILabel = {
 };
 
 /**
- * Track AI label parsing/scanning events (OCR)
+ * Track AI label parsing / bottle scanning events
+ *
+ * GA4 events emitted:
+ *   label_parse_start   — user submitted a photo for scanning
+ *   label_parse_success — AI successfully parsed the label
+ *                         params: scan_mode ('single'|'multi'|'receipt'), detected_count
+ *   label_parse_error   — scan pipeline failed
+ *                         params: error_type
  */
 export const trackLabelParse = {
-  start: (source: 'camera' | 'library') => trackEvent('label_parse_start', { source }),
-  success: (fieldsExtracted: number, source: 'camera' | 'library') => 
-    trackEvent('label_parse_success', { 
-      fields_extracted: fieldsExtracted,
-      source,
+  /** Called as soon as the scan pipeline starts (photo handed to AI). */
+  start: () => trackEvent('label_parse_start'),
+
+  /**
+   * Called when the AI returns a valid result.
+   * @param mode          What the AI detected: single bottle, multiple, or a receipt
+   * @param detectedCount Number of bottles / receipt items returned
+   */
+  success: (mode: 'single' | 'multi' | 'receipt', detectedCount: number) =>
+    trackEvent('label_parse_success', {
+      scan_mode: mode,
+      detected_count: detectedCount,
     }),
-  error: (errorType: string, source: 'camera' | 'library', errorMessage?: string) => 
-    trackEvent('label_parse_error', { 
-      error_type: errorType,
-      source,
-      error_message: errorMessage ? errorMessage.substring(0, 100) : undefined, // Truncate to 100 chars
-    }),
+
+  /**
+   * Called when the scan pipeline throws.
+   * @param errorType Short slug describing the failure reason (no PII)
+   */
+  error: (errorType: string) =>
+    trackEvent('label_parse_error', { error_type: errorType }),
 };
 
 /**

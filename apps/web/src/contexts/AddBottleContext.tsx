@@ -9,6 +9,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { toast } from '../lib/toast';
 import * as smartScanService from '../services/smartScanService';
+import { trackLabelParse, trackBottle } from '../services/analytics';
 
 type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
 type FallbackReason = 'cancelled' | 'permission-denied' | 'not-available' | 'error';
@@ -129,6 +130,9 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
     }
     
     console.log('[AddBottleContext] Starting smart scan for file:', file.name, file.type);
+
+    // ── Analytics: scan started ──────────────────────────────────────────────
+    trackLabelParse.start();
     
     try {
       // Keep sheet OPEN and transition to scanning state
@@ -140,6 +144,10 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
       // Perform smart scan
       const result = await smartScanService.performSmartScan(file);
+
+      // ── Analytics: scan succeeded ──────────────────────────────────────────
+      trackLabelParse.success(result.mode, result.detectedCount ?? 0);
+      trackBottle.addScan(result.mode, result.detectedCount ?? 0);
 
       // Mark as complete
       setScanningState('complete');
@@ -196,17 +204,26 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       // Set error state and keep modal open with helpful message
       setScanningState('error');
       
-      // Parse error message for better UX
+      // Parse error message for better UX and analytics error type
       let errorMessage = 'Scan failed. Please try again.';
+      let analyticsErrorType = 'unknown_error';
+
       if (error.message?.includes('IMAGE_NOT_ACCESSIBLE') || error.message?.includes('IMAGE_FETCH_FAILED')) {
         errorMessage = 'Cannot access image. Please check your connection and try again.';
+        analyticsErrorType = 'image_access_error';
       } else if (error.message?.includes('AI_SERVICE_UNREACHABLE')) {
         errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+        analyticsErrorType = 'ai_service_error';
       } else if (error.message?.includes('Rate limit')) {
         errorMessage = 'Too many requests. Please wait a moment and try again.';
+        analyticsErrorType = 'rate_limit';
       } else if (error.message?.includes('receipt') || error.message?.includes('invoice')) {
         errorMessage = 'Receipt scanning failed. Make sure the receipt is clear and fully visible.';
+        analyticsErrorType = 'receipt_parse_error';
       }
+
+      // ── Analytics: scan failed ─────────────────────────────────────────────
+      trackLabelParse.error(analyticsErrorType);
       
       setScanningMessage(errorMessage);
       
