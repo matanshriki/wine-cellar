@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 
+interface EnrichWineDetail {
+  wine_id: string;
+  wine_name: string;
+  producer: string;
+  vintage: number | null;
+  vivino_url: string | null;
+  status: 'enriched' | 'skipped' | 'failed';
+  skip_reason: string | null;
+  fields_updated: string[] | null;
+  error: string | null;
+}
+
 interface BatchProgress {
   total: number;
   processed: number;
@@ -9,6 +21,7 @@ interface BatchProgress {
   failed: number;
   skipped: number;
   errors: Array<{ wine_id: string; error: string }>;
+  details: EnrichWineDetail[];
 }
 
 interface AnalysisProgress {
@@ -29,6 +42,7 @@ export const AdminEnrichPage: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [detailFilter, setDetailFilter] = useState<'all' | 'enriched' | 'skipped' | 'failed'>('all');
 
   // ── Fetch Vivino Images state ──────────────────────────────────────────────
   const [imageRunning,  setImageRunning]  = useState(false);
@@ -90,6 +104,7 @@ export const AdminEnrichPage: React.FC = () => {
     setIsRunning(true);
     setProgress(null);
     setResult(null);
+    setDetailFilter('all');
 
     try {
       console.log('[Admin Enrich] ========== STARTING REQUEST ==========');
@@ -525,6 +540,98 @@ VALUES ('${user?.id}');`}
               </div>
             </details>
           )}
+        </div>
+      )}
+
+      {/* Per-wine detail table for batch enrichment */}
+      {progress?.details && progress.details.length > 0 && (
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ marginBottom: '0.75rem' }}>
+            📋 Wine-by-Wine Breakdown ({progress.details.length} wines)
+          </h3>
+          <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+            Click a DB Wine ID to copy it. Use the Vivino URL to verify the data on Vivino directly.
+          </p>
+
+          {/* Filter tabs */}
+          {(['all', 'enriched', 'skipped', 'failed'] as const).map(filter => {
+            const count = filter === 'all'
+              ? progress.details.length
+              : progress.details.filter(d => d.status === filter).length;
+            return (
+              <button
+                key={filter}
+                onClick={() => setDetailFilter(filter)}
+                style={{
+                  marginRight: '0.5rem',
+                  marginBottom: '0.75rem',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '999px',
+                  border: '1px solid #dee2e6',
+                  cursor: 'pointer',
+                  fontWeight: detailFilter === filter ? 'bold' : 'normal',
+                  backgroundColor: detailFilter === filter
+                    ? (filter === 'enriched' ? '#d4edda' : filter === 'skipped' ? '#e2e3e5' : filter === 'failed' ? '#f8d7da' : '#343a40')
+                    : '#fff',
+                  color: detailFilter === filter
+                    ? (filter === 'enriched' ? '#155724' : filter === 'skipped' ? '#383d41' : filter === 'failed' ? '#721c24' : '#fff')
+                    : '#495057',
+                }}
+              >
+                {filter === 'all' ? '🔢' : filter === 'enriched' ? '✅' : filter === 'skipped' ? '⏭' : '❌'}{' '}
+                {filter.charAt(0).toUpperCase() + filter.slice(1)} ({count})
+              </button>
+            );
+          })}
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#343a40', color: '#fff' }}>
+                  {['Status', 'Wine Name', 'Producer', 'Vintage', 'DB Wine ID', 'Vivino URL', 'Info'].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {progress.details
+                  .filter(row => detailFilter === 'all' || row.status === detailFilter)
+                  .map((row, i) => {
+                    const statusIcon = row.status === 'enriched' ? '✅' : row.status === 'failed' ? '❌' : '⏭';
+                    const rowBg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                    const info = row.status === 'enriched'
+                      ? <span style={{ color: '#28a745' }}>Updated: {row.fields_updated?.join(', ') ?? '—'}</span>
+                      : row.status === 'failed'
+                      ? <span style={{ color: '#dc3545' }}>{row.error}</span>
+                      : <span style={{ color: '#6c757d' }}>{row.skip_reason}</span>;
+                    return (
+                      <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid #dee2e6' }}>
+                        <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{statusIcon} {row.status}</td>
+                        <td style={{ padding: '0.4rem 0.75rem', fontWeight: 500 }}>{row.wine_name}</td>
+                        <td style={{ padding: '0.4rem 0.75rem' }}>{row.producer || '—'}</td>
+                        <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{row.vintage ?? '—'}</td>
+                        <td
+                          style={{ padding: '0.4rem 0.75rem', fontFamily: 'monospace', fontSize: '0.68rem', whiteSpace: 'nowrap', cursor: 'pointer', color: '#0066cc' }}
+                          title="Click to copy"
+                          onClick={() => navigator.clipboard?.writeText(row.wine_id)}
+                        >
+                          {row.wine_id.slice(0, 8)}…
+                        </td>
+                        <td style={{ padding: '0.4rem 0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.vivino_url
+                            ? <a href={row.vivino_url} target="_blank" rel="noreferrer" style={{ color: '#007bff' }} title={row.vivino_url}>
+                                {row.vivino_url.replace('https://www.vivino.com', '…')}
+                              </a>
+                            : <span style={{ color: '#999' }}>—</span>
+                          }
+                        </td>
+                        <td style={{ padding: '0.4rem 0.75rem', minWidth: '200px' }}>{info}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

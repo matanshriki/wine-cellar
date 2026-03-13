@@ -15,6 +15,18 @@ interface Wine {
   user_id: string;
 }
 
+interface WineDetail {
+  wine_id: string;
+  wine_name: string;
+  producer: string;
+  vintage: number | null;
+  vivino_url: string | null;
+  status: 'enriched' | 'skipped' | 'failed';
+  skip_reason: string | null;
+  fields_updated: string[] | null;
+  error: string | null;
+}
+
 interface BatchProgress {
   total: number;
   processed: number;
@@ -22,6 +34,7 @@ interface BatchProgress {
   failed: number;
   skipped: number;
   errors: Array<{ wine_id: string; error: string }>;
+  details: WineDetail[];
 }
 
 // Rate limiting: 1 request per 2 seconds (30 per minute to be safe)
@@ -92,6 +105,7 @@ Deno.serve(async (req) => {
       failed: 0,
       skipped: 0,
       errors: [],
+      details: [],
     };
 
     console.log(`[Batch Enrich] Found ${progress.total} wines to process`);
@@ -101,11 +115,30 @@ Deno.serve(async (req) => {
         JSON.stringify({
           message: "Dry run completed",
           progress,
-          winesToProcess: wines?.slice(0, 10), // Show first 10 as sample
+          winesToProcess: wines?.slice(0, 10),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Helper to push a detail record
+    const addDetail = (
+      wine: Wine,
+      status: WineDetail['status'],
+      opts: { skip_reason?: string; fields_updated?: string[]; error?: string } = {}
+    ) => {
+      progress.details.push({
+        wine_id: wine.id,
+        wine_name: wine.wine_name,
+        producer: wine.producer,
+        vintage: wine.vintage ?? null,
+        vivino_url: wine.vivino_url ?? null,
+        status,
+        skip_reason: opts.skip_reason ?? null,
+        fields_updated: opts.fields_updated ?? null,
+        error: opts.error ?? null,
+      });
+    };
 
     // Process wines in batches
     for (let i = 0; i < (wines?.length || 0); i += BATCH_SIZE) {
@@ -123,8 +156,10 @@ Deno.serve(async (req) => {
           // Extract wine_id from vivino_url
           const vivinoIdMatch = wine.vivino_url?.match(/\/w\/(\d+)/);
           if (!vivinoIdMatch) {
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: Invalid Vivino URL format - "${wine.vivino_url}"`);
+            const reason = `Invalid Vivino URL format: "${wine.vivino_url}"`;
+            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
+            addDetail(wine, 'skipped', { skip_reason: reason });
             continue;
           }
 
@@ -151,8 +186,10 @@ Deno.serve(async (req) => {
 
           if (!vivinoResponse.ok) {
             const errorText = await vivinoResponse.text();
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: Vivino API error - Status ${vivinoResponse.status}, ${errorText}`);
+            const reason = `Vivino HTTP error ${vivinoResponse.status}: ${errorText.slice(0, 200)}`;
+            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
+            addDetail(wine, 'skipped', { skip_reason: reason });
             continue;
           }
 
@@ -165,8 +202,10 @@ Deno.serve(async (req) => {
 
           // Check if we got valid data
           if (!wineData.rating && !wineData.region && !wineData.grapes && !wineData.wine_style) {
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: No enrichable data from Vivino`);
+            const reason = "Vivino returned no enrichable data (no rating, region, grapes, or style)";
+            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
+            addDetail(wine, 'skipped', { skip_reason: reason });
             continue;
           }
 
@@ -187,9 +226,17 @@ Deno.serve(async (req) => {
 
           // Only update if we have new data
           if (Object.keys(updateData).length === 0) {
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: Wine already has all available data`);
+            const missingFields: string[] = [];
+            if (!wine.rating) missingFields.push('rating');
+            if (!wine.region) missingFields.push('region');
+            if (!wine.country) missingFields.push('country');
+            if (!wine.grapes || wine.grapes.length === 0) missingFields.push('grapes');
+            if (!wine.regional_wine_style) missingFields.push('regional_wine_style');
+            const reason = `Wine already has all data available from Vivino (missing locally: ${missingFields.join(', ') || 'none'})`;
+            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             console.log(`[Batch Enrich] Wine has - Rating: ${!!wine.rating}, Region: ${!!wine.region}, Grapes: ${wine.grapes?.length || 0}, Style: ${!!wine.regional_wine_style}`);
             progress.skipped++;
+            addDetail(wine, 'skipped', { skip_reason: reason });
             continue;
           }
 
@@ -201,21 +248,19 @@ Deno.serve(async (req) => {
           if (updateError) {
             console.error(`[Batch Enrich] Error updating wine ${wine.id}:`, updateError);
             progress.failed++;
-            progress.errors.push({
-              wine_id: wine.id,
-              error: updateError.message,
-            });
+            progress.errors.push({ wine_id: wine.id, error: updateError.message });
+            addDetail(wine, 'failed', { error: updateError.message });
           } else {
             console.log(`[Batch Enrich] ✅ Enriched ${wine.id} with:`, Object.keys(updateData).join(", "));
             progress.enriched++;
+            addDetail(wine, 'enriched', { fields_updated: Object.keys(updateData) });
           }
         } catch (error) {
           console.error(`[Batch Enrich] Error processing wine ${wine.id}:`, error);
+          const errMsg = error instanceof Error ? error.message : "Unknown error";
           progress.failed++;
-          progress.errors.push({
-            wine_id: wine.id,
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
+          progress.errors.push({ wine_id: wine.id, error: errMsg });
+          addDetail(wine, 'failed', { error: errMsg });
         }
       }
     }
