@@ -297,9 +297,9 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
             </svg>
           </motion.div>
 
-          {/* Label — always visible on global FAB; hidden on mobile on standalone usage */}
+          {/* Label — hidden on mobile (icon-only pill), visible on sm+ screens */}
           <span
-            className={isGlobal ? 'text-sm font-semibold whitespace-nowrap' : 'hidden sm:inline text-sm font-semibold whitespace-nowrap'}
+            className="hidden sm:inline text-sm font-semibold whitespace-nowrap"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             {t('cellarSommelier.askSommelier', 'Ask Sommelier')}
