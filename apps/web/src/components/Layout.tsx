@@ -15,6 +15,7 @@ import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { CompactThemeToggle } from './ThemeToggle';
+import { SommelierChatButton } from './SommelierChatButton';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
@@ -471,6 +472,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Floating Footer with Camera FAB — shown on mobile AND iPad */}
       <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
+
+      {/* Global Sommelier FAB — shown on content pages that don't already have it.
+          Hidden on /recommendation (has its own), /agent (IS the agent), and admin/auth pages. */}
+      {['/cellar', '/history', '/wishlist', '/community'].includes(location.pathname) && (
+        <SommelierChatButton isGlobal />
+      )}
 
       {/* Hidden camera input for immediate capture (mobile/PWA) */}
       <input

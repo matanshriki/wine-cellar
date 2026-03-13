@@ -770,6 +770,11 @@
     "accept": "אשר והמשך",
     "reject": "לא תודה"
   },
+  "sommelierFab": {
+    "introTitle": "הכירו את הסומליה שלכם",
+    "introSubtitle": "שאלו על שילובים, מתי לפתוח בקבוק, או מה להגיש הלילה.",
+    "introCta": "לחצו לנסות"
+  },
   "cellarSommelier": {
     "title": "סומליה המרתף",
     "menuButton": "שאל את סומליה המרתף",

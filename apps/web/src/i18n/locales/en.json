@@ -871,6 +871,11 @@
       "continueButton": "Continue Exploring"
     }
   },
+  "sommelierFab": {
+    "introTitle": "Meet your AI Sommelier",
+    "introSubtitle": "Ask about pairings, when to open a bottle, or what to serve tonight.",
+    "introCta": "Tap to try it"
+  },
   "cellarSommelier": {
     "title": "Cellar Sommelier",
     "menuButton": "Ask Cellar Sommelier",
