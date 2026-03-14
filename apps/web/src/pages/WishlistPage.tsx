@@ -17,6 +17,7 @@ import * as wishlistService from '../services/wishlistService';
 import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';
 import { AddBottleSheet } from '../components/AddBottleSheet'; // Wishlist feature (dev only)
+import { WineLoader } from '../components/WineLoader';
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WishlistDetailsModal } from '../components/WishlistDetailsModal'; // Wishlist feature - details modal
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
@@ -227,12 +228,11 @@ export function WishlistPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine-600 mx-auto mb-4"></div>
-          <p style={{ color: 'var(--text-secondary)' }}>{t('common.loading')}</p>
-        </div>
-      </div>
+      <WineLoader
+        variant="page"
+        size="lg"
+        message={t('common.loading')}
+      />
     );
   }
 
