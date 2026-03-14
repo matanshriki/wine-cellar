@@ -23,7 +23,8 @@ interface WineDetailsModalProps {
   bottle: BottleWithWineInfo | null;
   onMarkAsOpened?: (bottle: BottleWithWineInfo) => void;
   onRefresh?: () => void;
-  onAnalyze?: () => void;
+  /** Called when the user clicks the re-analyse button. May return a Promise. */
+  onAnalyze?: () => Promise<void> | void;
 }
 
 export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh, onAnalyze }: WineDetailsModalProps) {
@@ -31,10 +32,26 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
+
+  /**
+   * Wraps the parent's onAnalyze so the modal can show a spinner while the
+   * AI analysis is running, and automatically clears it when done/errored.
+   */
+  const handleRefreshAnalysis = onAnalyze
+    ? async () => {
+        setIsRefreshing(true);
+        try {
+          await onAnalyze();
+        } finally {
+          setIsRefreshing(false);
+        }
+      }
+    : undefined;
 
   // Lock body scroll when modal is open.
   // Uses the negative-top trick so the page doesn't visually snap to y=0
@@ -619,7 +636,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         assumptions: (bottle as any).assumptions,
                         analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
                       }}
-                      onRefresh={onAnalyze}
+                      onRefresh={handleRefreshAnalysis}
+                      isRefreshing={isRefreshing}
                     />
                   </div>
                 )}

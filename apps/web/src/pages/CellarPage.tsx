@@ -576,6 +576,8 @@ export function CellarPage() {
       const updated = await bottleService.getBottle(id);
       if (updated) {
         setBottles(prev => prev.map(b => b.id === id ? updated : b));
+        // Also update the open modal so it shows fresh analysis immediately
+        setSelectedBottle(prev => (prev?.id === id ? updated : prev));
       } else {
         await loadBottles(true);
       }

@@ -139,12 +139,22 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     );
   }
 
-  // Filter by readiness if requested
+  // Filter by readiness if requested.
+  // Respect both the DB-computed readiness_status AND the more nuanced AI readiness_label.
+  // A bottle qualifies as "ready to drink" only when BOTH agree (or when no AI label exists yet).
   if (input.constraints?.preferReadyToDrink) {
-    filteredBottles = filteredBottles.filter(b => {
-      const status = b.readiness_status?.toLowerCase();
+    const readyByStatus = (b: BottleWithWine) => {
+      const status = (b as any).readiness_status?.toLowerCase();
       return status === 'inwindow' || status === 'peak' || status === 'ready';
-    });
+    };
+    const notHoldByAI = (b: BottleWithWine) => {
+      const label = (b as any).readiness_label as string | undefined;
+      // If no AI label yet, don't exclude the bottle — defer to status
+      if (!label) return true;
+      return label !== 'HOLD';
+    };
+
+    filteredBottles = filteredBottles.filter(b => readyByStatus(b) && notHoldByAI(b));
   }
 
   // If no bottles match constraints, fall back to all bottles
@@ -220,11 +230,19 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
       if (wineColor === 'white' || wineColor === 'rose') score += 10;
     }
 
-    // Readiness bonus
+    // Readiness bonus — DB-computed date math
     const readinessStatus = bottle.readiness_status?.toLowerCase();
     if (readinessStatus === 'peak') score += 20;
     if (readinessStatus === 'inwindow') score += 15;
     if (readinessStatus === 'ready') score += 10;
+
+    // AI readiness label adjustment — more nuanced than date math alone.
+    // When the sommelier AI says HOLD, penalise heavily so these bottles
+    // don't get recommended for tonight unless there's nothing else available.
+    const aiLabel = (bottle as any).readiness_label as string | undefined;
+    if (aiLabel === 'READY') score += 15;
+    if (aiLabel === 'PEAK_SOON') score += 8;
+    if (aiLabel === 'HOLD') score -= 35;
 
     // TASTE PROFILE AFFINITY SCORING
     if (userTasteProfile) {
@@ -384,8 +402,15 @@ function generateExplanation(bottle: BottleWithWine, wine: Wine, input: Recommen
     explanation = `A great ${wineColor} option from ${wine.region || wine.producer} that pairs well with ${mealType}. `;
   }
 
-  // Add readiness info
-  if (bottle.readiness_status) {
+  // Add readiness info — prefer the AI label when available
+  const aiLabel = (bottle as any).readiness_label as string | undefined;
+  if (aiLabel === 'READY') {
+    explanation += 'The sommelier AI confirms it\'s ready to drink tonight. ';
+  } else if (aiLabel === 'PEAK_SOON') {
+    explanation += 'It\'s approaching its peak — a great time to open it. ';
+  } else if (aiLabel === 'HOLD') {
+    explanation += 'Note: the sommelier analysis suggests this wine still benefits from more aging, but it\'s the best match in your cellar for tonight. ';
+  } else if (bottle.readiness_status) {
     const status = bottle.readiness_status.toLowerCase();
     if (status === 'peak') {
       explanation += 'It\'s at peak drinking condition right now! ';

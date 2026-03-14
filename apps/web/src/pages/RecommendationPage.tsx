@@ -23,6 +23,7 @@ import { SommelierChatButton } from '../components/SommelierChatButton';
 import { Toggle } from '../components/ui/Toggle';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
+import * as aiAnalysisService from '../services/aiAnalysisService';
 import { trackRecommendation } from '../services/analytics';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 
@@ -56,7 +57,7 @@ const vibes = [
 ];
 
 export function RecommendationPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { openRitual } = useOpenRitual();
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
@@ -207,6 +208,18 @@ export function RecommendationPage() {
   function handleCloseDetailsModal() {
     setShowDetailsModal(false);
     setSelectedBottle(null);
+  }
+
+  async function handleAnalyzeBottle() {
+    if (!selectedBottle) return;
+    try {
+      await aiAnalysisService.generateAIAnalysis(selectedBottle, i18n.language);
+      // Reload the bottle so the modal picks up the fresh analysis
+      const updated = await bottleService.getBottle(selectedBottle.id);
+      if (updated) setSelectedBottle(updated);
+    } catch (error: any) {
+      toast.error(error?.message || t('cellar.sommelier.failed'));
+    }
   }
 
   // Results View
@@ -459,6 +472,7 @@ export function RecommendationPage() {
           isOpen={showDetailsModal}
           onClose={handleCloseDetailsModal}
           bottle={selectedBottle}
+          onAnalyze={selectedBottle ? handleAnalyzeBottle : undefined}
         />
 
         <SommelierChatButton />
