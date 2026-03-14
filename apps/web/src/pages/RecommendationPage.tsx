@@ -148,6 +148,7 @@ export function RecommendationPage() {
       trackRecommendation.resultsShown(recs.length);
       setRecommendations(recs);
       setStep('results');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('errors.generic');
       toast.error(message);
