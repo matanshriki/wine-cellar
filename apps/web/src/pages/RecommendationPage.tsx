@@ -148,7 +148,18 @@ export function RecommendationPage() {
       trackRecommendation.resultsShown(recs.length);
       setRecommendations(recs);
       setStep('results');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Scroll to top after React paints the results.
+      // On mobile / iOS PWA the scroll container may be documentElement or
+      // body rather than window, so we target all three and fall back to
+      // direct scrollTop assignment for browsers that ignore scrollTo().
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        document.documentElement.scrollTo?.({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        document.body.scrollTo?.({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('errors.generic');
       toast.error(message);
