@@ -200,9 +200,9 @@ Deno.serve(async (req) => {
           const wineData = vivinoData.data || vivinoData;
           console.log(`[Batch Enrich] Wine data extracted:`, JSON.stringify(wineData, null, 2));
 
-          // Check if we got valid data
-          if (!wineData.rating && !wineData.region && !wineData.grapes && !wineData.wine_style) {
-            const reason = "Vivino returned no enrichable data (no rating, region, grapes, or style)";
+          // Check if we got valid data (country is now included in the check)
+          if (!wineData.rating && !wineData.region && !wineData.country && !wineData.grapes && !wineData.wine_style) {
+            const reason = "Vivino returned no enrichable data (no rating, region, country, grapes, or style)";
             console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
             addDetail(wine, 'skipped', { skip_reason: reason });
@@ -217,9 +217,10 @@ Deno.serve(async (req) => {
           if (wineData.grapes && (!wine.grapes || wine.grapes.length === 0)) {
             updateData.grapes = wineData.grapes;
           }
-          // Map wine_style to regional_wine_style
-          if (wineData.wine_style && !wine.regional_wine_style) {
-            updateData.regional_wine_style = wineData.wine_style;
+          // Map wine_style → regional_wine_style (both field names tried for safety)
+          const vivinoStyle = wineData.wine_style || wineData.regional_wine_style;
+          if (vivinoStyle && !wine.regional_wine_style) {
+            updateData.regional_wine_style = vivinoStyle;
           }
 
           console.log(`[Batch Enrich] Fields to update:`, Object.keys(updateData));

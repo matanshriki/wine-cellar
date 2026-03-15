@@ -165,8 +165,22 @@ serve(async (req) => {
               extractedData.name = wineData.name || extractedData.name;
               extractedData.winery = wineData.winery?.name || extractedData.winery;
               extractedData.vintage = wineData.vintage?.year || wineData.year || null;
-              extractedData.region = wineData.region?.name || wineData.region || null;
-              extractedData.country = wineData.region?.country?.name || wineData.country?.name || null;
+
+              // Region: handle both object { name: "..." } and plain string
+              extractedData.region = wineData.region?.name || (typeof wineData.region === 'string' ? wineData.region : null);
+
+              // Country: try all known Vivino data shapes
+              //   1. region.country.name  (most common nested shape)
+              //   2. region.country       (country as plain string inside region)
+              //   3. country.name         (country object at top level)
+              //   4. country              (country as plain string at top level)
+              extractedData.country =
+                wineData.region?.country?.name ||
+                (typeof wineData.region?.country === 'string' ? wineData.region.country : null) ||
+                wineData.country?.name ||
+                (typeof wineData.country === 'string' ? wineData.country : null) ||
+                null;
+
               extractedData.grape = wineData.style?.varietal_name || wineData.primary_varietal?.name || wineData.grape || null;
               
               // Handle grapes array (can be objects or strings)
@@ -174,12 +188,28 @@ serve(async (req) => {
                 extractedData.grapes = wineData.grapes.map((g: any) => 
                   typeof g === 'string' ? g : (g.name || g.varietal_name || '')
                 ).filter(Boolean).join(', ') || null;
-              } else if (wineData.style?.grapes) {
+              } else if (wineData.style?.grapes && Array.isArray(wineData.style.grapes)) {
                 extractedData.grapes = wineData.style.grapes.map((g: any) => g.name || g).filter(Boolean).join(', ') || null;
               }
               
               extractedData.alcohol = wineData.alcohol ? `${wineData.alcohol}%` : null;
-              extractedData.wine_style = wineData.style?.name || wineData.wine_style?.name || null;
+
+              // Regional wine style: try all known field names Vivino uses
+              //   1. style.name                 (most common)
+              //   2. style.regional_name
+              //   3. style.seo_name
+              //   4. wine_style.name / wine_style (plain string)
+              //   5. regional_name / regional_wine_style at top level
+              extractedData.wine_style =
+                wineData.style?.name ||
+                wineData.style?.regional_name ||
+                wineData.style?.seo_name ||
+                wineData.wine_style?.name ||
+                (typeof wineData.wine_style === 'string' ? wineData.wine_style : null) ||
+                wineData.regional_name ||
+                wineData.regional_wine_style ||
+                null;
+
               extractedData.image_url = wineData.image?.location || wineData.image || extractedData.image_url;
               
               console.log('[Fetch Vivino Data] ✅ Extracted:', Object.keys(extractedData).filter(k => extractedData[k]).join(', '));
@@ -209,7 +239,9 @@ serve(async (req) => {
       rating: extractedData.rating || null,
       rating_count: extractedData.rating_count || null,
       alcohol: extractedData.alcohol || null,
+      // Expose under both names so callers can use whichever they prefer
       wine_style: extractedData.wine_style || null,
+      regional_wine_style: extractedData.wine_style || null,
       image_url: extractedData.image_url || null,
     };
 
