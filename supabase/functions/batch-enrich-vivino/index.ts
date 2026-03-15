@@ -37,9 +37,12 @@ interface BatchProgress {
   details: WineDetail[];
 }
 
-// Rate limiting: 1 request per 2 seconds (30 per minute to be safe)
-const DELAY_BETWEEN_REQUESTS = 2000;
-const BATCH_SIZE = 50; // Process 50 wines at a time
+// Rate limiting: 1 request per second (safe for Vivino, stays within Edge Function time limit)
+const DELAY_BETWEEN_REQUESTS = 1000;
+// Hard cap per invocation to stay well within Supabase's 150s wall-clock limit.
+// The client calls this function in a loop until all wines are processed.
+const MAX_PER_INVOCATION = 10;
+const BATCH_SIZE = 10;
 
 Deno.serve(async (req) => {
   console.log("[Batch Enrich] ========== NEW REQUEST ==========");
@@ -79,7 +82,9 @@ Deno.serve(async (req) => {
     console.log(`[Batch Enrich] ⚠️ Using hardcoded test user: ${testUserId}`);
 
     // Parse request options
-    const { dryRun = false, limit = 1000 } = await req.json().catch(() => ({}));
+    const { dryRun = false, limit = MAX_PER_INVOCATION, offset = 0 } = await req.json().catch(() => ({}));
+    // Never process more than MAX_PER_INVOCATION wines per call regardless of what the client requests
+    const effectiveLimit = Math.min(limit, MAX_PER_INVOCATION);
 
     // Fetch all wines that need enrichment
     // Criteria: Have vivino_url but missing other data (rating, region, grapes, or regional_wine_style)
@@ -88,7 +93,8 @@ Deno.serve(async (req) => {
       .select("id, wine_name, producer, vintage, vivino_url, rating, region, country, grapes, regional_wine_style, user_id")
       .not("vivino_url", "is", null)
       .or("rating.is.null,region.is.null,country.is.null,grapes.is.null,regional_wine_style.is.null")
-      .limit(limit);
+      .order("id")                                         // stable ordering so offset is consistent
+      .range(offset, offset + effectiveLimit - 1);         // page forward past already-attempted wines
 
     if (fetchError) {
       console.error("[Batch Enrich] Error fetching wines:", fetchError);
@@ -166,14 +172,16 @@ Deno.serve(async (req) => {
           const vivinoWineId = vivinoIdMatch[1];
           console.log(`[Batch Enrich] Extracted Vivino ID: ${vivinoWineId}`);
 
-          // Fetch Vivino data using the wine ID
+          // Fetch Vivino data using the wine ID.
+          // Must use the service role key for function-to-function calls —
+          // the anon key is rejected by Supabase JWT verification in this context.
           const vivinoResponse = await fetch(
             `${Deno.env.get("SUPABASE_URL")}/functions/v1/fetch-vivino-data`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
               },
               body: JSON.stringify({ wine_id: vivinoWineId }),
             }
@@ -268,9 +276,13 @@ Deno.serve(async (req) => {
 
     console.log(`[Batch Enrich] Completed:`, progress);
 
+    // has_more = true when we got a full page — there may be more wines after the current offset
+    const has_more = progress.total === effectiveLimit;
+
     return new Response(
       JSON.stringify({
         message: "Batch enrichment completed",
+        has_more,
         progress,
         summary: {
           total: progress.total,

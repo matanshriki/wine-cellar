@@ -87,110 +87,106 @@ export const AdminEnrichPage: React.FC = () => {
     checkAdmin();
   }, [user]);
 
-  const runBatchEnrich = async () => {
-    if (!user) {
-      alert('You must be logged in to run batch enrichment');
-      return;
+  // Helper: get a fresh (non-expired) session token
+  const getFreshToken = async (): Promise<string> => {
+    let session = contextSession;
+
+    if (!session) {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) throw new Error('Session expired. Please refresh the page and try again.');
+      session = data.session;
     }
 
-    if (!isDryRun && !confirm(
-      `⚠️ This will fetch Vivino data for up to ${limit} wines.\n\n` +
-      `It will take approximately ${Math.ceil((limit * 2) / 60)} minutes.\n\n` +
-      `Continue?`
-    )) {
-      return;
+    const now = Math.floor(Date.now() / 1000);
+    if ((session.expires_at ?? 0) - now < 60) {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) throw new Error('Failed to refresh session. Please refresh the page.');
+      session = data.session;
     }
+
+    return session.access_token;
+  };
+
+  // Helper: call the Edge Function once for a specific page of wines
+  const callEnrichOnce = async (token: string, offset: number): Promise<{ data: any; hasMore: boolean }> => {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ dryRun: isDryRun, limit: 10, offset }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      let msg = `HTTP ${response.status}: ${text}`;
+      try { msg = JSON.parse(text).message || msg; } catch {}
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    return { data, hasMore: !!data.has_more };
+  };
+
+  const runBatchEnrich = async () => {
+    if (!user) { alert('You must be logged in to run batch enrichment'); return; }
+
+    const totalWanted = limit;
+    if (!isDryRun && !confirm(
+      `⚠️ This will fetch Vivino data for up to ${totalWanted} wines.\n\n` +
+      `Processed in chunks of 10 wines (~15s each) to stay within server limits.\n\nContinue?`
+    )) return;
 
     setIsRunning(true);
     setProgress(null);
     setResult(null);
     setDetailFilter('all');
 
+    // Accumulated totals across all chunks
+    const accumulated: BatchProgress = {
+      total: 0, processed: 0, enriched: 0, failed: 0, skipped: 0, errors: [], details: [],
+    };
+
     try {
-      console.log('[Admin Enrich] ========== STARTING REQUEST ==========');
-      console.log('[Admin Enrich] User:', user?.id);
-      console.log('[Admin Enrich] Dry run:', isDryRun);
-      console.log('[Admin Enrich] Limit:', limit);
-      
-      // Use session from context (more reliable than getSession)
-      console.log('[Admin Enrich] Step 1: Checking session from context...');
-      let session = contextSession;
-      
-      console.log('[Admin Enrich] Session from context:', !!session);
-      console.log('[Admin Enrich] Session expires at:', session?.expires_at);
-      
-      if (!session) {
-        console.log('[Admin Enrich] No session in context, fetching fresh...');
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !sessionData.session) {
-          console.error('[Admin Enrich] ❌ Failed to get session:', sessionError);
-          throw new Error('Session expired. Please refresh the page and try again.');
+      let offset = 0;        // advances by 10 every round — moves past skipped wines too
+      let totalProcessed = 0;
+      let round = 0;
+
+      while (totalProcessed < totalWanted) {
+        round++;
+        console.log(`[Admin Enrich] Round ${round}, offset: ${offset}, processed so far: ${totalProcessed}`);
+
+        const token = await getFreshToken();
+        const { data, hasMore } = await callEnrichOnce(token, offset);
+
+        const p: BatchProgress = data.progress;
+
+        // Always advance offset by how many wines were fetched this round
+        // (even if all were skipped — this is the key fix)
+        offset += p.total;
+        totalProcessed += p.total;
+
+        accumulated.total      += p.total;
+        accumulated.processed  += p.processed;
+        accumulated.enriched   += p.enriched;
+        accumulated.failed     += p.failed;
+        accumulated.skipped    += p.skipped;
+        accumulated.errors     = [...accumulated.errors, ...p.errors];
+        accumulated.details    = [...accumulated.details, ...p.details];
+
+        setProgress({ ...accumulated });
+        setResult({ ...data, progress: accumulated });
+
+        // Stop when there are no more wines in the queue
+        if (!hasMore || p.total === 0) {
+          console.log('[Admin Enrich] ✅ All wines processed');
+          break;
         }
-        
-        session = sessionData.session;
-        console.log('[Admin Enrich] ✅ Got fresh session');
+
+        // Brief pause between chunks so the browser stays responsive
+        await new Promise(r => setTimeout(r, 500));
       }
-
-      // Check if session is expired or about to expire
-      const now = Math.floor(Date.now() / 1000);
-      const expiresAt = session.expires_at || 0;
-      const timeUntilExpiry = expiresAt - now;
-      
-      console.log('[Admin Enrich] Time until token expiry:', timeUntilExpiry, 'seconds');
-      
-      if (timeUntilExpiry < 60) {
-        console.log('[Admin Enrich] Token expiring soon, refreshing...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          console.error('[Admin Enrich] ❌ Refresh failed:', refreshError);
-          throw new Error('Failed to refresh session. Please refresh the page and try again.');
-        }
-        
-        session = refreshData.session;
-        console.log('[Admin Enrich] ✅ Session refreshed');
-      }
-
-      console.log('[Admin Enrich] Step 2: Calling Edge Function...');
-      console.log('[Admin Enrich] Token length:', session.access_token.length);
-      console.log('[Admin Enrich] Token prefix:', session.access_token.substring(0, 30) + '...');
-      console.log('[Admin Enrich] Token suffix:', '...' + session.access_token.substring(session.access_token.length - 30));
-      console.log('[Admin Enrich] URL:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ dryRun: isDryRun, limit }),
-        }
-      );
-
-      console.log('[Admin Enrich] Step 3: Response received');
-      console.log('[Admin Enrich] Status:', response.status);
-      console.log('[Admin Enrich] OK:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Admin Enrich] Error response:', errorText);
-        
-        // Try to parse JSON error
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.error || errorJson.message || `HTTP ${response.status}`);
-        } catch {
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-      }
-
-      const data = await response.json();
-      console.log('[Admin Enrich] Success:', data);
-      setResult(data);
-      setProgress(data.progress);
     } catch (error) {
       console.error('[Admin Enrich] Error:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -434,7 +430,7 @@ VALUES ('${user?.id}');`}
         </label>
 
         <p style={{ fontSize: '0.875rem', color: '#666', margin: 0 }}>
-          ⏱️ Estimated time: <strong>{Math.ceil((limit * 2) / 60)} minutes</strong> (2 seconds per wine)
+          ⏱️ Estimated time: <strong>{Math.ceil(limit / 60)} minutes</strong> (1 second per wine, 10 per chunk)
         </p>
       </div>
 
