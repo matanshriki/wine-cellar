@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { MetaHead } from '../components/MetaHead';
 import { isIPad } from '../utils/deviceDetection';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1258,9 +1259,15 @@ export function CellarPage() {
 
   return (
     <div>
+      <MetaHead
+        title="My Cellar"
+        description="Manage your personal wine collection. Track bottles, explore drink windows, and get AI-powered recommendations for what to open next."
+        url="/cellar"
+        noIndex={true}
+      />
       {/**
        * Page Header - Mobile Optimized
-       * 
+       *
        * Mobile Layout:
        * - Stacked vertically on small screens
        * - Full-width buttons on mobile

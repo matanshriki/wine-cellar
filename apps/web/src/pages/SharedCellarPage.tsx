@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { getSharedCellar, parseShareLink, type ShareData } from '../services/shareService';
 import { WineLoader } from '../components/WineLoader';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
+import { MetaHead } from '../components/MetaHead';
 
 export function SharedCellarPage() {
   const { shareId } = useParams<{ shareId: string }>(); // New: /share/:shareId
@@ -157,6 +158,13 @@ export function SharedCellarPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
+      <MetaHead
+        title={shareData?.userName ? `${shareData.userName}'s Wine Cellar` : 'Shared Wine Cellar'}
+        description={shareData?.userName
+          ? `Browse ${shareData.userName}'s wine collection on Wine Cellar Brain.`
+          : 'Browse a shared wine collection on Wine Cellar Brain.'}
+        url="/share"
+      />
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Header with User Profile */}
         <div className="mb-6">

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
@@ -318,6 +319,7 @@ function AppRoutes() {
 
 export function App() {
   return (
+    <HelmetProvider>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
@@ -337,6 +339,7 @@ export function App() {
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 

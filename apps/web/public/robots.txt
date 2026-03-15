@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /privacy
+Allow: /share
+Allow: /share/
+Allow: /about
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /sitemap.xml
+
+# Auth-gated routes — crawlers will hit login redirect, disallow to save crawl budget
+Disallow: /cellar
+Disallow: /recommendation
+Disallow: /history
+Disallow: /profile
+Disallow: /admin/
+Disallow: /wishlist
+Disallow: /community
+Disallow: /agent
+
+Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml

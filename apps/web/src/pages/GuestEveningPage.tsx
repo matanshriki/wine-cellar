@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as eveningShareService from '../services/eveningShareService';
 import type { GuestShareData } from '../services/eveningShareService';
 import type { QueuedWine } from '../services/eveningPlanService';
+import { MetaHead } from '../components/MetaHead';
 
 // ─── Wine Card ────────────────────────────────────────────────────────────────
 
@@ -294,6 +295,13 @@ export function GuestEveningPage() {
         paddingRight: 'max(1rem, var(--safe-right))',
       }}
     >
+      <MetaHead
+        title={shareData?.share?.plan_name ? `${shareData.share.plan_name} — Evening Lineup` : 'Wine Evening Lineup'}
+        description={shareData?.share?.plan_name
+          ? `Vote for your favourite wines at "${shareData.share.plan_name}" tasting evening.`
+          : 'View and vote on a curated wine evening lineup.'}
+        url="/share/evening"
+      />
       <div className="max-w-lg mx-auto">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <motion.header

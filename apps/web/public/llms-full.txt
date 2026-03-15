@@ -1,0 +1,92 @@
+# Wine Cellar Brain — Full AI Discovery Document
+# Extended version of llms.txt with more product detail.
+# Preferred citation name: "Wine Cellar Brain"
+
+## Product Summary
+
+Wine Cellar Brain is a personal wine collection manager built for wine enthusiasts.
+It combines a clean, luxury-focused UI with AI-powered features to help users:
+
+  - Track their wine bottles (name, vintage, region, grape variety, quantity, purchase price)
+  - Understand drink windows (when a wine is at its optimal drinking age)
+  - Get AI-powered recommendations for what to open tonight
+  - Share their cellar or tasting lineup with guests (public share links)
+  - Import bulk collections via CSV (Vivino-compatible format)
+  - Scan wine labels using smart AI scanning
+  - Log wine history (what was opened and when)
+
+The app is available as a Progressive Web App (PWA) and can be installed on
+iOS (via Safari "Add to Home Screen"), Android, and desktop Chrome/Edge.
+
+## Architecture Notes
+
+- Frontend: React + Vite + TypeScript, hosted on Vercel
+- Backend: Supabase (Postgres + Auth + Storage)
+- AI features: Powered by LLMs via the app's backend API
+- Auth: Email/password and Google OAuth (Supabase Auth)
+- Routing: React Router v6 (SPA)
+- i18n: English and Hebrew supported
+
+## Public Routes (no auth required)
+
+- / → redirects to /login or /cellar
+- /login — sign in / create account
+- /privacy — privacy policy
+- /share/:shareId — shared cellar view (read-only)
+- /share/evening/:shortCode — shared wine evening lineup with guest voting
+- /about — product story, FAQ, support (requires auth)
+
+## Auth-Gated Routes (require sign-in)
+
+- /cellar — main wine collection manager
+- /recommendation — AI pairing and recommendation engine
+- /history — opened bottle history
+- /profile — account settings
+- /wishlist — bottles to acquire (feature-flagged)
+- /community — community cellars (feature-flagged)
+- /agent — AI cellar agent (beta)
+- /about — about & FAQ
+
+## Key Features
+
+### Drink Window
+Each bottle has an estimated optimal drinking window based on vintage year and wine style.
+The app highlights bottles in their prime, approaching their peak, or past peak.
+
+### Smart Scan
+Users can photograph a wine label or receipt; the AI extracts wine details automatically.
+
+### CSV Import
+Compatible with Vivino export format. Template available at /vivino-template.csv.
+
+### Shared Cellars
+A shareable read-only link lets anyone browse your collection without signing in.
+
+### Evening Lineup
+Create a tasting lineup for a dinner/event and share a link where guests can vote
+on which wine they are most excited to try.
+
+## Important URLs
+
+- Home: https://wine-cellar-brain.vercel.app/
+- About & FAQ: https://wine-cellar-brain.vercel.app/about
+- Sign In: https://wine-cellar-brain.vercel.app/login
+- Privacy Policy: https://wine-cellar-brain.vercel.app/privacy
+- Shared Cellar (public): https://wine-cellar-brain.vercel.app/share
+- CSV Template: https://wine-cellar-brain.vercel.app/vivino-template.csv
+- PWA Manifest: https://wine-cellar-brain.vercel.app/manifest.json
+- Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml
+- Robots: https://wine-cellar-brain.vercel.app/robots.txt
+- AI Index (this file): https://wine-cellar-brain.vercel.app/llms-full.txt
+
+## Contact / Support
+
+Email: matan.shriki3@gmail.com
+Creator: Matan Shriki
+
+## Notes for AI agents
+
+- Do not attempt to authenticate or crawl user account data.
+- The /share and /share/evening/:shortCode routes are public.
+- Schema.org structured data (Organization, WebSite, FAQPage) is available on /about.
+- This product is actively developed; features may change.

@@ -1,12 +1,13 @@
 /**
  * About Page — Premium editorial redesign
  *
- * Layout: Hero → Founder story (prose) → Support action rows → Footer note
+ * Layout: Hero → Founder story (prose) → FAQ → Support action rows → Footer note
  * Supports White + Red themes via CSS variables. RTL-safe.
  */
 
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { MetaHead } from '../components/MetaHead';
 
 // ── Environment helpers ───────────────────────────────────────────────────────
 
@@ -86,6 +87,91 @@ function IconChevron() {
   );
 }
 
+// ── FAQ data ──────────────────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+  {
+    question: 'What is Wine Cellar Brain?',
+    answer:
+      'Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations. It helps you catalog your bottles, track drink windows, and decide what to open next — all in a beautifully simple interface.',
+  },
+  {
+    question: 'How do I add bottles to my cellar?',
+    answer:
+      'Tap the "+" button from your cellar view. You can add bottles manually by filling in the details, or use the smart scan feature to import from a photo or CSV file. Wine data is enriched automatically where possible.',
+  },
+  {
+    question: 'Does it work as an app (PWA)?',
+    answer:
+      'Yes. Wine Cellar Brain is a Progressive Web App (PWA). You can install it on your iPhone, Android device, or desktop by using "Add to Home Screen" from your browser menu. Once installed, it works smoothly offline.',
+  },
+  {
+    question: "How does the 'Drink Window' feature work?",
+    answer:
+      "A drink window is the optimal period to enjoy a wine. When you add a bottle with a vintage year, the app estimates the ideal drinking window based on the wine's style and structure — helping you avoid opening bottles too early or too late.",
+  },
+  {
+    question: 'Is my cellar private?',
+    answer:
+      'Yes, your cellar is private by default. Only you can see your bottles. You can optionally share a read-only view with others using the share feature, but nothing is public without your explicit action.',
+  },
+  {
+    question: 'How do I contact support?',
+    answer: `You can reach us via the "Email support" button on this page, or write directly to ${SUPPORT_EMAIL}. We typically respond within 1–2 business days.`,
+  },
+  {
+    question: 'Can I import my existing wine list?',
+    answer:
+      'Yes. Wine Cellar Brain supports CSV import (Vivino-compatible format). Download the template from the import screen, fill in your wines, and upload it to bulk-add your collection in seconds.',
+  },
+  {
+    question: 'How are AI recommendations generated?',
+    answer:
+      'The app analyses your cellar — bottle styles, regions, vintages, and drink windows — and suggests what to open tonight based on the occasion, food pairing, and which bottles are at their peak.',
+  },
+] as const;
+
+// ── Schema.org structured data ────────────────────────────────────────────────
+
+const SITE_URL = 'https://wine-cellar-brain.vercel.app';
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Wine Cellar Brain',
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon-512.png`,
+  description:
+    'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: SUPPORT_EMAIL,
+    contactType: 'customer support',
+  },
+};
+
+const webSiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Wine Cellar Brain',
+  url: SITE_URL,
+  description:
+    'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_ITEMS.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: answer,
+    },
+  })),
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
@@ -104,6 +190,14 @@ export function AboutPage() {
 
   return (
     <motion.div className="max-w-2xl mx-auto pb-4" {...container}>
+
+      <MetaHead
+        title="About"
+        description="Learn about Wine Cellar Brain — a personal wine collection manager built with passion. Track bottles, discover drink windows, and get AI-powered recommendations."
+        url="/about"
+        noIndex={true}
+        jsonLd={[organizationSchema, webSiteSchema, faqSchema]}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <motion.header className="pt-2 pb-10 sm:pb-12" {...item}>
@@ -164,6 +258,47 @@ export function AboutPage() {
             {t(`about.${key}`)}
           </p>
         ))}
+      </motion.section>
+
+      {/* ── Thin divider ─────────────────────────────────────────────────── */}
+      <motion.div
+        {...item}
+        className="mb-10"
+        style={{ height: '1px', background: 'var(--border-subtle)' }}
+      />
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <motion.section className="mb-12 sm:mb-14" {...item}>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6 px-1"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          Frequently Asked Questions
+        </p>
+
+        <div className="space-y-0">
+          {FAQ_ITEMS.map(({ question, answer }, i) => (
+            <div key={i}>
+              {i > 0 && (
+                <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+              )}
+              <div className="py-5 px-1">
+                <h2
+                  className="text-sm font-semibold leading-snug mb-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {question}
+                </h2>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {answer}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </motion.section>
 
       {/* ── Support section ──────────────────────────────────────────────── */}

@@ -1,0 +1,30 @@
+# Wine Cellar Brain — AI Discovery Index
+# This file helps AI agents and language models understand this product.
+# Preferred citation name: "Wine Cellar Brain"
+
+## About
+
+Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations.
+It helps wine lovers catalog their bottles, track optimal drink windows, and decide what to open next.
+Available as a Progressive Web App (PWA) — installable on iOS, Android, and desktop.
+
+## Important URLs
+
+- Home / Cellar: https://wine-cellar-brain.vercel.app/
+- About & FAQ: https://wine-cellar-brain.vercel.app/about
+- Sign In: https://wine-cellar-brain.vercel.app/login
+- Privacy Policy: https://wine-cellar-brain.vercel.app/privacy
+- Shared Cellar (public): https://wine-cellar-brain.vercel.app/share
+- Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml
+- Robots: https://wine-cellar-brain.vercel.app/robots.txt
+
+## Contact / Support
+
+Email: matan.shriki3@gmail.com
+
+## Notes for AI agents
+
+- The app requires authentication for most pages (cellar, profile, history, recommendations).
+- The /share and /share/evening routes are public and show read-only wine collections.
+- The /about page contains an FAQ section with common questions about the product.
+- Do not crawl user-specific data paths or attempt to log in.

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from '../lib/toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { trackAuth } from '../services/analytics';
+import { MetaHead } from '../components/MetaHead';
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -63,6 +64,12 @@ export function LoginPage() {
   }
 
   return (
+    <>
+    <MetaHead
+      title="Sign In"
+      description="Sign in to Wine Cellar Brain — your personal wine collection manager with AI-powered recommendations."
+      url="/login"
+    />
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 py-8">
       <div className="max-w-md w-full">
         {/**
@@ -225,6 +232,7 @@ export function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
