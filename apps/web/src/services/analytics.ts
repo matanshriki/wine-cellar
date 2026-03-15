@@ -124,74 +124,61 @@ export function disableAnalytics(): void {
 // ── Initialisation ────────────────────────────────────────────────────────────
 
 /**
- * Initialise GA4.
- * - Loads the gtag.js script once
- * - Respects consent and the `VITE_ANALYTICS_ENABLED` flag
- * - Sets initial user properties (platform, session)
- * - Sends queued AI attribution event (if any)
+ * Grant analytics consent and activate GA4 data collection.
  *
- * Safe to call multiple times — script is only appended once.
+ * The gtag.js script is already loaded from index.html with consent denied by
+ * default (Consent Mode v2). This function upgrades consent to "granted" once
+ * the user accepts the cookie banner, which unblocks data collection.
+ *
+ * Safe to call multiple times — guarded by a sessionStorage flag.
  */
 export function initializeAnalytics(): void {
   if (!isAnalyticsEnabled()) {
-    console.log('[Analytics] Skipping init — disabled or no measurement ID');
+    console.log('[Analytics] Skipping — disabled or no measurement ID');
     return;
   }
 
   if (!hasAnalyticsConsent()) {
-    console.log('[Analytics] Skipping init — waiting for consent');
+    console.log('[Analytics] Skipping — waiting for consent');
     return;
   }
 
-  // Guard: already initialised
-  if (document.getElementById('ga4-script')) {
-    console.log('[Analytics] Already initialised');
+  // Guard: already activated this session
+  if (sessionStorage.getItem('ga4_consent_granted')) {
+    console.log('[Analytics] Already activated');
+    return;
+  }
+  sessionStorage.setItem('ga4_consent_granted', '1');
+
+  // gtag is always available from index.html — no script injection needed
+  if (!window.gtag) {
+    console.warn('[Analytics] gtag not found — check index.html');
     return;
   }
 
   const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
-  const debugMode =
-    import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV;
+  const debugMode = import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV;
 
-  // Set up dataLayer + gtag shim
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function (...args: unknown[]) {
-    (window.dataLayer as unknown[]).push(args);
-  };
+  // Upgrade consent from 'denied' (set in index.html) to 'granted'
+  window.gtag('consent', 'update', {
+    analytics_storage: 'granted',
+  });
 
-  window.gtag('js', new Date());
-
+  // Apply debug mode and any runtime config overrides
   window.gtag('config', measurementId, {
-    // Privacy
-    anonymize_ip: true,
-    allow_google_signals: false,
-    allow_ad_personalization_signals: false,
-
-    // Manual SPA page-view tracking
     send_page_view: false,
-
-    // Debug mode (GA DebugView)
     debug_mode: debugMode,
-
-    // App metadata
     app_name: 'Wine Cellar Brain',
   });
 
-  // Load the GA script
-  const script = document.createElement('script');
-  script.id = 'ga4-script';
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-  document.head.appendChild(script);
-
-  // Platform user property (persistent)
+  // Platform user property (persistent across this session)
   const platform = detectPlatform();
   window.gtag('set', 'user_properties', { platform });
 
   // Send queued AI attribution (once per session)
   sendAttributionToGA();
 
-  console.log('[Analytics] ✅ GA4 initialised', { measurementId, debugMode, platform });
+  console.log('[Analytics] ✅ GA4 consent granted + activated', { measurementId, debugMode, platform });
 }
 
 // ── User identity ─────────────────────────────────────────────────────────────

@@ -49,6 +49,34 @@
 
     <!-- Google Search Console Verification -->
     <meta name="google-site-verification" content="L5yXqSdTyZALHJiyPCwX4oYNAucmy-oubVYSnPxPr0g" />
+
+    <!-- Google tag (gtag.js) — always loads so Tag Assistant can detect it.
+         Consent Mode defaults to "denied" until the user accepts cookies.
+         analytics.ts calls gtag('consent','update',{analytics_storage:'granted'})
+         after the user accepts the cookie banner. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-30KY78JBLP"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // Set consent defaults BEFORE the config call so no data is sent
+      // until the user explicitly accepts the cookie consent banner.
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage:        'denied',
+        wait_for_update:   2000
+      });
+
+      gtag('js', new Date());
+
+      // SPA: send_page_view:false — React Router fires page_view manually.
+      gtag('config', 'G-30KY78JBLP', {
+        send_page_view:                    false,
+        anonymize_ip:                      true,
+        allow_google_signals:              false,
+        allow_ad_personalization_signals:  false
+      });
+    </script>
     
     <title>Wine Cellar Brain</title>
   </head>
