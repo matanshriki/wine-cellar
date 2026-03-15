@@ -20,6 +20,7 @@ import {
   isIPad,
   isStandalonePwa,
 } from '../utils/deviceDetection';
+import { sendAttributionToGA } from './aiAttribution';
 
 // Global gtag types
 declare global {
@@ -134,7 +135,10 @@ export function initializeAnalytics(): void {
   const platform = detectPlatform();
   window.gtag('set', 'user_properties', { platform });
   console.log('[Analytics] 🖥️ Platform detected:', platform);
-  
+
+  // Send AI attribution data that was captured at startup (once per session)
+  sendAttributionToGA();
+
   console.log('[Analytics] ✅ GA4 initialized successfully');
 }
 

@@ -27,6 +27,9 @@ import { registerServiceWorker } from './utils/registerServiceWorker';
 // Import analytics initialization
 import { initializeAnalytics } from './services/analytics';
 
+// Import AI attribution capture (runs before consent — no data sent to GA here)
+import { captureAttribution } from './services/aiAttribution';
+
 // Import PWA animation fixes
 import { initPWAAnimationFixes } from './utils/pwaAnimationFix';
 
@@ -50,10 +53,18 @@ registerServiceWorker().catch(console.error);
 initPWAAnimationFixes();
 
 /**
+ * Capture AI / UTM attribution data immediately — before any React renders or
+ * redirects that might clobber the raw referrer or URL params.
+ * Stores to localStorage only; no data is sent to GA at this point.
+ */
+captureAttribution();
+
+/**
  * Initialize Google Analytics 4
- * Only runs if VITE_ANALYTICS_ENABLED=true, measurement ID is provided, AND user has given consent
- * Privacy-first: No PII is tracked
- * Note: Analytics may initialize later after user logs in and accepts consent
+ * Only runs if VITE_ANALYTICS_ENABLED=true, measurement ID is provided, AND user has given consent.
+ * Internally calls sendAttributionToGA() once GA is ready.
+ * Privacy-first: No PII is tracked.
+ * Note: Analytics may initialize later after user logs in and accepts consent.
  */
 initializeAnalytics();
 
