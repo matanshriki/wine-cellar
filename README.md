@@ -85,8 +85,9 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 # Google Analytics 4 (optional)
-VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
-VITE_ANALYTICS_ENABLED=true
+VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX   # Your GA4 measurement ID
+VITE_ANALYTICS_ENABLED=true             # Set to "true" to enable GA (requires user consent)
+VITE_GA_DEBUG=true                      # Set to "true" to enable GA DebugView (dev only)
 
 # Feature Flags (optional - for AI label art)
 VITE_FEATURE_GENERATED_LABEL_ART=true
@@ -429,8 +430,9 @@ MIT
    ```bash
    VITE_SUPABASE_URL=https://pktelrzyllbwrmcfgocx.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key-here
-   VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
-   VITE_ANALYTICS_ENABLED=true
+   VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX   # GA4 measurement ID
+   VITE_ANALYTICS_ENABLED=true             # Enable GA (requires user consent)
+   # VITE_GA_DEBUG=true                    # GA DebugView — dev/staging only, never production
    ```
 
 2. **Supabase Auth URLs** (in Supabase dashboard → Auth → URL Configuration):

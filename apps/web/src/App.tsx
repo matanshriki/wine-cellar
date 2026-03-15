@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAnalyticsUser } from './hooks/useAnalyticsUser';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
@@ -180,6 +181,9 @@ function FeatureFlagRoute({
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+
+  // Sync Supabase auth state → GA4 user_id (pseudonymous UUID, no PII)
+  useAnalyticsUser();
 
   // Show loading only on initial app load (once)
   if (loading) {

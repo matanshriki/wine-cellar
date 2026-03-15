@@ -1,33 +1,21 @@
 /**
- * ScrollToTop Component
- * 
- * Automatically scrolls to the top of the page when the route changes.
- * Uses smooth scrolling for better UX.
- * Also tracks page views for analytics.
+ * ScrollToTop — scrolls to the top of the page on every route change,
+ * and delegates GA4 page-view tracking to useGaPageViews().
  */
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { trackPageView } from '../services/analytics';
+import { useGaPageViews } from '../hooks/useGaPageViews';
 
 export function ScrollToTop() {
   const { pathname } = useLocation();
 
+  // Fire GA4 page_view on every route change (no double-firing on initial load)
+  useGaPageViews();
+
   useEffect(() => {
-    // Scroll to top smoothly when route changes
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth'
-    });
-    
-    // Track page view for analytics
-    // This fires on every route change, perfect for SPA tracking
-    trackPageView(pathname);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }, [pathname]);
 
   return null;
 }
-
-
-

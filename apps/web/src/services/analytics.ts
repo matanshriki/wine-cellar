@@ -1,17 +1,25 @@
 /**
- * Google Analytics 4 (GA4) Integration
- * 
- * PRIVACY & COMPLIANCE:
- * - NO PII (Personally Identifiable Information) is tracked
- * - NO emails, names, or free-text fields are sent to GA
- * - Only internal IDs and app interactions are tracked
- * - Respects user privacy and GDPR/CCPA compliance
- * 
- * USAGE:
- * - Analytics only enabled when VITE_ANALYTICS_ENABLED=true and measurement ID exists
- * - Use trackPageView() for route changes
- * - Use trackEvent() for user actions
- * - Never pass PII in event parameters
+ * Google Analytics 4 (GA4) — Privacy-safe SPA analytics
+ *
+ * DESIGN PRINCIPLES
+ * - Zero PII: no emails, names, or free-text fields ever leave the device
+ * - Consent-first: GA script is only loaded after the user accepts analytics
+ * - Pseudonymous: logged-in users are identified by Supabase UUID only
+ * - Context-rich: every event carries app_session_id, language, theme, is_pwa
+ *
+ * USAGE
+ *   import { trackEvent, trackBottle, trackAuth, … } from './analytics';
+ *
+ * ENV VARS
+ *   VITE_GA4_MEASUREMENT_ID   GA4 measurement ID (e.g. G-XXXXXXXXXX)
+ *   VITE_ANALYTICS_ENABLED    Set to "true" to enable tracking
+ *   VITE_GA_DEBUG             Set to "true" to enable GA DebugView (dev-only)
+ *
+ * UTM LINK TEMPLATES (attach to links you control for reliable AI attribution)
+ *   ?utm_source=chatgpt&utm_medium=ai&utm_campaign=aeo
+ *   ?utm_source=gemini&utm_medium=ai&utm_campaign=aeo
+ *   ?utm_source=perplexity&utm_medium=ai&utm_campaign=aeo
+ *   ?ai_source=<engine>   (highest priority, custom param)
  */
 
 import {
@@ -22,222 +30,311 @@ import {
 } from '../utils/deviceDetection';
 import { sendAttributionToGA } from './aiAttribution';
 
-// Global gtag types
+// ── Global gtag types ─────────────────────────────────────────────────────────
+
 declare global {
   interface Window {
     gtag?: (
       command: 'config' | 'event' | 'js' | 'set',
       targetId: string | Date,
-      params?: Record<string, any>
+      params?: Record<string, unknown>
     ) => void;
-    dataLayer?: any[];
+    dataLayer?: unknown[];
   }
 }
 
+// ── Session ID ────────────────────────────────────────────────────────────────
+
+const SESSION_ID_KEY = 'app_session_id';
+
+/** Generate a v4-style UUID without any external library. */
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
- * Check if analytics is enabled
+ * Get or create the anonymous session ID stored in sessionStorage.
+ * Resets automatically when the browser tab/window is closed.
  */
+export function getAppSessionId(): string {
+  let id = sessionStorage.getItem(SESSION_ID_KEY);
+  if (!id) {
+    id = generateUUID();
+    sessionStorage.setItem(SESSION_ID_KEY, id);
+  }
+  return id;
+}
+
+// ── Context params ────────────────────────────────────────────────────────────
+
+/**
+ * Returns lightweight context parameters that are appended to every event.
+ * Reads from localStorage / DOM so it can be called outside React.
+ * Contains NO PII.
+ */
+function getContextParams(): Record<string, unknown> {
+  return {
+    app_session_id: getAppSessionId(),
+    language: document.documentElement.lang || localStorage.getItem('i18nextLng') || 'en',
+    theme: localStorage.getItem('theme') || 'white',
+    is_pwa: isStandalonePwa(),
+  };
+}
+
+// ── Guards ────────────────────────────────────────────────────────────────────
+
+/** True when GA is configured via env and the user hasn't opted out. */
 export function isAnalyticsEnabled(): boolean {
   const enabled = import.meta.env.VITE_ANALYTICS_ENABLED === 'true';
   const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
-  
-  if (!enabled) {
-    console.log('[Analytics] Disabled via VITE_ANALYTICS_ENABLED');
-    return false;
-  }
-  
+
+  if (!enabled) return false;
   if (!measurementId) {
-    console.warn('[Analytics] No measurement ID provided');
+    console.warn('[Analytics] No measurement ID — set VITE_GA4_MEASUREMENT_ID');
     return false;
   }
-  
+  // Runtime opt-out (see disableAnalytics())
+  if (localStorage.getItem('analytics_disabled') === 'true') return false;
+
   return true;
 }
 
-/**
- * Check if user has given consent for analytics
- */
+/** True when the user has explicitly accepted the cookie consent banner. */
 export function hasAnalyticsConsent(): boolean {
-  // Check localStorage for consent status
   const consent = localStorage.getItem('cookie_consent');
   const analyticsEnabled = localStorage.getItem('analytics_enabled');
-  
-  // If consent hasn't been given yet, return false (don't track)
-  if (!consent) {
-    return false;
-  }
-  
-  // Only track if consent was accepted and analytics explicitly enabled
   return consent === 'accepted' && analyticsEnabled === 'true';
 }
 
+/** Disable analytics at runtime (called when user opts out). */
+export function disableAnalytics(): void {
+  localStorage.setItem('analytics_disabled', 'true');
+  localStorage.setItem('cookie_consent', 'rejected');
+  localStorage.setItem('analytics_enabled', 'false');
+  console.log('[Analytics] Disabled by user');
+}
+
+// ── Initialisation ────────────────────────────────────────────────────────────
+
 /**
- * Initialize Google Analytics 4
- * Loads the gtag.js script and initializes tracking
- * Only runs if user has given consent
+ * Initialise GA4.
+ * - Loads the gtag.js script once
+ * - Respects consent and the `VITE_ANALYTICS_ENABLED` flag
+ * - Sets initial user properties (platform, session)
+ * - Sends queued AI attribution event (if any)
+ *
+ * Safe to call multiple times — script is only appended once.
  */
 export function initializeAnalytics(): void {
   if (!isAnalyticsEnabled()) {
-    console.log('[Analytics] Skipping initialization - analytics disabled in env');
+    console.log('[Analytics] Skipping init — disabled or no measurement ID');
     return;
   }
-  
-  // Check if user has given consent
+
   if (!hasAnalyticsConsent()) {
-    console.log('[Analytics] Skipping initialization - user has not given consent');
+    console.log('[Analytics] Skipping init — waiting for consent');
     return;
   }
-  
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
-  const debugMode = import.meta.env.DEV; // Enable debug in development
-  
-  console.log('[Analytics] Initializing GA4:', {
-    measurementId,
-    debugMode,
-    environment: import.meta.env.DEV ? 'development' : 'production',
-    consent: 'given',
-  });
-  
-  // Initialize dataLayer
+
+  // Guard: already initialised
+  if (document.getElementById('ga4-script')) {
+    console.log('[Analytics] Already initialised');
+    return;
+  }
+
+  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
+  const debugMode =
+    import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV;
+
+  // Set up dataLayer + gtag shim
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function() {
-    window.dataLayer!.push(arguments);
+  window.gtag = function (...args: unknown[]) {
+    (window.dataLayer as unknown[]).push(args);
   };
-  
-  // Set the initial timestamp
+
   window.gtag('js', new Date());
-  
-  // Configure GA4 with privacy-friendly settings
+
   window.gtag('config', measurementId, {
-    // Privacy settings
-    anonymize_ip: true, // Anonymize IP addresses
-    allow_google_signals: false, // Disable Google Signals (cross-device tracking)
-    allow_ad_personalization_signals: false, // Disable ad personalization
-    
-    // Debug mode (only in development)
+    // Privacy
+    anonymize_ip: true,
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false,
+
+    // Manual SPA page-view tracking
+    send_page_view: false,
+
+    // Debug mode (GA DebugView)
     debug_mode: debugMode,
-    
-    // Custom settings
-    send_page_view: false, // We'll manually track page views for SPA
-    
-    // App info
+
+    // App metadata
     app_name: 'Wine Cellar Brain',
-    app_version: '1.0.0',
   });
-  
-  // Load the gtag.js script
+
+  // Load the GA script
   const script = document.createElement('script');
+  script.id = 'ga4-script';
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
   document.head.appendChild(script);
 
-  // Tag every session with the user's platform as a persistent user property
+  // Platform user property (persistent)
   const platform = detectPlatform();
   window.gtag('set', 'user_properties', { platform });
-  console.log('[Analytics] 🖥️ Platform detected:', platform);
 
-  // Send AI attribution data that was captured at startup (once per session)
+  // Send queued AI attribution (once per session)
   sendAttributionToGA();
 
-  console.log('[Analytics] ✅ GA4 initialized successfully');
+  console.log('[Analytics] ✅ GA4 initialised', { measurementId, debugMode, platform });
+}
+
+// ── User identity ─────────────────────────────────────────────────────────────
+
+/**
+ * Set a pseudonymous GA4 user_id from the Supabase auth UUID.
+ * Called when the user signs in. Does NOT send any PII.
+ */
+export function setAnalyticsUser(supabaseUserId: string): void {
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
+
+  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
+  window.gtag('config', measurementId, { user_id: supabaseUserId });
+
+  console.log('[Analytics] User ID set (pseudonymous)');
 }
 
 /**
- * Track a page view
- * Call this on route changes in React SPA
- * 
- * @param path - The page path (e.g., '/cellar', '/recommendation')
- * @param title - Optional page title
+ * Clear the GA4 user_id when the user signs out.
+ */
+export function clearAnalyticsUser(): void {
+  if (!window.gtag) return;
+
+  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
+  if (!measurementId) return;
+
+  window.gtag('config', measurementId, { user_id: undefined });
+  console.log('[Analytics] User ID cleared');
+}
+
+/**
+ * Set persistent user properties on the GA4 session.
+ * Call this when user preferences load (language, theme, etc.).
+ * Silently skips when GA is not ready.
+ */
+export function setAnalyticsUserProperties(
+  props: Partial<{
+    language: string;
+    theme: string;
+    is_pwa: boolean;
+    platform: AppPlatform;
+  }>
+): void {
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
+  window.gtag('set', 'user_properties', props as Record<string, unknown>);
+}
+
+// ── Page views ────────────────────────────────────────────────────────────────
+
+/**
+ * Track a page view.
+ * Called by useGaPageViews on every React Router location change.
  */
 export function trackPageView(path: string, title?: string): void {
-  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) {
-    return;
-  }
-  
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
-  
-  console.log('[Analytics] 📄 Page view:', {
-    path,
-    title: title || document.title,
-  });
-  
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
+
+  const referrerDomain = (() => {
+    try {
+      return document.referrer ? new URL(document.referrer).hostname : '';
+    } catch {
+      return '';
+    }
+  })();
+
   window.gtag('event', 'page_view', {
     page_path: path,
     page_title: title || document.title,
     page_location: window.location.href,
+    ...(referrerDomain ? { referrer_domain: referrerDomain } : {}),
+    ...getContextParams(),
   });
+
+  if (import.meta.env.DEV) {
+    console.log('[Analytics] page_view', path);
+  }
 }
 
-/**
- * Track a custom event
- * 
- * IMPORTANT: Never pass PII in parameters
- * - OK: internal IDs, counts, categories, statuses
- * - NOT OK: emails, names, notes, free-text
- * 
- * @param eventName - Name of the event (e.g., 'bottle_add_manual')
- * @param params - Event parameters (NO PII!)
- */
-export function trackEvent(eventName: string, params?: Record<string, any>): void {
-  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) {
-    return;
-  }
-  
-  console.log('[Analytics] 📊 Event:', eventName, params);
-  
-  // Sanitize params to ensure no PII
-  const sanitizedParams = sanitizeEventParams(params);
-  
-  window.gtag('event', eventName, sanitizedParams);
-}
+// ── Core event helper ─────────────────────────────────────────────────────────
 
 /**
- * Sanitize event parameters to remove any potential PII
- * 
- * @param params - Raw event parameters
- * @returns Sanitized parameters safe for analytics
+ * Track a custom GA4 event.
+ * Context params (app_session_id, language, theme, is_pwa) are auto-appended.
+ * PII fields are stripped before sending.
  */
-function sanitizeEventParams(params?: Record<string, any>): Record<string, any> | undefined {
-  if (!params) {
-    return undefined;
+export function trackEvent(eventName: string, params?: Record<string, unknown>): void {
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
+
+  const merged = { ...getContextParams(), ...sanitizeEventParams(params) };
+
+  window.gtag('event', eventName, merged);
+
+  if (import.meta.env.DEV) {
+    console.log('[Analytics] event', eventName, merged);
   }
-  
-  const sanitized: Record<string, any> = {};
-  
-  // List of keys that should NEVER be sent (PII protection)
-  const blockedKeys = [
-    'email',
-    'name',
-    'display_name',
-    'first_name',
-    'last_name',
-    'notes',
-    'tasting_notes',
-    'user_notes',
-    'wine_notes',
-    'producer', // Producer names could be considered identifying
-    'wine_name', // Wine names could be considered identifying
-  ];
-  
+}
+
+// ── PII sanitiser ─────────────────────────────────────────────────────────────
+
+const BLOCKED_KEYS = new Set([
+  'email',
+  'name',
+  'display_name',
+  'first_name',
+  'last_name',
+  'notes',
+  'tasting_notes',
+  'user_notes',
+  'wine_notes',
+  'producer',
+  'wine_name',
+]);
+
+function sanitizeEventParams(
+  params?: Record<string, unknown>
+): Record<string, unknown> {
+  if (!params) return {};
+
+  const safe: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(params)) {
-    // Skip blocked keys
-    if (blockedKeys.some(blocked => key.toLowerCase().includes(blocked))) {
-      console.warn(`[Analytics] ⚠️ Blocked PII field: ${key}`);
+    const keyLower = key.toLowerCase();
+    const isBlocked = [...BLOCKED_KEYS].some((b) => keyLower.includes(b));
+
+    if (isBlocked) {
+      if (import.meta.env.DEV) {
+        console.warn('[Analytics] ⚠ Blocked PII field:', key);
+      }
       continue;
     }
-    
-    // Only include primitive values and numbers
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      sanitized[key] = value;
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      safe[key] = value;
     }
   }
-  
-  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+
+  return safe;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Platform detection
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Platform detection ────────────────────────────────────────────────────────
 
 export type AppPlatform =
   | 'ios_pwa'
@@ -248,198 +345,223 @@ export type AppPlatform =
   | 'ipad_web'
   | 'desktop_web';
 
-/**
- * Returns a clean platform slug for the current device/browser context.
- * Priority: PWA > tablet > phone > desktop
- */
 export function detectPlatform(): AppPlatform {
-  const pwa  = isStandalonePwa();
-  const ios  = isIos();
+  const pwa = isStandalonePwa();
+  const ios = isIos();
   const android = isAndroid();
   const ipad = isIPad();
 
   if (pwa) {
-    if (ipad)    return 'ipad_pwa';
-    if (ios)     return 'ios_pwa';
+    if (ipad) return 'ipad_pwa';
+    if (ios) return 'ios_pwa';
     if (android) return 'android_pwa';
-    return 'desktop_web'; // Desktop PWA (rare)
+    return 'desktop_web';
   }
 
-  if (ipad)    return 'ipad_web';
-  if (ios)     return 'ios_mobile_web';
+  if (ipad) return 'ipad_web';
+  if (ios) return 'ios_mobile_web';
   if (android) return 'android_mobile_web';
   return 'desktop_web';
 }
 
-/**
- * Platform tracking — call once after analytics is initialised.
- * Sets `platform` as a GA4 user property so every subsequent event
- * from this session is tagged with it automatically.
- */
 export const trackPlatform = {
   identify: () => {
     if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
-
     const platform = detectPlatform();
-
-    // Set as a persistent user property (attached to all future events)
     window.gtag('set', 'user_properties', { platform });
-
-    // Also emit a discrete event so the platform breakdown appears in
-    // GA4 realtime reports and can be used as a conversion dimension.
     trackEvent('platform_identified', { platform });
   },
 };
 
-/**
- * Track authentication events
- */
+// ── Auth events ───────────────────────────────────────────────────────────────
+
 export const trackAuth = {
-  signUp: () => trackEvent('sign_up', { platform: detectPlatform() }),
-  login:  () => trackEvent('login',   { platform: detectPlatform() }),
+  signUp: (provider: 'email' | 'google' = 'email') =>
+    trackEvent('sign_up', { provider, platform: detectPlatform() }),
+
+  login: (provider: 'email' | 'google' = 'email') =>
+    trackEvent('login_success', { provider, platform: detectPlatform() }),
+
   logout: () => trackEvent('logout'),
 };
 
-/**
- * Track bottle-related events
- */
+// ── Bottle events ─────────────────────────────────────────────────────────────
+
 export const trackBottle = {
-  addManual: () => trackEvent('bottle_add_manual'),
   /**
-   * Fired after a successful scan that results in bottle(s) being added.
-   * @param mode     'single' | 'multi' | 'receipt'
-   * @param count    Number of bottles / receipt items detected
+   * A bottle was added to the cellar.
+   * @param method  How it was added
+   * @param quantity  Number of bottles added in this operation
    */
-  addScan: (mode?: string, count?: number) =>
-    trackEvent('bottle_add_scan', {
-      scan_mode: mode,
-      detected_count: count,
+  added: (
+    method: 'manual' | 'scan' | 'csv' | 'receipt' | 'multi',
+    quantity: number = 1
+  ) => trackEvent('bottle_added', { method, quantity }),
+
+  /** @deprecated Use trackBottle.added('manual') */
+  addManual: () => trackBottle.added('manual'),
+
+  /** @deprecated Use trackBottle.added('scan', count) */
+  addScan: (mode?: string, count?: number) => {
+    trackBottle.added(
+      mode === 'receipt' ? 'receipt' : mode === 'multi' ? 'multi' : 'scan',
+      count ?? 1
+    );
+  },
+
+  edit: () => trackEvent('bottle_edited'),
+  delete: () => trackEvent('bottle_deleted'),
+
+  /**
+   * A bottle was marked as opened.
+   * @param from  Where the user triggered the open action
+   */
+  opened: (params?: {
+    quantity?: number;
+    vintage?: number;
+    from?: 'tonight' | 'plan' | 'agent' | 'details' | 'cellar';
+  }) =>
+    trackEvent('bottle_opened', {
+      quantity: params?.quantity ?? 1,
+      ...(params?.vintage ? { vintage: params.vintage } : {}),
+      ...(params?.from ? { from: params.from } : {}),
     }),
-  edit: () => trackEvent('bottle_edit'),
-  delete: () => trackEvent('bottle_delete'),
-  opened: (vintage?: number) => 
-    trackEvent('bottle_opened', vintage ? { vintage } : undefined),
 };
 
-/**
- * Track CSV import events
- */
+// ── Scan events ───────────────────────────────────────────────────────────────
+
+export const trackLabelParse = {
+  /** Scan pipeline started */
+  start: (params?: { source?: 'camera' | 'gallery'; mode?: 'label' | 'receipt' | 'multi' }) =>
+    trackEvent('scan_started', {
+      source: params?.source ?? 'unknown',
+      mode: params?.mode ?? 'label',
+    }),
+
+  /** Scan returned valid results */
+  success: (
+    mode: 'single' | 'multi' | 'receipt',
+    detectedCount: number,
+    confidence?: number
+  ) =>
+    trackEvent('scan_success', {
+      mode,
+      detected_count: detectedCount,
+      ...(confidence !== undefined ? { confidence: Math.round(confidence * 100) } : {}),
+    }),
+
+  /** Scan pipeline threw an error */
+  error: (errorType: string) =>
+    trackEvent('scan_failed', { error_code: errorType }),
+};
+
+// ── CSV events ────────────────────────────────────────────────────────────────
+
 export const trackCSV = {
   start: () => trackEvent('bottle_import_csv_start'),
-  success: (count: number) => trackEvent('bottle_import_csv_success', { bottle_count: count }),
-  error: (errorType: string) => trackEvent('bottle_import_csv_error', { error_type: errorType }),
+  success: (count: number) =>
+    trackEvent('bottle_import_csv_success', { bottle_count: count }),
+  error: (errorType: string) =>
+    trackEvent('bottle_import_csv_error', { error_type: errorType }),
 };
 
-/**
- * Track recommendation events
- */
+// ── Recommendation / Plan Evening events ─────────────────────────────────────
+
 export const trackRecommendation = {
-  run: (mealType?: string, occasion?: string) => 
+  run: (mealType?: string, occasion?: string) =>
     trackEvent('recommendation_run', {
       meal_type: mealType,
       occasion: occasion,
     }),
-  resultsShown: (resultCount: number) => 
+  resultsShown: (resultCount: number) =>
     trackEvent('recommendation_results_shown', { result_count: resultCount }),
 };
 
-/**
- * Track AI label generation events
- */
-export const trackAILabel = {
-  start: (style: string) => trackEvent('ai_label_generate_start', { style }),
-  success: (style: string) => trackEvent('ai_label_generate_success', { style }),
-  error: (errorType: string) => trackEvent('ai_label_generate_error', { error_type: errorType }),
-};
-
-/**
- * Track AI label parsing / bottle scanning events
- *
- * GA4 events emitted:
- *   label_parse_start   — user submitted a photo for scanning
- *   label_parse_success — AI successfully parsed the label
- *                         params: scan_mode ('single'|'multi'|'receipt'), detected_count
- *   label_parse_error   — scan pipeline failed
- *                         params: error_type
- */
-export const trackLabelParse = {
-  /** Called as soon as the scan pipeline starts (photo handed to AI). */
-  start: () => trackEvent('label_parse_start'),
-
-  /**
-   * Called when the AI returns a valid result.
-   * @param mode          What the AI detected: single bottle, multiple, or a receipt
-   * @param detectedCount Number of bottles / receipt items returned
-   */
-  success: (mode: 'single' | 'multi' | 'receipt', detectedCount: number) =>
-    trackEvent('label_parse_success', {
-      scan_mode: mode,
-      detected_count: detectedCount,
+export const trackEveningPlan = {
+  started: (params?: { occasion?: string; group_size?: number }) =>
+    trackEvent('plan_evening_started', {
+      ...(params?.occasion ? { occasion: params.occasion } : {}),
+      ...(params?.group_size !== undefined ? { group_size: params.group_size } : {}),
     }),
 
-  /**
-   * Called when the scan pipeline throws.
-   * @param errorType Short slug describing the failure reason (no PII)
-   */
-  error: (errorType: string) =>
-    trackEvent('label_parse_error', { error_type: errorType }),
+  completed: (params?: { opened_count?: number; avg_rating?: number }) =>
+    trackEvent('plan_evening_completed', {
+      opened_count: params?.opened_count ?? 0,
+      ...(params?.avg_rating !== undefined
+        ? { avg_rating: Math.round(params.avg_rating * 10) / 10 }
+        : {}),
+    }),
 };
 
-/**
- * Track upload events
- */
+// ── Wishlist events ───────────────────────────────────────────────────────────
+
+export const trackWishlist = {
+  added: () => trackEvent('wishlist_added'),
+  movedToCellar: () => trackEvent('wishlist_moved_to_cellar'),
+};
+
+// ── AI Agent / Sommelier events ───────────────────────────────────────────────
+
+export const trackSommelier = {
+  generate: () => trackEvent('sommelier_notes_generate'),
+  success: () => trackEvent('sommelier_notes_success'),
+  error: (errorType: string) =>
+    trackEvent('sommelier_notes_error', { error_type: errorType }),
+
+  agentButtonClick: (source: string) =>
+    trackEvent('sommelier_agent_click', { source, platform: detectPlatform() }),
+
+  agentOpen: () =>
+    trackEvent('sommelier_agent_open', { platform: detectPlatform() }),
+
+  /**
+   * User sent a query to the AI agent.
+   * Send only the intent category — NEVER the raw query text.
+   */
+  agentQuery: (intentCategory: string) =>
+    trackEvent('agent_query', { intent_category: intentCategory }),
+
+  /** User tapped a recommendation card returned by the agent. */
+  agentRecommendationClicked: (type: 'single' | 'multi') =>
+    trackEvent('agent_recommendation_clicked', { recommendation_type: type }),
+};
+
+// ── Upload events ─────────────────────────────────────────────────────────────
+
 export const trackUpload = {
   profileAvatarSuccess: () => trackEvent('profile_avatar_upload_success'),
-  profileAvatarError: (errorType: string) => 
+  profileAvatarError: (errorType: string) =>
     trackEvent('profile_avatar_upload_error', { error_type: errorType }),
   bottleImageSuccess: () => trackEvent('bottle_image_upload_success'),
-  bottleImageError: (errorType: string) => 
+  bottleImageError: (errorType: string) =>
     trackEvent('bottle_image_upload_error', { error_type: errorType }),
 };
 
-/**
- * Track app errors (NO PII - only error types and codes)
- */
+// ── Error events ──────────────────────────────────────────────────────────────
+
 export const trackError = {
-  appError: (errorType: string, errorCode?: string) => 
-    trackEvent('app_error', {
-      error_type: errorType,
-      error_code: errorCode,
-    }),
-  apiError: (endpoint: string, statusCode: number) => 
+  appError: (errorType: string, errorCode?: string) =>
+    trackEvent('app_error', { error_type: errorType, error_code: errorCode }),
+  apiError: (endpoint: string, statusCode: number) =>
     trackEvent('api_error', {
-      endpoint: endpoint.replace(/\/[0-9a-f-]{36}/gi, '/:id'), // Remove IDs from URLs
+      // Strip UUIDs from endpoint paths before logging
+      endpoint: endpoint.replace(/\/[0-9a-f-]{36}/gi, '/:id'),
       status_code: statusCode,
     }),
 };
 
-/**
- * Track sommelier / AI agent events
- */
-export const trackSommelier = {
-  generate: () => trackEvent('sommelier_notes_generate'),
-  success:  () => trackEvent('sommelier_notes_success'),
-  error: (errorType: string) => trackEvent('sommelier_notes_error', { error_type: errorType }),
+// ── Localisation events ───────────────────────────────────────────────────────
 
-  /**
-   * Fired when the user taps the sommelier FAB or menu button.
-   * @param source  The page the button was on (e.g. 'cellar', 'history', 'recommendation')
-   */
-  agentButtonClick: (source: string) =>
-    trackEvent('sommelier_agent_click', { source, platform: detectPlatform() }),
-
-  /**
-   * Fired when the agent conversation page finishes loading.
-   * Tells you how many unique users actually reached the chat.
-   */
-  agentOpen: () =>
-    trackEvent('sommelier_agent_open', { platform: detectPlatform() }),
-};
-
-/**
- * Track language/localization events
- */
 export const trackLocalization = {
-  changeLanguage: (language: string) => trackEvent('language_change', { language }),
+  changeLanguage: (language: string) =>
+    trackEvent('language_change', { language }),
 };
 
+// ── AI label events (legacy aliases) ─────────────────────────────────────────
+
+export const trackAILabel = {
+  start: (style: string) => trackEvent('ai_label_generate_start', { style }),
+  success: (style: string) => trackEvent('ai_label_generate_success', { style }),
+  error: (errorType: string) =>
+    trackEvent('ai_label_generate_error', { error_type: errorType }),
+};
