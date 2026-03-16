@@ -5,8 +5,9 @@
  * Supports White + Red themes via CSS variables. RTL-safe.
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MetaHead } from '../components/MetaHead';
 
 // ── Environment helpers ───────────────────────────────────────────────────────
@@ -87,6 +88,29 @@ function IconChevron() {
   );
 }
 
+function IconPlus({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden="true"
+      style={{
+        transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
+        transition: rm ? 'none' : 'transform 0.22s ease',
+        flexShrink: 0,
+      }}
+    >
+      <line x1="7" y1="1" x2="7" y2="13" />
+      <line x1="1" y1="7" x2="13" y2="7" />
+    </svg>
+  );
+}
+
 // ── FAQ data ──────────────────────────────────────────────────────────────────
 
 const FAQ_ITEMS = [
@@ -98,7 +122,7 @@ const FAQ_ITEMS = [
   {
     question: 'How do I add bottles to my cellar?',
     answer:
-      'Tap the "+" button from your cellar view. You can add bottles manually by filling in the details, or use the smart scan feature to import from a photo or CSV file. Wine data is enriched automatically where possible.',
+      'Tap the "+" button from your cellar view, or use the camera button in the bottom navigation bar to scan a label. You can add bottles manually by filling in the details, or use the smart scan feature to import from a photo or CSV file. Wine data is enriched automatically where possible.',
   },
   {
     question: 'Does it work as an app (PWA)?',
@@ -117,7 +141,8 @@ const FAQ_ITEMS = [
   },
   {
     question: 'How do I contact support?',
-    answer: `You can reach us via the "Email support" button on this page, or write directly to ${SUPPORT_EMAIL}. We typically respond within 1–2 business days.`,
+    answer:
+      'Use the "Email support" button below — it opens your mail app with a pre-filled message so you can reach us in seconds. We typically respond within 1–2 business days.',
   },
   {
     question: 'Can I import my existing wine list?',
@@ -178,6 +203,7 @@ const PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
 
 export function AboutPage() {
   const { t } = useTranslation();
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const supportHref = buildMailto(
     t('about.emailSupportSubject'),
@@ -276,28 +302,60 @@ export function AboutPage() {
           Frequently Asked Questions
         </p>
 
-        <div className="space-y-0">
-          {FAQ_ITEMS.map(({ question, answer }, i) => (
-            <div key={i}>
-              {i > 0 && (
-                <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
-              )}
-              <div className="py-5 px-1">
-                <h2
-                  className="text-sm font-semibold leading-snug mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+        <div>
+          {FAQ_ITEMS.map(({ question, answer }, i) => {
+            const isOpen = openFaq === i;
+            return (
+              <div key={i}>
+                {i > 0 && (
+                  <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+                )}
+                <button
+                  className="w-full flex items-center justify-between gap-3 py-5 px-1 text-left"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  onClick={() => setOpenFaq(isOpen ? null : i)}
+                  aria-expanded={isOpen}
                 >
-                  {question}
-                </h2>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {answer}
-                </p>
+                  <h2
+                    className="text-sm font-semibold leading-snug"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {question}
+                  </h2>
+                  <div
+                    className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{
+                      background: isOpen ? 'var(--wine-100)' : 'var(--bg-subtle)',
+                      color: isOpen ? 'var(--wine-600)' : 'var(--text-tertiary)',
+                      transition: rm ? 'none' : 'background 0.2s, color 0.2s',
+                    }}
+                  >
+                    <IconPlus open={isOpen} />
+                  </div>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      key="answer"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: rm ? 0 : 0.22, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <p
+                        className="text-sm leading-relaxed pb-5 px-1"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {answer}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </motion.section>
 
