@@ -88,6 +88,13 @@ export function RecommendationPage() {
     }
   }, [navigate]);
 
+  // Scroll to top on mount. This page has a sticky submit button and long
+  // content that can cause the global ScrollToTop to fire before the full
+  // DOM is painted, leaving the page at the previous scroll position.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     async function checkCellar() {
       try {
