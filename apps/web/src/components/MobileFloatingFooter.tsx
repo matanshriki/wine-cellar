@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import { useOpenRitual } from '../contexts/OpenRitualContext';
 import React from 'react';
 
 interface MobileFloatingFooterProps {
@@ -31,6 +32,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
   const { t } = useTranslation();
   const { flags } = useFeatureFlags();
   const reduceMotion = shouldReduceMotion();
+  const { isRitualOpen } = useOpenRitual();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   // Check if any modal is open (hide footer to prevent overlap).
@@ -127,7 +129,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
         animate={
           reduceMotion
             ? undefined
-            : { y: isModalOpen ? 100 : 0, opacity: isModalOpen ? 0 : 1 }
+            : { y: (isModalOpen || isRitualOpen) ? 100 : 0, opacity: (isModalOpen || isRitualOpen) ? 0 : 1 }
         }
         transition={{
           type: 'tween',

@@ -25,6 +25,7 @@ interface OpenRitualOptions {
 
 interface OpenRitualContextValue {
   openRitual: (bottle: BottleWithWineInfo, opts?: OpenRitualOptions) => void;
+  isRitualOpen: boolean;
 }
 
 const OpenRitualContext = createContext<OpenRitualContextValue | null>(null);
@@ -51,7 +52,7 @@ export function OpenRitualProvider({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <OpenRitualContext.Provider value={{ openRitual }}>
+    <OpenRitualContext.Provider value={{ openRitual, isRitualOpen: sheetOpen }}>
       {children}
 
       {/* Global open ritual sheet */}
