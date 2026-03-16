@@ -14,7 +14,10 @@ export function ScrollToTop() {
   useGaPageViews();
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    // Instant scroll — the new page should always open at the top immediately.
+    // Using 'smooth' would render the page at the old scroll position first
+    // and then animate up, making it look like the page opened in the middle.
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   return null;

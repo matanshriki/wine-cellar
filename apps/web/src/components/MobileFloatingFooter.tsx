@@ -123,7 +123,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
           zIndex: 'var(--z-sticky)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
-        initial={reduceMotion ? false : { y: 20, opacity: 0 }}
+        initial={false}
         animate={
           reduceMotion
             ? undefined
@@ -138,13 +138,6 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
 
         {/* Floating Footer with integrated Camera FAB */}
         <motion.div
-          initial={reduceMotion ? false : { y: 100, opacity: 0 }}
-          animate={reduceMotion ? false : { y: 0, opacity: 1 }}
-          transition={{
-            type: reduceMotion ? 'tween' : 'spring',
-            stiffness: 300,
-            damping: 30,
-          }}
           className={`relative mb-4 pointer-events-auto ${isTablet ? 'mx-auto' : 'mx-4'}`}
           style={isTablet ? { maxWidth: '520px', paddingLeft: '1rem', paddingRight: '1rem' } : undefined}
         >
