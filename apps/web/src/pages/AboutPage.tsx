@@ -111,49 +111,17 @@ function IconPlus({ open }: { open: boolean }) {
   );
 }
 
-// ── FAQ data ──────────────────────────────────────────────────────────────────
+// ── FAQ translation keys ──────────────────────────────────────────────────────
 
-const FAQ_ITEMS = [
-  {
-    question: 'What is Wine Cellar Brain?',
-    answer:
-      'Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations. It helps you catalog your bottles, track drink windows, and decide what to open next — all in a beautifully simple interface.',
-  },
-  {
-    question: 'How do I add bottles to my cellar?',
-    answer:
-      'Tap the "+" button from your cellar view, or use the camera button in the bottom navigation bar to scan a label. You can add bottles manually by filling in the details, or use the smart scan feature to import from a photo or CSV file. Wine data is enriched automatically where possible.',
-  },
-  {
-    question: 'Does it work as an app (PWA)?',
-    answer:
-      'Yes. Wine Cellar Brain is a Progressive Web App (PWA). You can install it on your iPhone, Android device, or desktop by using "Add to Home Screen" from your browser menu. Once installed, it works smoothly offline.',
-  },
-  {
-    question: "How does the 'Drink Window' feature work?",
-    answer:
-      "A drink window is the optimal period to enjoy a wine. When you add a bottle with a vintage year, the app estimates the ideal drinking window based on the wine's style and structure — helping you avoid opening bottles too early or too late.",
-  },
-  {
-    question: 'Is my cellar private?',
-    answer:
-      'Yes, your cellar is private by default. Only you can see your bottles. You can optionally share a read-only view with others using the share feature, but nothing is public without your explicit action.',
-  },
-  {
-    question: 'How do I contact support?',
-    answer:
-      'Use the "Email support" button below — it opens your mail app with a pre-filled message so you can reach us in seconds. We typically respond within 1–2 business days.',
-  },
-  {
-    question: 'Can I import my existing wine list?',
-    answer:
-      'Yes. Wine Cellar Brain supports CSV import (Vivino-compatible format). Download the template from the import screen, fill in your wines, and upload it to bulk-add your collection in seconds.',
-  },
-  {
-    question: 'How are AI recommendations generated?',
-    answer:
-      'The app analyses your cellar — bottle styles, regions, vintages, and drink windows — and suggests what to open tonight based on the occasion, food pairing, and which bottles are at their peak.',
-  },
+const FAQ_KEYS = [
+  'whatIs',
+  'addBottles',
+  'pwa',
+  'drinkWindow',
+  'privacy',
+  'contactSupport',
+  'import',
+  'aiRecs',
 ] as const;
 
 // ── Schema.org structured data ────────────────────────────────────────────────
@@ -184,18 +152,7 @@ const webSiteSchema = {
     'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
 };
 
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ_ITEMS.map(({ question, answer }) => ({
-    '@type': 'Question',
-    name: question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: answer,
-    },
-  })),
-};
+// faqSchema is built inside the component using translated strings
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -204,6 +161,21 @@ const PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
 export function AboutPage() {
   const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const faqItems = FAQ_KEYS.map(key => ({
+    question: t(`about.faq.${key}.question`),
+    answer: t(`about.faq.${key}.answer`),
+  }));
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  };
 
   const supportHref = buildMailto(
     t('about.emailSupportSubject'),
@@ -299,11 +271,11 @@ export function AboutPage() {
           className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6 px-1"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          Frequently Asked Questions
+          {t('about.faqTitle')}
         </p>
 
         <div>
-          {FAQ_ITEMS.map(({ question, answer }, i) => {
+          {faqItems.map(({ question, answer }, i) => {
             const isOpen = openFaq === i;
             return (
               <div key={i}>

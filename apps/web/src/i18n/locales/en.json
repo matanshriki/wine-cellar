@@ -1152,7 +1152,42 @@
     "emailSupportSubject": "Wine Cellar Brain - Support",
     "emailSupportBody": "Hi Matan,\n\nI have a question or need help with:\n\n[Your message here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}",
     "bugSubject": "Wine Cellar Brain - Bug report",
-    "bugBody": "Hi Matan,\n\nWhat happened?\n[Describe what went wrong]\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n[What should have happened]\n\nScreenshot link (optional):\n[Paste a link here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}"
+    "bugBody": "Hi Matan,\n\nWhat happened?\n[Describe what went wrong]\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n[What should have happened]\n\nScreenshot link (optional):\n[Paste a link here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}",
+    "faqTitle": "Frequently Asked Questions",
+    "faq": {
+      "whatIs": {
+        "question": "What is Wine Cellar Brain?",
+        "answer": "Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations. It helps you catalog your bottles, track drink windows, and decide what to open next — all in a beautifully simple interface."
+      },
+      "addBottles": {
+        "question": "How do I add bottles to my cellar?",
+        "answer": "Tap the \"+\" button from your cellar view, or use the camera button in the bottom navigation bar to scan a label. You can add bottles manually by filling in the details, or use the smart scan feature to import from a photo or CSV file. Wine data is enriched automatically where possible."
+      },
+      "pwa": {
+        "question": "Does it work as an app (PWA)?",
+        "answer": "Yes. Wine Cellar Brain is a Progressive Web App (PWA). You can install it on your iPhone, Android device, or desktop by using \"Add to Home Screen\" from your browser menu. Once installed, it works smoothly offline."
+      },
+      "drinkWindow": {
+        "question": "How does the 'Drink Window' feature work?",
+        "answer": "A drink window is the optimal period to enjoy a wine. When you add a bottle with a vintage year, the app estimates the ideal drinking window based on the wine's style and structure — helping you avoid opening bottles too early or too late."
+      },
+      "privacy": {
+        "question": "Is my cellar private?",
+        "answer": "Yes, your cellar is private by default. Only you can see your bottles. You can optionally share a read-only view with others using the share feature, but nothing is public without your explicit action."
+      },
+      "contactSupport": {
+        "question": "How do I contact support?",
+        "answer": "Use the \"Email support\" button below — it opens your mail app with a pre-filled message so you can reach us in seconds. We typically respond within 1–2 business days."
+      },
+      "import": {
+        "question": "Can I import my existing wine list?",
+        "answer": "Yes. Wine Cellar Brain supports CSV import (Vivino-compatible format). Download the template from the import screen, fill in your wines, and upload it to bulk-add your collection in seconds."
+      },
+      "aiRecs": {
+        "question": "How are AI recommendations generated?",
+        "answer": "The app analyses your cellar — bottle styles, regions, vintages, and drink windows — and suggests what to open tonight based on the occasion, food pairing, and which bottles are at their peak."
+      }
+    }
   }
 }
 
