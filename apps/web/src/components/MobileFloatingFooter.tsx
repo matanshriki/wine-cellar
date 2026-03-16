@@ -14,7 +14,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
@@ -33,20 +33,39 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
   const reduceMotion = shouldReduceMotion();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  // Check if any modal is open (hide footer to prevent overlap)
+  // Check if any modal is open (hide footer to prevent overlap).
+  // Debounced so that brief DOM mutations during page transitions (e.g. a modal's
+  // AnimatePresence exit animation on the previous page) don't trigger a spurious
+  // hide → show cycle that makes the nav "jump".
   React.useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+
     const checkModalState = () => {
-      const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
-      setIsModalOpen(!!hasOpenModal);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
+        setIsModalOpen(!!hasOpenModal);
+      }, 80);
     };
 
-    // Check on mount and whenever DOM changes
+    // Immediate check on mount
     checkModalState();
-    
-    const observer = new MutationObserver(checkModalState);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['role', 'aria-modal'] });
 
-    return () => observer.disconnect();
+    // Only watch for attribute changes on dialog elements — childList / subtree
+    // is intentionally omitted to avoid firing on every DOM mutation during
+    // page-level renders (which would cause spurious hide/show cycles).
+    const observer = new MutationObserver(checkModalState);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: false,        // only direct children of <body>
+      attributes: true,
+      attributeFilter: ['role', 'aria-modal'],
+    });
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+    };
   }, []);
 
   // Navigation items - ALL 4 items always visible for instant rendering
@@ -93,24 +112,29 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
 
   return (
     <>
-      {/* Fixed container for footer + FAB - Hidden when modals are open */}
-      <AnimatePresence>
-        {!isModalOpen && (
-          <motion.div 
-            className={`fixed bottom-0 left-0 right-0 pointer-events-none ${isTablet ? '' : 'md:hidden'}`}
-            style={{
-              zIndex: 'var(--z-sticky)',
-              paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
-            initial={reduceMotion ? false : { y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{
-              type: 'tween',
-              duration: 0.2,
-              ease: 'easeInOut',
-            }}
-          >
+      {/* Fixed container for footer + FAB.
+          We do NOT use AnimatePresence here — keeping the nav always in the DOM
+          and animating it via the `animate` prop prevents the entry spring from
+          replaying every time a modal opens/closes, which was causing the nav
+          to visually "jump" on pages like Wishlist. */}
+      <motion.div
+        className={`fixed bottom-0 left-0 right-0 pointer-events-none ${isTablet ? '' : 'md:hidden'}`}
+        style={{
+          zIndex: 'var(--z-sticky)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+        initial={reduceMotion ? false : { y: 20, opacity: 0 }}
+        animate={
+          reduceMotion
+            ? undefined
+            : { y: isModalOpen ? 100 : 0, opacity: isModalOpen ? 0 : 1 }
+        }
+        transition={{
+          type: 'tween',
+          duration: 0.2,
+          ease: 'easeInOut',
+        }}
+      >
 
         {/* Floating Footer with integrated Camera FAB */}
         <motion.div
@@ -314,18 +338,16 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
           </div>
         </motion.div>
       </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Spacer to prevent content from being covered - Only shown when footer is visible */}
-      {!isModalOpen && (
-        <div 
-          className={isTablet ? '' : 'md:hidden'}
-          style={{ 
-            height: 'calc(104px + env(safe-area-inset-bottom))', // Footer height + FAB protrusion + safe area
-          }} 
-        />
-      )}
+      {/* Spacer keeps content from being hidden behind the footer.
+          Always rendered (even when nav is hidden for modals) so page content
+          doesn't reflow when a modal opens — the modal covers everything anyway. */}
+      <div 
+        className={isTablet ? '' : 'md:hidden'}
+        style={{ 
+          height: 'calc(104px + env(safe-area-inset-bottom))',
+        }} 
+      />
     </>
   );
 }

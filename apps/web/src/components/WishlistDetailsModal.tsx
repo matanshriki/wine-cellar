@@ -26,22 +26,29 @@ export function WishlistDetailsModal({
 }: WishlistDetailsModalProps) {
   const { t, i18n } = useTranslation();
 
-  // Lock body scroll when modal is open (prevents iOS background shifts)
+  // Lock body scroll when modal is open (prevents iOS background scroll).
+  // We save scrollY and restore it via window.scrollTo on close — without this,
+  // iOS Safari jumps the page back to the top when position:fixed is removed.
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY;
       const originalOverflow = document.body.style.overflow;
       const originalPosition = document.body.style.position;
-      
-      // Lock scroll
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
-      
+
       return () => {
-        // Restore scroll
         document.body.style.overflow = originalOverflow || '';
         document.body.style.position = originalPosition || '';
-        document.body.style.width = '';
+        document.body.style.top = originalTop || '';
+        document.body.style.width = originalWidth || '';
+        // Restore scroll position that was lost when position:fixed was applied
+        window.scrollTo(0, scrollY);
       };
     }
   }, [isOpen]);
