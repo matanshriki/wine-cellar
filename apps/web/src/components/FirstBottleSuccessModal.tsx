@@ -54,6 +54,8 @@ export function FirstBottleSuccessModal({
       {isOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center p-4 z-[1070] ios-modal-scroll"
+          role="dialog"
+          aria-modal="true"
           style={{
             height: '100dvh',
             background: 'var(--bg-overlay)',

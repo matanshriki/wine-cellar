@@ -73,6 +73,8 @@ export function ImageCropEditor({ imageUrl, onCropComplete, onCancel }: ImageCro
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black z-[200] flex flex-col"
       style={{ height: '100dvh' }}
+      role="dialog"
+      aria-modal="true"
     >
       {/* Header */}
       <div

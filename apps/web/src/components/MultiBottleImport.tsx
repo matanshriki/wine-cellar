@@ -225,6 +225,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
   return (
     <div 
       className="fixed inset-0 z-50"
+      role="dialog"
+      aria-modal="true"
       style={{
         display: 'flex',
         alignItems: 'center',

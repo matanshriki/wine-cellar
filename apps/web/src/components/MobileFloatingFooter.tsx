@@ -53,15 +53,16 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
     // Immediate check on mount
     checkModalState();
 
-    // Only watch for attribute changes on dialog elements — childList / subtree
-    // is intentionally omitted to avoid firing on every DOM mutation during
-    // page-level renders (which would cause spurious hide/show cycles).
+    // Watch the full subtree so inline React modals (rendered inside div#root,
+    // not portalled directly to <body>) are detected. The 80 ms debounce in
+    // checkModalState absorbs the burst of childList mutations that happen
+    // during normal page renders, so this doesn't cause spurious hide/show cycles.
     const observer = new MutationObserver(checkModalState);
     observer.observe(document.body, {
       childList: true,
-      subtree: false,        // only direct children of <body>
+      subtree: true,
       attributes: true,
-      attributeFilter: ['role', 'aria-modal'],
+      attributeFilter: ['aria-modal'],
     });
 
     return () => {

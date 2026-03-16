@@ -70,6 +70,8 @@ export function OpenBottleQuantityModal({
       {isOpen && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
           style={{
             background: 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(8px)',

@@ -244,6 +244,8 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+      role="dialog"
+      aria-modal="true"
       onClick={handleClose}
       style={{ 
         pointerEvents: 'auto', // Fix: Ensure backdrop doesn't block interactions

@@ -79,6 +79,8 @@ export function DuplicateBottleModal({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
         style={{
           background: 'var(--bg-overlay)',
           backdropFilter: 'var(--blur-medium)',

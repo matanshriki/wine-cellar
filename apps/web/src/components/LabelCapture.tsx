@@ -161,6 +161,8 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black z-50 flex flex-col h-screen-ios"
+          role="dialog"
+          aria-modal="true"
           style={{
             height: '100dvh',
           }}

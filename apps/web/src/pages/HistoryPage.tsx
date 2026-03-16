@@ -629,6 +629,8 @@ export function HistoryPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[110]"
+            role="dialog"
+            aria-modal="true"
             onClick={() => setShowUndoConfirm(false)}
             style={{ backdropFilter: 'blur(4px)' }}
           >

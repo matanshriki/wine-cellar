@@ -1951,6 +1951,8 @@ export function CellarPage() {
         {showSortMenu && (
           <div
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            role="dialog"
+            aria-modal="true"
             style={{
               background: 'rgba(0, 0, 0, 0.4)',
               backdropFilter: 'blur(4px)',
@@ -2144,6 +2146,8 @@ export function CellarPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center"
+            role="dialog"
+            aria-modal="true"
             style={{
               background: 'rgba(250, 248, 245, 0.97)',
               backdropFilter: 'blur(16px)',
@@ -2283,6 +2287,8 @@ export function CellarPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+            role="dialog"
+            aria-modal="true"
             onClick={() => setShowConfirmation(false)}
             style={{ backdropFilter: 'blur(4px)' }}
           >

@@ -87,6 +87,8 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
   return createPortal(
     <div 
       className="fixed inset-0"
+      role="dialog"
+      aria-modal="true"
       style={{
         zIndex: 9999,
         display: 'flex',
