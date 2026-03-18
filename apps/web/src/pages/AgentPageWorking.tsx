@@ -99,7 +99,7 @@ export function AgentPageWorking() {
     greetingInjectedRef.current = true;
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    const count = bottlesInCellar.length;
+    const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
 
     const greeting: AgentMessage = {
       role: 'assistant',
