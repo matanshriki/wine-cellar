@@ -755,7 +755,7 @@ export function AgentPageWorking() {
               isTranscribing
                 ? t('cellarSommelier.inputPlaceholderTranscribing')
                 : messages.length <= 1
-                ? "What's the occasion tonight? 🍷"
+                ? "What's the occasion tonight?"
                 : t('cellarSommelier.inputPlaceholder')
             }
             disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isRecording || isTranscribing}
@@ -770,6 +770,7 @@ export function AgentPageWorking() {
               color: '#333',
               outline: 'none',
               resize: 'none',
+              overflow: 'hidden',
               maxHeight: '120px',
               fontFamily: 'inherit',
             }}
