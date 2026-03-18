@@ -732,6 +732,7 @@ export function AgentPageWorking() {
       {/* Input area */}
       <div style={{
         padding: '16px',
+        paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
         backgroundColor: 'white',
         borderTop: '1px solid #e0e0e0',
         flexShrink: 0,
