@@ -439,6 +439,7 @@ export function CSVImport({ onClose, onSuccess }: Props) {
             storage_location: null,
             bottle_size_ml: 750,
             tags: null,
+            entry_source: isVivino ? 'vivino' : 'csv_import',
           };
           
           await bottleService.createBottle(bottleInput);

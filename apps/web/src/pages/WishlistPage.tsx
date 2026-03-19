@@ -152,6 +152,7 @@ export function WishlistPage() {
         bottle_size_ml: 750,
         tags: ['wishlist'], // Tag as coming from wishlist (Wishlist feature - dev only)
         image_url: item.imageUrl,
+        entry_source: 'manual',
       };
 
       console.log('[WishlistPage] Creating bottle from wishlist item:', item.id);

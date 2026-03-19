@@ -176,6 +176,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
           label_image_path: imagePath || null,
           image_url: null, // Never store signed URL; use path for runtime URL generation
           tags: null,
+          entry_source: 'ai_scan',
         });
         
         successCount++;

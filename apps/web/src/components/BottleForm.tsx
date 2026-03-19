@@ -448,6 +448,8 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           image_url: (formData.label_image_url && !storageImageService.isStorageUrl(formData.label_image_url))
             ? formData.label_image_url
             : null,
+          // If a label image was scanned, this came from the camera flow
+          entry_source: formData.label_image_path ? 'ai_scan' : 'manual',
         };
         
         console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));

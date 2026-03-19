@@ -153,6 +153,9 @@ export interface CreateBottleInput {
   image_url?: string | null;            // Legacy: direct URL (external or temporary)
   
   tags?: string[] | null;
+
+  /** How the wine was added — stored on the wines row for analytics/filtering */
+  entry_source?: 'manual' | 'ai_scan' | 'csv_import' | 'vivino' | null;
 }
 
 /**
@@ -195,6 +198,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     rating: input.rating || null,
     vivino_url: input.vivino_url || null,
     notes: input.wine_notes || null,
+    entry_source: input.entry_source || null,
   };
 
   // Only include image fields when this bottle actually has an image.
