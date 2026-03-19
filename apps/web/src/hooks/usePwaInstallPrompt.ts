@@ -160,8 +160,12 @@ export function usePwaInstallPrompt() {
     setIsVisible(false);
   };
 
+  // On Android, only show the prompt when the native browser install dialog
+  // is available. There's no good manual flow for Android like iOS's share sheet.
+  const effectiveIsVisible = isVisible && !(platform === 'android' && !hasNativePrompt);
+
   return {
-    isVisible,
+    isVisible: effectiveIsVisible,
     platform,
     /** Android: whether the native install dialog is available */
     hasNativePrompt,

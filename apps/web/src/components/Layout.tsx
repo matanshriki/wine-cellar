@@ -14,6 +14,7 @@ import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
 import { PwaInstallPrompt } from './PwaInstallPrompt';
+import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { CompactThemeToggle } from './ThemeToggle';
 import { SommelierChatButton } from './SommelierChatButton';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
@@ -242,6 +243,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     await refreshProfile();
   }
 
+  // PWA install prompt state — lifted here so we can hide the bottom nav while it's open
+  const pwaPrompt = usePwaInstallPrompt();
+
   // Wishlist feature (feature-flagged) - Add wishlist nav item only if enabled
   const wishlistEnabled = useFeatureFlag('wishlistEnabled');
   
@@ -454,8 +458,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Mobile Floating Footer with Camera FAB — shown on mobile AND iPad */}
-      <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
+      {/* Mobile Floating Footer with Camera FAB — hidden while the PWA install prompt is open */}
+      {!pwaPrompt.isVisible && (
+        <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
+      )}
 
       {/* Global Sommelier FAB — shown on content pages that don't already have it.
           Hidden on /recommendation (has its own), /agent (IS the agent), and admin/auth pages. */}
@@ -579,7 +585,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       />
 
       {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}
-      <PwaInstallPrompt />
+      <PwaInstallPrompt
+        isVisible={pwaPrompt.isVisible}
+        platform={pwaPrompt.platform}
+        hasNativePrompt={pwaPrompt.hasNativePrompt}
+        handleInstall={pwaPrompt.handleInstall}
+        handleDismiss={pwaPrompt.handleDismiss}
+      />
     </div>
   );
 }

@@ -13,7 +13,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
+import type { PromptPlatform } from '../hooks/usePwaInstallPrompt';
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 
@@ -371,17 +371,21 @@ function DesktopModal({ onDismiss }: { onDismiss: () => void }) {
 
 // ── Root component ────────────────────────────────────────────────────────────
 
-export function PwaInstallPrompt() {
-  const { isVisible, platform, hasNativePrompt, handleInstall, handleDismiss } =
-    usePwaInstallPrompt();
+interface PwaInstallPromptProps {
+  isVisible: boolean;
+  platform: PromptPlatform;
+  hasNativePrompt: boolean;
+  handleInstall: () => void;
+  handleDismiss: () => void;
+}
 
-  // Android: only show if the native install prompt is available
-  if (platform === 'android' && !hasNativePrompt && isVisible) {
-    // Silently decline — no manual Android instructions needed
-    handleDismiss();
-    return null;
-  }
-
+export function PwaInstallPrompt({
+  isVisible,
+  platform,
+  hasNativePrompt,
+  handleInstall,
+  handleDismiss,
+}: PwaInstallPromptProps) {
   return (
     <AnimatePresence>
       {isVisible && (
