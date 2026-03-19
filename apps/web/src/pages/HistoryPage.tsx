@@ -4,9 +4,56 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
+import { RateRitualSheet, MOOD_CHIPS } from '../components/RateRitualSheet';
 import * as historyService from '../services/historyService';
 import * as bottleService from '../services/bottleService';
 import type { BottleWithWineInfo } from '../services/bottleService';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse tasting_notes back into chip IDs and free-text notes */
+function parseTastingNotes(raw: string | null): { chipIds: string[]; notes: string } {
+  if (!raw) return { chipIds: [], notes: '' };
+  const emojiToId: Record<string, string> = {
+    '🔁': 'would_buy_again',
+    '🍽️': 'great_with_food',
+    '✨': 'special_occasion',
+  };
+  const allEmojis = new Set(Object.keys(emojiToId));
+  const sepIdx = raw.indexOf(' · ');
+  if (sepIdx !== -1) {
+    const chipsPart = raw.slice(0, sepIdx);
+    const tokens = chipsPart.split(' ');
+    if (tokens.every(t => allEmojis.has(t))) {
+      return {
+        chipIds: tokens.map(t => emojiToId[t]).filter(Boolean),
+        notes: raw.slice(sepIdx + 3),
+      };
+    }
+  }
+  // No separator — check if the whole string is chip emojis
+  const tokens = raw.split(' ');
+  if (tokens.length <= 3 && tokens.every(t => allEmojis.has(t))) {
+    return { chipIds: tokens.map(t => emojiToId[t]).filter(Boolean), notes: '' };
+  }
+  return { chipIds: [], notes: raw };
+}
+
+/** Read-only compact star row */
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <span
+          key={star}
+          style={{ fontSize: '15px', filter: star <= rating ? 'none' : 'grayscale(1) opacity(0.25)' }}
+        >
+          ⭐
+        </span>
+      ))}
+    </div>
+  );
+}
 
 interface HistoryEvent {
   id: string;
@@ -37,7 +84,7 @@ export function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedBottle, setSelectedBottle] = useState<BottleWithWineInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [ratingLoading, setRatingLoading] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<HistoryEvent | null>(null);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState<string>('');
   const [notesSaving, setNotesSaving] = useState<string | null>(null);
@@ -105,44 +152,8 @@ export function HistoryPage() {
     }
   }
 
-  async function handleQuickRating(eventId: string, isPositive: boolean) {
-    console.log('[HistoryPage] Updating rating for event:', eventId, 'isPositive:', isPositive);
-    setRatingLoading(eventId);
-    
-    try {
-      // Update rating: thumbs up = 5, thumbs down = 2
-      const newRating = isPositive ? 5 : 2;
-      console.log('[HistoryPage] Setting user_rating to:', newRating);
-      
-      const updatedEvent = await historyService.updateConsumptionHistory(eventId, {
-        user_rating: newRating,
-      });
-      
-      console.log('[HistoryPage] ✅ Rating updated successfully:', updatedEvent);
-
-      // Optimistically update local state (instant feedback)
-      setEvents((prevEvents) => 
-        prevEvents.map(event => 
-          event.id === eventId 
-            ? { ...event, user_rating: newRating } 
-            : event
-        )
-      );
-      
-      console.log('[HistoryPage] Local state updated optimistically');
-      
-      // Also refresh from server to ensure consistency
-      await loadData();
-      
-      console.log('[HistoryPage] Data reloaded from server');
-      
-      toast.success(t('history.ratingUpdated'));
-    } catch (error: any) {
-      console.error('[HistoryPage] ❌ Error updating rating:', error);
-      toast.error(error.message || t('history.error.ratingFailed'));
-    } finally {
-      setRatingLoading(null);
-    }
+  function openRateSheet(event: HistoryEvent) {
+    setRatingTarget(event);
   }
 
   function handleEditNotes(eventId: string, currentNotes: string | null) {
@@ -407,68 +418,74 @@ export function HistoryPage() {
                   )}
                 </div>
 
-                {/* Tasting Notes */}
-                {/* Note: tasting_notes are user-generated content, NOT translated */}
-                {event.tasting_notes && (
-                  <p 
-                    className="text-xs sm:text-sm italic mb-3 pl-3 border-l-2"
-                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border-medium)' }}
-                  >
-                    "{event.tasting_notes}"
-                  </p>
-                )}
+                {/* Tasting notes — parsed into chips + free text */}
+                {event.tasting_notes && (() => {
+                  const { chipIds, notes: noteText } = parseTastingNotes(event.tasting_notes);
+                  return (
+                    <>
+                      {chipIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {chipIds.map(chipId => {
+                            const chip = MOOD_CHIPS.find(c => c.id === chipId);
+                            if (!chip) return null;
+                            return (
+                              <span
+                                key={chipId}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                style={{
+                                  background: 'var(--wine-50)',
+                                  color: 'var(--wine-700)',
+                                  border: '1px solid var(--wine-200)',
+                                }}
+                              >
+                                {chip.emoji} {t(chip.labelKey)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {noteText && (
+                        <p
+                          className="text-xs sm:text-sm italic mb-3 pl-3 border-l-2"
+                          style={{ color: 'var(--text-primary)', borderColor: 'var(--border-medium)' }}
+                        >
+                          "{noteText}"
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Rating Section */}
-                <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{t('history.quickRating')}:</span>
-                  
-                  <div className="flex gap-2">
+                <div
+                  className="flex items-center justify-between gap-2 pt-2 border-t"
+                  style={{ borderColor: 'var(--border-subtle)' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {event.user_rating ? (
+                    <>
+                      <StarDisplay rating={event.user_rating} />
+                      <button
+                        onClick={() => openRateSheet(event)}
+                        className="text-xs font-medium"
+                        style={{ color: 'var(--wine-600)' }}
+                      >
+                        {t('history.editRating', 'Edit rating')}
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickRating(event.id, true);
+                      onClick={() => openRateSheet(event)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                      style={{
+                        background: 'var(--wine-50)',
+                        color: 'var(--wine-700)',
+                        border: '1px solid var(--wine-200)',
                       }}
-                      disabled={ratingLoading === event.id}
-                      className={`
-                        flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all
-                        ${event.user_rating && event.user_rating >= 4 
-                          ? 'bg-green-100 text-green-700 border-2 border-green-500' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600 border-2 border-transparent hover:border-green-300'
-                        }
-                        ${ratingLoading === event.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                      `}
-                      aria-label={t('history.thumbsUp')}
                     >
-                      <span className="text-base">👍</span>
-                      <span>{t('history.liked')}</span>
+                      <span>⭐</span>
+                      <span>{t('history.rateWine', 'Rate this wine')}</span>
                     </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickRating(event.id, false);
-                      }}
-                      disabled={ratingLoading === event.id}
-                      className={`
-                        flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all
-                        ${event.user_rating && event.user_rating <= 3 
-                          ? 'bg-orange-100 text-orange-700 border-2 border-orange-500' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600 border-2 border-transparent hover:border-orange-300'
-                        }
-                        ${ratingLoading === event.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                      `}
-                      aria-label={t('history.thumbsDown')}
-                    >
-                      <span className="text-base">👎</span>
-                      <span>{t('history.notLiked')}</span>
-                    </button>
-                  </div>
-
-                  {/* Current Rating Display */}
-                  {event.user_rating && (
-                    <span className="ml-auto badge badge-yellow text-xs">
-                      ⭐ {event.user_rating}/5
-                    </span>
                   )}
                 </div>
 
@@ -612,6 +629,24 @@ export function HistoryPage() {
           </div>
         )}
       </div>
+
+      {/* Rate Ritual Sheet — same rich experience as after opening a bottle */}
+      {ratingTarget && (() => {
+        const { chipIds, notes: noteText } = parseTastingNotes(ratingTarget.tasting_notes);
+        return (
+          <RateRitualSheet
+            isOpen={!!ratingTarget}
+            onClose={() => setRatingTarget(null)}
+            onRated={loadData}
+            historyId={ratingTarget.id}
+            wineName={ratingTarget.bottle?.wine?.wine_name ?? ''}
+            producer={ratingTarget.bottle?.wine?.producer ?? ''}
+            initialRating={ratingTarget.user_rating ?? undefined}
+            initialNotes={noteText || undefined}
+            initialChipIds={chipIds}
+          />
+        );
+      })()}
 
       {/* Wine Details Modal */}
       <WineDetailsModal

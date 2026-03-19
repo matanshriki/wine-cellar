@@ -10,7 +10,7 @@
  *  – Free-text notes
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import * as historyService from '../services/historyService';
@@ -19,19 +19,25 @@ import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 const reduce = shouldReduceMotion();
 
-interface RateRitualSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  historyId: string;
-  wineName: string;
-  producer: string;
-}
-
-const MOOD_CHIPS = [
+export const MOOD_CHIPS = [
   { id: 'would_buy_again', emoji: '🔁', labelKey: 'rateRitual.chips.wouldBuyAgain' },
   { id: 'great_with_food', emoji: '🍽️', labelKey: 'rateRitual.chips.greatWithFood' },
   { id: 'special_occasion', emoji: '✨', labelKey: 'rateRitual.chips.specialOccasion' },
 ] as const;
+
+interface RateRitualSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Called after a rating is successfully saved (before onClose) */
+  onRated?: () => void;
+  historyId: string;
+  wineName: string;
+  producer: string;
+  /** Pre-fill the sheet when editing an existing rating */
+  initialRating?: number;
+  initialNotes?: string;
+  initialChipIds?: string[];
+}
 
 function StarRating({
   value,
@@ -80,16 +86,30 @@ function StarRating({
 export function RateRitualSheet({
   isOpen,
   onClose,
+  onRated,
   historyId,
   wineName,
   producer,
+  initialRating,
+  initialNotes,
+  initialChipIds,
 }: RateRitualSheetProps) {
   const { t } = useTranslation();
 
-  const [rating, setRating] = useState(0);
-  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set());
-  const [notes, setNotes] = useState('');
+  const [rating, setRating] = useState(initialRating ?? 0);
+  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set(initialChipIds ?? []));
+  const [notes, setNotes] = useState(initialNotes ?? '');
   const [loading, setLoading] = useState(false);
+
+  // Sync prefill values whenever the sheet is opened (handles editing existing ratings)
+  useEffect(() => {
+    if (isOpen) {
+      setRating(initialRating ?? 0);
+      setSelectedChips(new Set(initialChipIds ?? []));
+      setNotes(initialNotes ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   function toggleChip(id: string) {
     setSelectedChips(prev => {
@@ -123,6 +143,7 @@ export function RateRitualSheet({
       });
 
       toast.success(t('rateRitual.saved', 'Rating saved!'));
+      onRated?.();
       onClose();
     } catch (err: any) {
       toast.error(err?.message || t('rateRitual.saveFailed', 'Failed to save rating'));
