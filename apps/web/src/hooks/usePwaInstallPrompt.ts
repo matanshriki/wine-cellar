@@ -17,6 +17,7 @@
 
 import { useState, useEffect } from 'react';
 import { isStandalonePwa, isIos, isAndroid } from '../utils/deviceDetection';
+import { supabase } from '../lib/supabase';
 
 // ── localStorage keys ─────────────────────────────────────────────────────────
 const KEY_DISMISSED_UNTIL = 'pwa_prompt_dismissed_until';
@@ -93,11 +94,23 @@ export function usePwaInstallPrompt() {
     return timer;
   };
 
-  // If the user already has a bottle from a previous session, show on mount
+  // Show on mount if:
+  //  a) the user already has a bottle flag set in this browser context, OR
+  //  b) the user is authenticated (covers the case where they open the site
+  //     in a fresh browser tab / mobile Safari after previously using the PWA,
+  //     where localStorage is isolated so KEY_HAS_BOTTLE was never written here)
   useEffect(() => {
-    if (!hasBottle) return;
-    const timer = tryShow();
-    return () => { if (timer) clearTimeout(timer); };
+    if (hasBottle) {
+      const timer = tryShow();
+      return () => { if (timer) clearTimeout(timer); };
+    }
+    // Fallback: check auth state — any logged-in user is eligible
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        try { localStorage.setItem(KEY_HAS_BOTTLE, 'true'); } catch {}
+        setHasBottle(true);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
