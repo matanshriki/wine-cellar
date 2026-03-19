@@ -114,11 +114,85 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle messages from the client
+// ── Local notification scheduling ─────────────────────────────────────────────
+//
+// The app posts SCHEDULE_NOTIFICATION when a timer is created and
+// CANCEL_NOTIFICATION when one is cancelled.  The service worker holds a
+// Map of pending setTimeout handles so that notifications fire even when
+// the browser tab is in the background.
+//
+// Limitation: if the OS fully terminates the service worker (e.g. the device
+// is restarted, or the browser aggressively culls background SWs) the timeout
+// is lost.  The in-app FloatingTimerPill modal is the fallback for that case.
+
+/** Map<timerId, timeoutHandle> */
+const pendingNotifications = new Map();
+
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  const { data } = event;
+  if (!data) return;
+
+  if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
   }
+
+  if (data.type === 'SCHEDULE_NOTIFICATION') {
+    const { timerId, title, body, delayMs, tag } = data;
+
+    // Clear any existing timeout for this timer (e.g. re-scheduling)
+    if (pendingNotifications.has(timerId)) {
+      clearTimeout(pendingNotifications.get(timerId));
+    }
+
+    if (delayMs <= 0) return;
+
+    const handle = setTimeout(() => {
+      self.registration.showNotification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag,
+        renotify: false,
+        requireInteraction: true,
+        data: { timerId, url: '/' },
+      });
+      pendingNotifications.delete(timerId);
+    }, delayMs);
+
+    pendingNotifications.set(timerId, handle);
+    return;
+  }
+
+  if (data.type === 'CANCEL_NOTIFICATION') {
+    const { timerId } = data;
+    if (pendingNotifications.has(timerId)) {
+      clearTimeout(pendingNotifications.get(timerId));
+      pendingNotifications.delete(timerId);
+    }
+    // Also dismiss any already-shown notification with this tag
+    self.registration.getNotifications({ tag: `wine-timer-${timerId}` })
+      .then(notifications => notifications.forEach(n => n.close()))
+      .catch(() => {});
+    return;
+  }
+});
+
+// Open / focus the app when the user taps a notification
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If the app is already open, focus it
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      // Otherwise open a new window
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    })
+  );
 });
 
 

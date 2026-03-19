@@ -26,6 +26,65 @@ export interface WineTimer {
 
 const STORAGE_PREFIX = 'activeTimers:';
 
+// ── OS notification helpers ────────────────────────────────────────────────────
+
+/** Returns true if the browser supports notifications and SW messaging */
+function notificationsSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'Notification' in window &&
+    'serviceWorker' in navigator
+  );
+}
+
+/**
+ * Requests notification permission if not already granted.
+ * Must be called from within a user-gesture handler (button click etc.)
+ * Returns true if permission is now granted.
+ */
+async function requestNotificationPermission(): Promise<boolean> {
+  if (!notificationsSupported()) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+/** Posts a SCHEDULE_NOTIFICATION message to the active service worker */
+async function scheduleOSNotification(timer: WineTimer): Promise<void> {
+  if (!notificationsSupported()) return;
+  if (Notification.permission !== 'granted') return;
+
+  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  if (!reg?.active) return;
+
+  const endMs = new Date(timer.started_at).getTime() + timer.duration_minutes * 60_000;
+  const delayMs = endMs - Date.now();
+  if (delayMs <= 0) return;
+
+  const isRate = timer.type === 'rate';
+  const title = isRate ? '⭐ Time to rate your wine!' : '🫙 Decanting complete!';
+  const body = isRate
+    ? `How was ${timer.producer} ${timer.wine_name}? Open the app to rate it.`
+    : `${timer.producer} ${timer.wine_name} is ready to pour.`;
+
+  reg.active.postMessage({
+    type: 'SCHEDULE_NOTIFICATION',
+    timerId: timer.id,
+    title,
+    body,
+    delayMs,
+    tag: `wine-timer-${timer.id}`,
+  });
+}
+
+/** Cancels a previously scheduled OS notification */
+async function cancelOSNotification(timerId: string): Promise<void> {
+  if (!notificationsSupported()) return;
+  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  reg?.active?.postMessage({ type: 'CANCEL_NOTIFICATION', timerId });
+}
+
 function getKey(userId: string) {
   return `${STORAGE_PREFIX}${userId}`;
 }
@@ -103,6 +162,13 @@ export function useTimerManager() {
         saveToStorage(userId, next);
         return next;
       });
+
+      // Request OS notification permission (requires user-gesture context) then
+      // schedule a native notification for when this timer expires.
+      requestNotificationPermission().then(granted => {
+        if (granted) scheduleOSNotification(timer);
+      });
+
       return timer;
     },
     [userId],
@@ -116,6 +182,7 @@ export function useTimerManager() {
         saveToStorage(userId, next);
         return next;
       });
+      cancelOSNotification(timerId);
     },
     [userId],
   );
@@ -129,6 +196,7 @@ export function useTimerManager() {
         saveToStorage(userId, next);
         return next;
       });
+      cancelOSNotification(timerId);
     },
     [userId],
   );
