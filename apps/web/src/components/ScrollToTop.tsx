@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useGaPageViews } from '../hooks/useGaPageViews';
+import { scrollAppToTop } from '../utils/scrollAppToTop';
 
 export function ScrollToTop() {
   const { pathname } = useLocation();
@@ -17,7 +18,8 @@ export function ScrollToTop() {
     // Instant scroll — the new page should always open at the top immediately.
     // Using 'smooth' would render the page at the old scroll position first
     // and then animate up, making it look like the page opened in the middle.
-    window.scrollTo(0, 0);
+    // Uses scrollAppToTop so body/html scroll containers match global CSS.
+    scrollAppToTop({ behavior: 'auto' });
   }, [pathname]);
 
   return null;

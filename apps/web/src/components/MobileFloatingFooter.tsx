@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 import React from 'react';
 
@@ -112,6 +113,16 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
       ),
     },
   ];
+
+  /** WhatsApp-style: re-tapping the current tab scrolls the page to the top */
+  const handleNavClick = (e: React.MouseEvent, path: string) => {
+    const isActive = location.pathname === path;
+    if (isActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      scrollAppToTop();
+    }
+  };
 
   return (
     <>
@@ -222,16 +233,6 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
               {navItems.slice(0, 2).map((item) => {
                 const isActive = location.pathname === item.path;
 
-                const handleClick = (e: React.MouseEvent) => {
-                  console.log('[Footer Icon]', item.path, 'clicked, isActive:', isActive);
-                  if (isActive) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('[Footer Icon] Scrolling to top');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                };
-
                 return (
                   <Link
                     key={item.path}
@@ -242,7 +243,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
                     }}
-                    onClick={handleClick}
+                    onClick={(e) => handleNavClick(e, item.path)}
                   >
                     <motion.div
                       className="relative"
@@ -280,16 +281,6 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
               {navItems.slice(2).map((item) => {
                 const isActive = location.pathname === item.path;
 
-                const handleClick = (e: React.MouseEvent) => {
-                  console.log('[Footer Icon]', item.path, 'clicked, isActive:', isActive);
-                  if (isActive) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('[Footer Icon] Scrolling to top');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                };
-
                 return (
                   <Link
                     key={item.path}
@@ -300,7 +291,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                     style={{
                       color: isActive ? 'var(--wine-600)' : 'var(--color-stone-500)',
                     }}
-                    onClick={handleClick}
+                    onClick={(e) => handleNavClick(e, item.path)}
                   >
                     <motion.div
                       className="relative"

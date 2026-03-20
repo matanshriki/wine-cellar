@@ -19,6 +19,7 @@ import { CompactThemeToggle } from './ThemeToggle';
 import { SommelierChatButton } from './SommelierChatButton';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -389,12 +390,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   const isActive = location.pathname === item.path;
                   
                   const handleClick = (e: React.MouseEvent) => {
-                    console.log('[Desktop Nav]', item.path, 'clicked, isActive:', isActive);
                     if (isActive) {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('[Desktop Nav] Scrolling to top');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      scrollAppToTop();
                     }
                   };
                   
