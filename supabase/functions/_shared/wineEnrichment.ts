@@ -33,9 +33,13 @@ export type EnrichmentPlan = {
     regional_wine_style?: string;
   };
   matchedRuleId: string | null;
+  /** How this plan was chosen: fill empty/generic grapes, or fix suspicion + rule. */
+  mode: "fill" | "fix" | null;
   confidence: number;
   suspicion: { flagged: boolean; reasons: string[]; fixTags: string[] };
   logLines: string[];
+  /** Human-readable audit trail for admin / Edge logs (not shown to end users). */
+  mechanismLines: string[];
 };
 
 type InferenceRule = {
@@ -489,9 +493,11 @@ export function planWineMetadataEnrichment(wine: WineEnrichmentRow): EnrichmentP
       hasUpdates: false,
       updates: {},
       matchedRuleId: null,
+      mode: null,
       confidence: 0,
       suspicion,
       logLines,
+      mechanismLines: [],
     };
   }
 
@@ -520,13 +526,65 @@ export function planWineMetadataEnrichment(wine: WineEnrichmentRow): EnrichmentP
     logLines.push(`[wineEnrichment] version=${WINE_METADATA_ENRICHMENT_VERSION} mode=${mode}`);
   }
 
+  const mechanismLines: string[] = [];
+  if (hasUpdates) {
+    const geo = [
+      wine.country && `country="${wine.country}"`,
+      wine.region && `region="${wine.region}"`,
+      wine.appellation && `appellation="${wine.appellation}"`,
+      wine.regional_wine_style && `style="${wine.regional_wine_style}"`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const haystackPreview =
+      haystack.length > 220 ? `${haystack.slice(0, 220)}…` : haystack;
+
+    mechanismLines.push(
+      `Catalog row: this is the shared \`wines\` row (UUID above); all bottles pointing at it share these grapes/style.`,
+    );
+    mechanismLines.push(
+      `Mechanism: deterministic rule engine (${WINE_METADATA_ENRICHMENT_VERSION}), no AI. Text from producer, wine name, country, region, appellation, and regional_wine_style is normalized (case/diacritics) and scanned for known geography/style keywords.`,
+    );
+    mechanismLines.push(
+      `Context used: ${geo || "(no geography fields — matched on wine name/producer only)"}`,
+    );
+    mechanismLines.push(`Normalized search text (preview): ${haystackPreview || "(empty)"}`);
+    mechanismLines.push(
+      `Decision: ${mode === "fill" ? "FILL" : "FIX"} — first matching rule by priority wins. Rule id="${matched.id}", confidence=${matched.confidence}.`,
+    );
+    if (mode === "fill") {
+      mechanismLines.push(
+        `Why FILL: grapes were empty or only generic placeholders (e.g. "Red blend"); safe to apply regional default grape set for matched rule.`,
+      );
+    } else {
+      mechanismLines.push(
+        `Why FIX: grape list conflicted with geography heuristics: ${suspicion.reasons.join("; ")}`,
+      );
+      mechanismLines.push(
+        `Suspicion fix tags: [${suspicion.fixTags.join(", ")}] — replacement allowed only when the matched rule declares overlapping fixTags and meets min confidence (${MIN_CONFIDENCE_FIX}).`,
+      );
+    }
+    const beforeG = grapes.length ? grapes.join(", ") : "(none)";
+    const afterG =
+      updates.grapes?.length ? updates.grapes.join(", ") : beforeG;
+    mechanismLines.push(`Grapes change: "${beforeG}" → "${afterG}"`);
+    if (updates.regional_wine_style) {
+      const bs = wine.regional_wine_style?.trim() || "(empty)";
+      mechanismLines.push(
+        `regional_wine_style change: "${bs}" → "${updates.regional_wine_style}"`,
+      );
+    }
+  }
+
   return {
     hasUpdates,
     updates,
     matchedRuleId: matched.id,
+    mode,
     confidence: matched.confidence,
     suspicion,
     logLines,
+    mechanismLines,
   };
 }
 

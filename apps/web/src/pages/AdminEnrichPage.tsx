@@ -76,12 +76,24 @@ export const AdminEnrichPage: React.FC = () => {
     wine_id: string;
     wine_name: string;
     producer: string;
+    vintage: number | null;
+    region: string | null;
+    country: string | null;
+    appellation: string | null;
+    color: string;
+    entry_source: string | null;
     status: string;
+    mode: string | null;
     rule_id: string | null;
+    confidence: number;
     before_grapes: string[] | null;
     after_grapes: string[] | null;
+    before_style: string | null;
+    after_style: string | null;
     suspicion_reasons: string[];
+    suspicion_fix_tags: string[];
     log_lines: string[];
+    mechanism_lines: string[];
   }>>([]);
   const [rulesDone, setRulesDone] = useState(false);
 
@@ -276,9 +288,42 @@ export const AdminEnrichPage: React.FC = () => {
         }
 
         const label = rulesDryRun ? 'would_update' : 'updated';
+        const ts = new Date().toLocaleTimeString();
+        const perWineLines: string[] = [];
+        for (const row of data.details ?? []) {
+          const tag = rulesDryRun ? 'DRY-RUN' : 'APPLY';
+          perWineLines.push(
+            `[${ts}] ${tag} wine_id=${row.wine_id}`,
+            `  label: ${row.producer} — ${row.wine_name}  vintage=${row.vintage ?? '—'}`,
+            `  location: ${[row.region, row.appellation, row.country].filter(Boolean).join(' · ') || '—'}`,
+            `  color=${row.color ?? '—'} entry_source=${row.entry_source ?? '—'}`,
+            `  mode=${row.mode ?? '—'} rule=${row.rule_id ?? '—'} confidence=${row.confidence ?? '—'}`,
+          );
+          if (row.suspicion_reasons?.length) {
+            perWineLines.push(`  suspicion: ${row.suspicion_reasons.join('; ')}`);
+          }
+          if (row.suspicion_fix_tags?.length) {
+            perWineLines.push(`  suspicion_fix_tags: [${row.suspicion_fix_tags.join(', ')}]`);
+          }
+          perWineLines.push(
+            `  grapes: "${(row.before_grapes ?? []).join(', ') || '(none)'}" → "${(row.after_grapes ?? []).join(', ') || '(none)'}"`,
+          );
+          if (row.before_style !== row.after_style && (row.before_style || row.after_style)) {
+            perWineLines.push(
+              `  regional_wine_style: "${row.before_style ?? '(empty)'}" → "${row.after_style ?? '(empty)'}"`,
+            );
+          }
+          perWineLines.push('  — mechanism —');
+          for (const ml of row.mechanism_lines ?? []) {
+            perWineLines.push(`    ${ml}`);
+          }
+          perWineLines.push('');
+        }
+
         setRulesLog((prev) => [
           ...prev,
-          `[${new Date().toLocaleTimeString()}] page ${pages} rows=${data.rowsFetched} examined=${data.examined} ${label}=${data.updatedOrWouldUpdate} next=${offset}`,
+          `[${ts}] page ${pages} rows=${data.rowsFetched} examined=${data.examined} ${label}=${data.updatedOrWouldUpdate} next=${offset}`,
+          ...perWineLines,
         ]);
         setRulesTotals({
           fetched: totalFetched,
@@ -571,7 +616,7 @@ VALUES ('${user?.id}');`}
         {rulesLog.length > 0 && (
           <details style={{ marginTop: '1rem' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Server log</summary>
-            <pre style={{ fontSize: '0.72rem', maxHeight: 160, overflow: 'auto', background: '#fff', padding: '0.75rem' }}>
+            <pre style={{ fontSize: '0.72rem', maxHeight: 420, overflow: 'auto', background: '#fff', padding: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {rulesLog.join('\n')}
             </pre>
           </details>
@@ -585,10 +630,10 @@ VALUES ('${user?.id}');`}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
                 <thead>
                   <tr style={{ background: '#343a40', color: '#fff' }}>
-                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Wine</th>
-                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Rule</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Wine / id</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Mode / rule</th>
                     <th style={{ padding: '0.35rem', textAlign: 'left' }}>Grapes before → after</th>
-                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Suspicion</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Suspicion / mechanism</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -597,16 +642,28 @@ VALUES ('${user?.id}');`}
                       <td style={{ padding: '0.35rem', maxWidth: 180 }}>
                         <div style={{ fontWeight: 600 }}>{row.wine_name}</div>
                         <div style={{ color: '#666' }}>{row.producer}</div>
-                        <code style={{ fontSize: '0.65rem' }} title={row.wine_id}>{row.wine_id.slice(0, 8)}…</code>
+                        <code style={{ fontSize: '0.65rem', display: 'block', wordBreak: 'break-all' }} title="Full wine UUID — click log line to copy">{row.wine_id}</code>
                       </td>
-                      <td style={{ padding: '0.35rem', whiteSpace: 'nowrap' }}>{row.rule_id ?? '—'}</td>
+                      <td style={{ padding: '0.35rem' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#555' }}>{row.mode ?? '—'}</span>
+                        <br />
+                        <span style={{ whiteSpace: 'nowrap' }}>{row.rule_id ?? '—'}</span>
+                        <br />
+                        <span style={{ fontSize: '0.65rem' }}>conf {row.confidence ?? '—'}</span>
+                      </td>
                       <td style={{ padding: '0.35rem' }}>
                         <span style={{ color: '#999' }}>{(row.before_grapes ?? []).join(', ') || '—'}</span>
                         {' → '}
                         <span style={{ color: '#155724' }}>{(row.after_grapes ?? []).join(', ') || '—'}</span>
                       </td>
-                      <td style={{ padding: '0.35rem', maxWidth: 200 }}>
-                        {(row.suspicion_reasons ?? []).length ? row.suspicion_reasons.join('; ') : '—'}
+                      <td style={{ padding: '0.35rem', maxWidth: 280, fontSize: '0.68rem' }}>
+                        {(row.suspicion_reasons ?? []).length ? (
+                          <div style={{ marginBottom: '0.35rem', color: '#721c24' }}>{row.suspicion_reasons.join('; ')}</div>
+                        ) : null}
+                        {(row.mechanism_lines ?? []).slice(0, 2).map((l, i) => (
+                          <div key={i} style={{ color: '#444' }}>{l}</div>
+                        ))}
+                        {(row.mechanism_lines ?? []).length > 2 ? <div style={{ color: '#888' }}>…see Server log</div> : null}
                       </td>
                     </tr>
                   ))}

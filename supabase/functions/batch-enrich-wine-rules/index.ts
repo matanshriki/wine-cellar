@@ -39,17 +39,57 @@ type DetailRow = {
   vintage: number | null;
   region: string | null;
   country: string | null;
+  appellation: string | null;
+  color: string;
+  entry_source: string | null;
   status: "updated" | "would_update" | "skipped";
+  mode: "fill" | "fix" | null;
   rule_id: string | null;
   confidence: number;
   suspicion_flagged: boolean;
   suspicion_reasons: string[];
+  suspicion_fix_tags: string[];
   before_grapes: string[] | null;
   after_grapes: string[] | null;
   before_style: string | null;
   after_style: string | null;
   log_lines: string[];
+  /** Same as plan.mechanismLines — how the engine decided + before/after. */
+  mechanism_lines: string[];
 };
+
+function logWineEnrichmentBlock(
+  prefix: "DRY-RUN" | "APPLIED",
+  w: WineRow,
+  detail: DetailRow,
+) {
+  const lines = [
+    "",
+    `──────── ${prefix} ────────`,
+    `wine_id: ${w.id}`,
+    `display: ${w.producer} — ${w.wine_name}${w.vintage != null ? ` (${w.vintage})` : ""}`,
+    `location: ${[w.region, w.appellation, w.country].filter(Boolean).join(" · ") || "—"}`,
+    `color: ${w.color}  entry_source: ${w.entry_source ?? "—"}`,
+    `mode: ${detail.mode ?? "—"}  rule: ${detail.rule_id ?? "—"}  confidence: ${detail.confidence}`,
+    ...(detail.suspicion_flagged
+      ? [`suspicion: ${detail.suspicion_reasons.join("; ")}`]
+      : []),
+    ...(detail.suspicion_fix_tags?.length
+      ? [`suspicion_fix_tags: [${detail.suspicion_fix_tags.join(", ")}]`]
+      : []),
+    `grapes: ${(detail.before_grapes ?? []).join(", ") || "(none)"}  →  ${(detail.after_grapes ?? []).join(", ") || "(none)"}`,
+    ...(detail.before_style !== detail.after_style &&
+    (detail.before_style || detail.after_style)
+      ? [
+        `regional_wine_style: ${detail.before_style ?? "(empty)"}  →  ${detail.after_style ?? "(empty)"}`,
+      ]
+      : []),
+    "--- mechanism ---",
+    ...detail.mechanism_lines.map((l) => `  ${l}`),
+    `────────────────────────`,
+  ];
+  console.log(lines.join("\n"));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -165,19 +205,26 @@ Deno.serve(async (req) => {
         vintage: w.vintage,
         region: w.region,
         country: w.country,
+        appellation: w.appellation,
+        color: w.color,
+        entry_source: w.entry_source,
         status: dryRun ? "would_update" : "updated",
+        mode: plan.mode,
         rule_id: plan.matchedRuleId,
         confidence: plan.confidence,
         suspicion_flagged: plan.suspicion.flagged,
         suspicion_reasons: plan.suspicion.reasons,
+        suspicion_fix_tags: plan.suspicion.fixTags,
         before_grapes: beforeGrapes.length ? [...beforeGrapes] : null,
         after_grapes: afterGrapes.length ? [...afterGrapes] : null,
         before_style: beforeStyle,
         after_style: afterStyle ?? null,
         log_lines: [...plan.logLines],
+        mechanism_lines: [...plan.mechanismLines],
       };
 
       if (dryRun) {
+        logWineEnrichmentBlock("DRY-RUN", w, detail);
         details.push({ ...detail, status: "would_update" });
         mutations++;
         continue;
@@ -198,15 +245,17 @@ Deno.serve(async (req) => {
           ...detail,
           status: "skipped",
           log_lines: [...detail.log_lines, `DB error: ${upErr.message}`],
+          mechanism_lines: [
+            ...detail.mechanism_lines,
+            `DB error: ${upErr.message}`,
+          ],
         });
         continue;
       }
 
       mutations++;
       details.push({ ...detail, status: "updated" });
-      console.log(
-        `[batch-enrich-wine-rules] updated wine=${w.id} rule=${plan.matchedRuleId} grapes=${JSON.stringify(plan.updates.grapes)}`,
-      );
+      logWineEnrichmentBlock("APPLIED", w, detail);
     }
 
     return new Response(
