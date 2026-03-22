@@ -65,6 +65,26 @@ export const AdminEnrichPage: React.FC = () => {
   const [analysisLog,     setAnalysisLog]        = useState<string[]>([]);
   const [analysisDone,    setAnalysisDone]       = useState(false);
 
+  // ── Rule-based wine metadata (internal, no Vivino) ─────────────────────────
+  const [rulesDryRun, setRulesDryRun] = useState(true);
+  const [rulesFilter, setRulesFilter] = useState<'candidates' | 'missing_grapes' | 'suspicious'>('candidates');
+  const [rulesBatch, setRulesBatch] = useState(40);
+  const [rulesRunning, setRulesRunning] = useState(false);
+  const [rulesLog, setRulesLog] = useState<string[]>([]);
+  const [rulesTotals, setRulesTotals] = useState({ fetched: 0, examined: 0, mutations: 0, pages: 0 });
+  const [rulesDetails, setRulesDetails] = useState<Array<{
+    wine_id: string;
+    wine_name: string;
+    producer: string;
+    status: string;
+    rule_id: string | null;
+    before_grapes: string[] | null;
+    after_grapes: string[] | null;
+    suspicion_reasons: string[];
+    log_lines: string[];
+  }>>([]);
+  const [rulesDone, setRulesDone] = useState(false);
+
   // Check if user is admin
   React.useEffect(() => {
     const checkAdmin = async () => {
@@ -192,6 +212,93 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const runRulesBackfill = async () => {
+    if (!rulesDryRun && !confirm(
+      'Apply rule-based grape / style updates to the wines table?\n\n' +
+      'Only rows that match the filter and have a planned change are written.\n\nContinue?',
+    )) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session ?? contextSession;
+    if (!session) {
+      alert('Session expired — please refresh the page.');
+      return;
+    }
+
+    setRulesRunning(true);
+    setRulesDone(false);
+    setRulesLog([`[${new Date().toLocaleTimeString()}] start dryRun=${rulesDryRun} filter=${rulesFilter} batch=${rulesBatch}`]);
+    setRulesDetails([]);
+
+    let offset = 0;
+    let totalFetched = 0;
+    let totalExamined = 0;
+    let totalMutations = 0;
+    let pages = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-wine-rules`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              dryRun: rulesDryRun,
+              offset,
+              batchSize: rulesBatch,
+              filterMode: rulesFilter,
+            }),
+          },
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+
+        const data = await res.json();
+        pages += 1;
+        totalFetched += data.rowsFetched ?? 0;
+        totalExamined += data.examined ?? 0;
+        totalMutations += data.updatedOrWouldUpdate ?? 0;
+        offset = data.nextOffset ?? 0;
+
+        if (Array.isArray(data.details) && data.details.length) {
+          setRulesDetails((prev) => [...prev, ...data.details]);
+        }
+
+        const label = rulesDryRun ? 'would_update' : 'updated';
+        setRulesLog((prev) => [
+          ...prev,
+          `[${new Date().toLocaleTimeString()}] page ${pages} rows=${data.rowsFetched} examined=${data.examined} ${label}=${data.updatedOrWouldUpdate} next=${offset}`,
+        ]);
+        setRulesTotals({
+          fetched: totalFetched,
+          examined: totalExamined,
+          mutations: totalMutations,
+          pages,
+        });
+
+        if (data.isComplete) break;
+        await new Promise((r) => setTimeout(r, 200));
+      }
+
+      setRulesLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] complete`]);
+      setRulesDone(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setRulesLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ERROR ${msg}`]);
+      alert(`Error: ${msg}`);
+    } finally {
+      setRulesRunning(false);
     }
   };
 
@@ -341,7 +448,7 @@ export const AdminEnrichPage: React.FC = () => {
   if (isAdmin === null) {
     return (
       <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-        <h1>🍷 Batch Vivino Enrichment</h1>
+        <h1>🍷 Admin enrichment</h1>
         <p style={{ color: '#666', marginTop: '2rem' }}>Checking admin privileges...</p>
       </div>
     );
@@ -351,7 +458,7 @@ export const AdminEnrichPage: React.FC = () => {
   if (isAdmin === false) {
     return (
       <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-        <h1>🍷 Batch Vivino Enrichment</h1>
+        <h1>🍷 Admin enrichment</h1>
         <div style={{
           backgroundColor: '#f8d7da',
           border: '1px solid #f5c6cb',
@@ -387,9 +494,134 @@ VALUES ('${user?.id}');`}
   // Admin user - show full interface
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>🍷 Batch Vivino Enrichment</h1>
+      <h1>🍷 Admin enrichment tools</h1>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
-        Automatically fetch and populate Vivino data for all wines in the database.
+        Internal batch jobs (admin only). Rule-based fixes run locally; Vivino jobs call external scrapers.
+      </p>
+
+      <div style={{
+        backgroundColor: '#e7f3ff',
+        padding: '1.5rem',
+        borderRadius: '8px',
+        marginBottom: '2rem',
+        border: '1px solid #b8daff',
+      }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Rule-based wine metadata (grapes / style)</h2>
+        <p style={{ color: '#444', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          Heuristic corrections (e.g. Bordeaux vs wrong Italian varieties). Paginates the entire <code>wines</code> table.
+          Dry-run first; review details, then apply.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <input
+            type="checkbox"
+            checked={rulesDryRun}
+            onChange={(e) => setRulesDryRun(e.target.checked)}
+            style={{ marginRight: '0.5rem' }}
+          />
+          <strong>Dry run</strong>
+          <span style={{ marginLeft: '0.35rem', color: '#666', fontSize: '0.85rem' }}>(no DB writes)</span>
+        </label>
+        <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+          <strong>Filter</strong>{' '}
+          <select
+            value={rulesFilter}
+            onChange={(e) => setRulesFilter(e.target.value as typeof rulesFilter)}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem' }}
+          >
+            <option value="candidates">Candidates (missing/generic grapes OR suspicious)</option>
+            <option value="missing_grapes">Missing or generic grapes only</option>
+            <option value="suspicious">Suspicious grape vs region only</option>
+          </select>
+        </label>
+        <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.9rem' }}>
+          <strong>Rows per page</strong>{' '}
+          <input
+            type="number"
+            min={5}
+            max={80}
+            value={rulesBatch}
+            onChange={(e) => setRulesBatch(parseInt(e.target.value, 10) || 40)}
+            style={{ width: '4rem', marginLeft: '0.5rem', padding: '0.25rem' }}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={runRulesBackfill}
+          disabled={rulesRunning}
+          style={{
+            backgroundColor: rulesDryRun ? '#6c757d' : '#c82333',
+            color: '#fff',
+            padding: '0.65rem 1.25rem',
+            borderRadius: '8px',
+            border: 'none',
+            fontWeight: 'bold',
+            cursor: rulesRunning ? 'not-allowed' : 'pointer',
+            opacity: rulesRunning ? 0.65 : 1,
+          }}
+        >
+          {rulesRunning ? 'Running…' : rulesDryRun ? 'Run dry-run (all pages)' : 'Apply updates (all pages)'}
+        </button>
+        {rulesTotals.pages > 0 && (
+          <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#333' }}>
+            Pages {rulesTotals.pages} · rows scanned {rulesTotals.fetched} · rows examined {rulesTotals.examined} ·{' '}
+            {rulesDryRun ? 'would change' : 'changed'} {rulesTotals.mutations}
+            {rulesDone ? ' · ✅ finished' : ''}
+          </p>
+        )}
+        {rulesLog.length > 0 && (
+          <details style={{ marginTop: '1rem' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Server log</summary>
+            <pre style={{ fontSize: '0.72rem', maxHeight: 160, overflow: 'auto', background: '#fff', padding: '0.75rem' }}>
+              {rulesLog.join('\n')}
+            </pre>
+          </details>
+        )}
+        {rulesDetails.length > 0 && (
+          <details open style={{ marginTop: '1rem' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+              Row details ({rulesDetails.length})
+            </summary>
+            <div style={{ overflowX: 'auto', maxHeight: 320, marginTop: '0.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+                <thead>
+                  <tr style={{ background: '#343a40', color: '#fff' }}>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Wine</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Rule</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Grapes before → after</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Suspicion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rulesDetails.map((row, ri) => (
+                    <tr key={`${row.wine_id}-${ri}`} style={{ borderBottom: '1px solid #dee2e6' }}>
+                      <td style={{ padding: '0.35rem', maxWidth: 180 }}>
+                        <div style={{ fontWeight: 600 }}>{row.wine_name}</div>
+                        <div style={{ color: '#666' }}>{row.producer}</div>
+                        <code style={{ fontSize: '0.65rem' }} title={row.wine_id}>{row.wine_id.slice(0, 8)}…</code>
+                      </td>
+                      <td style={{ padding: '0.35rem', whiteSpace: 'nowrap' }}>{row.rule_id ?? '—'}</td>
+                      <td style={{ padding: '0.35rem' }}>
+                        <span style={{ color: '#999' }}>{(row.before_grapes ?? []).join(', ') || '—'}</span>
+                        {' → '}
+                        <span style={{ color: '#155724' }}>{(row.after_grapes ?? []).join(', ') || '—'}</span>
+                      </td>
+                      <td style={{ padding: '0.35rem', maxWidth: 200 }}>
+                        {(row.suspicion_reasons ?? []).length ? row.suspicion_reasons.join('; ') : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
+      </div>
+
+      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+
+      <h2 style={{ fontSize: '1.15rem' }}>Batch Vivino enrichment</h2>
+      <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+        Fetch Vivino data for wines that have a URL but incomplete fields.
       </p>
 
       <div style={{

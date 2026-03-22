@@ -7,6 +7,10 @@
 
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/supabase';
+import {
+  normalizeWineMetadataStrings,
+  planWineMetadataEnrichment,
+} from '@wine/wine-enrichment';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
 type WineInsert = Database['public']['Tables']['wines']['Insert'];
@@ -211,7 +215,7 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   if (wineImageUrl) (wineData as any).image_url = wineImageUrl;
   
   // Try to insert wine, or get existing if conflict
-  const { data: wine, error: wineError } = await supabase
+  const { data: wineRow, error: wineError } = await supabase
     .from('wines')
     .upsert(wineData as any, {
       onConflict: 'user_id,producer,wine_name,vintage',
@@ -222,6 +226,49 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
 
   if (wineError) {
     throw new Error('Failed to create wine entry');
+  }
+
+  let wine = wineRow as Wine;
+
+  // Internal: rule-based grape / style enrichment (conservative; no user-visible UI)
+  try {
+    const enrichmentInput = normalizeWineMetadataStrings({
+      producer: wine.producer,
+      wine_name: wine.wine_name,
+      vintage: wine.vintage,
+      country: (wine as any).country ?? null,
+      region: (wine as any).region ?? null,
+      appellation: (wine as any).appellation ?? null,
+      regional_wine_style: (wine as any).regional_wine_style ?? null,
+      color: (wine as any).color,
+      grapes: (wine as any).grapes,
+      entry_source: (wine as any).entry_source ?? null,
+    });
+    const plan = planWineMetadataEnrichment(enrichmentInput);
+    if (plan.hasUpdates && Object.keys(plan.updates).length > 0) {
+      plan.logLines.forEach((line) => console.log(`[bottleService] ${line}`));
+      const patch: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (plan.updates.grapes !== undefined) patch.grapes = plan.updates.grapes;
+      if (plan.updates.regional_wine_style !== undefined) {
+        patch.regional_wine_style = plan.updates.regional_wine_style;
+      }
+      const { data: enrichedWine, error: enrichErr } = await supabase
+        .from('wines')
+        .update(patch as any)
+        .eq('id', wine.id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      if (enrichErr) {
+        console.error('[bottleService] Wine metadata enrichment update failed:', enrichErr);
+      } else if (enrichedWine) {
+        wine = enrichedWine as any;
+      }
+    }
+  } catch (enrichEx) {
+    console.error('[bottleService] Wine metadata enrichment error:', enrichEx);
   }
 
   // Now create the bottle
