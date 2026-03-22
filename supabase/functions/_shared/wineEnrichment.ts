@@ -40,6 +40,8 @@ export type EnrichmentPlan = {
   logLines: string[];
   /** Human-readable audit trail for admin / Edge logs (not shown to end users). */
   mechanismLines: string[];
+  /** When hasUpdates is false: why the engine made no change (admin diagnostics). */
+  diagnosticLines: string[];
 };
 
 type InferenceRule = {
@@ -449,6 +451,85 @@ function canFixWithRule(
 const MIN_CONFIDENCE_FILL = 0.65;
 const MIN_CONFIDENCE_FIX = 0.72;
 
+function computeNoUpdateDiagnostics(
+  wine: WineEnrichmentRow,
+  haystack: string,
+  color: WineColor,
+  grapes: string[],
+  suspicion: { flagged: boolean; reasons: string[]; fixTags: string[] },
+  missingOrGeneric: boolean,
+  matched: InferenceRule | null,
+  matchedWouldWrite: boolean,
+): string[] {
+  const lines: string[] = [];
+  const sorted = [...INFERENCE_RULES].sort((a, b) => a.priority - b.priority);
+
+  if (matched && !matchedWouldWrite) {
+    lines.push(
+      `Rule "${matched.id}" matched, but values already match what we would write (grapes + style) — no DB update.`,
+    );
+    lines.push(`Current grapes: ${grapes.length ? grapes.join(", ") : "(none)"}`);
+    if ((wine.regional_wine_style || "").trim()) {
+      lines.push(`Current regional_wine_style: "${wine.regional_wine_style}"`);
+    }
+    return lines;
+  }
+
+  if (!matched) {
+    if (missingOrGeneric) {
+      const geoHit = sorted.filter((r) => ruleMatches(r, haystack, color));
+      if (geoHit.length === 0) {
+        lines.push(
+          "Grapes are missing or only generic (e.g. “Red blend”), but no rule matched your text — we need a known region/appellation keyword in country, region, appellation, wine name, or producer.",
+        );
+        lines.push(
+          "Tip: fix region/appellation on this row in the DB, or add a new rule in wineEnrichment.ts for this area.",
+        );
+      } else {
+        const fillable = geoHit.filter((r) => r.confidence >= MIN_CONFIDENCE_FILL);
+        if (fillable.length === 0) {
+          lines.push(
+            `${geoHit.length} rule(s) partially match geography, but none reach minimum fill confidence (${MIN_CONFIDENCE_FILL}).`,
+          );
+        }
+      }
+    }
+    if (suspicion.flagged) {
+      const fixRules = sorted.filter(
+        (r) => ruleMatches(r, haystack, color) && canFixWithRule(suspicion, r),
+      );
+      if (fixRules.length === 0) {
+        lines.push(
+          `Suspicion: ${suspicion.reasons.join("; ")} — no rule both matches this wine’s geography AND shares a fix_tag with [${suspicion.fixTags.join(", ")}].`,
+        );
+      } else {
+        const ok = fixRules.filter((r) => r.confidence >= MIN_CONFIDENCE_FIX);
+        if (ok.length === 0) {
+          lines.push(
+            `Suspicion fix rules exist (${fixRules.map((r) => r.id).join(", ")}), but none meet minimum fix confidence (${MIN_CONFIDENCE_FIX}).`,
+          );
+        }
+      }
+    }
+    if (!missingOrGeneric && !suspicion.flagged) {
+      lines.push(
+        "Row was included by the backfill filter but has neither generic/missing grapes nor flagged suspicion — unexpected; check filter logic.",
+      );
+    }
+  }
+
+  lines.push(
+    `Normalized search text (≤200 chars): ${
+      haystack.length === 0
+        ? "(empty — add region/country or clearer wine name)"
+        : haystack.length > 200
+        ? `${haystack.slice(0, 200)}…`
+        : haystack
+    }`,
+  );
+  return lines;
+}
+
 /**
  * Compute which wine fields would change (pure function — no I/O).
  */
@@ -498,6 +579,16 @@ export function planWineMetadataEnrichment(wine: WineEnrichmentRow): EnrichmentP
       suspicion,
       logLines,
       mechanismLines: [],
+      diagnosticLines: computeNoUpdateDiagnostics(
+        wine,
+        haystack,
+        color,
+        grapes,
+        suspicion,
+        missingOrGeneric,
+        null,
+        false,
+      ),
     };
   }
 
@@ -524,6 +615,29 @@ export function planWineMetadataEnrichment(wine: WineEnrichmentRow): EnrichmentP
   const hasUpdates = Object.keys(updates).length > 0;
   if (hasUpdates) {
     logLines.push(`[wineEnrichment] version=${WINE_METADATA_ENRICHMENT_VERSION} mode=${mode}`);
+  }
+
+  if (!hasUpdates) {
+    return {
+      hasUpdates: false,
+      updates: {},
+      matchedRuleId: matched.id,
+      mode,
+      confidence: matched.confidence,
+      suspicion,
+      logLines,
+      mechanismLines: [],
+      diagnosticLines: computeNoUpdateDiagnostics(
+        wine,
+        haystack,
+        color,
+        grapes,
+        suspicion,
+        missingOrGeneric,
+        matched,
+        false,
+      ),
+    };
   }
 
   const mechanismLines: string[] = [];
@@ -585,6 +699,7 @@ export function planWineMetadataEnrichment(wine: WineEnrichmentRow): EnrichmentP
     suspicion,
     logLines,
     mechanismLines,
+    diagnosticLines: [],
   };
 }
 

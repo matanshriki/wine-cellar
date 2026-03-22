@@ -58,6 +58,41 @@ type DetailRow = {
   mechanism_lines: string[];
 };
 
+type NoChangeDetailRow = {
+  wine_id: string;
+  producer: string;
+  wine_name: string;
+  vintage: number | null;
+  region: string | null;
+  country: string | null;
+  appellation: string | null;
+  color: string;
+  grapes_current: string[];
+  suspicion_flagged: boolean;
+  suspicion_reasons: string[];
+  suspicion_fix_tags: string[];
+  diagnostic_lines: string[];
+  log_lines: string[];
+};
+
+function logWineNoChangeBlock(w: WineRow, row: NoChangeDetailRow) {
+  const lines = [
+    "",
+    `──────── EXAMINED · NO UPDATE ────────`,
+    `wine_id: ${w.id}`,
+    `display: ${w.producer} — ${w.wine_name}${w.vintage != null ? ` (${w.vintage})` : ""}`,
+    `location: ${[w.region, w.appellation, w.country].filter(Boolean).join(" · ") || "—"}`,
+    `color: ${w.color}  grapes now: ${row.grapes_current.join(", ") || "(none)"}`,
+    ...(row.suspicion_flagged
+      ? [`suspicion: ${row.suspicion_reasons.join("; ")}`]
+      : []),
+    "--- why no write ---",
+    ...row.diagnostic_lines.map((l) => `  ${l}`),
+    `────────────────────────`,
+  ];
+  console.log(lines.join("\n"));
+}
+
 function logWineEnrichmentBlock(
   prefix: "DRY-RUN" | "APPLIED",
   w: WineRow,
@@ -160,6 +195,7 @@ Deno.serve(async (req) => {
     const nextOffset = offset + rows.length;
 
     const details: DetailRow[] = [];
+    const noChangeDetails: NoChangeDetailRow[] = [];
     let examined = 0;
     let ineligibleFilter = 0;
     let noChange = 0;
@@ -192,6 +228,24 @@ Deno.serve(async (req) => {
 
       if (!plan.hasUpdates) {
         noChange++;
+        const nc: NoChangeDetailRow = {
+          wine_id: w.id,
+          producer: w.producer,
+          wine_name: w.wine_name,
+          vintage: w.vintage,
+          region: w.region,
+          country: w.country,
+          appellation: w.appellation,
+          color: w.color,
+          grapes_current: [...beforeGrapes],
+          suspicion_flagged: plan.suspicion.flagged,
+          suspicion_reasons: plan.suspicion.reasons,
+          suspicion_fix_tags: plan.suspicion.fixTags,
+          diagnostic_lines: [...plan.diagnosticLines],
+          log_lines: [...plan.logLines],
+        };
+        noChangeDetails.push(nc);
+        logWineNoChangeBlock(w, nc);
         continue;
       }
 
@@ -274,6 +328,7 @@ Deno.serve(async (req) => {
         noChange,
         updatedOrWouldUpdate: mutations,
         details,
+        noChangeDetails,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

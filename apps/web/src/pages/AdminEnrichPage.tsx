@@ -71,7 +71,13 @@ export const AdminEnrichPage: React.FC = () => {
   const [rulesBatch, setRulesBatch] = useState(40);
   const [rulesRunning, setRulesRunning] = useState(false);
   const [rulesLog, setRulesLog] = useState<string[]>([]);
-  const [rulesTotals, setRulesTotals] = useState({ fetched: 0, examined: 0, mutations: 0, pages: 0 });
+  const [rulesTotals, setRulesTotals] = useState({
+    fetched: 0,
+    examined: 0,
+    mutations: 0,
+    noChange: 0,
+    pages: 0,
+  });
   const [rulesDetails, setRulesDetails] = useState<Array<{
     wine_id: string;
     wine_name: string;
@@ -94,6 +100,20 @@ export const AdminEnrichPage: React.FC = () => {
     suspicion_fix_tags: string[];
     log_lines: string[];
     mechanism_lines: string[];
+  }>>([]);
+  const [rulesNoChangeDetails, setRulesNoChangeDetails] = useState<Array<{
+    wine_id: string;
+    wine_name: string;
+    producer: string;
+    vintage: number | null;
+    region: string | null;
+    country: string | null;
+    appellation: string | null;
+    color: string;
+    grapes_current: string[];
+    suspicion_flagged: boolean;
+    suspicion_reasons: string[];
+    diagnostic_lines: string[];
   }>>([]);
   const [rulesDone, setRulesDone] = useState(false);
 
@@ -244,11 +264,13 @@ export const AdminEnrichPage: React.FC = () => {
     setRulesDone(false);
     setRulesLog([`[${new Date().toLocaleTimeString()}] start dryRun=${rulesDryRun} filter=${rulesFilter} batch=${rulesBatch}`]);
     setRulesDetails([]);
+    setRulesNoChangeDetails([]);
 
     let offset = 0;
     let totalFetched = 0;
     let totalExamined = 0;
     let totalMutations = 0;
+    let totalNoChange = 0;
     let pages = 0;
 
     try {
@@ -281,15 +303,36 @@ export const AdminEnrichPage: React.FC = () => {
         totalFetched += data.rowsFetched ?? 0;
         totalExamined += data.examined ?? 0;
         totalMutations += data.updatedOrWouldUpdate ?? 0;
+        totalNoChange += data.noChange ?? 0;
         offset = data.nextOffset ?? 0;
 
         if (Array.isArray(data.details) && data.details.length) {
           setRulesDetails((prev) => [...prev, ...data.details]);
         }
 
+        if (Array.isArray(data.noChangeDetails) && data.noChangeDetails.length) {
+          setRulesNoChangeDetails((prev) => [...prev, ...data.noChangeDetails]);
+        }
+
         const label = rulesDryRun ? 'would_update' : 'updated';
         const ts = new Date().toLocaleTimeString();
         const perWineLines: string[] = [];
+        for (const row of data.noChangeDetails ?? []) {
+          perWineLines.push(
+            `[${ts}] EXAMINED_NO_CHANGE wine_id=${row.wine_id}`,
+            `  label: ${row.producer} — ${row.wine_name}  vintage=${row.vintage ?? '—'}`,
+            `  location: ${[row.region, row.appellation, row.country].filter(Boolean).join(' · ') || '—'}`,
+            `  color=${row.color ?? '—'}  grapes_now: ${(row.grapes_current ?? []).join(', ') || '(none)'}`,
+          );
+          if (row.suspicion_flagged && row.suspicion_reasons?.length) {
+            perWineLines.push(`  suspicion: ${row.suspicion_reasons.join('; ')}`);
+          }
+          perWineLines.push('  — why no DB change —');
+          for (const dl of row.diagnostic_lines ?? []) {
+            perWineLines.push(`    ${dl}`);
+          }
+          perWineLines.push('');
+        }
         for (const row of data.details ?? []) {
           const tag = rulesDryRun ? 'DRY-RUN' : 'APPLY';
           perWineLines.push(
@@ -322,13 +365,14 @@ export const AdminEnrichPage: React.FC = () => {
 
         setRulesLog((prev) => [
           ...prev,
-          `[${ts}] page ${pages} rows=${data.rowsFetched} examined=${data.examined} ${label}=${data.updatedOrWouldUpdate} next=${offset}`,
+          `[${ts}] page ${pages} rows=${data.rowsFetched} examined=${data.examined} ${label}=${data.updatedOrWouldUpdate} no_change=${data.noChange ?? 0} next=${offset}`,
           ...perWineLines,
         ]);
         setRulesTotals({
           fetched: totalFetched,
           examined: totalExamined,
           mutations: totalMutations,
+          noChange: totalNoChange,
           pages,
         });
 
@@ -555,6 +599,7 @@ VALUES ('${user?.id}');`}
         <p style={{ color: '#444', fontSize: '0.9rem', marginBottom: '1rem' }}>
           Heuristic corrections (e.g. Bordeaux vs wrong Italian varieties). Paginates the entire <code>wines</code> table.
           Dry-run first; review details, then apply.
+          Rows that match the filter but get <strong>no</strong> rule-based update appear under <em>Examined, no change</em> with reasons (e.g. missing region keywords).
         </p>
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
           <input
@@ -608,8 +653,8 @@ VALUES ('${user?.id}');`}
         </button>
         {rulesTotals.pages > 0 && (
           <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#333' }}>
-            Pages {rulesTotals.pages} · rows scanned {rulesTotals.fetched} · rows examined {rulesTotals.examined} ·{' '}
-            {rulesDryRun ? 'would change' : 'changed'} {rulesTotals.mutations}
+            Pages {rulesTotals.pages} · rows scanned {rulesTotals.fetched} · examined {rulesTotals.examined} ·{' '}
+            {rulesDryRun ? 'would change' : 'changed'} {rulesTotals.mutations} · examined no change {rulesTotals.noChange}
             {rulesDone ? ' · ✅ finished' : ''}
           </p>
         )}
@@ -621,10 +666,50 @@ VALUES ('${user?.id}');`}
             </pre>
           </details>
         )}
+        {rulesNoChangeDetails.length > 0 && (
+          <details open style={{ marginTop: '1rem' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+              Examined, no change ({rulesNoChangeDetails.length}) — why the engine skipped a write
+            </summary>
+            <div style={{ overflowX: 'auto', maxHeight: 360, marginTop: '0.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+                <thead>
+                  <tr style={{ background: '#856404', color: '#fff' }}>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Wine / id</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Grapes now</th>
+                    <th style={{ padding: '0.35rem', textAlign: 'left' }}>Diagnostics</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rulesNoChangeDetails.map((row, ri) => (
+                    <tr key={`${row.wine_id}-nc-${ri}`} style={{ borderBottom: '1px solid #dee2e6', background: ri % 2 ? '#fffbf0' : '#fff' }}>
+                      <td style={{ padding: '0.35rem', maxWidth: 200, verticalAlign: 'top' }}>
+                        <div style={{ fontWeight: 600 }}>{row.wine_name}</div>
+                        <div style={{ color: '#666' }}>{row.producer}</div>
+                        <code style={{ fontSize: '0.62rem', display: 'block', wordBreak: 'break-all' }}>{row.wine_id}</code>
+                      </td>
+                      <td style={{ padding: '0.35rem', verticalAlign: 'top', maxWidth: 140 }}>
+                        {(row.grapes_current ?? []).join(', ') || '(none)'}
+                        {row.suspicion_flagged ? (
+                          <div style={{ color: '#721c24', marginTop: '0.25rem' }}>⚠ {row.suspicion_reasons.join('; ')}</div>
+                        ) : null}
+                      </td>
+                      <td style={{ padding: '0.35rem', verticalAlign: 'top', color: '#333' }}>
+                        {(row.diagnostic_lines ?? []).map((l, i) => (
+                          <div key={i} style={{ marginBottom: '0.2rem' }}>{l}</div>
+                        ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
         {rulesDetails.length > 0 && (
           <details open style={{ marginTop: '1rem' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
-              Row details ({rulesDetails.length})
+              Would update / updated ({rulesDetails.length})
             </summary>
             <div style={{ overflowX: 'auto', maxHeight: 320, marginTop: '0.5rem' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
