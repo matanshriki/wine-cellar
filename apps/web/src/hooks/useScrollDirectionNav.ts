@@ -6,12 +6,26 @@ const TOP_EXPAND_THRESHOLD = 40;
 const SHRINK_DELTA = 24;
 const EXPAND_UP_DELTA = 16;
 
+/**
+ * Global CSS uses `body { height: 100%; overflow-y: auto }` so the viewport scrolls
+ * on **body**, not on `html`. In that case `window.scrollY` and `html.scrollTop`
+ * often stay 0 while `body.scrollTop` moves — we must read all sources.
+ */
 function getScrollY(): number {
-  const root = document.scrollingElement;
-  if (root && typeof root.scrollTop === 'number') {
-    return root.scrollTop;
-  }
-  return window.scrollY || document.documentElement.scrollTop || 0;
+  if (typeof document === 'undefined' || typeof window === 'undefined') return 0;
+  const w = window.scrollY ?? window.pageYOffset ?? 0;
+  const html = document.documentElement?.scrollTop ?? 0;
+  const body = document.body?.scrollTop ?? 0;
+  return Math.max(w, html, body);
+}
+
+function getScrollEventTargets(): EventTarget[] {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return [];
+  const list: EventTarget[] = [window];
+  list.push(document);
+  list.push(document.documentElement);
+  if (document.body) list.push(document.body);
+  return list;
 }
 
 export type UseScrollDirectionNavOptions = {
@@ -87,11 +101,17 @@ export function useScrollDirectionNav(options?: UseScrollDirectionNavOptions): N
       });
     };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    const targets = getScrollEventTargets();
+    const opts: AddEventListenerOptions = { passive: true, capture: true };
+    for (const t of targets) {
+      t.addEventListener('scroll', onScroll, opts);
+    }
     tick();
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      for (const t of targets) {
+        t.removeEventListener('scroll', onScroll, opts);
+      }
       if (rafId.current != null) {
         cancelAnimationFrame(rafId.current);
         rafId.current = null;

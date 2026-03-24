@@ -176,10 +176,32 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
         }}
       >
 
-        {/* Floating Footer with integrated Camera FAB */}
+        {/* Floating Footer with integrated Camera FAB.
+            Phone: wider side margins + slightly more lift when compact (Instagram-style float). */}
         <motion.div
-          className={`relative mb-4 pointer-events-auto ${isTablet ? 'mx-auto' : 'mx-4'}`}
+          className={`relative pointer-events-auto ${
+            isTablet
+              ? 'mx-auto mb-4'
+              : reduceMotion
+                ? compact
+                  ? 'mx-7 mb-5'
+                  : 'mx-4 mb-4'
+                : ''
+          }`}
           style={isTablet ? { maxWidth: '520px', paddingLeft: '1rem', paddingRight: '1rem' } : undefined}
+          initial={false}
+          animate={
+            isTablet
+              ? undefined
+              : reduceMotion
+                ? undefined
+                : {
+                    marginLeft: compact ? 28 : 16,
+                    marginRight: compact ? 28 : 16,
+                    marginBottom: compact ? 22 : 16,
+                  }
+          }
+          transition={navLayoutTransition}
         >
           {/* Camera FAB - Centered and protruding above footer */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
