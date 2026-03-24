@@ -8,7 +8,6 @@ import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CompleteProfileModal } from './CompleteProfileModal';
 import { UserMenu } from './UserMenu';
-import { BottomNav } from './BottomNav';
 import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
@@ -446,12 +445,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
        * Top padding added to account for fixed header
        */}
       {/* On iPad the md: CSS rule resets pb-bottom-nav to 2rem, but we're showing the footer
-          there too, so override it back to the full nav height via inline style. */}
+          there too, so override it back to the dynamic nav layout + extra buffer. */}
       <main
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav"
         style={{
           paddingTop: 'calc(4rem + 1.5rem)',
-          ...(isIpad ? { paddingBottom: 'calc(104px + env(safe-area-inset-bottom) + 1.5rem)' } : {}),
+          ...(isIpad
+            ? { paddingBottom: 'calc(var(--app-bottom-nav-layout-total) + 1.5rem)' }
+            : {}),
         }}
       >
         {children}

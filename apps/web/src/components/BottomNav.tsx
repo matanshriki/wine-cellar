@@ -10,12 +10,20 @@
  * - Accessible
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext'; // For wishlist feature flag
 import { scrollAppToTop } from '../utils/scrollAppToTop';
+import { useScrollDirectionNav } from '../hooks/useScrollDirectionNav';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import {
+  BOTTOM_NAV_LAYOUT_COMPACT_PX,
+  BOTTOM_NAV_LAYOUT_EXPANDED_PX,
+  NAV_ROW_COMPACT_PX,
+  NAV_ROW_EXPANDED_PX,
+} from '../constants/bottomNavLayout';
 
 interface NavItem {
   path: string;
@@ -28,6 +36,27 @@ export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { flags, loading } = useFeatureFlags(); // Get feature flags and loading state
+  const reduceMotion = shouldReduceMotion();
+  const navMode = useScrollDirectionNav({ enabled: true });
+  const compact = navMode === 'compact';
+
+  const navLayoutTransition = useMemo(
+    () => ({
+      type: 'tween' as const,
+      duration: reduceMotion ? 0.05 : 0.24,
+      ease: [0.4, 0, 0.2, 1] as const,
+    }),
+    [reduceMotion]
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const h = compact ? BOTTOM_NAV_LAYOUT_COMPACT_PX : BOTTOM_NAV_LAYOUT_EXPANDED_PX;
+    root.style.setProperty('--bottom-nav-h', `${h}px`);
+    return () => {
+      root.style.setProperty('--bottom-nav-h', `${BOTTOM_NAV_LAYOUT_EXPANDED_PX}px`);
+    };
+  }, [compact]);
 
   // Build nav items array - conditionally include Wishlist if feature is enabled
   const baseNavItems: NavItem[] = [
@@ -118,7 +147,15 @@ export const BottomNav: React.FC = () => {
           zIndex: 'var(--z-sticky)',
         }}
       >
-        <div className="flex items-center justify-around h-16 px-2">
+        <motion.div
+          className="flex items-center justify-around px-2"
+          initial={false}
+          animate={{
+            height: compact ? NAV_ROW_COMPACT_PX : NAV_ROW_EXPANDED_PX,
+          }}
+          transition={navLayoutTransition}
+          style={{ minHeight: 44 }}
+        >
           {baseNavItems.map((item) => {
             const isActive = location.pathname === item.path;
 
@@ -133,15 +170,19 @@ export const BottomNav: React.FC = () => {
                     scrollAppToTop();
                   }
                 }}
-                className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
+                className="relative flex flex-col items-center justify-center flex-1 min-h-[44px] min-w-[44px] h-full gap-0.5 transition-colors"
                 aria-label={t(item.labelKey)}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <div
-                  className="relative transition-colors"
+                <motion.div
+                  className="relative transition-colors flex items-center justify-center"
                   style={{
                     color: isActive ? 'var(--color-wine-600)' : 'var(--color-stone-500)',
+                    transformOrigin: 'center',
                   }}
+                  initial={false}
+                  animate={reduceMotion ? undefined : { scale: compact ? 0.88 : 1 }}
+                  transition={navLayoutTransition}
                 >
                   {isActive ? item.activeIcon : item.icon}
 
@@ -161,16 +202,24 @@ export const BottomNav: React.FC = () => {
                       }}
                     />
                   )}
-                </div>
+                </motion.div>
 
-                <span
-                  className="text-xs font-medium transition-colors"
+                <motion.span
+                  className="text-xs font-medium transition-colors overflow-hidden text-center leading-tight"
                   style={{
                     color: isActive ? 'var(--color-wine-700)' : 'var(--color-stone-600)',
                   }}
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? undefined
+                      : { opacity: compact ? 0 : 1, marginTop: compact ? 0 : 2, maxHeight: compact ? 0 : 20 }
+                  }
+                  transition={navLayoutTransition}
+                  aria-hidden={compact}
                 >
                   {t(item.labelKey)}
-                </span>
+                </motion.span>
               </Link>
             );
           })}
@@ -192,7 +241,7 @@ export const BottomNav: React.FC = () => {
                   scrollAppToTop();
                 }
               }}
-              className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors"
+              className="relative flex flex-col items-center justify-center flex-1 min-h-[44px] min-w-[44px] h-full gap-0.5 transition-colors"
               aria-label={t(wishlistNavItem.labelKey)}
               aria-current={location.pathname === wishlistNavItem.path ? 'page' : undefined}
               style={{
@@ -200,11 +249,15 @@ export const BottomNav: React.FC = () => {
                 pointerEvents: loading ? 'none' : 'auto', // Disable clicks during loading
               }}
             >
-              <div
-                className="relative transition-colors"
+              <motion.div
+                className="relative transition-colors flex items-center justify-center"
                 style={{
                   color: location.pathname === wishlistNavItem.path ? 'var(--color-wine-600)' : 'var(--color-stone-500)',
+                  transformOrigin: 'center',
                 }}
+                initial={false}
+                animate={reduceMotion ? undefined : { scale: compact ? 0.88 : 1 }}
+                transition={navLayoutTransition}
               >
                 {location.pathname === wishlistNavItem.path ? wishlistNavItem.activeIcon : wishlistNavItem.icon}
 
@@ -224,19 +277,27 @@ export const BottomNav: React.FC = () => {
                     }}
                   />
                 )}
-              </div>
+              </motion.div>
 
-              <span
-                className="text-xs font-medium transition-colors"
+              <motion.span
+                className="text-xs font-medium transition-colors overflow-hidden text-center leading-tight"
                 style={{
                   color: location.pathname === wishlistNavItem.path ? 'var(--color-wine-700)' : 'var(--color-stone-600)',
                 }}
+                initial={false}
+                animate={
+                  reduceMotion
+                    ? undefined
+                    : { opacity: compact ? 0 : 1, marginTop: compact ? 0 : 2, maxHeight: compact ? 0 : 20 }
+                }
+                transition={navLayoutTransition}
+                aria-hidden={compact}
               >
                 {t(wishlistNavItem.labelKey)}
-              </span>
+              </motion.span>
             </Link>
           )}
-        </div>
+        </motion.div>
       </nav>
     </>
   );

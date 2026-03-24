@@ -16,10 +16,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
+import { useScrollDirectionNav } from '../hooks/useScrollDirectionNav';
+import {
+  BOTTOM_NAV_LAYOUT_COMPACT_PX,
+  BOTTOM_NAV_LAYOUT_EXPANDED_PX,
+  NAV_ROW_COMPACT_PX,
+  NAV_ROW_EXPANDED_PX,
+} from '../constants/bottomNavLayout';
 import React from 'react';
 
 interface MobileFloatingFooterProps {
@@ -31,10 +37,30 @@ interface MobileFloatingFooterProps {
 export function MobileFloatingFooter({ onCameraClick, isTablet = false }: MobileFloatingFooterProps) {
   const location = useLocation();
   const { t } = useTranslation();
-  const { flags } = useFeatureFlags();
   const reduceMotion = shouldReduceMotion();
   const { isRitualOpen } = useOpenRitual();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const scrollNavEnabled = !isModalOpen && !isRitualOpen;
+  const navMode = useScrollDirectionNav({ enabled: scrollNavEnabled });
+  const compact = navMode === 'compact';
+
+  const navLayoutTransition = React.useMemo(
+    () => ({
+      type: 'tween' as const,
+      duration: reduceMotion ? 0.05 : 0.24,
+      ease: [0.4, 0, 0.2, 1] as const,
+    }),
+    [reduceMotion]
+  );
+
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const h = compact ? BOTTOM_NAV_LAYOUT_COMPACT_PX : BOTTOM_NAV_LAYOUT_EXPANDED_PX;
+    root.style.setProperty('--bottom-nav-h', `${h}px`);
+    return () => {
+      root.style.setProperty('--bottom-nav-h', `${BOTTOM_NAV_LAYOUT_EXPANDED_PX}px`);
+    };
+  }, [compact]);
 
   // Check if any modal is open (hide footer to prevent overlap).
   // Debounced so that brief DOM mutations during page transitions (e.g. a modal's
@@ -159,13 +185,14 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
           <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
             <motion.button
               onClick={onCameraClick}
-              className="relative w-16 h-16 rounded-full flex items-center justify-center overflow-hidden"
+              className="relative w-16 h-16 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
                 boxShadow: '0 8px 32px rgba(164, 76, 104, 0.5), 0 4px 16px rgba(0, 0, 0, 0.2)',
                 border: '4px solid rgba(255, 255, 255, 0.95)',
               }}
               initial={false}
+              animate={reduceMotion ? undefined : { scale: compact ? 0.96 : 1 }}
               whileTap={reduceMotion ? {} : { 
                 scale: 0.92,
                 boxShadow: '0 4px 16px rgba(164, 76, 104, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15)',
@@ -175,11 +202,15 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                 scale: 1.05,
                 boxShadow: '0 12px 40px rgba(164, 76, 104, 0.6), 0 6px 20px rgba(0, 0, 0, 0.25)',
               }}
-              transition={{
-                type: reduceMotion ? 'tween' : 'spring',
-                stiffness: 400,
-                damping: 17,
-              }}
+              transition={
+                reduceMotion
+                  ? { duration: 0.05 }
+                  : {
+                      scale: navLayoutTransition,
+                      y: { type: 'spring', stiffness: 400, damping: 17 },
+                      boxShadow: { duration: 0.2 },
+                    }
+              }
               aria-label={t('cellar.addBottleButton', 'Add bottle')}
               tabIndex={0}
             >
@@ -228,7 +259,15 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <div className="flex items-center h-16 px-2">
+            <motion.div
+              className="flex items-center px-2"
+              initial={false}
+              animate={{
+                height: compact ? NAV_ROW_COMPACT_PX : NAV_ROW_EXPANDED_PX,
+              }}
+              transition={navLayoutTransition}
+              style={{ minHeight: 44 }}
+            >
               {/* Left nav items */}
               {navItems.slice(0, 2).map((item) => {
                 const isActive = location.pathname === item.path;
@@ -237,7 +276,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                   <Link
                     key={item.path}
                     to={item.path}
-                    className="relative flex flex-col items-center justify-center flex-1 h-full transition-colors"
+                    className="relative flex flex-col items-center justify-center flex-1 min-h-[44px] min-w-[44px] h-full transition-colors"
                     aria-label={t(item.labelKey)}
                     aria-current={isActive ? 'page' : undefined}
                     style={{
@@ -246,9 +285,12 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                     onClick={(e) => handleNavClick(e, item.path)}
                   >
                     <motion.div
-                      className="relative"
+                      className="relative flex items-center justify-center"
+                      style={{ transformOrigin: 'center' }}
+                      initial={false}
+                      animate={reduceMotion ? undefined : { scale: compact ? 0.88 : 1 }}
+                      transition={navLayoutTransition}
                       whileTap={reduceMotion ? {} : { scale: 0.9 }}
-                      transition={{ duration: 0.1 }}
                     >
                       {item.icon}
                       
@@ -275,7 +317,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
               })}
 
               {/* Center spacer for Camera FAB */}
-              <div className="flex-1 h-full" />
+              <div className="flex-1 h-full min-h-[44px]" />
 
               {/* Right nav items */}
               {navItems.slice(2).map((item) => {
@@ -285,7 +327,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                   <Link
                     key={item.path}
                     to={item.path}
-                    className="relative flex flex-col items-center justify-center flex-1 h-full transition-colors"
+                    className="relative flex flex-col items-center justify-center flex-1 min-h-[44px] min-w-[44px] h-full transition-colors"
                     aria-label={t(item.labelKey)}
                     aria-current={isActive ? 'page' : undefined}
                     style={{
@@ -294,9 +336,12 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                     onClick={(e) => handleNavClick(e, item.path)}
                   >
                     <motion.div
-                      className="relative"
+                      className="relative flex items-center justify-center"
+                      style={{ transformOrigin: 'center' }}
+                      initial={false}
+                      animate={reduceMotion ? undefined : { scale: compact ? 0.88 : 1 }}
+                      transition={navLayoutTransition}
                       whileTap={reduceMotion ? {} : { scale: 0.9 }}
-                      transition={{ duration: 0.1 }}
                     >
                       {item.icon}
                       
@@ -321,20 +366,10 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
                   </Link>
                 );
               })}
-            </div>
+            </motion.div>
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Spacer keeps content from being hidden behind the footer.
-          Always rendered (even when nav is hidden for modals) so page content
-          doesn't reflow when a modal opens — the modal covers everything anyway. */}
-      <div 
-        className={isTablet ? '' : 'md:hidden'}
-        style={{ 
-          height: 'calc(104px + env(safe-area-inset-bottom))',
-        }} 
-      />
     </>
   );
 }

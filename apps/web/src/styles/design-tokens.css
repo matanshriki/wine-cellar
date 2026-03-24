@@ -165,19 +165,19 @@
 
   /* === Layout Dimensions === */
   /**
-   * Bottom Navigation Height
-   * Used to prevent content overlap with fixed bottom nav on mobile.
-   * 
-   * Total height = nav bar (64px) + safe-area-inset-bottom
-   * This ensures buttons, forms, and modals are never hidden behind the nav.
-   * 
+   * Bottom navigation layout (floating footer + safe area + buffer).
+   * --bottom-nav-h is updated at runtime when the nav is compact vs expanded.
+   *
    * Usage:
-   * - Main content: padding-bottom: var(--app-bottom-nav-total)
-   * - Modals on mobile: maxHeight: calc(100dvh - var(--app-bottom-nav-total) - spacing)
-   * - Fixed action bars: bottom: var(--app-bottom-nav-total)
+   * - Main content: padding-bottom: var(--app-bottom-nav-layout-total)
+   * - Modals on mobile: maxHeight: calc(100dvh - var(--app-bottom-nav-layout-total) - spacing)
+   * - Fixed action bars: bottom: var(--app-bottom-nav-layout-total)
    */
-  --app-bottom-nav-height: 64px; /* h-16 from BottomNav component */
-  --app-bottom-nav-total: calc(var(--app-bottom-nav-height) + env(safe-area-inset-bottom));
+  --bottom-nav-h: 92px; /* expanded reserve; JS sets 72px in compact mode */
+  --app-bottom-nav-layout-total: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 12px);
+  /* Legacy aliases (same value as layout total for mobile spacing) */
+  --app-bottom-nav-height: var(--bottom-nav-h);
+  --app-bottom-nav-total: var(--app-bottom-nav-layout-total);
 }
 
 /* === Component-specific tokens === */
