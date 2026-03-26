@@ -371,9 +371,13 @@ export function CellarPage() {
 
   // Onboarding v1 – production: Initialize onboarding for new users and re-engagement
   useEffect(() => {
+    // Wait until initial cellar load finishes so we don't treat a loaded cellar as empty
+    if (loading) return;
     // Only check once to avoid multiple modals
     if (hasCheckedOnboarding.current) return;
     hasCheckedOnboarding.current = true;
+
+    onboardingUtils.syncOnboardingSeenForEstablishedCellar(bottles.length);
 
     // Check if onboarding should be shown (first-time users OR re-engagement after 7 days)
     if (onboardingUtils.shouldShowOnboarding(bottles.length)) {
@@ -390,7 +394,7 @@ export function CellarPage() {
       console.log('[CellarPage] Demo mode active');
       setIsDemoMode(true);
     }
-  }, [bottles.length]);
+  }, [loading, bottles.length]);
 
   // Wine World Moments: Load active events
   useEffect(() => {

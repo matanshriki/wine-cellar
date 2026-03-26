@@ -18,13 +18,19 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 /**
  * Check if onboarding should be shown
  * Returns true if:
- * 1. User has never seen onboarding, OR
+ * 1. User has never seen onboarding (and cellar is not already established), OR
  * 2. User skipped 7+ days ago AND still has empty cellar
+ *
+ * Users with more than 2 bottles are treated as established — no welcome modal.
  */
 export function shouldShowOnboarding(bottleCount: number = 0): boolean {
+  if (bottleCount > 2) {
+    return false;
+  }
+
   const hasSeenOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
   
-  // First-time user - always show
+  // First-time user in this browser — show only if cellar is still small/empty
   if (!hasSeenOnboarding) {
     return true;
   }
@@ -56,6 +62,16 @@ export function shouldShowOnboarding(bottleCount: number = 0): boolean {
 export function markOnboardingSeen(): void {
   localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
   localStorage.setItem(ONBOARDING_TIMESTAMP_KEY, Date.now().toString());
+}
+
+/**
+ * After cellar load: if the user already has an established cellar but never set
+ * onboarding flags on this device, mark onboarding as seen without showing the modal.
+ */
+export function syncOnboardingSeenForEstablishedCellar(bottleCount: number): void {
+  if (bottleCount <= 2) return;
+  if (localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true') return;
+  markOnboardingSeen();
 }
 
 /**
