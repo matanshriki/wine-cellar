@@ -75,7 +75,8 @@ export function shortlistCandidates(
   bottles: CellarBottleInput[],
   constraints: ExtractedConstraints,
   userMessageLower: string,
-  memory?: SommelierPreferenceMemory | null
+  memory?: SommelierPreferenceMemory | null,
+  recentlyRecommended?: Set<string> | null
 ): { scored: ScoredCandidate[]; relaxedFilter: boolean } {
   let pool = bottles;
   let relaxedFilter = false;
@@ -92,7 +93,8 @@ export function shortlistCandidates(
       bottle,
       constraints,
       userMessageLower,
-      memory ?? null
+      memory ?? null,
+      recentlyRecommended ?? null
     );
     return { bottle, score, features };
   });

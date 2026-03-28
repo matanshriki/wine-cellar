@@ -81,6 +81,36 @@ function uniq(arr: string[]): string[] {
   return [...new Set(arr.map((s) => s.trim().toLowerCase()).filter(Boolean))];
 }
 
+/**
+ * Load recently recommended bottle IDs (last N events) to penalize repeats.
+ * Returns a flat Set of bottle IDs chosen in recent turns.
+ */
+export async function loadRecentRecommendedBottleIds(
+  userId: string,
+  supabase: SupabaseClient,
+  limit = 5
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('sommelier_recommendation_events')
+    .select('chosen_bottle_ids')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return new Set();
+
+  const ids = new Set<string>();
+  for (const row of data) {
+    const arr = row.chosen_bottle_ids;
+    if (Array.isArray(arr)) {
+      for (const id of arr) {
+        if (typeof id === 'string' && id.length > 0) ids.add(id);
+      }
+    }
+  }
+  return ids;
+}
+
 export interface RecommendationEventInsert {
   user_message: string;
   detected_intent: string;

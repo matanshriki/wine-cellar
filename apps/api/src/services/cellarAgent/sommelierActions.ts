@@ -5,21 +5,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   insertFeedbackEvent,
-  insertRecommendationEvent,
   insertTastingDraft,
   mergeAndSavePreferences,
 } from './sommelierRepo.js';
-import type { RecommendationEventInsert } from './sommelierRepo.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 import { inferFeedbackFromText } from './preferenceInference.js';
-
-export async function saveRecommendationEvent(
-  userId: string,
-  row: RecommendationEventInsert,
-  supabase: SupabaseClient
-): Promise<string | null> {
-  return insertRecommendationEvent(userId, row, supabase);
-}
 
 export async function saveSommelierFeedback(
   userId: string,

@@ -82,6 +82,11 @@ export function validateModelOutput(
     return { validationResult: 'ok', recommendation: parsed };
   }
 
-  // Conversational / follow-up only
-  return { validationResult: 'ok', recommendation: parsed };
+  // Conversational / follow-up — accepted but marked so callers can distinguish
+  // a real recommendation from a chatty non-answer.
+  const hasFollowUp = typeof parsed.followUpQuestion === 'string' && parsed.followUpQuestion.length > 0;
+  return {
+    validationResult: hasFollowUp ? 'ok' : 'partial',
+    recommendation: parsed,
+  };
 }

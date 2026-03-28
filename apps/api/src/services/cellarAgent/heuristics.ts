@@ -145,7 +145,8 @@ export function scoreBottleHeuristically(
   bottle: CellarBottleInput,
   constraints: ExtractedConstraints,
   userMessageLower: string,
-  memory?: SommelierPreferenceMemory | null
+  memory?: SommelierPreferenceMemory | null,
+  recentlyRecommended?: Set<string> | null
 ): { score: number; features: string[] } {
   const features: string[] = [];
   let score = 0;
@@ -209,6 +210,11 @@ export function scoreBottleHeuristically(
 
   score += applyPreferenceMemory(bottle, memory ?? null, features);
   score += applyPastOpensHistory(bottle, features);
+
+  if (recentlyRecommended?.has(bottle.id)) {
+    score -= 12;
+    features.push('recently_recommended');
+  }
 
   return { score, features };
 }

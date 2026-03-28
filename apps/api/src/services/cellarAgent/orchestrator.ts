@@ -34,6 +34,7 @@ import {
 } from './agentRouter.js';
 import {
   loadSommelierMemory,
+  loadRecentRecommendedBottleIds,
   insertRecommendationEvent,
   mergeAndSavePreferences,
 } from './sommelierRepo.js';
@@ -140,6 +141,7 @@ async function runOrchestratedRecommendation(params: {
   tasteContext?: string;
   scoredOverride?: ScoredCandidate[];
   intentOverride?: CellarIntent;
+  recentlyRecommended?: Set<string> | null;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
@@ -174,7 +176,13 @@ async function runOrchestratedRecommendation(params: {
 
   const { scored, relaxedFilter } = scoredOverride
     ? { scored: scoredOverride, relaxedFilter: false }
-    : shortlistCandidates(cellarBottles, constraints, userMessageLower, memory);
+    : shortlistCandidates(
+        cellarBottles,
+        constraints,
+        userMessageLower,
+        memory,
+        params.recentlyRecommended ?? null
+      );
 
   const cap = computeEffectiveShortlistCap(scored.length);
   const top = takeTopForCap(scored, cap);
@@ -266,8 +274,11 @@ async function runOrchestratedRecommendation(params: {
       }
 
       const v = validateModelOutput(parsed, bottles);
-      recommendation = v.recommendation;
       validationResult = v.validationResult;
+      if (validationResult === 'failed' && attempt < maxAttempts) {
+        continue;
+      }
+      recommendation = v.recommendation;
     } catch (e) {
       validationResult = 'failed';
       if (attempt >= maxAttempts) {
@@ -355,6 +366,7 @@ async function runLlmPathThenPersist(params: {
   scoredOverride?: ScoredCandidate[];
   intentOverride?: CellarIntent;
   routedAction: 'recommend' | 'similar';
+  recentlyRecommended?: Set<string> | null;
 }): Promise<unknown> {
   const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
     openai: params.openai,
@@ -365,6 +377,7 @@ async function runLlmPathThenPersist(params: {
     tasteContext: params.tasteContext,
     scoredOverride: params.scoredOverride,
     intentOverride: params.intentOverride,
+    recentlyRecommended: params.recentlyRecommended ?? null,
   });
 
   logSommelier('orchestration', {
@@ -465,9 +478,15 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
 
   const route = classifyAgentRoute(message, actionContext);
   let memoryPrefs: SommelierPreferenceMemory | null = null;
+  let recentPicks: Set<string> | null = null;
   if (supabase) {
     try {
-      memoryPrefs = await loadSommelierMemory(userId, supabase);
+      const [mem, picks] = await Promise.all([
+        loadSommelierMemory(userId, supabase),
+        loadRecentRecommendedBottleIds(userId, supabase, 5),
+      ]);
+      memoryPrefs = mem;
+      recentPicks = picks.size > 0 ? picks : null;
     } catch {
       logSommelierWarn('memory_load_failed', { user: shortUser(userId) });
       memoryPrefs = null;
@@ -757,6 +776,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             scoredOverride: similarScored,
             intentOverride: 'similar_cellar',
             routedAction: 'similar',
+            recentlyRecommended: recentPicks,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
@@ -784,6 +804,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             memory: memoryPrefs,
             tasteContext,
             routedAction: 'recommend',
+            recentlyRecommended: recentPicks,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });

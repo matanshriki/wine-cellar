@@ -34,7 +34,6 @@ export function inferFeedbackFromText(text: string): InferredFeedback {
   }
   if (/\b(not\s+special|ordinary|boring)\b/.test(t)) {
     tags.push('not_special');
-    preferenceDelta.occasionPreference = 'special';
   }
   if (/\b(perfect\s+for\s+dinner|great\s+with\s+food|paired\s+well)\b/.test(t)) {
     tags.push('pairing_hit');
@@ -58,17 +57,8 @@ export function inferMemoryUpdateFromText(text: string): Partial<SommelierPrefer
 
   if (/\b(i\s+prefer|i\s+like|remember\s+(that\s+)?i)\b.*\b(lighter|light(er)?\s+wines?|light\s+body)\b/.test(t)) {
     out.bodyPreference = 'light';
-    out.preferredStyles = ['light_bodied'];
   } else if (/\b(heavier|fuller|bold(er)?)\b/.test(t) && /\b(prefer|like|want)\b/.test(t)) {
     out.bodyPreference = 'full';
-    out.preferredStyles = ['full_bodied'];
-  }
-
-  if (/\b(special\s+occasion|celebration|date\s+night)\b/.test(t) && /\b(prefer|usually|often)\b/.test(t)) {
-    out.occasionPreference = 'special';
-  }
-  if (/\b(casual|weeknight|everyday)\b/.test(t) && /\b(prefer|usually|like)\b/.test(t)) {
-    out.occasionPreference = 'casual';
   }
 
   const regionMatch = t.match(/\b(burgundy|bordeaux|barolo|rioja|napa|champagne|tuscany|rh[oô]ne)\b/);
