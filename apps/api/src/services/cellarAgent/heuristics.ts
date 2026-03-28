@@ -46,10 +46,38 @@ function bottleSearchBlob(b: CellarBottleInput): string {
     b.country,
     grapeString(b),
     b.notes,
+    b.pastNotesSummary,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+/** Nudge ranking from this user's past opens (History) — complements taste profile. */
+function applyPastOpensHistory(
+  bottle: CellarBottleInput,
+  features: string[]
+): number {
+  const avg = bottle.pastOpeningsAvgRating;
+  const rated = bottle.pastOpeningsRatingCount ?? 0;
+  if (typeof avg !== 'number' || rated < 1) return 0;
+  if (avg >= 4.25) {
+    features.push('history:liked');
+    return 10;
+  }
+  if (avg >= 3.5) {
+    features.push('history:ok');
+    return 4;
+  }
+  if (avg <= 2.25) {
+    features.push('history:disliked');
+    return -10;
+  }
+  if (avg <= 3) {
+    features.push('history:meh');
+    return -3;
+  }
+  return 0;
 }
 
 function colorNormalized(b: CellarBottleInput): string {
@@ -180,6 +208,7 @@ export function scoreBottleHeuristically(
   if (q > 0) score += Math.min(5, q);
 
   score += applyPreferenceMemory(bottle, memory ?? null, features);
+  score += applyPastOpensHistory(bottle, features);
 
   return { score, features };
 }

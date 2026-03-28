@@ -9,6 +9,10 @@ import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
 import * as tasteProfileService from './tasteProfileService';
 import type { TasteProfile } from '../types/supabase';
+import {
+  fetchWineHistoryInsightsForWineIds,
+  type WineHistoryInsight,
+} from './historyService';
 
 /** Optional — returned by Phase 2 agent; safe for older clients to ignore */
 export interface AgentResponseMeta {
@@ -101,9 +105,17 @@ export async function sendAgentMessage(
     throw new Error('Not authenticated. Please log in again.');
   }
 
-  // Build compact cellar context
-  const cellarContext = buildCellarContext(bottles);
-  
+  const wineIds = [...new Set(bottles.map((b) => b.wine_id))];
+  let historyByWineId: Map<string, WineHistoryInsight> | undefined;
+  try {
+    historyByWineId = await fetchWineHistoryInsightsForWineIds(wineIds);
+  } catch {
+    historyByWineId = undefined;
+  }
+
+  // Build compact cellar context (includes History ratings/notes per wine when available)
+  const cellarContext = buildCellarContext(bottles, historyByWineId);
+
   // Fetch user taste profile for personalized recommendations
   let tasteContext: string | undefined;
   try {
@@ -148,7 +160,10 @@ export async function sendAgentMessage(
  * Build compact cellar context for AI
  * Limits size to avoid token bloat
  */
-function buildCellarContext(bottles: BottleWithWineInfo[]) {
+function buildCellarContext(
+  bottles: BottleWithWineInfo[],
+  historyByWineId?: Map<string, WineHistoryInsight>
+) {
   // If too many bottles, keep best 60 for recommendations
   let bottlesToInclude = bottles;
   let summary = '';
@@ -190,39 +205,55 @@ function buildCellarContext(bottles: BottleWithWineInfo[]) {
   const totalPhysicalBottles = bottles.reduce((sum, b) => sum + b.quantity, 0);
 
   return {
-    bottles: bottlesToInclude.map((b) => ({
-      id: b.id,
-      producer: b.wine.producer,
-      wineName: b.wine.wine_name,
-      vintage: b.wine.vintage,
-      region: b.wine.region,
-      appellation: b.wine.appellation,
-      country: b.wine.country,
-      grapes: b.wine.grapes,
-      color: b.wine.color,
-      
-      // Aging and readiness data
-      drinkWindowStart: b.drink_window_start,
-      drinkWindowEnd: b.drink_window_end,
-      readinessStatus: b.readiness_status,
-      readinessScore: b.readiness_score,
-      
-      // Serving recommendations
-      serveTempC: b.serve_temp_c,
-      decantMinutes: b.decant_minutes,
-      
-      // Analysis and notes
-      analysisNotes: b.analysis_notes,
-      notes: b.notes,
-      
-      // Bottle metadata
-      quantity: b.quantity,
-      purchaseDate: b.purchase_date,
-      purchasePrice: b.purchase_price,
-      
-      // Vivino data for additional context
-      vivinoRating: b.wine.vivino_rating,
-    })),
+    bottles: bottlesToInclude.map((b) => {
+      const h = historyByWineId?.get(b.wine_id);
+      const historyFields =
+        h && h.openCount > 0
+          ? {
+              pastOpeningsCount: h.openCount,
+              pastOpeningsAvgRating: h.avgRating ?? undefined,
+              pastOpeningsRatingCount:
+                (h.ratingCount ?? 0) > 0 ? h.ratingCount : undefined,
+              pastNotesSummary: h.notesSummary ?? undefined,
+            }
+          : {};
+
+      return {
+        id: b.id,
+        producer: b.wine.producer,
+        wineName: b.wine.wine_name,
+        vintage: b.wine.vintage,
+        region: b.wine.region,
+        appellation: b.wine.appellation,
+        country: b.wine.country,
+        grapes: b.wine.grapes,
+        color: b.wine.color,
+
+        // Aging and readiness data
+        drinkWindowStart: b.drink_window_start,
+        drinkWindowEnd: b.drink_window_end,
+        readinessStatus: b.readiness_status,
+        readinessScore: b.readiness_score,
+
+        // Serving recommendations
+        serveTempC: b.serve_temp_c,
+        decantMinutes: b.decant_minutes,
+
+        // Analysis and notes
+        analysisNotes: b.analysis_notes,
+        notes: b.notes,
+
+        // Bottle metadata
+        quantity: b.quantity,
+        purchaseDate: b.purchase_date,
+        purchasePrice: b.purchase_price,
+
+        // Vivino data for additional context
+        vivinoRating: b.wine.vivino_rating,
+
+        ...historyFields,
+      };
+    }),
     summary: summary || undefined,
     totalBottles: totalPhysicalBottles,
   };

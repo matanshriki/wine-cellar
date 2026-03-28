@@ -352,3 +352,95 @@ export async function undoBottleOpened(historyId: string): Promise<void> {
   }
 }
 
+/** Aggregated opens from History for a wine — used by Cellar Sommelier context */
+export interface WineHistoryInsight {
+  avgRating: number | null;
+  /** Opens that had a 1–5 star rating */
+  ratingCount: number;
+  /** Total consumption_history rows for this wine */
+  openCount: number;
+  /** Combined snippets from tasting_notes, meal_notes, notes (truncated) */
+  notesSummary: string | null;
+}
+
+const WINE_ID_CHUNK = 80;
+
+/**
+ * Load per-wine ratings and notes from consumption_history for the given wine IDs.
+ * Safe to call with empty array; fails soft (empty map).
+ */
+export async function fetchWineHistoryInsightsForWineIds(
+  wineIds: string[]
+): Promise<Map<string, WineHistoryInsight>> {
+  const out = new Map<string, WineHistoryInsight>();
+  const unique = [...new Set(wineIds.filter(Boolean))];
+  if (unique.length === 0) return out;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return out;
+
+  const rows: Array<{
+    wine_id: string;
+    user_rating: number | null;
+    tasting_notes: string | null;
+    meal_notes: string | null;
+    notes: string | null;
+    opened_at: string;
+  }> = [];
+
+  for (let i = 0; i < unique.length; i += WINE_ID_CHUNK) {
+    const chunk = unique.slice(i, i + WINE_ID_CHUNK);
+    const { data, error } = await supabase
+      .from('consumption_history')
+      .select('wine_id, user_rating, tasting_notes, meal_notes, notes, opened_at')
+      .eq('user_id', user.id)
+      .in('wine_id', chunk)
+      .order('opened_at', { ascending: false });
+
+    if (error) {
+      console.warn('[HistoryService] fetchWineHistoryInsightsForWineIds:', error.message);
+      continue;
+    }
+    if (data?.length) rows.push(...(data as typeof rows));
+  }
+
+  const byWine = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const list = byWine.get(r.wine_id) ?? [];
+    list.push(r);
+    byWine.set(r.wine_id, list);
+  }
+
+  const MAX_SNIPPETS = 3;
+  const MAX_SNIP = 120;
+
+  for (const [wineId, list] of byWine) {
+    const ratings = list
+      .map((r) => r.user_rating)
+      .filter((x): x is number => typeof x === 'number' && x >= 1 && x <= 5);
+    const avgRating =
+      ratings.length > 0 ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null;
+
+    const snippets: string[] = [];
+    for (const r of list) {
+      if (snippets.length >= MAX_SNIPPETS) break;
+      const parts = [r.tasting_notes, r.meal_notes, r.notes].filter(Boolean) as string[];
+      const joined = parts.join(' · ').trim();
+      if (joined) snippets.push(joined.slice(0, MAX_SNIP));
+    }
+    let notesSummary = snippets.length ? snippets.join(' | ') : null;
+    if (notesSummary && notesSummary.length > 480) {
+      notesSummary = `${notesSummary.slice(0, 477)}...`;
+    }
+
+    out.set(wineId, {
+      avgRating,
+      ratingCount: ratings.length,
+      openCount: list.length,
+      notesSummary,
+    });
+  }
+
+  return out;
+}
+

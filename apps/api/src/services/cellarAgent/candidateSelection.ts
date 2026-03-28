@@ -26,6 +26,7 @@ export function computeEffectiveShortlistCap(totalRanked: number): number {
 }
 
 function compactOne(b: CellarBottleInput): CompactCellarBottle {
+  const pastNotes = b.pastNotesSummary?.trim();
   return {
     id: b.id,
     producer: b.producer || 'Unknown',
@@ -40,6 +41,10 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     readinessStatus: b.readinessStatus,
     notes: b.notes?.substring(0, 200),
     quantity: b.quantity,
+    pastOpeningsCount: b.pastOpeningsCount,
+    pastOpeningsAvgRating: b.pastOpeningsAvgRating,
+    pastOpeningsRatingCount: b.pastOpeningsRatingCount,
+    pastNotesSummary: pastNotes ? pastNotes.substring(0, 220) : undefined,
   };
 }
 

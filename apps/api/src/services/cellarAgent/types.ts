@@ -33,6 +33,14 @@ export interface CellarBottleInput {
   readinessStatus?: string;
   notes?: string;
   quantity?: number;
+  /** From consumption_history — how many times this wine was opened */
+  pastOpeningsCount?: number;
+  /** Average user_rating (1–5) across rated opens */
+  pastOpeningsAvgRating?: number;
+  /** How many opens had a star rating */
+  pastOpeningsRatingCount?: number;
+  /** Snippets from tasting/meal/general notes on past opens */
+  pastNotesSummary?: string;
 }
 
 /** Deterministic extraction output used for shortlisting and prompt context. */
@@ -64,6 +72,10 @@ export interface CompactCellarBottle {
   readinessStatus?: string;
   notes?: string;
   quantity?: number;
+  pastOpeningsCount?: number;
+  pastOpeningsAvgRating?: number;
+  pastOpeningsRatingCount?: number;
+  pastNotesSummary?: string;
 }
 
 export interface CellarContextBuildResult {
