@@ -51,6 +51,15 @@ export function inferFeedbackFromText(text: string): InferredFeedback {
   return { tags, sentiment, preferenceDelta };
 }
 
+const POSITIVE_SENTIMENT =
+  /\b(love|loved|really\s+lik(e|ed)|amazing|fantastic|incredible|great|excellent|wonderful|perfect|adore|enjoy(ed)?|favorite|favourite)\b/;
+
+const REGION_RE =
+  /\b(burgundy|bordeaux|barolo|rioja|napa|champagne|tuscany|rh[oô]ne|piemonte?|mendoza|willamette|mosel|alsace|stellenbosch|marlborough|priorat)\b/;
+
+const GRAPE_RE =
+  /\b(pinot\s+noir|cabernet|merlot|syrah|shiraz|sangiovese|nebbiolo|chardonnay|riesling|sauvignon|tempranillo|malbec|grenache|zinfandel|barbera)\b/;
+
 export function inferMemoryUpdateFromText(text: string): Partial<SommelierPreferenceMemory> | null {
   const t = text.toLowerCase();
   const out: Partial<SommelierPreferenceMemory> = {};
@@ -61,15 +70,15 @@ export function inferMemoryUpdateFromText(text: string): Partial<SommelierPrefer
     out.bodyPreference = 'full';
   }
 
-  const regionMatch = t.match(/\b(burgundy|bordeaux|barolo|rioja|napa|champagne|tuscany|rh[oô]ne)\b/);
-  if (regionMatch && /\b(love|prefer|favorite|favourite)\b/.test(t)) {
+  const hasPositive = POSITIVE_SENTIMENT.test(t);
+
+  const regionMatch = t.match(REGION_RE);
+  if (regionMatch && hasPositive) {
     out.favoriteRegions = [regionMatch[1]];
   }
 
-  const grapeMatch = t.match(
-    /\b(pinot\s+noir|cabernet|merlot|syrah|sangiovese|nebbiolo|chardonnay|riesling|sauvignon)\b/
-  );
-  if (grapeMatch && /\b(love|prefer|favorite|favourite)\b/.test(t)) {
+  const grapeMatch = t.match(GRAPE_RE);
+  if (grapeMatch && hasPositive) {
     out.favoriteGrapes = [grapeMatch[1].replace(/\s+/, ' ')];
   }
 

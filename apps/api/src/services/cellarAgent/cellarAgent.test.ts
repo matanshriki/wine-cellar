@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { classifyAgentRoute } from './agentRouter.js';
 import { parseChosenBottleIds } from './chosenBottleIds.js';
+import { inferMemoryUpdateFromText } from './preferenceInference.js';
 
 describe('parseChosenBottleIds', () => {
   it('parses string arrays', () => {
@@ -43,5 +44,33 @@ describe('classifyAgentRoute', () => {
   it('routes Hebrew similar and memory', () => {
     expect(classifyAgentRoute('מה עוד יש דומה לזה?')).toBe('similar');
     expect(classifyAgentRoute('תזכור שאני אוהב בורדו')).toBe('memory_update');
+  });
+});
+
+describe('inferMemoryUpdateFromText', () => {
+  it('extracts region preference from natural positive sentiment', () => {
+    const result = inferMemoryUpdateFromText(
+      'i was drinking this wine 2018 Viña Alberdi Reserva from La Rioja Alta in the past, and i really love it. it was a great wine.'
+    );
+    expect(result).not.toBeNull();
+    expect(result?.favoriteRegions).toEqual(['rioja']);
+  });
+
+  it('extracts grape preference from casual praise', () => {
+    const result = inferMemoryUpdateFromText(
+      'I had an amazing Nebbiolo last week, loved every sip'
+    );
+    expect(result).not.toBeNull();
+    expect(result?.favoriteGrapes).toEqual(['nebbiolo']);
+  });
+
+  it('returns null when no region/grape/body signal is present', () => {
+    expect(inferMemoryUpdateFromText('the weather was great today')).toBeNull();
+  });
+
+  it('extracts body preference from explicit statement', () => {
+    const result = inferMemoryUpdateFromText('I prefer lighter wines');
+    expect(result).not.toBeNull();
+    expect(result?.bodyPreference).toBe('light');
   });
 });

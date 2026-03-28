@@ -793,6 +793,23 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
       }
 
       default: {
+        // Side-effect: save implicit preference signals even though the main route is "recommend"
+        if (supabase) {
+          try {
+            const implicitPrefs = inferMemoryUpdateFromText(message);
+            if (implicitPrefs && Object.keys(implicitPrefs).length > 0) {
+              await mergeAndSavePreferences(userId, implicitPrefs, supabase);
+              logSommelier('action', {
+                action: 'implicit_memory',
+                user: shortUser(userId),
+                keys: Object.keys(implicitPrefs).join(','),
+              });
+            }
+          } catch {
+            // non-critical — don't block the recommendation
+          }
+        }
+
         try {
           return await runLlmPathThenPersist({
             openai,
