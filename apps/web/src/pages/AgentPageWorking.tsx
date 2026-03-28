@@ -8,7 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { listBottles, getBottle, type BottleWithWineInfo } from '../services/bottleService';
-import { sendAgentMessage, transcribeAudio, type AgentMessage } from '../services/agentService';
+import {
+  sendAgentMessage,
+  transcribeAudio,
+  type AgentMessage,
+  type SendAgentMessageOptions,
+} from '../services/agentService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 import {
   listConversations,
@@ -51,6 +56,24 @@ export function AgentPageWorking() {
   const audioChunksRef = useRef<Blob[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const greetingInjectedRef = useRef(false);
+
+  /** Correlates follow-up actions (open, similar, feedback) with the last recommendation turn */
+  function buildActionContextFromHistory(
+    priorMessages: AgentMessage[]
+  ): SendAgentMessageOptions['actionContext'] {
+    const lastAssistant = [...priorMessages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistant) return undefined;
+    const eventId = lastAssistant.agentMeta?.eventId;
+    let bottleId = lastAssistant.recommendation?.bottleId;
+    if (!bottleId && lastAssistant.bottleList?.bottles?.length) {
+      bottleId = lastAssistant.bottleList.bottles[0].bottleId;
+    }
+    if (!eventId && !bottleId) return undefined;
+    return {
+      lastEventId: eventId,
+      lastRecommendationBottleId: bottleId,
+    };
+  }
 
   // Track agent page open (once on mount)
   useEffect(() => {
@@ -131,12 +154,16 @@ export function AgentPageWorking() {
 
     try {
       const history = messages.slice(-8);
-      const response = await sendAgentMessage(text, history, bottlesInCellar);
+      const actionContext = buildActionContextFromHistory(messages);
+      const response = await sendAgentMessage(text, history, bottlesInCellar, {
+        actionContext,
+      });
 
       const assistantMsg: AgentMessage = {
         role: 'assistant',
         content: response.message || '',
         timestamp: new Date().toISOString(),
+        agentMeta: response.agentMeta,
         recommendation: response.recommendation,
         bottleList: response.type === 'bottle_list' && response.bottles ? {
           title: response.title,

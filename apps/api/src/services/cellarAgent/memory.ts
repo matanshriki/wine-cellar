@@ -1,8 +1,8 @@
 /**
- * Memory interfaces (Phase 1 stubs).
+ * Memory port (Phase 1 interface).
  *
- * Future: persist taste profiles, history, and feedback to personalize shortlisting
- * and prompts without coupling the HTTP layer to storage.
+ * Phase 2 persists preferences in `sommelier_agent_memory` via `sommelierRepo.ts`
+ * and loads them in `orchestrator.ts`. This file keeps the abstract port for tests.
  */
 
 import type { CellarBottleInput } from './types.js';

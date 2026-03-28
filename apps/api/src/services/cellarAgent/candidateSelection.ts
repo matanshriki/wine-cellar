@@ -12,6 +12,7 @@ import type {
   ScoredCandidate,
 } from './types.js';
 import { scoreBottleHeuristically } from './heuristics.js';
+import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 
 /** Tunable: keep LLM context small but rich enough for multi-bottle asks. */
 export const SHORTLIST_MIN = 8;
@@ -68,7 +69,8 @@ function strictColorFilter(
 export function shortlistCandidates(
   bottles: CellarBottleInput[],
   constraints: ExtractedConstraints,
-  userMessageLower: string
+  userMessageLower: string,
+  memory?: SommelierPreferenceMemory | null
 ): { scored: ScoredCandidate[]; relaxedFilter: boolean } {
   let pool = bottles;
   let relaxedFilter = false;
@@ -84,7 +86,8 @@ export function shortlistCandidates(
     const { score, features } = scoreBottleHeuristically(
       bottle,
       constraints,
-      userMessageLower
+      userMessageLower,
+      memory ?? null
     );
     return { bottle, score, features };
   });

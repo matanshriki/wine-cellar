@@ -1,8 +1,7 @@
 /**
- * Action interfaces (Phase 1 stubs).
+ * Action interfaces (Phase 1).
  *
- * Future: open bottle, mark consumed, log feedback — callable by a true agent loop.
- * Phase 1 only declares contracts so orchestration can evolve without API breaks.
+ * Implementations live in `sommelierActions.ts` (mark opened, feedback, drafts).
  */
 
 export interface OpenBottleAction {

@@ -17,14 +17,16 @@ export async function runLegacyRecommendation(params: {
   message: string;
   history: unknown[];
   cellarBottles: CellarBottleInput[];
+  tasteContext?: string;
 }): Promise<unknown> {
-  const { openai, message, history, cellarBottles } = params;
+  const { openai, message, history, cellarBottles, tasteContext } = params;
   const { bottles, summary } = buildLegacyCellarContextPayload(cellarBottles);
   const conversationHistory = sliceHistoryForChat(history, 8);
 
   const systemContent = buildLegacySystemPrompt({
     cellarJson: JSON.stringify(bottles, null, 2),
     summary,
+    tasteContext,
   });
 
   let attempt = 0;

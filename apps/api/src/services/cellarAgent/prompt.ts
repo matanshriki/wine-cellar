@@ -73,7 +73,20 @@ export function buildOrchestratedSystemPrompt(params: {
   shortlistJson: string;
   summary: string;
   reasoningBlock: string;
+  /** Client-supplied taste vector summary (profiles.taste_profile) — optional */
+  tasteContext?: string;
 }): string {
+  const tasteBlock = params.tasteContext?.trim()
+    ? `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER TASTE PROFILE (from app — soft bias, cellar still rules)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${params.tasteContext.trim()}
+`
+    : '';
+
   return `${getSommelierSystemPrompt()}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -83,6 +96,7 @@ CELLAR AGENT SPECIFIC RULES
 You are assisting a user in a conversational interface. Apply all sommelier knowledge above, PLUS:
 
 ${CELLAR_JSON_RULES}
+${tasteBlock}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SERVER-DETERMINED CONTEXT (TRUST THIS)
@@ -108,7 +122,19 @@ Remember: Think like a knowledgeable sommelier, not a rule-following machine.`;
 export function buildLegacySystemPrompt(params: {
   cellarJson: string;
   summary: string;
+  tasteContext?: string;
 }): string {
+  const tasteBlock = params.tasteContext?.trim()
+    ? `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER TASTE PROFILE (from app — soft bias)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${params.tasteContext.trim()}
+`
+    : '';
+
   return `${getSommelierSystemPrompt()}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -118,6 +144,7 @@ CELLAR AGENT SPECIFIC RULES
 You are assisting a user in a conversational interface. Apply all sommelier knowledge above, PLUS:
 
 ${CELLAR_JSON_RULES}
+${tasteBlock}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 USER'S CELLAR (COMPLETE LIST)

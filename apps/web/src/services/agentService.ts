@@ -10,10 +10,20 @@ import type { BottleWithWineInfo } from './bottleService';
 import * as tasteProfileService from './tasteProfileService';
 import type { TasteProfile } from '../types/supabase';
 
+/** Optional — returned by Phase 2 agent; safe for older clients to ignore */
+export interface AgentResponseMeta {
+  eventId?: string;
+  routedAction?: string;
+  explanation?: unknown;
+  actionResult?: 'ok' | 'error';
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  /** Last turn metadata for action routing (open bottle, similar, etc.) */
+  agentMeta?: AgentResponseMeta;
   recommendation?: {
     bottleId: string;
     reason: string;
@@ -62,16 +72,27 @@ export interface AgentResponse {
     shortWhy: string;
   }>;
   followUpQuestion?: string;
+  /** Optional Phase 2 fields */
+  agentMeta?: AgentResponseMeta;
 }
 
 /**
  * Send a message to the Cellar Agent
  * Returns AI-generated recommendation from user's cellar only
  */
+export interface SendAgentMessageOptions {
+  actionContext?: {
+    lastEventId?: string;
+    lastRecommendationBottleId?: string;
+    anchorBottleId?: string;
+  };
+}
+
 export async function sendAgentMessage(
   userMessage: string,
   conversationHistory: AgentMessage[],
-  bottles: BottleWithWineInfo[]
+  bottles: BottleWithWineInfo[],
+  options?: SendAgentMessageOptions
 ): Promise<AgentResponse> {
   // Get Supabase session for authentication
   const { data: { session } } = await supabase.auth.getSession();
@@ -111,6 +132,7 @@ export async function sendAgentMessage(
       history: conversationHistory,
       cellarContext,
       tasteContext,
+      actionContext: options?.actionContext,
     }),
   });
 

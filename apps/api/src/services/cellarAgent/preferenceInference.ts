@@ -1,0 +1,87 @@
+/**
+ * Translate short natural feedback into structured preference deltas (deterministic).
+ * Keeps the domain focused — no generic chat completion here.
+ */
+
+import type { SommelierPreferenceMemory } from './sommelierTypes.js';
+
+export interface InferredFeedback {
+  tags: string[];
+  sentiment: 'positive' | 'negative' | 'neutral';
+  preferenceDelta: Partial<SommelierPreferenceMemory>;
+}
+
+export function inferFeedbackFromText(text: string): InferredFeedback {
+  const t = text.toLowerCase();
+  const tags: string[] = [];
+  const preferenceDelta: Partial<SommelierPreferenceMemory> = {};
+
+  if (/\b(i\s+liked|loved|perfect|great|excellent)\b/.test(t)) {
+    tags.push('liked');
+  }
+  if (/\b(too\s+heavy|too\s+big|too\s+full)\b/.test(t)) {
+    tags.push('too_heavy');
+    preferenceDelta.bodyPreference = 'light';
+    preferenceDelta.dislikedProfiles = ['heavy'];
+  }
+  if (/\b(too\s+light|too\s+thin|watery)\b/.test(t)) {
+    tags.push('too_light');
+    preferenceDelta.bodyPreference = 'medium';
+  }
+  if (/\b(too\s+acid(ic)?|too\s+sour|too\s+tart)\b/.test(t)) {
+    tags.push('too_acidic');
+    preferenceDelta.dislikedProfiles = ['high_acid'];
+  }
+  if (/\b(not\s+special|ordinary|boring)\b/.test(t)) {
+    tags.push('not_special');
+    preferenceDelta.occasionPreference = 'special';
+  }
+  if (/\b(perfect\s+for\s+dinner|great\s+with\s+food|paired\s+well)\b/.test(t)) {
+    tags.push('pairing_hit');
+  }
+  if (/\b(more\s+like\s+this|another\s+like\s+this)\b/.test(t)) {
+    tags.push('more_like_this');
+  }
+
+  let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
+  if (tags.some((x) => ['liked', 'pairing_hit'].includes(x))) sentiment = 'positive';
+  if (tags.some((x) => ['too_heavy', 'too_light', 'too_acidic', 'not_special'].includes(x))) {
+    sentiment = sentiment === 'positive' ? 'neutral' : 'negative';
+  }
+
+  return { tags, sentiment, preferenceDelta };
+}
+
+export function inferMemoryUpdateFromText(text: string): Partial<SommelierPreferenceMemory> | null {
+  const t = text.toLowerCase();
+  const out: Partial<SommelierPreferenceMemory> = {};
+
+  if (/\b(i\s+prefer|i\s+like|remember\s+(that\s+)?i)\b.*\b(lighter|light(er)?\s+wines?|light\s+body)\b/.test(t)) {
+    out.bodyPreference = 'light';
+    out.preferredStyles = ['light_bodied'];
+  } else if (/\b(heavier|fuller|bold(er)?)\b/.test(t) && /\b(prefer|like|want)\b/.test(t)) {
+    out.bodyPreference = 'full';
+    out.preferredStyles = ['full_bodied'];
+  }
+
+  if (/\b(special\s+occasion|celebration|date\s+night)\b/.test(t) && /\b(prefer|usually|often)\b/.test(t)) {
+    out.occasionPreference = 'special';
+  }
+  if (/\b(casual|weeknight|everyday)\b/.test(t) && /\b(prefer|usually|like)\b/.test(t)) {
+    out.occasionPreference = 'casual';
+  }
+
+  const regionMatch = t.match(/\b(burgundy|bordeaux|barolo|rioja|napa|champagne|tuscany|rh[oô]ne)\b/);
+  if (regionMatch && /\b(love|prefer|favorite|favourite)\b/.test(t)) {
+    out.favoriteRegions = [regionMatch[1]];
+  }
+
+  const grapeMatch = t.match(
+    /\b(pinot\s+noir|cabernet|merlot|syrah|sangiovese|nebbiolo|chardonnay|riesling|sauvignon)\b/
+  );
+  if (grapeMatch && /\b(love|prefer|favorite|favourite)\b/.test(t)) {
+    out.favoriteGrapes = [grapeMatch[1].replace(/\s+/, ' ')];
+  }
+
+  return Object.keys(out).length ? out : null;
+}

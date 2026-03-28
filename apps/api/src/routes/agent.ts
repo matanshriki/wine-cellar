@@ -12,8 +12,21 @@ import OpenAI from 'openai';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { recommendCellar } from '../services/cellarAgent/orchestrator.js';
+import { saveSommelierFeedback } from '../services/cellarAgent/sommelierActions.js';
+import { updateRecommendationOutcome } from '../services/cellarAgent/sommelierRepo.js';
+import type { RecommendationOutcome } from '../services/cellarAgent/sommelierTypes.js';
 
 export const agentRouter = Router();
+
+function createUserSupabase(req: AuthRequest) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token || !config.supabaseUrl || !config.supabaseAnonKey) return null;
+  return createClient(config.supabaseUrl, config.supabaseAnonKey, {
+    global: {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  });
+}
 
 // Multer for audio upload
 const upload = multer({
@@ -183,76 +196,163 @@ agentRouter.post(
     const startTime = Date.now();
     
     try {
-      console.log('[Sommelier] ====== REQUEST START ======');
-      console.log('[Sommelier] Request body keys:', Object.keys(req.body));
-      
       if (!openai) {
-        console.error('[Sommelier] ERROR: OpenAI not configured');
+        console.error('[Sommelier]', JSON.stringify({ phase: 'config', error: 'openai_missing' }));
         return res.status(503).json({ 
           error: 'OpenAI API key not configured. Sommelier is unavailable.' 
         });
       }
 
-      const { message, history, cellarContext } = req.body;
-      console.log('[Sommelier] Message:', message ? 'present' : 'MISSING');
-      console.log('[Sommelier] CellarContext:', cellarContext ? 'present' : 'MISSING');
+      const { message, history, cellarContext, tasteContext, actionContext } = req.body;
 
       if (!message || typeof message !== 'string') {
-        console.error('[Sommelier] ERROR: Invalid message');
         return res.status(400).json({ error: 'Message is required' });
       }
 
       if (!cellarContext || !cellarContext.bottles || cellarContext.bottles.length === 0) {
-        console.error('[Sommelier] ERROR: Invalid cellarContext');
         return res.status(400).json({ error: 'Cellar context is required' });
       }
-      
-      console.log('[Sommelier] ✓ Basic validation passed');
 
-      console.log(`[Sommelier] ====== NEW REQUEST ======`);
       console.log(
-        `[Sommelier] User ${req.userId?.substring(0, 8)} — cellar entries: ${cellarContext.bottles.length}`
+        '[Sommelier]',
+        JSON.stringify({
+          phase: 'recommend_http',
+          user: req.userId?.slice(0, 8),
+          cellarEntries: cellarContext.bottles.length,
+          msgLen: message.length,
+          hasTasteContext: !!tasteContext,
+          hasActionContext: !!actionContext,
+        })
       );
+
+      const userSupabase = createUserSupabase(req);
 
       const recommendation = await recommendCellar({
         openai,
+        userId: req.userId!,
+        supabase: userSupabase,
         message,
         history: history || [],
         cellarBottles: cellarContext.bottles,
+        tasteContext: typeof tasteContext === 'string' ? tasteContext : undefined,
+        actionContext:
+          actionContext && typeof actionContext === 'object' ? actionContext : undefined,
       });
 
-      console.log('[Sommelier] ====== FINAL CHECK ======');
-      console.log('[Sommelier] Recommendation exists:', !!recommendation);
-      console.log(
-        '[Sommelier] Recommendation type:',
-        (recommendation as { type?: string })?.type || 'undefined'
-      );
-
       if (!recommendation) {
-        console.error('[Sommelier] ❌ ERROR: Failed to generate recommendation after all attempts');
+        console.error('[Sommelier]', JSON.stringify({ phase: 'recommend_http', error: 'empty_result' }));
         return res.status(500).json({
           error: 'Failed to generate valid recommendation',
         });
       }
 
       const duration = Date.now() - startTime;
-      
-      // Log minimal metrics (no PII, no full messages)
-      console.log(`[Sommelier] ✓ Request completed successfully | user: ${req.userId?.substring(0, 8)}... | duration: ${duration}ms`);
-      console.log('[Sommelier] ====== RETURNING RESPONSE ======');
+      console.log(
+        '[Sommelier]',
+        JSON.stringify({
+          phase: 'recommend_http_done',
+          user: req.userId?.slice(0, 8),
+          ms: duration,
+          responseType: (recommendation as { type?: string })?.type ?? 'message',
+        })
+      );
 
       return res.json(recommendation);
       
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error('[Sommelier] ====== CAUGHT EXCEPTION ======');
-      console.error('[Sommelier] Error name:', error.name);
-      console.error('[Sommelier] Error message:', error.message);
-      console.error('[Sommelier] Error stack:', error.stack);
-      console.error('[Sommelier] Duration:', duration, 'ms');
+      console.error(
+        '[Sommelier]',
+        JSON.stringify({
+          phase: 'recommend_http_error',
+          ms: duration,
+          err: error?.message?.slice(0, 120),
+        })
+      );
       return res.status(500).json({ 
         error: 'Failed to generate recommendation. Please try again.' 
       });
+    }
+  }
+);
+
+/**
+ * POST /api/agent/feedback
+ * Body: { feedback: string, recommendationEventId?: string, bottleId?: string }
+ */
+agentRouter.post(
+  '/feedback',
+  authenticateProduction,
+  checkFeatureFlag,
+  rateLimit,
+  async (req: AuthRequest, res) => {
+    try {
+      const { recommendationEventId, bottleId, feedback } = req.body;
+      if (!feedback || typeof feedback !== 'string') {
+        return res.status(400).json({ error: 'feedback is required' });
+      }
+
+      const supabase = createUserSupabase(req);
+      if (!supabase) {
+        return res.status(500).json({ error: 'Server configuration error' });
+      }
+
+      await saveSommelierFeedback(req.userId!, {
+        rawText: feedback,
+        recommendationEventId: recommendationEventId ?? null,
+        bottleId: bottleId ?? null,
+        supabase,
+        applyToMemory: true,
+      });
+
+      return res.json({ ok: true });
+    } catch {
+      return res.status(500).json({ error: 'Failed to save feedback' });
+    }
+  }
+);
+
+/**
+ * POST /api/agent/outcome
+ * Body: { eventId: string, outcome: RecommendationOutcome }
+ */
+agentRouter.post(
+  '/outcome',
+  authenticateProduction,
+  checkFeatureFlag,
+  rateLimit,
+  async (req: AuthRequest, res) => {
+    try {
+      const { eventId, outcome } = req.body;
+      if (!eventId || typeof eventId !== 'string') {
+        return res.status(400).json({ error: 'eventId is required' });
+      }
+
+      const valid: RecommendationOutcome[] = [
+        'pending',
+        'accepted',
+        'rejected',
+        'opened',
+        'feedback_positive',
+        'feedback_negative',
+        'feedback_neutral',
+      ];
+      if (!outcome || !valid.includes(outcome)) {
+        return res.status(400).json({ error: 'invalid outcome' });
+      }
+
+      const supabase = createUserSupabase(req);
+      if (!supabase) {
+        return res.status(500).json({ error: 'Server configuration error' });
+      }
+
+      const ok = await updateRecommendationOutcome(eventId, req.userId!, outcome, supabase);
+      if (!ok) {
+        return res.status(500).json({ error: 'Failed to update outcome' });
+      }
+      return res.json({ ok: true });
+    } catch {
+      return res.status(500).json({ error: 'Failed to update outcome' });
     }
   }
 );

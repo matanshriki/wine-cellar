@@ -12,6 +12,7 @@ export type CellarIntent =
   | 'multi_recommendation'
   | 'browse_cellar'
   | 'pairing'
+  | 'similar_cellar'
   | 'general';
 
 /**
