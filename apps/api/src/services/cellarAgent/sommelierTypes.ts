@@ -60,4 +60,11 @@ export interface AgentResponseMeta {
   explanation?: RecommendationExplanation;
   /** When an action ran without a full recommendation payload */
   actionResult?: 'ok' | 'error';
+  /**
+   * How the reply was produced (observability — not for UI logic).
+   * - deterministic_action: routed server action (open, memory, draft, …), no rec LLM
+   * - orchestrated_shortlist: LLM on server-ranked shortlist + validation
+   * - legacy_full_cellar: fallback LLM over full cellar (orchestrated path failed)
+   */
+  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar';
 }

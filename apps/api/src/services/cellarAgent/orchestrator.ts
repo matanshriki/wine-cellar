@@ -390,6 +390,7 @@ async function runLlmPathThenPersist(params: {
     eventId,
     routedAction: params.routedAction,
     explanation,
+    processingMode: 'orchestrated_shortlist',
   });
 }
 
@@ -400,6 +401,7 @@ async function legacyFallback(params: {
   cellarBottles: CellarBottleInput[];
   tasteContext?: string;
   userId: string;
+  routedAction: 'recommend' | 'similar';
 }): Promise<unknown> {
   logSommelier('fallback', {
     user: shortUser(params.userId),
@@ -426,12 +428,16 @@ async function legacyFallback(params: {
     validation: fallbackLog.validationResult,
     fallback: 'true',
   });
-  return runLegacyRecommendation({
+  const raw = await runLegacyRecommendation({
     openai: params.openai,
     message: params.message,
     history: params.history,
     cellarBottles: params.cellarBottles,
     tasteContext: params.tasteContext,
+  });
+  return withMeta(raw as Record<string, unknown>, {
+    routedAction: params.routedAction,
+    processingMode: 'legacy_full_cellar',
   });
 }
 
@@ -472,6 +478,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
     route,
     user: shortUser(userId),
     msgLen: String(message.length),
+    hasLastRecoBottle: actionContext?.lastRecommendationBottleId ? 'yes' : 'no',
   });
 
   switch (route) {
@@ -484,13 +491,21 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               message:
                 "I couldn't tell which bottle you opened. Mention the bottle or pick one from your last recommendation, then try again.",
             },
-            { routedAction: 'open_bottle', actionResult: 'error' }
+            {
+              routedAction: 'open_bottle',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         if (!supabase) {
           return withMeta(
             { message: 'Opening bottles from chat requires storage. Try again later.' },
-            { routedAction: 'open_bottle', actionResult: 'error' }
+            {
+              routedAction: 'open_bottle',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         const result = await markBottleOpened(userId, {
@@ -499,7 +514,14 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           occasion: 'sommelier_agent',
         });
         if (!result.ok) {
-          return withMeta({ message: result.error }, { routedAction: 'open_bottle', actionResult: 'error' });
+          return withMeta(
+            { message: result.error },
+            {
+              routedAction: 'open_bottle',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
+          );
         }
         logSommelier('action', {
           action: 'open_bottle',
@@ -512,11 +534,19 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               "Done — I've recorded that bottle as opened and updated your cellar count.",
             type: 'single',
           },
-          { routedAction: 'open_bottle', actionResult: 'ok' }
+          {
+            routedAction: 'open_bottle',
+            actionResult: 'ok',
+            processingMode: 'deterministic_action',
+          }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'open_bottle' });
-          return withMeta(safeActionErrorMessage(), { routedAction: 'open_bottle', actionResult: 'error' });
+          return withMeta(safeActionErrorMessage(), {
+            routedAction: 'open_bottle',
+            actionResult: 'error',
+            processingMode: 'deterministic_action',
+          });
         }
       }
 
@@ -528,13 +558,21 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             {
               message: 'Add a few words for your tasting note after the prompt, e.g. “Save a note: cherry, smoke, long finish”.',
             },
-            { routedAction: 'tasting_draft', actionResult: 'error' }
+            {
+              routedAction: 'tasting_draft',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         if (!supabase) {
           return withMeta(
             { message: "I can't save drafts right now — storage isn't available." },
-            { routedAction: 'tasting_draft', actionResult: 'error' }
+            {
+              routedAction: 'tasting_draft',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         const bottleId =
@@ -560,11 +598,19 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               : "I couldn't save the draft, but you can try again in a moment.",
             type: 'single',
           },
-          { routedAction: 'tasting_draft', actionResult: draftId ? 'ok' : 'error' }
+          {
+            routedAction: 'tasting_draft',
+            actionResult: draftId ? 'ok' : 'error',
+            processingMode: 'deterministic_action',
+          }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'tasting_draft' });
-          return withMeta(safeActionErrorMessage(), { routedAction: 'tasting_draft', actionResult: 'error' });
+          return withMeta(safeActionErrorMessage(), {
+            routedAction: 'tasting_draft',
+            actionResult: 'error',
+            processingMode: 'deterministic_action',
+          });
         }
       }
 
@@ -577,7 +623,11 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               message:
                 "I've noted that in our chat — connect storage to remember it for next time.",
             },
-            { routedAction: 'memory_update', actionResult: 'error' }
+            {
+              routedAction: 'memory_update',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         if (!inferred || Object.keys(inferred).length === 0) {
@@ -586,7 +636,11 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               message:
                 "Tell me what you'd like me to remember — for example lighter reds, a favorite region, or casual vs special occasions.",
             },
-            { routedAction: 'memory_update', actionResult: 'error' }
+            {
+              routedAction: 'memory_update',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         await mergeAndSavePreferences(userId, inferred, supabase);
@@ -597,11 +651,19 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               "Done — I'll lean on those preferences when shortlisting your cellar from now on.",
             type: 'single',
           },
-          { routedAction: 'memory_update', actionResult: 'ok' }
+          {
+            routedAction: 'memory_update',
+            actionResult: 'ok',
+            processingMode: 'deterministic_action',
+          }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'memory_update' });
-          return withMeta(safeActionErrorMessage(), { routedAction: 'memory_update', actionResult: 'error' });
+          return withMeta(safeActionErrorMessage(), {
+            routedAction: 'memory_update',
+            actionResult: 'error',
+            processingMode: 'deterministic_action',
+          });
         }
       }
 
@@ -610,7 +672,11 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         if (!supabase) {
           return withMeta(
             { message: 'Thanks for the feedback — I could not persist it just now.' },
-            { routedAction: 'feedback_inline', actionResult: 'error' }
+            {
+              routedAction: 'feedback_inline',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         await saveSommelierFeedback(userId, {
@@ -627,11 +693,19 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               "Thanks — I've logged that and will adjust future picks from your cellar.",
             type: 'single',
           },
-          { routedAction: 'feedback_inline', actionResult: 'ok' }
+          {
+            routedAction: 'feedback_inline',
+            actionResult: 'ok',
+            processingMode: 'deterministic_action',
+          }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'feedback_inline' });
-          return withMeta(safeActionErrorMessage(), { routedAction: 'feedback_inline', actionResult: 'error' });
+          return withMeta(safeActionErrorMessage(), {
+            routedAction: 'feedback_inline',
+            actionResult: 'error',
+            processingMode: 'deterministic_action',
+          });
         }
       }
 
@@ -643,7 +717,11 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               message:
                 "Tell me which bottle to match (or ask for a recommendation first), e.g. “what else like the Barolo you suggested?”.",
             },
-            { routedAction: 'similar', actionResult: 'error' }
+            {
+              routedAction: 'similar',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         const constraints = extractConstraints(message);
@@ -659,7 +737,11 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         if (similarScored.length === 0) {
           return withMeta(
             { message: "I couldn't find other bottles to compare in your cellar." },
-            { routedAction: 'similar', actionResult: 'error' }
+            {
+              routedAction: 'similar',
+              actionResult: 'error',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         try {
@@ -678,7 +760,15 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
-          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId });
+          return legacyFallback({
+            openai,
+            message,
+            history,
+            cellarBottles,
+            tasteContext,
+            userId,
+            routedAction: 'similar',
+          });
         }
       }
 
@@ -697,7 +787,15 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });
-          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId });
+          return legacyFallback({
+            openai,
+            message,
+            history,
+            cellarBottles,
+            tasteContext,
+            userId,
+            routedAction: 'recommend',
+          });
         }
       }
   }

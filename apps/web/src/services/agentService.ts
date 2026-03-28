@@ -20,6 +20,11 @@ export interface AgentResponseMeta {
   routedAction?: string;
   explanation?: unknown;
   actionResult?: 'ok' | 'error';
+  /**
+   * Server pipeline: deterministic_action (open/memory/…), orchestrated_shortlist (agent+LLM),
+   * legacy_full_cellar (fallback — full cellar to model).
+   */
+  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar';
 }
 
 export interface AgentMessage {
@@ -153,7 +158,17 @@ export async function sendAgentMessage(
     throw new Error(error.error || 'Failed to get recommendation');
   }
 
-  return response.json();
+  const data = (await response.json()) as AgentResponse;
+  if (import.meta.env.DEV) {
+    console.log(
+      '[AgentService] sommelier pipeline',
+      data.agentMeta?.processingMode ?? '—',
+      'route:',
+      data.agentMeta?.routedAction ?? '—',
+      data.agentMeta?.actionResult ? `(${data.agentMeta.actionResult})` : ''
+    );
+  }
+  return data;
 }
 
 /**

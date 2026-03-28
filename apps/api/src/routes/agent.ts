@@ -247,6 +247,8 @@ agentRouter.post(
       }
 
       const duration = Date.now() - startTime;
+      const meta = (recommendation as { agentMeta?: { routedAction?: string; processingMode?: string; actionResult?: string } })
+        .agentMeta;
       console.log(
         '[Sommelier]',
         JSON.stringify({
@@ -254,6 +256,10 @@ agentRouter.post(
           user: req.userId?.slice(0, 8),
           ms: duration,
           responseType: (recommendation as { type?: string })?.type ?? 'message',
+          /** deterministic_action = routed server action; orchestrated_shortlist = real agent shortlist+LLM; legacy_full_cellar = degraded */
+          processingMode: meta?.processingMode ?? null,
+          routedAction: meta?.routedAction ?? null,
+          actionResult: meta?.actionResult ?? null,
         })
       );
 
