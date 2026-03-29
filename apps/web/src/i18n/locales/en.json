@@ -830,7 +830,8 @@
     },
     "demoBanner": {
       "message": "You're viewing a demo cellar – replace it with your own anytime",
-      "exitDemo": "Exit Demo"
+      "exitDemo": "Exit Demo",
+      "startMyCellar": "Start My Cellar"
     },
     "demoRecommendation": {
       "title": "If this were your cellar…",
@@ -849,10 +850,47 @@
       "button": "Let's explore!",
       "closing": "Closing automatically..."
     },
+    "postDemo": {
+      "title": "Your cellar awaits",
+      "subtitle": "You've seen what a personal AI sommelier can do. Now let's build your collection.",
+      "scanCta": "Scan Your First Bottle",
+      "addManuallyCta": "Or add manually",
+      "skipLink": "I'll do this later",
+      "features": {
+        "ai": {
+          "title": "AI Sommelier Notes",
+          "desc": "Instant tasting notes and food pairings for every bottle"
+        },
+        "tonight": {
+          "title": "What to Drink Tonight",
+          "desc": "Smart recommendations based on what's actually in your cellar"
+        },
+        "cellar": {
+          "title": "Track Your Collection",
+          "desc": "Know exactly what you have, when to open it, and what to buy next"
+        }
+      }
+    },
     "emptyState": {
-      "title": "I can't recommend anything yet – I don't know what you like.",
-      "subtitle": "The more I know about your collection, the better I can help you decide what to drink.",
-      "cta": "Teach me with one bottle 🍷"
+      "title": "Your sommelier is ready — are you?",
+      "subtitle": "Add your first bottle and I'll start learning what you love.",
+      "scanCta": "Scan a Label",
+      "addManuallyCta": "Or add manually",
+      "cta": "Teach me with one bottle 🍷",
+      "features": {
+        "ai": {
+          "title": "AI Sommelier Notes",
+          "desc": "Tasting notes, food pairings, and aging advice — instantly"
+        },
+        "tonight": {
+          "title": "What to Drink Tonight",
+          "desc": "Personalized picks from your collection"
+        },
+        "cellar": {
+          "title": "Smart Cellar",
+          "desc": "Drink windows, readiness tracking, and cellar insights"
+        }
+      }
     },
     "demoAction": {
       "edit": {

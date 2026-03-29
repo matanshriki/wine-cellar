@@ -29,6 +29,7 @@ import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
 import { DemoRecommendationCard } from '../components/DemoRecommendationCard';
 import { FirstBottleSuccessModal } from '../components/FirstBottleSuccessModal';
+import { PostDemoTransitionModal } from '../components/PostDemoTransitionModal';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
@@ -151,6 +152,7 @@ export function CellarPage() {
   // Onboarding v1 – production: Onboarding state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [showPostDemoModal, setShowPostDemoModal] = useState(false);
   const [showFirstBottleSuccess, setShowFirstBottleSuccess] = useState(false);
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
@@ -472,11 +474,27 @@ export function CellarPage() {
     setShowWelcomeModal(false);
   }
 
-  // Onboarding v1 – production: Exit demo mode
+  // Onboarding v1 – production: Exit demo → show transition modal
   function handleExitDemo() {
-    console.log('[CellarPage] Exiting demo mode');
+    console.log('[CellarPage] Exiting demo mode → showing post-demo transition');
     onboardingUtils.deactivateDemoMode();
     setIsDemoMode(false);
+    setShowPostDemoModal(true);
+  }
+
+  function handlePostDemoScan() {
+    setShowPostDemoModal(false);
+    setShowLabelCapture(true);
+    setLabelCaptureMode('camera');
+  }
+
+  function handlePostDemoAddManually() {
+    setShowPostDemoModal(false);
+    setShowAddSheet(true);
+  }
+
+  function handlePostDemoSkip() {
+    setShowPostDemoModal(false);
   }
 
   // Infinite scroll: Page size
@@ -1665,98 +1683,194 @@ export function CellarPage() {
         return null;
       })()}
       {bottlesInCellar.length === 0 ? (
-        /**
-         * Empty State - Onboarding v1 – value first
-         * 
-         * - Improved messaging focused on teaching the app
-         * - Visual element (wine glass illustration)
-         * - Clear call-to-action
-         * - Mobile optimized
-         */
         <motion.div
           key="empty-cellar-state"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="luxury-card text-center py-8 sm:py-12 px-4"
+          transition={{ duration: 0.4 }}
+          className="space-y-4"
         >
-          {/* Elegant wine glass visual with dramatic bouncy animation */}
-          <motion.div
-            key="wine-glass-animation"
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              y: 0,
-            }}
-            transition={{ 
-              duration: 0.6,
-              ease: [0.4, 0, 0.2, 1],
-            }}
-            className="text-7xl sm:text-8xl mb-6"
+          {/* Hero card */}
+          <div
+            className="luxury-card text-center py-8 sm:py-10 px-5 sm:px-8 rounded-2xl overflow-hidden relative"
           >
-            🍷
-          </motion.div>
-
-          {/* Onboarding v1 – value first: Improved heading */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.3 }}
-            className="text-2xl sm:text-3xl mb-3"
-            style={{ 
-              color: 'var(--text-primary)', 
-              fontFamily: 'var(--font-display)',
-              fontWeight: 'var(--font-bold)',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {t('onboarding.emptyState.title')}
-          </motion.h2>
-
-          {/* Onboarding v1 – value first: Improved explanation */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.3 }}
-            className="text-base sm:text-lg mb-8 max-w-md mx-auto"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {t('onboarding.emptyState.subtitle')}
-          </motion.p>
-
-          {/* Action buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-            className="flex flex-col xs:flex-row gap-2 xs:gap-3 justify-center max-w-lg mx-auto"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowAddSheet(true);
+            {/* Top accent */}
+            <div
+              className="absolute top-0 left-0 right-0"
+              style={{
+                height: '3px',
+                background: 'linear-gradient(90deg, var(--wine-400), var(--wine-600), var(--wine-400))',
               }}
-              className="btn-luxury-primary w-full xs:w-auto text-base sm:text-lg"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="inline-flex items-center justify-center w-20 h-20 rounded-full text-5xl mb-5"
+              style={{
+                background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
+                boxShadow: '0 0 40px rgba(139, 21, 56, 0.12)',
+              }}
+            >
+              🍷
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+              className="text-2xl sm:text-3xl mb-2"
+              style={{
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 'var(--font-bold)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {t('onboarding.emptyState.title')}
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.3 }}
+              className="text-base mb-7 max-w-sm mx-auto"
+              style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}
+            >
+              {t('onboarding.emptyState.subtitle')}
+            </motion.p>
+
+            {/* Primary scan CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+              className="flex flex-col gap-2.5 max-w-xs mx-auto"
               style={{ pointerEvents: 'auto' }}
             >
-              {t('onboarding.emptyState.cta')}
-            </button>
-            {/* Import CSV - Only show if user has permission */}
-            {csvImportEnabled && (
-              <button 
+              <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setShowImport(true);
+                  setShowLabelCapture(true);
+                  setLabelCaptureMode('camera');
                 }}
-                className="btn-luxury-secondary w-full xs:w-auto"
+                className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-all min-h-[52px] flex items-center justify-center gap-2.5"
+                style={{
+                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  color: 'var(--text-inverse)',
+                  border: '1px solid var(--wine-700)',
+                  boxShadow: '0 8px 24px rgba(139, 21, 56, 0.25)',
+                  pointerEvents: 'auto',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 21, 56, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 21, 56, 0.25)';
+                }}
               >
-                {t('cellar.empty.importButton')}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                {t('onboarding.emptyState.scanCta')}
               </button>
-            )}
+
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowAddSheet(true);
+                }}
+                className="w-full py-3 px-6 rounded-xl font-medium text-sm transition-all min-h-[44px]"
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-base)',
+                  pointerEvents: 'auto',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--bg-tertiary)';
+                  e.currentTarget.style.borderColor = 'var(--wine-200)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'var(--border-base)';
+                }}
+              >
+                {t('onboarding.emptyState.addManuallyCta')}
+              </button>
+
+              {csvImportEnabled && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowImport(true);
+                  }}
+                  className="text-xs py-2 transition-all"
+                  style={{
+                    color: 'var(--text-tertiary)',
+                    background: 'transparent',
+                    border: 'none',
+                    pointerEvents: 'auto',
+                  }}
+                >
+                  {t('cellar.empty.importButton')}
+                </button>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Feature preview cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+          >
+            {(['ai', 'tonight', 'cellar'] as const).map((key, i) => (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 + i * 0.08, duration: 0.3 }}
+                className="luxury-card p-4 sm:p-5 rounded-xl text-center"
+                style={{
+                  border: '1px solid var(--border-base)',
+                }}
+              >
+                <div
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-xl mb-3"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
+                    border: '1px solid var(--wine-200)',
+                  }}
+                >
+                  {['🧠', '🌙', '📊'][i]}
+                </div>
+                <p
+                  className="text-sm font-semibold mb-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {t(`onboarding.emptyState.features.${key}.title`)}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: 'var(--text-tertiary)', lineHeight: '1.5' }}
+                >
+                  {t(`onboarding.emptyState.features.${key}.desc`)}
+                </p>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
       ) : filteredBottles.length === 0 ? (
@@ -2387,6 +2501,14 @@ export function CellarPage() {
         isOpen={showFirstBottleSuccess}
         onClose={() => setShowFirstBottleSuccess(false)}
         bottleName={firstBottleName}
+      />
+
+      {/* Post-demo transition modal */}
+      <PostDemoTransitionModal
+        isOpen={showPostDemoModal}
+        onScanBottle={handlePostDemoScan}
+        onAddManually={handlePostDemoAddManually}
+        onSkip={handlePostDemoSkip}
       />
 
       {/* Duplicate Detection Modal */}

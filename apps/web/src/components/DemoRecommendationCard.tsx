@@ -10,6 +10,7 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { useLocalizedWine } from '../hooks/useLocalizedWine';
 
 interface DemoRecommendationCardProps {
   recommendedBottle: BottleWithWineInfo;
@@ -22,6 +23,7 @@ export function DemoRecommendationCard({
 }: DemoRecommendationCardProps) {
   const { t } = useTranslation();
   const wine = recommendedBottle.wine;
+  const localizedWine = useLocalizedWine(wine as any);
 
   return (
     <motion.div
@@ -77,14 +79,14 @@ export function DemoRecommendationCard({
               className="text-lg font-semibold mb-1"
               style={{ color: 'var(--text-primary)' }}
             >
-              {wine.wine_name}
+              {localizedWine.wine_name}
             </h4>
             <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-              {wine.producer}
+              {localizedWine.producer}
               {wine.vintage && ` · ${wine.vintage}`}
             </p>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {wine.region}
+              {localizedWine.region}
             </p>
           </div>
         </div>
