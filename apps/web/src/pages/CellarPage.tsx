@@ -377,11 +377,14 @@ export function CellarPage() {
     if (hasCheckedOnboarding.current) return;
     hasCheckedOnboarding.current = true;
 
-    onboardingUtils.syncOnboardingSeenForEstablishedCellar(bottles.length);
+    // Use only bottles with quantity > 0 (ignore opened/consumed records)
+    const activeCellarCount = bottles.filter(b => b.quantity > 0).length;
+
+    onboardingUtils.syncOnboardingSeenForEstablishedCellar(activeCellarCount);
 
     // Check if onboarding should be shown (first-time users OR re-engagement after 7 days)
-    if (onboardingUtils.shouldShowOnboarding(bottles.length)) {
-      if (bottles.length === 0) {
+    if (onboardingUtils.shouldShowOnboarding(activeCellarCount)) {
+      if (activeCellarCount === 0) {
         console.log('[CellarPage] Showing onboarding - new user or re-engagement (empty cellar after 7 days)');
       } else {
         console.log('[CellarPage] First-time user detected - showing welcome modal');
@@ -443,11 +446,12 @@ export function CellarPage() {
     return () => clearInterval(intervalId);
   }, [isDemoMode, activeEvents]);
 
-  // Onboarding v1 – production: Auto-exit demo mode when user has real bottles
+  // Onboarding v1 – production: Auto-exit demo mode when user has real bottles in cellar
   useEffect(() => {
-    // If demo mode is active AND user has at least one real bottle, exit demo mode
-    if (isDemoMode && bottles.length > 0) {
-      console.log('[CellarPage] User has real bottles, auto-exiting demo mode');
+    // Only exit demo if user has bottles with quantity > 0 (not just consumed history)
+    const activeCellarCount = bottles.filter(b => b.quantity > 0).length;
+    if (isDemoMode && activeCellarCount > 0) {
+      console.log('[CellarPage] User has real bottles in cellar, auto-exiting demo mode');
       onboardingUtils.deactivateDemoMode();
       setIsDemoMode(false);
     }
