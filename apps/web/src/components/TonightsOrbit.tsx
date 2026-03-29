@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
+import { getLocalizedWineData } from '../utils/wineTranslations';
 
 interface TonightsOrbitProps {
   bottles: BottleWithWineInfo[];
@@ -16,7 +17,7 @@ interface TonightsOrbitProps {
 }
 
 export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   /**
    * Smart Selection Logic:
@@ -171,11 +172,9 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                         }}
                         loading="lazy"
                         onError={(e) => {
-                          // Hide image if it fails to load
                           e.currentTarget.style.display = 'none';
                         }}
                       />
-                      {/* AI Generated Badge */}
                       {displayImage.isGenerated && (
                         <div 
                           className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-medium flex items-center gap-0.5"
@@ -196,7 +195,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   );
                 })()}
 
-                {/* Wine name */}
+                {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
                 <div 
                   className="font-semibold text-base mb-1 pe-8 line-clamp-2 leading-snug"
                   style={{ 
@@ -205,12 +204,10 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     fontWeight: 'var(--font-semibold)',
                   }}
                 >
-                  {bottle.wine.wine_name}
+                  {lw.wine_name}
                 </div>
 
-                {/* Details row */}
                 <div className="space-y-1.5 mb-2">
-                  {/* Vintage */}
                   {bottle.wine.vintage && (
                     <div 
                       className="text-sm flex items-center gap-2"
@@ -221,13 +218,12 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     </div>
                   )}
                   
-                  {/* Region */}
-                  {bottle.wine.region && (
+                  {lw.region && (
                     <div 
                       className="text-xs truncate"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
-                      📍 {bottle.wine.region}
+                      📍 {lw.region}
                     </div>
                   )}
 
@@ -264,6 +260,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     </div>
                   )}
                 </div>
+                </>); })()}
 
                 {/* Wine style badge */}
                 <span
@@ -346,7 +343,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     <div className="mb-3 flex justify-center relative">
                       <img 
                         src={displayImage.imageUrl} 
-                        alt={bottle.wine.wine_name}
+                        alt={getLocalizedWineData(bottle.wine, i18n.language).wine_name}
                         className="w-20 h-28 object-cover rounded-md"
                         style={{
                           border: '1px solid var(--border-base)',
@@ -377,7 +374,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                   );
                 })()}
 
-                {/* Wine name */}
+                {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
                 <div 
                   className="font-semibold text-base mb-2 pe-10 line-clamp-2 leading-snug"
                   style={{ 
@@ -386,10 +383,9 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     fontWeight: 'var(--font-semibold)',
                   }}
                 >
-                  {bottle.wine.wine_name}
+                  {lw.wine_name}
                 </div>
 
-                {/* Details row */}
                 <div className="space-y-2 mb-3">
                   {bottle.wine.vintage && (
                     <div 
@@ -401,12 +397,12 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     </div>
                   )}
                   
-                  {bottle.wine.region && (
+                  {lw.region && (
                     <div 
                       className="text-xs truncate"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
-                      📍 {bottle.wine.region}
+                      📍 {lw.region}
                     </div>
                   )}
 
@@ -442,6 +438,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                     </div>
                   )}
                 </div>
+                </>); })()}
 
                 {/* Wine style badge */}
                 <span

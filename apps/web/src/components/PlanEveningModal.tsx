@@ -21,6 +21,7 @@ import * as wineProfileService from '../services/wineProfileService';
 import type { FoodProfile, WineProfile } from '../services/wineProfileService';
 import * as tasteProfileService from '../services/tasteProfileService';
 import type { TasteProfile } from '../types/supabase';
+import { getLocalizedWineData } from '../utils/wineTranslations';
 
 interface PlanEveningModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ interface WineSlot {
 }
 
 export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEveningModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   // Step management
   const [currentStep, setCurrentStep] = useState<PlanStep>('input');
@@ -502,7 +503,7 @@ function SwapPickerModal({
   currentWine?: BottleWithWineInfo;
   onSelect: (bottle: BottleWithWineInfo) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!isOpen || !currentWine) return null;
 
   return (
@@ -606,11 +607,11 @@ function SwapPickerModal({
                 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {/* Wine Image */}
+                {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
                 {bottle.wine.image_url ? (
                   <img
                     src={bottle.wine.image_url}
-                    alt={bottle.wine.wine_name}
+                    alt={lw.wine_name}
                     className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                     style={{ border: '1px solid var(--border-subtle)' }}
                   />
@@ -628,13 +629,12 @@ function SwapPickerModal({
                   </div>
                 )}
 
-                {/* Wine Info */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                    {bottle.wine.wine_name}
+                    {lw.wine_name}
                   </h4>
                   <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                    {bottle.wine.producer}
+                    {lw.producer}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     {bottle.wine.vintage && (
@@ -658,6 +658,7 @@ function SwapPickerModal({
                     </span>
                   </div>
                 </div>
+                </>); })()}
 
                 {/* Select Icon */}
                 <div
@@ -987,7 +988,7 @@ function InputStep({
 
 // Lineup Step Component
 function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <motion.div
       key="lineup"
@@ -1031,12 +1032,14 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
               <div className="text-xs font-medium mb-1" style={{ color: 'var(--wine-600)' }}>
                 {slot.label}
               </div>
+              {(() => { const lw = getLocalizedWineData(slot.bottle.wine, i18n.language); return (<>
               <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                {slot.bottle.wine.wine_name}
+                {lw.wine_name}
               </h4>
               <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                {slot.bottle.wine.producer}
+                {lw.producer}
               </p>
+              </>); })()}
               {slot.bottle.wine.vintage && (
                 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   {slot.bottle.wine.vintage}

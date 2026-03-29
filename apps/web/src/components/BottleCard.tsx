@@ -4,6 +4,7 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import { DemoActionModal } from './DemoActionModal';
 import { MuseumViewModal } from './MuseumViewModal';
 import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
+import { useLocalizedWine } from '../hooks/useLocalizedWine';
 
 interface Props {
   bottle: BottleWithWineInfo;
@@ -21,6 +22,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
   const [demoAction, setDemoAction] = useState<'edit' | 'markOpened' | 'delete'>('edit');
   const [showMuseumView, setShowMuseumView] = useState(false);
   const [imageErrorRetried, setImageErrorRetried] = useState(false);
+  const localizedWine = useLocalizedWine(bottle.wine);
 
   // Merge the bottle's own image fields into the wine object as a fallback.
   // This guards against a past bug where adding a second bottle of the same wine
@@ -76,7 +78,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           }
         }}
         style={{ cursor: onShowDetails ? 'pointer' : 'default' }}
-        aria-label={`View details for ${bottle.wine.wine_name}`}
+        aria-label={`View details for ${localizedWine.wine_name}`}
       >
         {/* Header Section */}
         <div className="relative mb-3 flex gap-3 md:gap-4">
@@ -105,7 +107,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 >
                   <img
                     src={displayImage.imageUrl}
-                    alt={bottle.wine.wine_name}
+                    alt={localizedWine.wine_name}
                     className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105 w-full h-full"
                     style={{
                       border: '1px solid var(--border-base)',
@@ -192,7 +194,6 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             )}
           </div>
 
-          {/* Wine Name - Note: NOT translated, it's actual wine data */}
           <h3 
             className="text-lg sm:text-xl md:text-2xl font-semibold line-clamp-2 leading-tight mb-2 pe-20"
             style={{ 
@@ -202,11 +203,10 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
               letterSpacing: '-0.01em',
             }}
           >
-            {bottle.wine.wine_name}
+            {localizedWine.wine_name}
           </h3>
 
-          {/* Producer - Note: NOT translated, it's actual wine data */}
-          {bottle.wine.producer && (
+          {localizedWine.producer && (
             <p 
               className="text-sm truncate pe-20"
               style={{ 
@@ -214,7 +214,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 fontFamily: 'var(--font-body)',
               }}
             >
-              {bottle.wine.producer}
+              {localizedWine.producer}
             </p>
           )}
 
@@ -298,31 +298,28 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         </span>
       </div>
 
-      {/* Region & Country & Grapes - Compact single line */}
-      {(bottle.wine.region || bottle.wine.country || (bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0)) && (
+      {(localizedWine.region || localizedWine.country || (localizedWine.grapes && localizedWine.grapes.length > 0)) && (
         <div className="mb-3 space-y-1">
-          {/* Region & Country - Note: NOT translated, it's actual geographic data */}
-          {(bottle.wine.region || bottle.wine.country) && (
+          {(localizedWine.region || localizedWine.country) && (
             <div className="flex items-center gap-2">
               <span className="text-base flex-shrink-0" aria-hidden="true">📍</span>
               <span 
                 className="text-sm line-clamp-1"
                 style={{ color: 'var(--text-tertiary)' }}
               >
-                {[bottle.wine.region, bottle.wine.country].filter(Boolean).join(', ')}
+                {[localizedWine.region, localizedWine.country].filter(Boolean).join(', ')}
               </span>
             </div>
           )}
 
-          {/* Grapes - Note: NOT translated, they're actual grape variety names */}
-          {bottle.wine.grapes && Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0 && (
+          {localizedWine.grapes && localizedWine.grapes.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-base flex-shrink-0" aria-hidden="true">🍇</span>
               <span 
                 className="text-sm line-clamp-1"
                 style={{ color: 'var(--text-tertiary)' }}
               >
-                {bottle.wine.grapes.join(', ')}
+                {localizedWine.grapes.join(', ')}
               </span>
             </div>
           )}
@@ -645,14 +642,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       onShowDetails={onShowDetails}
       bottle={{
         id: bottle.id,
-        name: bottle.wine.wine_name || '',
-        producer: bottle.wine.producer || undefined,
+        name: localizedWine.wine_name || '',
+        producer: localizedWine.producer || undefined,
         vintage: bottle.wine.vintage || undefined,
         style: bottle.wine.style || 'red',
         rating: bottle.wine.rating || undefined,
-        region: bottle.wine.region || undefined,
-        grapes: Array.isArray(bottle.wine.grapes) && bottle.wine.grapes.length > 0
-          ? bottle.wine.grapes.join(', ')
+        region: localizedWine.region || undefined,
+        grapes: localizedWine.grapes && localizedWine.grapes.length > 0
+          ? localizedWine.grapes.join(', ')
           : undefined,
         label_image_url: displayImage.imageUrl || undefined,
         readiness_label: (bottle as any).readiness_label || undefined,

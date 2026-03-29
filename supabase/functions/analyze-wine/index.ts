@@ -15,6 +15,8 @@ interface WineData {
   producer?: string
   vintage?: number
   region?: string
+  country?: string
+  appellation?: string
   grapes?: string[]
   color: string
   notes?: string
@@ -31,6 +33,14 @@ interface AnalysisResult {
   drink_window_end?: number
   confidence: 'LOW' | 'MEDIUM' | 'HIGH'
   assumptions?: string
+  he_translations?: {
+    wine_name?: string
+    producer?: string
+    region?: string
+    country?: string
+    appellation?: string
+    grapes?: string[]
+  }
 }
 
 serve(async (req) => {
@@ -76,7 +86,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { bottle_id, wine_data } = await req.json()
+    const { bottle_id, wine_data, wine_id } = await req.json()
     
     if (!bottle_id || !wine_data) {
       throw new Error('Missing bottle_id or wine_data')
@@ -107,7 +117,15 @@ serve(async (req) => {
   "drink_window_start": number | null,
   "drink_window_end": number | null,
   "confidence": "LOW" | "MEDIUM" | "HIGH",
-  "assumptions": "string or null"
+  "assumptions": "string or null",
+  "he_translations": {
+    "wine_name": "Hebrew transliteration of the wine name",
+    "producer": "Hebrew transliteration of the producer name",
+    "region": "Hebrew name of the region (e.g. Bordeaux → בורדו)",
+    "country": "Hebrew name of the country (e.g. France → צרפת)",
+    "appellation": "Hebrew transliteration of the appellation or null",
+    "grapes": ["Hebrew names of grape varieties"]
+  }
 }
 
 IMPORTANT:
@@ -116,6 +134,7 @@ IMPORTANT:
 - If data is missing, lower confidence and mention assumptions
 - Analysis must be unique per bottle
 - ${languageInstruction}
+- ALWAYS include the "he_translations" object with Hebrew transliterations/translations of the wine metadata. Use standard Hebrew wine terminology. For proper nouns (wine names, producers), provide the commonly used Hebrew transliteration. For geographic names and grape varieties, use the standard Hebrew equivalents.
 
 READINESS LABEL RULES — follow strictly based on the wine's actual age:
 - "HOLD": Wine is too young; tannins and structure need time. Typically reds under 5 years, structured whites under 2 years.
@@ -130,13 +149,15 @@ READINESS LABEL RULES — follow strictly based on the wine's actual age:
 בציר: ${wineData.vintage || 'ללא בציר'}
 גיל: ${age ? `${age} שנים` : 'לא ידוע'}
 אזור: ${wineData.region || 'לא ידוע'}
+מדינה: ${wineData.country || 'לא ידוע'}
+אפלסיון: ${wineData.appellation || 'לא ידוע'}
 ענבים: ${wineData.grapes?.join(', ') || 'לא ידוע'}
 סגנון: ${wineData.color}
 הערות משתמש: ${wineData.notes || 'אין'}
 
 שנה נוכחית: ${currentYear}
 
-ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY". כתוב הכל בעברית.`
+ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY". כתוב הכל בעברית. הוסף גם תרגומים לעברית בשדה he_translations.`
       : `Analyze this wine and provide sommelier notes:
 
 Wine Name: ${wineData.wine_name}
@@ -144,13 +165,15 @@ Producer: ${wineData.producer || 'Unknown'}
 Vintage: ${wineData.vintage || 'NV'}
 Age: ${age ? `${age} years` : 'Unknown'}
 Region: ${wineData.region || 'Unknown'}
+Country: ${wineData.country || 'Unknown'}
+Appellation: ${wineData.appellation || 'Unknown'}
 Grapes: ${wineData.grapes?.join(', ') || 'Unknown'}
 Style: ${wineData.color}
 User Notes: ${wineData.notes || 'None'}
 
 Current Year: ${currentYear}
 
-Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".`
+Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY". Also include Hebrew translations in he_translations.`
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -189,6 +212,33 @@ Provide a detailed, bottle-specific analysis. Reference the actual producer, reg
     // Validate response structure
     if (!analysis.analysis_summary || !analysis.analysis_reasons || !analysis.readiness_label) {
       throw new Error('Invalid response structure from ChatGPT')
+    }
+
+    // Store Hebrew translations in the wines table if available
+    if (wine_id && analysis.he_translations) {
+      try {
+        // Fetch current translations to merge (don't overwrite other locales)
+        const { data: currentWine } = await supabaseAdmin
+          .from('wines')
+          .select('translations')
+          .eq('id', wine_id)
+          .single()
+
+        const existingTranslations = (currentWine?.translations as Record<string, unknown>) || {}
+        const mergedTranslations = {
+          ...existingTranslations,
+          he: analysis.he_translations,
+        }
+
+        await supabaseAdmin
+          .from('wines')
+          .update({ translations: mergedTranslations })
+          .eq('id', wine_id)
+
+        console.log('[Analyze Wine] Stored Hebrew translations for wine:', wine_id)
+      } catch (translationError) {
+        console.error('[Analyze Wine] Failed to store translations:', translationError)
+      }
     }
 
     // Return analysis result

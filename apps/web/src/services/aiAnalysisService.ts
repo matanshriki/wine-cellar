@@ -94,22 +94,23 @@ export async function generateAIAnalysis(
 
   // Try AI analysis first
   try {
-    // Prepare wine data for Edge Function
     const wineData = {
       wine_name: bottle.wine.wine_name,
       producer: bottle.wine.producer,
       vintage: bottle.wine.vintage,
       region: bottle.wine.region,
+      country: (bottle.wine as any).country,
+      appellation: (bottle.wine as any).appellation,
       grapes: bottle.wine.grapes,
       color: bottle.wine.color,
       notes: bottle.notes,
-      language: language, // Pass language preference
+      language: language,
     };
 
-    // Call Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('analyze-wine', {
       body: {
         bottle_id: bottle.id,
+        wine_id: bottle.wine_id,
         wine_data: wineData,
       },
     });

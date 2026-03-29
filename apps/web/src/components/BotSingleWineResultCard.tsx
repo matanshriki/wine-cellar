@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { useLocalizedWine } from '../hooks/useLocalizedWine';
 
 interface BotSingleWineResultCardProps {
   bottle: BottleWithWineInfo;
@@ -37,6 +38,7 @@ export function BotSingleWineResultCard({
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const reduceMotion = shouldReduceMotion();
+  const localizedWine = useLocalizedWine(bottle.wine);
 
   // Get readiness badge style
   const getReadinessBadge = (status: string | null | undefined) => {
@@ -162,7 +164,7 @@ export function BotSingleWineResultCard({
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={`${bottle.wine.producer} ${bottle.wine.name}`}
+              alt={`${localizedWine.producer} ${localizedWine.wine_name}`}
               style={{
                 width: '100%',
                 height: '100%',
@@ -214,10 +216,9 @@ export function BotSingleWineResultCard({
               WebkitBoxOrient: 'vertical',
             }}
           >
-            {bottle.wine.name}
+            {localizedWine.wine_name}
           </h4>
 
-          {/* Producer + Region + Vintage */}
           <p
             style={{
               fontSize: '14px',
@@ -226,11 +227,11 @@ export function BotSingleWineResultCard({
               margin: 0,
             }}
           >
-            {bottle.wine.producer}
-            {bottle.wine.region && (
+            {localizedWine.producer}
+            {localizedWine.region && (
               <span style={{ color: 'var(--text-tertiary)' }}>
                 {' • '}
-                {bottle.wine.region}
+                {localizedWine.region}
               </span>
             )}
             {bottle.vintage && (

@@ -28,6 +28,7 @@ import { PlanEveningModal } from './PlanEveningModal';
 import { EveningQueuePlayer } from './EveningQueuePlayer';
 import * as eveningPlanService from '../services/eveningPlanService';
 import type { EveningPlan } from '../services/eveningPlanService';
+import { getLocalizedWineData } from '../utils/wineTranslations';
 
 interface TonightsOrbitCinematicProps {
   bottles: BottleWithWineInfo[];
@@ -35,7 +36,7 @@ interface TonightsOrbitCinematicProps {
 }
 
 export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbitCinematicProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -610,7 +611,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                         {displayImage.imageUrl ? (
                           <img 
                             src={displayImage.imageUrl} 
-                            alt={bottle.wine.wine_name}
+                            alt={getLocalizedWineData(bottle.wine, i18n.language).wine_name}
                             className="w-full h-full"
                             style={{
                               objectFit: 'cover',
@@ -676,7 +677,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
 
                   {/* Wine Details Panel */}
                   <div className="p-5" style={{ background: 'var(--bg-surface)' }}>
-                    {/* Wine Name */}
+                    {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
                     <h3 
                       className="text-lg font-bold mb-2 line-clamp-2 leading-tight"
                       style={{ 
@@ -684,21 +685,21 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                         fontFamily: 'var(--font-display)',
                       }}
                     >
-                      {bottle.wine.wine_name}
+                      {lw.wine_name}
                     </h3>
 
-                    {/* Producer + Vintage */}
                     <p 
                       className="text-sm mb-3"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      {bottle.wine.producer}
+                      {lw.producer}
                       {bottle.wine.vintage && (
                         <span className="font-semibold ms-2" style={{ color: 'var(--text-primary)' }}>
                           {bottle.wine.vintage}
                         </span>
                       )}
                     </p>
+                    </>); })()}
 
                     {/* Metadata Row */}
                     <div className="flex items-center gap-3 flex-wrap">

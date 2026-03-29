@@ -11,6 +11,7 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
 import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
+import { useLocalizedWine } from '../hooks/useLocalizedWine';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { SommelierNotes } from './SommelierNotes';
 import { toast } from '../lib/toast';
@@ -37,6 +38,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
+  const localizedWine = useLocalizedWine(bottle?.wine);
 
   /**
    * Wraps the parent's onAnalyze so the modal can show a spinner while the
@@ -249,14 +251,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         fontFamily: 'var(--font-display)',
                       }}
                     >
-                      {wine.wine_name}
+                      {localizedWine.wine_name}
                     </h2>
-                    {wine.producer && (
+                    {localizedWine.producer && (
                       <p 
                         className="text-base sm:text-lg"
                         style={{ color: 'var(--text-secondary)' }}
                       >
-                        {wine.producer}
+                        {localizedWine.producer}
                       </p>
                     )}
                   </div>
@@ -296,7 +298,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         <div className="relative">
                           <img 
                             src={displayImage.imageUrl}
-                            alt={wine.wine_name}
+                            alt={localizedWine.wine_name}
                             className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg wine-image"
                             style={{
                               border: '2px solid var(--border-base)',
@@ -488,7 +490,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
 
                 {/* Location Info */}
-                {(wine.region || wine.country || (wine as any).regional_wine_style) && (
+                {(localizedWine.region || localizedWine.country || (wine as any).regional_wine_style) && (
                   <div>
                     <h3 
                       className="text-sm font-semibold mb-3 flex items-center gap-2"
@@ -498,20 +500,20 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {t('cellar.bottle.origin')}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {wine.region && (
+                      {localizedWine.region && (
                         <div>
                           <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
                             {t('form.region', 'Region')}
                           </div>
-                          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{wine.region}</div>
+                          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{localizedWine.region}</div>
                         </div>
                       )}
-                      {wine.country && (
+                      {localizedWine.country && (
                         <div>
                           <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
                             {t('wineDetails.country', 'Country')}
                           </div>
-                          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{wine.country}</div>
+                          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{localizedWine.country}</div>
                         </div>
                       )}
                       {(wine as any).regional_wine_style && (
@@ -529,7 +531,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 )}
 
                 {/* Grapes */}
-                {wine.grapes && wine.grapes.length > 0 && (
+                {localizedWine.grapes && localizedWine.grapes.length > 0 && (
                   <div>
                     <h3 
                       className="text-sm font-semibold mb-3 flex items-center gap-2"
@@ -539,7 +541,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {t('cellar.bottle.grapes')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {wine.grapes.map((grape, index) => (
+                      {localizedWine.grapes.map((grape: string, index: number) => (
                         <span 
                           key={`${wine.id}-grape-${index}-${grape}`}
                           className="px-3 py-1 rounded-full text-sm"
@@ -790,7 +792,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           onClose={() => setShowImageDialog(false)}
           onSave={handleSaveImage}
           currentImageUrl={displayImage.imageUrl ?? undefined}
-          wineName={wine.wine_name}
+          wineName={localizedWine.wine_name}
         />
       )}
 

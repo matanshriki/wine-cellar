@@ -113,6 +113,7 @@ export interface Database {
           vivino_wine_id: string | null
           notes: string | null
           image_url: string | null
+          translations: Json | null
           created_at: string
           updated_at: string
         }
@@ -130,6 +131,7 @@ export interface Database {
           vivino_wine_id?: string | null
           notes?: string | null
           image_url?: string | null
+          translations?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -147,6 +149,7 @@ export interface Database {
           vivino_wine_id?: string | null
           notes?: string | null
           image_url?: string | null
+          translations?: Json | null
           created_at?: string
           updated_at?: string
         }
