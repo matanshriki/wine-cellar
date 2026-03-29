@@ -7,6 +7,7 @@ import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
 import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
 import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
 import { ThemeProvider } from './contexts/ThemeContext'; // Dark mode V2
+import { WinePourProvider } from './components/WinePourTransition';
 import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast'; // Correct import location
 import { WineLoader } from './components/WineLoader';
@@ -329,6 +330,7 @@ export function App() {
         <BrowserRouter>
           <ToastProvider>
             <ThemeProvider>
+            <WinePourProvider>
               <SupabaseAuthProvider>
                 <FeatureFlagsProvider>
                   <AddBottleProvider>
@@ -338,6 +340,7 @@ export function App() {
                   </AddBottleProvider>
                 </FeatureFlagsProvider>
               </SupabaseAuthProvider>
+            </WinePourProvider>
             </ThemeProvider>
           </ToastProvider>
         </BrowserRouter>

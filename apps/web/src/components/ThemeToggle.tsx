@@ -7,6 +7,7 @@
 
 import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
+import { useWinePour } from './WinePourTransition';
 
 /**
  * Full Theme Toggle (for settings page)
@@ -79,13 +80,19 @@ export function ThemeToggle() {
  */
 export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const winePour = useWinePour();
 
   const handleClick = () => {
     const newTheme = theme === 'white' ? 'red' : 'white';
     console.log('[CompactThemeToggle] ===== BUTTON CLICKED =====');
     console.log('[CompactThemeToggle] Current theme:', theme);
     console.log('[CompactThemeToggle] Switching to:', newTheme);
-    setTheme(newTheme);
+
+    if (winePour) {
+      winePour.triggerPour(newTheme, () => setTheme(newTheme));
+    } else {
+      setTheme(newTheme);
+    }
   };
 
   return (
