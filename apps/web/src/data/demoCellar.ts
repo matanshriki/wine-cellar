@@ -50,6 +50,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'שאטו מרגו',
+          producer: 'שאטו מרגו',
+          country: 'צרפת',
+          region: 'מרגו, בורדו',
+          appellation: 'מרגו AOC',
+          grapes: ['קברנה סוביניון', 'מרלו', 'קברנה פרנק'],
+        },
+      },
     },
   },
   {
@@ -90,6 +100,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'קלאודי ביי סוביניון בלאן',
+          producer: 'קלאודי ביי',
+          country: 'ניו זילנד',
+          region: 'מרלבורו',
+          appellation: 'מרלבורו',
+          grapes: ['סוביניון בלאן'],
+        },
+      },
     },
   },
   {
@@ -130,6 +150,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'בארולו ריזרבה',
+          producer: "ג'וזפה מסקרלו",
+          country: 'איטליה',
+          region: 'פיימונטה',
+          appellation: 'בארולו DOCG',
+          grapes: ['נביולו'],
+        },
+      },
     },
   },
   {
@@ -170,6 +200,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'קוט דו רון',
+          producer: 'דומיין לה קולייר',
+          country: 'צרפת',
+          region: 'עמק הרון',
+          appellation: 'קוט דו רון AOC',
+          grapes: ['גרנש', 'סירה', 'מורבדר'],
+        },
+      },
     },
   },
   {
@@ -210,6 +250,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: "וויספרינג אנג'ל",
+          producer: "שאטו ד'אסקלאן",
+          country: 'צרפת',
+          region: 'פרובאנס',
+          appellation: 'קוט דה פרובאנס AOC',
+          grapes: ['גרנש', 'סנסו', 'רול'],
+        },
+      },
     },
   },
   {
@@ -250,6 +300,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'מרסו פרמייה קרו',
+          producer: 'דומיין לפלייב',
+          country: 'צרפת',
+          region: 'בורגונדי',
+          appellation: 'מרסו פרמייה קרו AOC',
+          grapes: ['שרדונה'],
+        },
+      },
     },
   },
   {
@@ -290,6 +350,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1585553616435-2dc0a54e271d?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: 'אלבריניו',
+          producer: 'פאזו דה סניוראנס',
+          country: 'ספרד',
+          region: 'ריאס באישאס',
+          appellation: 'ריאס באישאס DO',
+          grapes: ['אלבריניו'],
+        },
+      },
     },
   },
   {
@@ -330,7 +400,16 @@ export const DEMO_BOTTLES: BottleWithWineInfo[] = [
       updated_at: new Date().toISOString(),
       image_url: 'https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=600&fit=crop&q=80',
       ai_generated_image_url: null,
+      translations: {
+        he: {
+          wine_name: "ברונלו די מונטלצ'ינו ריזרבה",
+          producer: 'ביונדי-סנטי',
+          country: 'איטליה',
+          region: 'טוסקנה',
+          appellation: "ברונלו די מונטלצ'ינו DOCG",
+          grapes: ["סנג'ובזה"],
+        },
+      },
     },
   },
 ];
-
