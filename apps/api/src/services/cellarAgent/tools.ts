@@ -47,10 +47,18 @@ function parseRequestedCount(message: string): number | null {
 function extractColorHints(message: string): string[] {
   const m = normalizeMessage(message);
   const colors: string[] = [];
+  // English
   if (/\bred(s)?\b/.test(m) || /\brouge\b/.test(m)) colors.push('red');
   if (/\bwhite\b/.test(m) || /\bblanc\b/.test(m)) colors.push('white');
   if (/\bros[eé]\b/.test(m)) colors.push('rose');
   if (/\bsparkling\b/.test(m)) colors.push('sparkling');
+  // Hebrew — use original message (not lowercased); handle final-letter forms (ם ן ך ף ץ).
+  // אדום (singular, final-mem ם) | אדומים (plural, regular mem מ + final-mem ם)
+  if (/אדו[מם]/.test(message)) colors.push('red');
+  // לבן (singular, final-nun ן) | לבנה | לבנים
+  if (/לב[נן]/.test(message)) colors.push('white');
+  if (/רוזה/.test(message)) colors.push('rose');
+  if (/תוסס|מבעבע/.test(message)) colors.push('sparkling');
   return [...new Set(colors)];
 }
 
@@ -106,29 +114,47 @@ function extractFoodOccasion(message: string): { food: string[]; occasion: strin
   const m = normalizeMessage(message);
   const food: string[] = [];
   const foodLex = [
-    'steak',
-    'beef',
-    'lamb',
-    'fish',
-    'salmon',
-    'chicken',
-    'pasta',
-    'cheese',
-    'sushi',
-    'bbq',
-    'grill',
-    'curry',
-    'dessert',
-    'tomato',
+    'steak', 'beef', 'lamb', 'fish', 'salmon', 'chicken', 'pasta',
+    'cheese', 'sushi', 'bbq', 'grill', 'curry', 'dessert', 'tomato',
   ];
   for (const w of foodLex) {
     if (m.includes(w)) food.push(w);
   }
+  // Hebrew food terms (map to English equivalents already in foodLex)
+  if (/בשר|סטייק/.test(message)) food.push('steak');
+  if (/טלה|כבש/.test(message)) food.push('lamb');
+  if (/דג|סלמון/.test(message)) food.push('fish');
+  if (/עוף|תרנגול/.test(message)) food.push('chicken');
+  if (/פסטה/.test(message)) food.push('pasta');
+  if (/גבינ/.test(message)) food.push('cheese');
+  if (/עוגה|קינוח/.test(message)) food.push('dessert');
+  if (/פיצה/.test(message)) food.push('pizza');
+
   const occasion: string[] = [];
   if (/\b(birthday|anniversary|celebration|party|holiday)\b/.test(m)) occasion.push('celebration');
   if (/\b(summer|hot|warm)\b/.test(m)) occasion.push('summer');
   if (/\b(winter|cold)\b/.test(m)) occasion.push('winter');
+  // Hebrew occasions
+  if (/חגיגה|יום הולדת|יום נישואין|אירוע|מסיבה/.test(message)) occasion.push('celebration');
+  if (/חג|פסח|ראש השנה|סוכות|חנוכה|שבת/.test(message)) occasion.push('celebration');
+  if (/קיץ|חם/.test(message)) occasion.push('summer');
+  if (/חורף|קר/.test(message)) occasion.push('winter');
+
   return { food: [...new Set(food)], occasion: [...new Set(occasion)] };
+}
+
+/**
+ * Detect if the user message references a specific producer or winery,
+ * including Hebrew patterns (יקב = winery). Used to expand shortlist cap.
+ */
+export function detectsSpecificProducerMention(message: string): boolean {
+  // Hebrew winery marker
+  if (/יקב/.test(message)) return true;
+  // English producer-specific patterns: "from [Proper Noun]", "[Name] winery", etc.
+  if (/\b(winery|winer|château|domaine|estate|vineyard)\b/i.test(message)) return true;
+  // Pattern: "the [Producer] wine / bottle"
+  if (/\b(the\s+\w+\s+(wine|bottle|label|red|white))\b/i.test(message)) return true;
+  return false;
 }
 
 export function extractConstraints(message: string): ExtractedConstraints {

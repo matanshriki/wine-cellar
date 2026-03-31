@@ -22,6 +22,7 @@ import { validateModelOutput } from './validation.js';
 import {
   buildReasoningContext,
   detectIntent,
+  detectsSpecificProducerMention,
   extractConstraints,
   needsClarification,
 } from './tools.js';
@@ -143,6 +144,8 @@ async function runOrchestratedRecommendation(params: {
   intentOverride?: CellarIntent;
   recentlyRecommended?: Set<string> | null;
   language?: string;
+  /** When true, uses an enlarged shortlist cap so named producers are included */
+  extendedShortlist?: boolean;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
@@ -159,6 +162,7 @@ async function runOrchestratedRecommendation(params: {
     scoredOverride,
     intentOverride,
     language,
+    extendedShortlist,
   } = params;
 
   const conversationHistory = sliceHistoryForChat(history, 8);
@@ -186,7 +190,7 @@ async function runOrchestratedRecommendation(params: {
         params.recentlyRecommended ?? null
       );
 
-  const cap = computeEffectiveShortlistCap(scored.length);
+  const cap = computeEffectiveShortlistCap(scored.length, extendedShortlist);
   const top = takeTopForCap(scored, cap);
 
   const diversified =
@@ -371,6 +375,7 @@ async function runLlmPathThenPersist(params: {
   routedAction: 'recommend' | 'similar';
   recentlyRecommended?: Set<string> | null;
   language?: string;
+  extendedShortlist?: boolean;
 }): Promise<unknown> {
   const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
     openai: params.openai,
@@ -383,6 +388,7 @@ async function runLlmPathThenPersist(params: {
     intentOverride: params.intentOverride,
     recentlyRecommended: params.recentlyRecommended ?? null,
     language: params.language,
+    extendedShortlist: params.extendedShortlist,
   });
 
   logSommelier('orchestration', {
@@ -491,6 +497,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
     params;
 
   const route = classifyAgentRoute(message, actionContext);
+  const extendedShortlist = detectsSpecificProducerMention(message);
   let memoryPrefs: SommelierPreferenceMemory | null = null;
   let recentPicks: Set<string> | null = null;
   if (supabase) {
@@ -685,7 +692,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             openai, userId, supabase, message, history, cellarBottles,
             memory: memoryPrefs, tasteContext,
             scoredOverride: similarScored, intentOverride: 'similar_cellar',
-            routedAction: 'similar', recentlyRecommended: recentPicks, language,
+            routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
@@ -709,7 +716,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           return await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
             memory: memoryPrefs, tasteContext,
-            routedAction: 'recommend', recentlyRecommended: recentPicks, language,
+            routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });

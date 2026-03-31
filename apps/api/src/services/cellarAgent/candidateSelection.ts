@@ -16,13 +16,23 @@ import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 
 /** Tunable: keep LLM context small but rich enough for multi-bottle asks. */
 export const SHORTLIST_MIN = 8;
-export const SHORTLIST_MAX = 12;
+export const SHORTLIST_MAX = 15;
+/**
+ * Extended cap used when the user is asking about a specific producer/winery
+ * (e.g. Hebrew "יקב X" pattern). A larger pool ensures the named winery's
+ * bottles are included even when the heuristic can't match cross-script text.
+ */
+export const SHORTLIST_MAX_PRODUCER_QUERY = 30;
 
-/** When the cellar is large, cap at 12; when small, send all ranked bottles (<8). */
-export function computeEffectiveShortlistCap(totalRanked: number): number {
+/** When the cellar is large, cap at SHORTLIST_MAX; when small, send all ranked bottles. */
+export function computeEffectiveShortlistCap(
+  totalRanked: number,
+  extended?: boolean
+): number {
   if (totalRanked <= 0) return 0;
   if (totalRanked < SHORTLIST_MIN) return totalRanked;
-  return Math.min(SHORTLIST_MAX, totalRanked);
+  const cap = extended ? SHORTLIST_MAX_PRODUCER_QUERY : SHORTLIST_MAX;
+  return Math.min(cap, totalRanked);
 }
 
 function compactOne(b: CellarBottleInput): CompactCellarBottle {

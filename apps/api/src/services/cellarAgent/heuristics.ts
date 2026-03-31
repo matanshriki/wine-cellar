@@ -216,5 +216,25 @@ export function scoreBottleHeuristically(
     features.push('recently_recommended');
   }
 
+  // Direct text mention: if the bottle's producer or wine name (English) appears
+  // verbatim in the user message, give a large boost so it rises to the top of
+  // the shortlist regardless of readiness. This covers cases where the user writes
+  // the winery name in Latin script inside a Hebrew or mixed-language message.
+  const producerLower = (bottle.producer || '').toLowerCase();
+  const wineNameLower = (bottle.wineName || '').toLowerCase();
+  if (
+    producerLower.length >= 3 &&
+    userMessageLower.includes(producerLower)
+  ) {
+    score += 40;
+    features.push('explicit_producer_mention');
+  } else if (
+    wineNameLower.length >= 3 &&
+    userMessageLower.includes(wineNameLower)
+  ) {
+    score += 30;
+    features.push('explicit_wine_mention');
+  }
+
   return { score, features };
 }
