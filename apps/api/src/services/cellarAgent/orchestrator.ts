@@ -142,6 +142,7 @@ async function runOrchestratedRecommendation(params: {
   scoredOverride?: ScoredCandidate[];
   intentOverride?: CellarIntent;
   recentlyRecommended?: Set<string> | null;
+  language?: string;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
@@ -157,6 +158,7 @@ async function runOrchestratedRecommendation(params: {
     tasteContext,
     scoredOverride,
     intentOverride,
+    language,
   } = params;
 
   const conversationHistory = sliceHistoryForChat(history, 8);
@@ -219,6 +221,7 @@ async function runOrchestratedRecommendation(params: {
       .filter(Boolean)
       .join('\n'),
     tasteContext,
+    language,
   });
 
   let attempt = 0;
@@ -367,6 +370,7 @@ async function runLlmPathThenPersist(params: {
   intentOverride?: CellarIntent;
   routedAction: 'recommend' | 'similar';
   recentlyRecommended?: Set<string> | null;
+  language?: string;
 }): Promise<unknown> {
   const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
     openai: params.openai,
@@ -378,6 +382,7 @@ async function runLlmPathThenPersist(params: {
     scoredOverride: params.scoredOverride,
     intentOverride: params.intentOverride,
     recentlyRecommended: params.recentlyRecommended ?? null,
+    language: params.language,
   });
 
   logSommelier('orchestration', {
@@ -415,6 +420,7 @@ async function legacyFallback(params: {
   tasteContext?: string;
   userId: string;
   routedAction: 'recommend' | 'similar';
+  language?: string;
 }): Promise<unknown> {
   logSommelier('fallback', {
     user: shortUser(params.userId),
@@ -447,6 +453,7 @@ async function legacyFallback(params: {
     history: params.history,
     cellarBottles: params.cellarBottles,
     tasteContext: params.tasteContext,
+    language: params.language,
   });
   return withMeta(raw as Record<string, unknown>, {
     routedAction: params.routedAction,
@@ -463,6 +470,13 @@ export interface RecommendCellarParams {
   cellarBottles: CellarBottleInput[];
   tasteContext?: string;
   actionContext?: ActionContext;
+  /** ISO 639-1 language code from the client — e.g. 'he' for Hebrew */
+  language?: string;
+}
+
+/** Return Hebrew string when language is 'he', English otherwise */
+function m(language: string | undefined, en: string, he: string): string {
+  return language === 'he' ? he : en;
 }
 
 function safeActionErrorMessage(): Record<string, unknown> {
@@ -473,7 +487,7 @@ function safeActionErrorMessage(): Record<string, unknown> {
 }
 
 export async function recommendCellar(params: RecommendCellarParams): Promise<unknown> {
-  const { openai, userId, supabase, message, history, cellarBottles, tasteContext, actionContext } =
+  const { openai, userId, supabase, message, history, cellarBottles, tasteContext, actionContext, language } =
     params;
 
   const route = classifyAgentRoute(message, actionContext);
@@ -506,66 +520,37 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         const bottleId = resolveBottleIdForOpenAction(message, actionContext);
         if (!bottleId) {
           return withMeta(
-            {
-              message:
+            { message: m(language,
                 "I couldn't tell which bottle you opened. Mention the bottle or pick one from your last recommendation, then try again.",
-            },
-            {
-              routedAction: 'open_bottle',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+                "לא הצלחתי להבין איזה בקבוק פתחת. ציין את הבקבוק או בחר מההמלצה האחרונה שלי, ונסה שוב."
+              ) },
+            { routedAction: 'open_bottle', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         if (!supabase) {
           return withMeta(
-            { message: 'Opening bottles from chat requires storage. Try again later.' },
-            {
-              routedAction: 'open_bottle',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language, 'Opening bottles from chat requires storage. Try again later.', "פתיחת בקבוקים מהצ'אט דורשת אחסון. נסה שוב מאוחר יותר.") },
+            { routedAction: 'open_bottle', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
-        const result = await markBottleOpened(userId, {
-          bottleId,
-          supabase,
-          occasion: 'sommelier_agent',
-        });
+        const result = await markBottleOpened(userId, { bottleId, supabase, occasion: 'sommelier_agent' });
         if (!result.ok) {
           return withMeta(
             { message: result.error },
-            {
-              routedAction: 'open_bottle',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { routedAction: 'open_bottle', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
-        logSommelier('action', {
-          action: 'open_bottle',
-          user: shortUser(userId),
-          ok: 'true',
-        });
+        logSommelier('action', { action: 'open_bottle', user: shortUser(userId), ok: 'true' });
         return withMeta(
-          {
-            message:
+          { message: m(language,
               "Done — I've recorded that bottle as opened and updated your cellar count.",
-            type: 'single',
-          },
-          {
-            routedAction: 'open_bottle',
-            actionResult: 'ok',
-            processingMode: 'deterministic_action',
-          }
+              "סיום — רשמתי את הבקבוק כפתוח ועדכנתי את ספירת המרתף שלך."
+            ), type: 'single' },
+          { routedAction: 'open_bottle', actionResult: 'ok', processingMode: 'deterministic_action' }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'open_bottle' });
-          return withMeta(safeActionErrorMessage(), {
-            routedAction: 'open_bottle',
-            actionResult: 'error',
-            processingMode: 'deterministic_action',
-          });
+          return withMeta(safeActionErrorMessage(), { routedAction: 'open_bottle', actionResult: 'error', processingMode: 'deterministic_action' });
         }
       }
 
@@ -574,24 +559,17 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         const draftText = extractDraftTextFromMessage(message).trim();
         if (draftText.length < 2) {
           return withMeta(
-            {
-              message: 'Add a few words for your tasting note after the prompt, e.g. “Save a note: cherry, smoke, long finish”.',
-            },
-            {
-              routedAction: 'tasting_draft',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language,
+                'Add a few words for your tasting note after the prompt, e.g. "Save a note: cherry, smoke, long finish".',
+                'הוסף כמה מילים להערת הטעימה שלך, למשל: "שמור הערה: דובדבן, עשן, סיום ארוך".'
+              ) },
+            { routedAction: 'tasting_draft', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         if (!supabase) {
           return withMeta(
-            { message: "I can't save drafts right now — storage isn't available." },
-            {
-              routedAction: 'tasting_draft',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language, "I can't save drafts right now — storage isn't available.", "לא ניתן לשמור טיוטות כרגע — האחסון אינו זמין.") },
+            { routedAction: 'tasting_draft', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         const bottleId =
@@ -600,36 +578,19 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           extractUuidFromMessage(message) ||
           null;
         const draftId = await createTastingNoteDraft(userId, {
-          draftText,
-          bottleId,
-          sourceEventId: actionContext?.lastEventId ?? null,
-          supabase,
+          draftText, bottleId, sourceEventId: actionContext?.lastEventId ?? null, supabase,
         });
-        logSommelier('action', {
-          action: 'tasting_draft',
-          user: shortUser(userId),
-          ok: draftId ? 'true' : 'false',
-        });
+        logSommelier('action', { action: 'tasting_draft', user: shortUser(userId), ok: draftId ? 'true' : 'false' });
         return withMeta(
-          {
-            message: draftId
-              ? "I've saved a tasting note draft for you — you can refine it in your cellar later."
-              : "I couldn't save the draft, but you can try again in a moment.",
-            type: 'single',
-          },
-          {
-            routedAction: 'tasting_draft',
-            actionResult: draftId ? 'ok' : 'error',
-            processingMode: 'deterministic_action',
-          }
+          { message: draftId
+              ? m(language, "I've saved a tasting note draft for you — you can refine it in your cellar later.", "שמרתי עבורך טיוטת הערת טעימה — תוכל לשפר אותה במרתף שלך מאוחר יותר.")
+              : m(language, "I couldn't save the draft, but you can try again in a moment.", "לא הצלחתי לשמור את הטיוטה, אבל תוכל לנסות שוב בעוד רגע."),
+            type: 'single' },
+          { routedAction: 'tasting_draft', actionResult: draftId ? 'ok' : 'error', processingMode: 'deterministic_action' }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'tasting_draft' });
-          return withMeta(safeActionErrorMessage(), {
-            routedAction: 'tasting_draft',
-            actionResult: 'error',
-            processingMode: 'deterministic_action',
-          });
+          return withMeta(safeActionErrorMessage(), { routedAction: 'tasting_draft', actionResult: 'error', processingMode: 'deterministic_action' });
         }
       }
 
@@ -638,51 +599,34 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         const inferred = inferMemoryUpdateFromText(message);
         if (!supabase) {
           return withMeta(
-            {
-              message:
+            { message: m(language,
                 "I've noted that in our chat — connect storage to remember it for next time.",
-            },
-            {
-              routedAction: 'memory_update',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+                "ציינתי זאת בשיחה שלנו — חבר אחסון כדי לזכור זאת בפעם הבאה."
+              ) },
+            { routedAction: 'memory_update', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         if (!inferred || Object.keys(inferred).length === 0) {
           return withMeta(
-            {
-              message:
+            { message: m(language,
                 "Tell me what you'd like me to remember — for example lighter reds, a favorite region, or casual vs special occasions.",
-            },
-            {
-              routedAction: 'memory_update',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+                "ספר לי מה תרצה שאזכור — למשל אדומים קלים, אזור מועדף, או הזדמנויות יומיומיות מול מיוחדות."
+              ) },
+            { routedAction: 'memory_update', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         await mergeAndSavePreferences(userId, inferred, supabase);
         logSommelier('action', { action: 'memory_update', user: shortUser(userId), ok: 'true' });
         return withMeta(
-          {
-            message:
+          { message: m(language,
               "Done — I'll lean on those preferences when shortlisting your cellar from now on.",
-            type: 'single',
-          },
-          {
-            routedAction: 'memory_update',
-            actionResult: 'ok',
-            processingMode: 'deterministic_action',
-          }
+              "סיום — אסתמך על ההעדפות האלו כשאסנן את המרתף שלך מעכשיו."
+            ), type: 'single' },
+          { routedAction: 'memory_update', actionResult: 'ok', processingMode: 'deterministic_action' }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'memory_update' });
-          return withMeta(safeActionErrorMessage(), {
-            routedAction: 'memory_update',
-            actionResult: 'error',
-            processingMode: 'deterministic_action',
-          });
+          return withMeta(safeActionErrorMessage(), { routedAction: 'memory_update', actionResult: 'error', processingMode: 'deterministic_action' });
         }
       }
 
@@ -690,41 +634,27 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         try {
         if (!supabase) {
           return withMeta(
-            { message: 'Thanks for the feedback — I could not persist it just now.' },
-            {
-              routedAction: 'feedback_inline',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language, 'Thanks for the feedback — I could not persist it just now.', 'תודה על המשוב — לא הצלחתי לשמור אותו כרגע.') },
+            { routedAction: 'feedback_inline', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         await saveSommelierFeedback(userId, {
           rawText: message,
           recommendationEventId: actionContext?.lastEventId ?? null,
           bottleId: actionContext?.lastRecommendationBottleId ?? null,
-          supabase,
-          applyToMemory: true,
+          supabase, applyToMemory: true,
         });
         logSommelier('action', { action: 'feedback_inline', user: shortUser(userId), ok: 'true' });
         return withMeta(
-          {
-            message:
+          { message: m(language,
               "Thanks — I've logged that and will adjust future picks from your cellar.",
-            type: 'single',
-          },
-          {
-            routedAction: 'feedback_inline',
-            actionResult: 'ok',
-            processingMode: 'deterministic_action',
-          }
+              "תודה — רשמתי זאת ואתאים את הבחירות העתידיות מהמרתף שלך."
+            ), type: 'single' },
+          { routedAction: 'feedback_inline', actionResult: 'ok', processingMode: 'deterministic_action' }
         );
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'feedback_inline' });
-          return withMeta(safeActionErrorMessage(), {
-            routedAction: 'feedback_inline',
-            actionResult: 'error',
-            processingMode: 'deterministic_action',
-          });
+          return withMeta(safeActionErrorMessage(), { routedAction: 'feedback_inline', actionResult: 'error', processingMode: 'deterministic_action' });
         }
       }
 
@@ -732,108 +662,58 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         const anchor = resolveAnchorForSimilar(message, actionContext);
         if (!anchor) {
           return withMeta(
-            {
-              message:
-                "Tell me which bottle to match (or ask for a recommendation first), e.g. “what else like the Barolo you suggested?”.",
-            },
-            {
-              routedAction: 'similar',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language,
+                'Tell me which bottle to match (or ask for a recommendation first), e.g. "what else like the Barolo you suggested?".',
+                'ספר לי איזה בקבוק להתאים (או בקש המלצה קודם), למשל: "מה עוד דומה לברולו שהצעת?".'
+              ) },
+            { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         const constraints = extractConstraints(message);
         const cap = computeEffectiveShortlistCap(cellarBottles.length);
         const similarScored = findSimilarCandidates(
-          anchor,
-          cellarBottles,
-          constraints,
-          message.toLowerCase(),
-          memoryPrefs,
-          cap
+          anchor, cellarBottles, constraints, message.toLowerCase(), memoryPrefs, cap
         );
         if (similarScored.length === 0) {
           return withMeta(
-            { message: "I couldn't find other bottles to compare in your cellar." },
-            {
-              routedAction: 'similar',
-              actionResult: 'error',
-              processingMode: 'deterministic_action',
-            }
+            { message: m(language, "I couldn't find other bottles to compare in your cellar.", "לא מצאתי בקבוקים אחרים להשוואה במרתף שלך.") },
+            { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
         try {
           return await runLlmPathThenPersist({
-            openai,
-            userId,
-            supabase,
-            message,
-            history,
-            cellarBottles,
-            memory: memoryPrefs,
-            tasteContext,
-            scoredOverride: similarScored,
-            intentOverride: 'similar_cellar',
-            routedAction: 'similar',
-            recentlyRecommended: recentPicks,
+            openai, userId, supabase, message, history, cellarBottles,
+            memory: memoryPrefs, tasteContext,
+            scoredOverride: similarScored, intentOverride: 'similar_cellar',
+            routedAction: 'similar', recentlyRecommended: recentPicks, language,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
-          return legacyFallback({
-            openai,
-            message,
-            history,
-            cellarBottles,
-            tasteContext,
-            userId,
-            routedAction: 'similar',
-          });
+          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'similar', language });
         }
       }
 
       default: {
-        // Side-effect: save implicit preference signals even though the main route is "recommend"
         if (supabase) {
           try {
             const implicitPrefs = inferMemoryUpdateFromText(message);
             if (implicitPrefs && Object.keys(implicitPrefs).length > 0) {
               await mergeAndSavePreferences(userId, implicitPrefs, supabase);
-              logSommelier('action', {
-                action: 'implicit_memory',
-                user: shortUser(userId),
-                keys: Object.keys(implicitPrefs).join(','),
-              });
+              logSommelier('action', { action: 'implicit_memory', user: shortUser(userId), keys: Object.keys(implicitPrefs).join(',') });
             }
           } catch {
             // non-critical — don't block the recommendation
           }
         }
-
         try {
           return await runLlmPathThenPersist({
-            openai,
-            userId,
-            supabase,
-            message,
-            history,
-            cellarBottles,
-            memory: memoryPrefs,
-            tasteContext,
-            routedAction: 'recommend',
-            recentlyRecommended: recentPicks,
+            openai, userId, supabase, message, history, cellarBottles,
+            memory: memoryPrefs, tasteContext,
+            routedAction: 'recommend', recentlyRecommended: recentPicks, language,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });
-          return legacyFallback({
-            openai,
-            message,
-            history,
-            cellarBottles,
-            tasteContext,
-            userId,
-            routedAction: 'recommend',
-          });
+          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'recommend', language });
         }
       }
   }

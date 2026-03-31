@@ -203,7 +203,7 @@ agentRouter.post(
         });
       }
 
-      const { message, history, cellarContext, tasteContext, actionContext } = req.body;
+      const { message, history, cellarContext, tasteContext, actionContext, language } = req.body;
 
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ error: 'Message is required' });
@@ -237,6 +237,7 @@ agentRouter.post(
         tasteContext: typeof tasteContext === 'string' ? tasteContext : undefined,
         actionContext:
           actionContext && typeof actionContext === 'object' ? actionContext : undefined,
+        language: typeof language === 'string' ? language : undefined,
       });
 
       if (!recommendation) {

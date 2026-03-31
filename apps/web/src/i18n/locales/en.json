@@ -941,6 +941,20 @@
     "whyThisWine": "Why this wine",
     "viewInCellar": "View in Cellar",
     "viewDetails": "View Details",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingContent": "{{greeting}}! 🍷 I've scanned your cellar — {{count}} bottles ready to explore. Tell me about tonight and I'll find your perfect match.",
+    "quickStartHeader": "Quick start — or type your own below",
+    "inputPlaceholderFirst": "What's the occasion tonight?",
+    "scenarios": {
+      "steak":     { "label": "Steak dinner tonight",    "prompt": "I'm having steak for dinner tonight, what do you recommend from my cellar?" },
+      "romantic":  { "label": "Romantic date night",     "prompt": "Planning a romantic date night — help me pick the perfect bottle" },
+      "celebrate": { "label": "We're celebrating!",      "prompt": "We're celebrating something special tonight, recommend your best pick" },
+      "pizza":     { "label": "Casual pizza night",      "prompt": "Casual pizza night at home, keep it easy and delicious" },
+      "cheese":    { "label": "Cheese & wine evening",   "prompt": "Hosting a cheese and wine evening, what pairs beautifully?" },
+      "surprise":  { "label": "Surprise me!",            "prompt": "Surprise me — I trust you, just pick the best bottle for tonight" }
+    },
     "quickPrompts": {
       "tonight": "What should I drink tonight?",
       "readyNow": "Ready to drink now",

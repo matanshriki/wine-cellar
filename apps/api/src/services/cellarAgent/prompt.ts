@@ -78,7 +78,24 @@ export function buildOrchestratedSystemPrompt(params: {
   reasoningBlock: string;
   /** Client-supplied taste vector summary (profiles.taste_profile) — optional */
   tasteContext?: string;
+  /** ISO 639-1 language code from the client app — e.g. 'he' for Hebrew */
+  language?: string;
 }): string {
+  const languageBlock =
+    params.language === 'he'
+      ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANGUAGE INSTRUCTION (CRITICAL — FOLLOW THIS FIRST)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user's app is set to Hebrew (עברית). You MUST write ALL of your response text in Hebrew.
+This includes: the "message" field, "reason", "shortWhy", "title", and any follow-up questions.
+Wine names, producer names, region names, and grape varieties may stay in their original language
+(e.g., "Château Margaux", "Barolo"), but ALL descriptive prose must be in Hebrew.
+Do not mix languages — do not write English sentences in your response.
+`
+      : '';
+
   const tasteBlock = params.tasteContext?.trim()
     ? `
 
@@ -91,7 +108,7 @@ ${params.tasteContext.trim()}
     : '';
 
   return `${getSommelierSystemPrompt()}
-
+${languageBlock}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CELLAR AGENT SPECIFIC RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -126,7 +143,23 @@ export function buildLegacySystemPrompt(params: {
   cellarJson: string;
   summary: string;
   tasteContext?: string;
+  language?: string;
 }): string {
+  const languageBlock =
+    params.language === 'he'
+      ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANGUAGE INSTRUCTION (CRITICAL — FOLLOW THIS FIRST)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user's app is set to Hebrew (עברית). You MUST write ALL of your response text in Hebrew.
+This includes: the "message" field, "reason", "shortWhy", "title", and any follow-up questions.
+Wine names, producer names, region names, and grape varieties may stay in their original language
+(e.g., "Château Margaux", "Barolo"), but ALL descriptive prose must be in Hebrew.
+Do not mix languages — do not write English sentences in your response.
+`
+      : '';
+
   const tasteBlock = params.tasteContext?.trim()
     ? `
 
@@ -139,7 +172,7 @@ ${params.tasteContext.trim()}
     : '';
 
   return `${getSommelierSystemPrompt()}
-
+${languageBlock}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CELLAR AGENT SPECIFIC RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

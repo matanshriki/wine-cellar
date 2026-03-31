@@ -100,12 +100,13 @@ export function AgentPageWorking() {
     }
   }, [flags]);
 
-  // Load bottles and most recent conversation once
+  // Load bottles on mount — always start a fresh conversation session.
+  // Previous conversations are saved in DB but not auto-restored, to avoid
+  // the agent responding in the context of an old session when the user says "Hi".
   useEffect(() => {
     async function load() {
       try {
         await loadBottles();
-        await loadMostRecentConversation();
       } finally {
         setLoading(false);
       }
@@ -121,19 +122,23 @@ export function AgentPageWorking() {
 
     greetingInjectedRef.current = true;
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const timeGreeting = hour < 12
+      ? t('cellarSommelier.greetingMorning')
+      : hour < 17
+      ? t('cellarSommelier.greetingAfternoon')
+      : t('cellarSommelier.greetingEvening');
     const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
 
     const greeting: AgentMessage = {
       role: 'assistant',
-      content: `${timeGreeting}! 🍷 I've scanned your cellar — ${count} bottle${count !== 1 ? 's' : ''} ready to open. Tell me about tonight and I'll find your perfect match.`,
+      content: t('cellarSommelier.greetingContent', { greeting: timeGreeting, count }),
       timestamp: new Date().toISOString(),
     };
     setMessages([greeting]);
 
     // Auto-focus input so user can type immediately
     setTimeout(() => inputRef.current?.focus(), 300);
-  }, [loading, bottles, messages.length]);
+  }, [loading, bottles, messages.length, t]);
 
   async function handleSend(text: string) {
     // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
@@ -157,7 +162,7 @@ export function AgentPageWorking() {
       const actionContext = buildActionContextFromHistory(messages);
       const response = await sendAgentMessage(text, history, bottlesInCellar, {
         actionContext,
-      });
+      }, i18n.language);
 
       const assistantMsg: AgentMessage = {
         role: 'assistant',
@@ -437,18 +442,18 @@ export function AgentPageWorking() {
         {/* Scenario chips — shown right after the greeting bubble when there's only 1 assistant message */}
         {messages.length === 1 && messages[0].role === 'assistant' && bottles.filter(b => b.quantity > 0).length > 0 && (() => {
           const scenarioChips = [
-            { emoji: '🥩', label: "Steak dinner tonight",        prompt: "I'm having steak for dinner tonight, what do you recommend from my cellar?" },
-            { emoji: '💕', label: "Romantic date night",         prompt: "Planning a romantic date night — help me pick the perfect bottle" },
-            { emoji: '🎉', label: "We're celebrating!",          prompt: "We're celebrating something special tonight, recommend your best pick" },
-            { emoji: '🍕', label: "Casual pizza night",          prompt: "Casual pizza night at home, keep it easy and delicious" },
-            { emoji: '🧀', label: "Cheese & wine evening",       prompt: "Hosting a cheese and wine evening, what pairs beautifully?" },
-            { emoji: '🎲', label: "Surprise me!",                prompt: "Surprise me — I trust you, just pick the best bottle for tonight" },
+            { emoji: '🥩', label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
+            { emoji: '💕', label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
+            { emoji: '🎉', label: t('cellarSommelier.scenarios.celebrate.label'),prompt: t('cellarSommelier.scenarios.celebrate.prompt') },
+            { emoji: '🍕', label: t('cellarSommelier.scenarios.pizza.label'),    prompt: t('cellarSommelier.scenarios.pizza.prompt') },
+            { emoji: '🧀', label: t('cellarSommelier.scenarios.cheese.label'),   prompt: t('cellarSommelier.scenarios.cheese.prompt') },
+            { emoji: '🎲', label: t('cellarSommelier.scenarios.surprise.label'), prompt: t('cellarSommelier.scenarios.surprise.prompt') },
           ];
 
           return (
             <div style={{ paddingTop: '8px', paddingBottom: '8px' }}>
               <p style={{ fontSize: '12px', color: '#999', textAlign: 'center', marginBottom: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                Quick start — or type your own below
+                {t('cellarSommelier.quickStartHeader')}
               </p>
               <div style={{
                 display: 'grid',
@@ -782,7 +787,7 @@ export function AgentPageWorking() {
               isTranscribing
                 ? t('cellarSommelier.inputPlaceholderTranscribing')
                 : messages.length <= 1
-                ? "What's the occasion tonight?"
+                ? t('cellarSommelier.inputPlaceholderFirst')
                 : t('cellarSommelier.inputPlaceholder')
             }
             disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isRecording || isTranscribing}

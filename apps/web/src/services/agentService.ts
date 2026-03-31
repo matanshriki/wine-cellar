@@ -101,7 +101,8 @@ export async function sendAgentMessage(
   userMessage: string,
   conversationHistory: AgentMessage[],
   bottles: BottleWithWineInfo[],
-  options?: SendAgentMessageOptions
+  options?: SendAgentMessageOptions,
+  language?: string
 ): Promise<AgentResponse> {
   // Get Supabase session for authentication
   const { data: { session } } = await supabase.auth.getSession();
@@ -150,6 +151,7 @@ export async function sendAgentMessage(
       cellarContext,
       tasteContext,
       actionContext: options?.actionContext,
+      language,
     }),
   });
 

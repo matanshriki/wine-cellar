@@ -18,8 +18,9 @@ export async function runLegacyRecommendation(params: {
   history: unknown[];
   cellarBottles: CellarBottleInput[];
   tasteContext?: string;
+  language?: string;
 }): Promise<unknown> {
-  const { openai, message, history, cellarBottles, tasteContext } = params;
+  const { openai, message, history, cellarBottles, tasteContext, language } = params;
   const { bottles, summary } = buildLegacyCellarContextPayload(cellarBottles);
   const conversationHistory = sliceHistoryForChat(history, 8);
 
@@ -27,6 +28,7 @@ export async function runLegacyRecommendation(params: {
     cellarJson: JSON.stringify(bottles, null, 2),
     summary,
     tasteContext,
+    language,
   });
 
   let attempt = 0;
