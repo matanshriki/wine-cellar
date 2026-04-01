@@ -157,6 +157,28 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
     expect(scoreWithMention).toBeGreaterThan(scoreWithout + 25);
   });
 
+  it('boosts bottle when Hebrew producer name appears in Hebrew message', () => {
+    const bottleWithHe: CellarBottleInput = {
+      ...base,
+      producerHe: 'רזיאל',
+      wineNameHe: 'רזיאל ריזרב',
+    };
+    const { score: withHe, features: featuresWithHe } = scoreBottleHeuristically(
+      bottleWithHe,
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
+      null, null
+    );
+    const { score: withoutHe } = scoreBottleHeuristically(
+      base, // no producerHe
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
+      null, null
+    );
+    expect(withHe).toBeGreaterThan(withoutHe + 25);
+    expect(featuresWithHe).toContain('explicit_producer_mention');
+  });
+
   it('red color constraint boosts red Raziel bottle', () => {
     const constraints = extractConstraints(
       'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)'

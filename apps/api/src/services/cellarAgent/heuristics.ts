@@ -47,6 +47,10 @@ function bottleSearchBlob(b: CellarBottleInput): string {
     grapeString(b),
     b.notes,
     b.pastNotesSummary,
+    // Hebrew translations — enables matching when the user writes in Hebrew
+    b.producerHe,
+    b.wineNameHe,
+    b.regionHe,
   ]
     .filter(Boolean)
     .join(' ')
@@ -216,22 +220,27 @@ export function scoreBottleHeuristically(
     features.push('recently_recommended');
   }
 
-  // Direct text mention: if the bottle's producer or wine name (English) appears
-  // verbatim in the user message, give a large boost so it rises to the top of
-  // the shortlist regardless of readiness. This covers cases where the user writes
-  // the winery name in Latin script inside a Hebrew or mixed-language message.
+  // Direct text mention: if the bottle's producer or wine name (English OR Hebrew)
+  // appears verbatim in the user message, give a large boost so it rises to the
+  // top of the shortlist regardless of readiness.
+  // Checks English names against the lowercased message, and Hebrew names against
+  // the original message (Hebrew is script-invariant to case).
   const producerLower = (bottle.producer || '').toLowerCase();
   const wineNameLower = (bottle.wineName || '').toLowerCase();
-  if (
-    producerLower.length >= 3 &&
-    userMessageLower.includes(producerLower)
-  ) {
+  const producerHeLower = (bottle.producerHe || '').toLowerCase();
+  const wineNameHeLower = (bottle.wineNameHe || '').toLowerCase();
+
+  const mentionsProducer =
+    (producerLower.length >= 3 && userMessageLower.includes(producerLower)) ||
+    (producerHeLower.length >= 2 && userMessageLower.includes(producerHeLower));
+  const mentionsWineName =
+    (wineNameLower.length >= 3 && userMessageLower.includes(wineNameLower)) ||
+    (wineNameHeLower.length >= 2 && userMessageLower.includes(wineNameHeLower));
+
+  if (mentionsProducer) {
     score += 40;
     features.push('explicit_producer_mention');
-  } else if (
-    wineNameLower.length >= 3 &&
-    userMessageLower.includes(wineNameLower)
-  ) {
+  } else if (mentionsWineName) {
     score += 30;
     features.push('explicit_wine_mention');
   }

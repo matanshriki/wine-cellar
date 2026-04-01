@@ -41,6 +41,14 @@ export interface CellarBottleInput {
   pastOpeningsRatingCount?: number;
   /** Snippets from tasting/meal/general notes on past opens */
   pastNotesSummary?: string;
+  /**
+   * Hebrew translations from wines.translations.he — enables cross-script
+   * text matching so users can search for wines by their Hebrew name even
+   * when the DB stores the wine name in English/French.
+   */
+  producerHe?: string;
+  wineNameHe?: string;
+  regionHe?: string;
 }
 
 /** Deterministic extraction output used for shortlisting and prompt context. */
@@ -76,6 +84,9 @@ export interface CompactCellarBottle {
   pastOpeningsAvgRating?: number;
   pastOpeningsRatingCount?: number;
   pastNotesSummary?: string;
+  /** Hebrew name alternatives — helps the LLM match Hebrew user queries */
+  producerHe?: string;
+  wineNameHe?: string;
 }
 
 export interface CellarContextBuildResult {

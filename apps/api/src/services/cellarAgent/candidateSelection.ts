@@ -55,6 +55,9 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     pastOpeningsAvgRating: b.pastOpeningsAvgRating,
     pastOpeningsRatingCount: b.pastOpeningsRatingCount,
     pastNotesSummary: pastNotes ? pastNotes.substring(0, 220) : undefined,
+    // Hebrew alternatives so the LLM can match Hebrew user queries to bottles
+    ...(b.producerHe && { producerHe: b.producerHe }),
+    ...(b.wineNameHe && { wineNameHe: b.wineNameHe }),
   };
 }
 

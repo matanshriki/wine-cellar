@@ -235,6 +235,11 @@ function buildCellarContext(
             }
           : {};
 
+      // Pull Hebrew translations if available (wines.translations.he)
+      const heTranslations = (b.wine as any).translations?.he as
+        | { wine_name?: string; producer?: string; region?: string }
+        | undefined;
+
       return {
         id: b.id,
         producer: b.wine.producer,
@@ -245,6 +250,11 @@ function buildCellarContext(
         country: b.wine.country,
         grapes: b.wine.grapes,
         color: b.wine.color,
+
+        // Hebrew translations for cross-script search
+        ...(heTranslations?.producer && { producerHe: heTranslations.producer }),
+        ...(heTranslations?.wine_name && { wineNameHe: heTranslations.wine_name }),
+        ...(heTranslations?.region && { regionHe: heTranslations.region }),
 
         // Aging and readiness data
         drinkWindowStart: b.drink_window_start,
