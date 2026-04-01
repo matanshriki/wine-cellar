@@ -293,7 +293,13 @@
       "keepDate": "on {{date}}",
       "removeKeep": "Remove Keep",
       "keepUpdated": "Reservation saved",
-      "keepRemoved": "Reservation removed"
+      "keepRemoved": "Reservation removed",
+      "keepReminderTitle": "Your special occasion is here! 🎉",
+      "keepReminderSubtitle": "A bottle you reserved is ready for tonight.",
+      "keepReminderFor": "Reserved for",
+      "keepReminderOpenNow": "Open this bottle 🍷",
+      "keepReminderSnooze": "Keep for later",
+      "keepReminderRemove": "Remove reservation"
     },
     "openBottle": {
       "howMany": "How many bottles?",

@@ -24,6 +24,7 @@ import { WineEventBanner, type WineEvent } from '../components/WineEventBanner';
 import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
 import { ReceiptReviewModal } from '../components/ReceiptReviewModal'; // Receipt scanning
 import { DrinkWindowDebugPanel } from '../components/DrinkWindowDebugPanel'; // DEV: Debug drink windows
+import { KeepReminderModal, findDueReminders } from '../components/KeepReminderModal'; // Keep date reminders
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -156,6 +157,9 @@ export function CellarPage() {
   const [showFirstBottleSuccess, setShowFirstBottleSuccess] = useState(false);
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
+
+  // Keep/Reserve reminders: bottles whose reserved_date has arrived
+  const [keepReminders, setKeepReminders] = useState<bottleService.BottleWithWineInfo[]>([]);
 
   // Wine World Moments: Wine events state
   const [activeEvents, setActiveEvents] = useState<WineEvent[]>([]);
@@ -520,6 +524,13 @@ export function CellarPage() {
       setLoadingMore(false);
     }
   }
+
+  // Keep reminders: check for due reserved bottles after load
+  useEffect(() => {
+    if (loading || bottles.length === 0) return;
+    const due = findDueReminders(bottles);
+    if (due.length > 0) setKeepReminders(due);
+  }, [bottles, loading]);
 
   // Infinite scroll: Load more bottles
   async function loadMoreBottles() {
@@ -2551,6 +2562,18 @@ export function CellarPage() {
       
       {/* DEV ONLY: Drink Window Debug Panel */}
       {isDevEnvironment() && <DrinkWindowDebugPanel />}
+
+      {/* Keep / Reserve — date reminder modal */}
+      {keepReminders.length > 0 && (
+        <KeepReminderModal
+          bottles={keepReminders}
+          onOpenBottle={(bottle) => {
+            setKeepReminders([]);
+            handleMarkOpened(bottle);
+          }}
+          onRefresh={() => loadBottles(true)}
+        />
+      )}
     </div>
   );
 }

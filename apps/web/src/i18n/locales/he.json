@@ -292,7 +292,13 @@
       "keepDate": "בתאריך {{date}}",
       "removeKeep": "הסר שמירה",
       "keepUpdated": "ההקצאה נשמרה",
-      "keepRemoved": "ההקצאה הוסרה"
+      "keepRemoved": "ההקצאה הוסרה",
+      "keepReminderTitle": "האירוע המיוחד שלך הגיע! 🎉",
+      "keepReminderSubtitle": "בקבוק ששמרת מוכן להערב.",
+      "keepReminderFor": "שמור עבור",
+      "keepReminderOpenNow": "פתח את הבקבוק 🍷",
+      "keepReminderSnooze": "שמור לאחר כך",
+      "keepReminderRemove": "הסר הקצאה"
     },
     "openBottle": {
       "howMany": "כמה בקבוקים?",
