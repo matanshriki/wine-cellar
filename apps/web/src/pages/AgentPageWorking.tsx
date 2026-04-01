@@ -114,6 +114,21 @@ export function AgentPageWorking() {
     load();
   }, []);
 
+  function buildGreetingMessage(bottleCount: number): AgentMessage {
+    const hour = new Date().getHours();
+    const timeGreeting =
+      hour < 5  ? t('cellarSommelier.greetingEvening')
+      : hour < 12 ? t('cellarSommelier.greetingMorning')
+      : hour < 17 ? t('cellarSommelier.greetingAfternoon')
+      : t('cellarSommelier.greetingEvening');
+    return {
+      role: 'assistant',
+      content: t('cellarSommelier.greetingContent', { greeting: timeGreeting, count: bottleCount }),
+      timestamp: new Date().toISOString(),
+      isGreeting: true,
+    };
+  }
+
   // Inject warm greeting once bottles load (only for fresh sessions with no saved conversation)
   useEffect(() => {
     if (loading || greetingInjectedRef.current || messages.length > 0) return;
@@ -121,24 +136,27 @@ export function AgentPageWorking() {
     if (bottlesInCellar.length === 0) return;
 
     greetingInjectedRef.current = true;
-    const hour = new Date().getHours();
-    const timeGreeting = hour < 12
-      ? t('cellarSommelier.greetingMorning')
-      : hour < 17
-      ? t('cellarSommelier.greetingAfternoon')
-      : t('cellarSommelier.greetingEvening');
     const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
+    setMessages([buildGreetingMessage(count)]);
 
-    const greeting: AgentMessage = {
-      role: 'assistant',
-      content: t('cellarSommelier.greetingContent', { greeting: timeGreeting, count }),
-      timestamp: new Date().toISOString(),
-    };
-    setMessages([greeting]);
-
-    // Auto-focus input so user can type immediately
     setTimeout(() => inputRef.current?.focus(), 300);
   }, [loading, bottles, messages.length, t]);
+
+  // Refresh greeting when user returns to the tab (e.g. left open overnight)
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState !== 'visible') return;
+      setMessages((prev) => {
+        if (prev.length !== 1 || !prev[0].isGreeting) return prev;
+        const bottlesInCellar = bottles.filter(b => b.quantity > 0);
+        if (bottlesInCellar.length === 0) return prev;
+        const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
+        return [buildGreetingMessage(count)];
+      });
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [bottles, t]);
 
   async function handleSend(text: string) {
     // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
@@ -241,25 +259,24 @@ export function AgentPageWorking() {
   }
 
   async function saveConversation(updatedMessages: AgentMessage[]) {
+    const persistable = updatedMessages.filter((m) => !m.isGreeting);
+    if (persistable.length === 0) return;
     setIsSavingConversation(true);
     try {
       if (currentConversation) {
-        // Update existing conversation
         const updated = await updateConversation(
           currentConversation.id,
-          updatedMessages,
+          persistable,
           currentConversation.title
         );
         setCurrentConversation(updated);
       } else {
-        // Create new conversation with auto-generated title
-        const title = generateConversationTitle(updatedMessages);
-        const created = await createConversation(updatedMessages, title);
+        const title = generateConversationTitle(persistable);
+        const created = await createConversation(persistable, title);
         setCurrentConversation(created);
       }
     } catch (error) {
       console.error('Failed to save conversation:', error);
-      // Silent fail - don't disrupt user experience
     } finally {
       setIsSavingConversation(false);
     }

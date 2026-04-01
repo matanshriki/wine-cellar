@@ -31,6 +31,8 @@ export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  /** Ephemeral flag — greeting messages are regenerated when the tab regains focus */
+  isGreeting?: boolean;
   /** Last turn metadata for action routing (open bottle, similar, etc.) */
   agentMeta?: AgentResponseMeta;
   recommendation?: {
