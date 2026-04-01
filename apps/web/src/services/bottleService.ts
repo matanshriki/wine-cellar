@@ -318,10 +318,39 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     window.dispatchEvent(new CustomEvent('bottleCreated'));
   }
 
-  return {
-    ...(bottle as any),
-    wine,
-  } as BottleWithWineInfo;
+  const newBottle: BottleWithWineInfo = { ...(bottle as any), wine } as BottleWithWineInfo;
+
+  // Fire-and-forget: trigger Hebrew translation for the new wine via the
+  // analyze-wine edge function. Runs silently in the background — the user
+  // doesn't wait for it. Skipped when translations.he is already present
+  // (e.g. a second bottle of the same wine was added).
+  const existingHe = (wine as any).translations?.he;
+  if (!existingHe || Object.keys(existingHe).length === 0) {
+    supabase.functions
+      .invoke('analyze-wine', {
+        body: {
+          bottle_id: newBottle.id,
+          wine_id: newBottle.wine_id,
+          wine_data: {
+            wine_name: wine.wine_name,
+            producer: wine.producer,
+            vintage: wine.vintage,
+            region: (wine as any).region ?? null,
+            country: (wine as any).country ?? null,
+            appellation: (wine as any).appellation ?? null,
+            grapes: wine.grapes ?? null,
+            color: wine.color,
+            language: 'he',
+          },
+        },
+      })
+      .catch((err) => {
+        // Non-critical — admin backfill is always available as fallback.
+        console.warn('[bottleService] Background translation failed:', err);
+      });
+  }
+
+  return newBottle;
 }
 
 /**
