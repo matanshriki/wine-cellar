@@ -14,6 +14,7 @@ import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { useLocalizedWine } from '../hooks/useLocalizedWine';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { SommelierNotes } from './SommelierNotes';
+import { KeepBadge } from './KeepBadge';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
@@ -34,6 +35,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRemovingKeep, setIsRemovingKeep] = useState(false);
 
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
 
@@ -54,6 +56,25 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
         }
       }
     : undefined;
+
+  const handleRemoveKeep = async () => {
+    if (!bottle || isDemoBottle) return;
+    setIsRemovingKeep(true);
+    try {
+      await bottleService.updateBottle(bottle.id, {
+        is_reserved: false,
+        reserved_for: null,
+        reserved_date: null,
+        reserved_note: null,
+      });
+      toast.success(t('cellar.bottle.keepRemoved'));
+      if (onRefresh) onRefresh();
+    } catch {
+      toast.error(t('errors.generic', 'Something went wrong'));
+    } finally {
+      setIsRemovingKeep(false);
+    }
+  };
 
   // Lock body scroll when modal is open.
   // Uses the negative-top trick so the page doesn't visually snap to y=0
@@ -663,6 +684,73 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     >
                       {bottle.notes}
                     </p>
+                  </div>
+                )}
+
+                {/* Keep / Reserved Section */}
+                {bottle.is_reserved && !isDemoBottle && (
+                  <div>
+                    <h3
+                      className="text-sm font-semibold mb-3 flex items-center gap-2"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-600, #a37700)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <KeepBadge reservedFor={bottle.reserved_for} reservedDate={bottle.reserved_date} size="md" />
+                    </h3>
+                    <div
+                      className="p-4 rounded-xl space-y-2 text-sm"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.07), rgba(180,140,30,0.10))',
+                        border: '1px solid rgba(212,175,55,0.3)',
+                      }}
+                    >
+                      {bottle.reserved_for && (
+                        <div className="flex items-center gap-2">
+                          <span style={{ color: 'var(--text-tertiary)' }}>🎉</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {t('cellar.bottle.keepReservedFor', { name: bottle.reserved_for })}
+                          </span>
+                        </div>
+                      )}
+                      {bottle.reserved_date && (
+                        <div className="flex items-center gap-2">
+                          <span style={{ color: 'var(--text-tertiary)' }}>📅</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {t('cellar.bottle.keepDate', {
+                              date: new Date(bottle.reserved_date).toLocaleDateString(i18n.language, {
+                                year: 'numeric', month: 'long', day: 'numeric',
+                              }),
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {bottle.reserved_note && (
+                        <div className="flex items-start gap-2">
+                          <span style={{ color: 'var(--text-tertiary)' }}>📝</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{bottle.reserved_note}</span>
+                        </div>
+                      )}
+                      <div className="pt-2 flex gap-2">
+                        <button
+                          onClick={handleRemoveKeep}
+                          disabled={isRemovingKeep}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-150"
+                          style={{
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border-base)',
+                            color: 'var(--text-secondary)',
+                            cursor: isRemovingKeep ? 'not-allowed' : 'pointer',
+                            opacity: isRemovingKeep ? 0.6 : 1,
+                            minHeight: '32px',
+                          }}
+                        >
+                          {isRemovingKeep ? '…' : t('cellar.bottle.removeKeep')}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 

@@ -49,6 +49,12 @@ export interface CellarBottleInput {
   producerHe?: string;
   wineNameHe?: string;
   regionHe?: string;
+  /**
+   * Keep / Reserve flag — when true, exclude this bottle from suggestions
+   * unless the user explicitly asks to include reserved wines.
+   */
+  isReserved?: boolean;
+  reservedFor?: string;
 }
 
 /** Deterministic extraction output used for shortlisting and prompt context. */

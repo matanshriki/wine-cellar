@@ -5,6 +5,7 @@ import { DemoActionModal } from './DemoActionModal';
 import { MuseumViewModal } from './MuseumViewModal';
 import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { useLocalizedWine } from '../hooks/useLocalizedWine';
+import { KeepBadge } from './KeepBadge';
 
 interface Props {
   bottle: BottleWithWineInfo;
@@ -159,11 +160,18 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
 
         {/* Text Content */}
         <div className="flex-1 min-w-0">
-          {/* Wine Style Badge - Top Right */}
+          {/* Wine Style Badge + Keep Badge - Top Right */}
           <div className="absolute top-0 end-0 flex flex-col gap-1 items-end">
             <span className="badge-luxury badge-luxury-wine text-xs">
               {t(`cellar.wineStyles.${bottle.wine.color}`)}
             </span>
+            {bottle.is_reserved && (
+              <KeepBadge
+                reservedFor={bottle.reserved_for}
+                reservedDate={bottle.reserved_date}
+                size="sm"
+              />
+            )}
             {/* Readiness badge — only show when no AI analysis exists yet (AI label takes over once analyzed) */}
             {bottle.readiness_status && bottle.readiness_status !== 'Unknown' && !(bottle as any).readiness_label && (
               <span 

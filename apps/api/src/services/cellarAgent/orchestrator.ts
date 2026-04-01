@@ -22,6 +22,7 @@ import { validateModelOutput } from './validation.js';
 import {
   buildReasoningContext,
   detectIntent,
+  detectsIncludeReservedRequest,
   detectsSpecificProducerMention,
   extractConstraints,
   needsClarification,
@@ -146,6 +147,8 @@ async function runOrchestratedRecommendation(params: {
   language?: string;
   /** When true, uses an enlarged shortlist cap so named producers are included */
   extendedShortlist?: boolean;
+  /** When true, reserved (Keep) bottles are included in the candidate pool */
+  includeReserved?: boolean;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
@@ -163,6 +166,7 @@ async function runOrchestratedRecommendation(params: {
     intentOverride,
     language,
     extendedShortlist,
+    includeReserved,
   } = params;
 
   const conversationHistory = sliceHistoryForChat(history, 8);
@@ -180,14 +184,18 @@ async function runOrchestratedRecommendation(params: {
     historyLen
   );
 
-  const { scored, relaxedFilter } = scoredOverride
-    ? { scored: scoredOverride, relaxedFilter: false }
+  // Detect if user explicitly wants to include reserved bottles (param overrides detection)
+  const resolvedIncludeReserved = includeReserved ?? detectsIncludeReservedRequest(message);
+
+  const { scored, relaxedFilter, reservedExcluded } = scoredOverride
+    ? { scored: scoredOverride, relaxedFilter: false, reservedExcluded: 0 }
     : shortlistCandidates(
         cellarBottles,
         constraints,
         userMessageLower,
         memory,
-        params.recentlyRecommended ?? null
+        params.recentlyRecommended ?? null,
+        resolvedIncludeReserved
       );
 
   const cap = computeEffectiveShortlistCap(scored.length, extendedShortlist);
@@ -203,6 +211,9 @@ async function runOrchestratedRecommendation(params: {
   let summary = '';
   if (cellarBottles.length > compact.length) {
     summary = `\n\nNote: Your full cellar has more bottles than listed here. This is a relevance-ranked shortlist for this question only.`;
+  }
+  if (reservedExcluded > 0) {
+    summary += `\n\nKEEP/RESERVE NOTE: ${reservedExcluded} bottle(s) in the user's cellar are marked as "Keep" (reserved for future events) and have been excluded from this shortlist. If the user asks why a bottle is missing or requests reserved wines, acknowledge this and mention they can say "include reserved bottles" to see them.`;
   }
 
   const shortlistRegions = compact
@@ -376,6 +387,7 @@ async function runLlmPathThenPersist(params: {
   recentlyRecommended?: Set<string> | null;
   language?: string;
   extendedShortlist?: boolean;
+  includeReserved?: boolean;
 }): Promise<unknown> {
   const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
     openai: params.openai,
@@ -389,6 +401,7 @@ async function runLlmPathThenPersist(params: {
     recentlyRecommended: params.recentlyRecommended ?? null,
     language: params.language,
     extendedShortlist: params.extendedShortlist,
+    includeReserved: params.includeReserved,
   });
 
   logSommelier('orchestration', {
@@ -498,6 +511,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
 
   const route = classifyAgentRoute(message, actionContext);
   const extendedShortlist = detectsSpecificProducerMention(message);
+  const includeReserved = detectsIncludeReservedRequest(message);
   let memoryPrefs: SommelierPreferenceMemory | null = null;
   let recentPicks: Set<string> | null = null;
   if (supabase) {
@@ -692,7 +706,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             openai, userId, supabase, message, history, cellarBottles,
             memory: memoryPrefs, tasteContext,
             scoredOverride: similarScored, intentOverride: 'similar_cellar',
-            routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist,
+            routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
@@ -716,7 +730,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           return await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
             memory: memoryPrefs, tasteContext,
-            routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist,
+            routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });

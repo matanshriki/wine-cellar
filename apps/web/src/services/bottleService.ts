@@ -160,6 +160,12 @@ export interface CreateBottleInput {
 
   /** How the wine was added — stored on the wines row for analytics/filtering */
   entry_source?: 'manual' | 'ai_scan' | 'csv_import' | 'vivino' | null;
+
+  /** Keep / Reserve feature */
+  is_reserved?: boolean;
+  reserved_for?: string | null;
+  reserved_date?: string | null;
+  reserved_note?: string | null;
 }
 
 /**
@@ -289,6 +295,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
     // Permanent public URL — visible directly in the DB and never expires
     image_url: publicLabelUrl || input.image_url || null,
     tags: input.tags ? input.tags : null,
+    // Keep / Reserve feature
+    is_reserved: input.is_reserved ?? false,
+    reserved_for: input.is_reserved ? (input.reserved_for ?? null) : null,
+    reserved_date: input.is_reserved ? (input.reserved_date ?? null) : null,
+    reserved_note: input.is_reserved ? (input.reserved_note ?? null) : null,
   };
   
   const { data: bottle, error: bottleError } = await supabase

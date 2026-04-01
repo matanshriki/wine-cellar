@@ -28,8 +28,8 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
    * 5. Finally, newest additions (most recent purchases)
    */
   const getSmartSelection = (bottles: BottleWithWineInfo[]) => {
-    // First, filter out bottles that are already opened (quantity = 0)
-    const availableBottles = bottles.filter(bottle => bottle.quantity > 0);
+    // First, filter out bottles that are already opened (quantity = 0) or reserved (Keep)
+    const availableBottles = bottles.filter(bottle => bottle.quantity > 0 && !(bottle as any).is_reserved);
     
     const scored = availableBottles.map(bottle => {
       const analysis = bottle as any;

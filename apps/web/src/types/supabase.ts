@@ -178,6 +178,11 @@ export interface Database {
           notes: string | null
           created_at: string
           updated_at: string
+          /** Keep/Reserve feature */
+          is_reserved: boolean
+          reserved_for: string | null
+          reserved_date: string | null
+          reserved_note: string | null
         }
         Insert: {
           id?: string
@@ -202,6 +207,11 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          /** Keep/Reserve feature */
+          is_reserved?: boolean
+          reserved_for?: string | null
+          reserved_date?: string | null
+          reserved_note?: string | null
         }
         Update: {
           id?: string
@@ -226,6 +236,11 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          /** Keep/Reserve feature */
+          is_reserved?: boolean
+          reserved_for?: string | null
+          reserved_date?: string | null
+          reserved_note?: string | null
         }
       }
       consumption_history: {

@@ -157,6 +157,23 @@ export function detectsSpecificProducerMention(message: string): boolean {
   return false;
 }
 
+/**
+ * Detects if the user explicitly wants to include reserved (Keep) bottles in suggestions.
+ * Matches: "include reserved", "include keep wines", "even reserved", "כולל שמורים", etc.
+ */
+export function detectsIncludeReservedRequest(message: string): boolean {
+  // English patterns
+  if (/\b(include|show|add|consider|with)\b.{0,20}\b(reserved|keep|kept|set aside)\b/i.test(message)) return true;
+  if (/\beven\s+(the\s+)?(reserved|kept|keep)\b/i.test(message)) return true;
+  if (/\breserved\s+(wines?|bottles?|ones?)\b/i.test(message)) return true;
+  // Hebrew patterns (שמורים / שמורות = reserved; כולל = including)
+  if (/כולל\s*שמור/.test(message)) return true;
+  if (/גם\s*שמור/.test(message)) return true;
+  if (/הצג\s*שמור/.test(message)) return true;
+  if (/לשמור/.test(message) && /כולל|הצג|גם/.test(message)) return true;
+  return false;
+}
+
 export function extractConstraints(message: string): ExtractedConstraints {
   const m = normalizeMessage(message);
   const { regions, grapes } = extractRegionGrapeHints(message);

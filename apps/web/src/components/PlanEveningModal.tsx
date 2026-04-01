@@ -103,8 +103,8 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     // Determine number of wines
     const wineCount = groupSize === '2-4' ? 3 : groupSize === '5-8' ? 4 : 5;
     
-    // Filter candidates
-    let candidates = [...candidateBottles].filter(b => b.quantity > 0);
+    // Filter candidates — exclude opened and reserved (Keep) bottles
+    let candidates = [...candidateBottles].filter(b => b.quantity > 0 && !(b as any).is_reserved);
     
     if (redsOnly) {
       candidates = candidates.filter(b => b.wine.color === 'red');
@@ -236,7 +236,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
     // Filter candidates - exclude wines already in lineup
     const winesInLineup = lineup.map(slot => slot.bottle.id);
     let alternatives = [...candidateBottles].filter(b => 
-      b.quantity > 0 && !winesInLineup.includes(b.id)
+      b.quantity > 0 && !(b as any).is_reserved && !winesInLineup.includes(b.id)
     );
     
     // Apply same filters as original lineup

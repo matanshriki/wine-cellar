@@ -32,6 +32,8 @@ export interface RecommendationInput {
     preferReadyToDrink?: boolean;
     maxPrice?: number;
   };
+  /** When true, reserved (Keep) bottles are included in suggestions */
+  includeReserved?: boolean;
 }
 
 export interface BottleWithWine extends Bottle {
@@ -109,6 +111,11 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
 
   console.log('[RecommendationService] Found', bottles.length, 'bottles');
 
+  // Separate reserved bottles before any other filtering
+  const reservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => (b as any).is_reserved);
+  const nonReservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => !(b as any).is_reserved);
+  console.log('[RecommendationService] Reserved (excluded by default):', reservedBottles.length);
+
   // Get recently recommended bottles (last 7 days) to avoid repetition
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -126,8 +133,12 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   const recentlyShownBottleIds = getRecentlyShownBottles();
   console.log('[RecommendationService] Recently shown bottles:', recentlyShownBottleIds.size);
 
+  // Start from non-reserved bottles by default
+  // If user explicitly passes includeReserved=true the caller can set it on the input.
+  const startingPool = (input as any).includeReserved ? (bottles as unknown as BottleWithWine[]) : nonReservedBottles;
+
   // Cast to proper type
-  const bottlesWithWine = bottles as unknown as BottleWithWine[];
+  const bottlesWithWine = startingPool;
 
   // Filter by constraints
   let filteredBottles = bottlesWithWine;
@@ -332,6 +343,10 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   trackShownBottles(recommendations.map(r => r.bottleId));
 
   console.log('[RecommendationService] Generated', recommendations.length, 'recommendations');
+
+  // Attach metadata about excluded reserved bottles so callers can show a note
+  (recommendations as any).__reservedExcludedCount = input.includeReserved ? 0 : reservedBottles.length;
+
   return recommendations;
 }
 

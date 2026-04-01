@@ -83,22 +83,33 @@ function strictColorFilter(
 
 /**
  * Rank all bottles, optionally after strict color filter; relax filter if empty.
+ * By default, reserved (Keep) bottles are excluded from the candidate pool.
+ * Pass `includeReserved=true` when the user explicitly asks to include them.
  */
 export function shortlistCandidates(
   bottles: CellarBottleInput[],
   constraints: ExtractedConstraints,
   userMessageLower: string,
   memory?: SommelierPreferenceMemory | null,
-  recentlyRecommended?: Set<string> | null
-): { scored: ScoredCandidate[]; relaxedFilter: boolean } {
-  let pool = bottles;
+  recentlyRecommended?: Set<string> | null,
+  includeReserved = false
+): { scored: ScoredCandidate[]; relaxedFilter: boolean; reservedExcluded: number } {
+  // Separate reserved bottles before any heuristic scoring
+  const reservedBottles = bottles.filter((b) => b.isReserved);
+  const nonReservedBottles = bottles.filter((b) => !b.isReserved);
+  const reservedExcluded = includeReserved ? 0 : reservedBottles.length;
+
+  // Use the appropriate pool
+  const eligibleBottles = includeReserved ? bottles : nonReservedBottles;
+
+  let pool = eligibleBottles;
   let relaxedFilter = false;
-  const strict = strictColorFilter(bottles, constraints.colors);
+  const strict = strictColorFilter(eligibleBottles, constraints.colors);
   if (strict) {
     pool = strict;
   } else if (constraints.colors.length > 0) {
     relaxedFilter = true;
-    pool = bottles;
+    pool = eligibleBottles;
   }
 
   const scored: ScoredCandidate[] = pool.map((bottle) => {
@@ -113,7 +124,7 @@ export function shortlistCandidates(
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return { scored, relaxedFilter };
+  return { scored, relaxedFilter, reservedExcluded };
 }
 
 /** Slice top N after `computeEffectiveShortlistCap(scored.length)`. */

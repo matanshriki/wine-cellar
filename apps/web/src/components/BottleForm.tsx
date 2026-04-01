@@ -89,6 +89,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   };
   
   const [formData, setFormData] = useState(getInitialFormData());
+
+  // Keep / Reserve state
+  const [isReserved, setIsReserved] = useState<boolean>((bottle as any)?.is_reserved === true);
+  const [reservedFor, setReservedFor] = useState<string>((bottle as any)?.reserved_for || '');
+  const [reservedDate, setReservedDate] = useState<string>((bottle as any)?.reserved_date || '');
+  const [reservedNote, setReservedNote] = useState<string>((bottle as any)?.reserved_note || '');
+
   const [loading, setLoading] = useState(false);
   const [fetchingVivino, setFetchingVivino] = useState(false);
   const [autoFetchingVivino, setAutoFetchingVivino] = useState(false); // Background auto-fetch indicator
@@ -388,6 +395,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
           purchase_price_currency: currentCurrency, // Store current currency
           notes: formData.notes || null,
+          // Keep / Reserve fields
+          is_reserved: isReserved,
+          reserved_for: isReserved && reservedFor ? reservedFor : null,
+          reserved_date: isReserved && reservedDate ? reservedDate : null,
+          reserved_note: isReserved && reservedNote ? reservedNote : null,
         };
         
         console.log('[BottleForm] Updating bottle fields:', bottleUpdates);
@@ -450,6 +462,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             : null,
           // If a label image was scanned, this came from the camera flow
           entry_source: formData.label_image_path ? 'ai_scan' : 'manual',
+          // Keep / Reserve fields
+          is_reserved: isReserved,
+          reserved_for: isReserved && reservedFor ? reservedFor : null,
+          reserved_date: isReserved && reservedDate ? reservedDate : null,
+          reserved_note: isReserved && reservedNote ? reservedNote : null,
         };
         
         console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));
@@ -902,6 +919,101 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 rows={3}
                 placeholder={t('bottleForm.notesPlaceholder')}
               />
+            </div>
+
+            {/* Keep / Reserve toggle */}
+            <div className="md:col-span-2">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setIsReserved(v => !v)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsReserved(v => !v); } }}
+                className="flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200"
+                style={{
+                  background: isReserved
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(180,140,30,0.12))'
+                    : 'var(--bg-muted)',
+                  border: `1px solid ${isReserved ? 'rgba(212,175,55,0.4)' : 'var(--border-base)'}`,
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isReserved ? 'var(--gold-600, #a37700)' : 'var(--text-tertiary)'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <div>
+                    <div className="text-sm font-medium" style={{ color: isReserved ? 'var(--gold-700, #92660a)' : 'var(--text-primary)' }}>
+                      {t('bottleForm.keep.toggleLabel')}
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      {t('bottleForm.keep.toggleHint')}
+                    </div>
+                  </div>
+                </div>
+                {/* Toggle switch */}
+                <div
+                  className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
+                  style={{ background: isReserved ? 'var(--gold-500, #c9a227)' : 'var(--border-medium, #d1d5db)' }}
+                >
+                  <div
+                    className="absolute top-0.5 w-5 h-5 rounded-full transition-transform duration-200"
+                    style={{
+                      background: 'white',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      transform: isReserved ? 'translateX(22px)' : 'translateX(2px)',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Reserve detail fields (only when toggled on) */}
+              {isReserved && (
+                <div
+                  className="mt-2 p-3 rounded-xl space-y-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.05), rgba(180,140,30,0.08))',
+                    border: '1px solid rgba(212,175,55,0.25)',
+                  }}
+                >
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      {t('bottleForm.keep.reservedFor')}
+                    </label>
+                    <input
+                      type="text"
+                      value={reservedFor}
+                      onChange={(e) => setReservedFor(e.target.value)}
+                      className="input-luxury w-full text-sm"
+                      placeholder={t('bottleForm.keep.reservedForPlaceholder')}
+                      maxLength={80}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      {t('bottleForm.keep.date')}
+                    </label>
+                    <input
+                      type="date"
+                      value={reservedDate}
+                      onChange={(e) => setReservedDate(e.target.value)}
+                      className="input-luxury w-full text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      {t('bottleForm.keep.note')}
+                    </label>
+                    <input
+                      type="text"
+                      value={reservedNote}
+                      onChange={(e) => setReservedNote(e.target.value)}
+                      className="input-luxury w-full text-sm"
+                      placeholder={t('bottleForm.keep.notePlaceholder')}
+                      maxLength={200}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

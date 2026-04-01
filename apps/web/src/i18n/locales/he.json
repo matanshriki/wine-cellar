@@ -284,7 +284,15 @@
       "deleted": "הבקבוק נמחק",
       "deleteFailed": "מחיקת הבקבוק נכשלה",
       "markOpened": "סמן כנפתח",
-      "markOpenedFailed": "סימון הבקבוק כנפתח נכשל"
+      "markOpenedFailed": "סימון הבקבוק כנפתח נכשל",
+      "keep": "לשמור",
+      "keepBadge": "לשמור",
+      "keepTooltip": "שמור · לא בהמלצות",
+      "keepReservedFor": "שמור עבור {{name}}",
+      "keepDate": "בתאריך {{date}}",
+      "removeKeep": "הסר שמירה",
+      "keepUpdated": "ההקצאה נשמרה",
+      "keepRemoved": "ההקצאה הוסרה"
     },
     "openBottle": {
       "howMany": "כמה בקבוקים?",
@@ -395,7 +403,16 @@
     "required": "חובה",
     "bottleAdded": "הבקבוק נוסף!",
     "bottleUpdated": "הבקבוק עודכן!",
-    "saveFailed": "שמירת הבקבוק נכשלה"
+    "saveFailed": "שמירת הבקבוק נכשלה",
+    "keep": {
+      "toggleLabel": "שמור / הקצה בקבוק זה",
+      "toggleHint": "בקבוקים שמורים לא יופיעו בהמלצות הלילה",
+      "reservedFor": "שמור עבור",
+      "reservedForPlaceholder": "למשל, יום הולדת נועה",
+      "date": "תאריך יעד",
+      "note": "הערה (אופציונלי)",
+      "notePlaceholder": "פרטים על האירוע…"
+    }
   },
   "recommendation": {
     "title": "מה לפתוח הערב?",
@@ -453,7 +470,9 @@
       "markedAsOpened": "הבקבוק סומן כנפתח",
       "markOpenedError": "נכשל בסימון הבקבוק כנפתח",
       "inCellar": "במרתף",
-      "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך."
+      "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך.",
+      "keepExcluded": "{{count}} בקבוק/ים מסומנים 'לשמור' לא נכללו בהמלצות.",
+      "includeKeep": "כלול בקבוקים שמורים"
     },
     "emptyCellar": {
       "title": "המרתף שלך ריק",

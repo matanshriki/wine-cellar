@@ -256,6 +256,10 @@ function buildCellarContext(
         ...(heTranslations?.wine_name && { wineNameHe: heTranslations.wine_name }),
         ...(heTranslations?.region && { regionHe: heTranslations.region }),
 
+        // Keep / Reserve flag
+        ...(b.is_reserved && { isReserved: true }),
+        ...((b as any).reserved_for && { reservedFor: (b as any).reserved_for as string }),
+
         // Aging and readiness data
         drinkWindowStart: b.drink_window_start,
         drinkWindowEnd: b.drink_window_end,

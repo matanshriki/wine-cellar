@@ -64,7 +64,8 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
    * This ensures carousel index mapping remains consistent
    */
   const topBottles = useMemo(() => {
-    const availableBottles = bottles.filter(bottle => bottle.quantity > 0);
+    // Filter out opened (quantity=0) and reserved (Keep) bottles
+    const availableBottles = bottles.filter(bottle => bottle.quantity > 0 && !(bottle as any).is_reserved);
     
     // Generate a stable random seed based on bottle IDs
     // This ensures consistent ordering across re-renders

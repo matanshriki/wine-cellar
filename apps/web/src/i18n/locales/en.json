@@ -285,7 +285,15 @@
       "deleted": "Bottle deleted",
       "deleteFailed": "Failed to delete bottle",
       "markOpened": "Mark as Opened",
-      "markOpenedFailed": "Failed to mark bottle as opened"
+      "markOpenedFailed": "Failed to mark bottle as opened",
+      "keep": "Keep",
+      "keepBadge": "Keep",
+      "keepTooltip": "Reserved · not in suggestions",
+      "keepReservedFor": "Reserved for {{name}}",
+      "keepDate": "on {{date}}",
+      "removeKeep": "Remove Keep",
+      "keepUpdated": "Reservation saved",
+      "keepRemoved": "Reservation removed"
     },
     "openBottle": {
       "howMany": "How many bottles?",
@@ -405,7 +413,16 @@
     "required": "Required",
     "bottleAdded": "Bottle added!",
     "bottleUpdated": "Bottle updated!",
-    "saveFailed": "Failed to save bottle"
+    "saveFailed": "Failed to save bottle",
+    "keep": {
+      "toggleLabel": "Keep / Reserve this bottle",
+      "toggleHint": "Reserved bottles are excluded from tonight's suggestions",
+      "reservedFor": "Reserved for",
+      "reservedForPlaceholder": "e.g., Noa's birthday",
+      "date": "Target date",
+      "note": "Note (optional)",
+      "notePlaceholder": "Any details about the occasion…"
+    }
   },
   "recommendation": {
     "title": "What Should I Open Tonight?",
@@ -472,7 +489,9 @@
       "markOpenedError": "Failed to mark bottle as opened",
       "inCellar": "in cellar",
       "noResults": "No matching bottles found. Try adjusting your preferences.",
-      "noWineTypeMatch": "No {{wineType}} wines found in your cellar. Add some or select a different type."
+      "noWineTypeMatch": "No {{wineType}} wines found in your cellar. Add some or select a different type.",
+      "keepExcluded": "{{count}} bottle(s) marked Keep were excluded from suggestions.",
+      "includeKeep": "Include reserved bottles"
     },
     "noResults": {
       "title": "No Matches Found",
