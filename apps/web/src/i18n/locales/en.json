@@ -294,6 +294,8 @@
       "removeKeep": "Remove Keep",
       "keepUpdated": "Reservation saved",
       "keepRemoved": "Reservation removed",
+      "keepBannerTomorrow": "Tomorrow is the day!",
+      "keepBannerDays": "In {{count}} days",
       "keepReminderTitle": "Your special occasion is here! 🎉",
       "keepReminderSubtitle": "A bottle you reserved is ready for tonight.",
       "keepReminderFor": "Reserved for",

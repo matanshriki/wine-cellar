@@ -85,6 +85,68 @@ export function findDueReminders(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Upcoming banner dismissal (separate key — dismissed per calendar day)
+// ---------------------------------------------------------------------------
+
+const BANNER_DISMISSED_KEY = 'keep-banner-dismissed'; // { date: string; ids: string[] }
+
+function getBannerDismissedToday(): Set<string> {
+  try {
+    const raw = localStorage.getItem(BANNER_DISMISSED_KEY);
+    if (!raw) return new Set();
+    const parsed: { date: string; ids: string[] } = JSON.parse(raw);
+    const today = new Date().toISOString().slice(0, 10);
+    if (parsed.date !== today) return new Set();
+    return new Set(parsed.ids);
+  } catch {
+    return new Set();
+  }
+}
+
+export function dismissBannerForToday(bottleId: string) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = getBannerDismissedToday();
+    existing.add(bottleId);
+    localStorage.setItem(
+      BANNER_DISMISSED_KEY,
+      JSON.stringify({ date: today, ids: Array.from(existing) })
+    );
+  } catch {
+    // non-critical
+  }
+}
+
+/**
+ * Returns reserved bottles whose date is 1–7 days from now (not today —
+ * today shows the full popup instead) and whose banner hasn't been dismissed today.
+ */
+export function findUpcomingReminders(
+  bottles: BottleWithWineInfo[]
+): (BottleWithWineInfo & { daysUntil: number })[] {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const dismissed = getBannerDismissedToday();
+
+  const results: (BottleWithWineInfo & { daysUntil: number })[] = [];
+
+  for (const b of bottles) {
+    if (!b.is_reserved || !b.reserved_date) continue;
+    if (b.reserved_date <= todayStr) continue; // today or past → popup handles it
+    if (dismissed.has(b.id)) continue;
+
+    const diff = Math.round(
+      (new Date(b.reserved_date).getTime() - now.setHours(0, 0, 0, 0)) /
+        (1000 * 60 * 60 * 24)
+    );
+    if (diff >= 1 && diff <= 7) results.push({ ...b, daysUntil: diff });
+  }
+
+  // Sort soonest first
+  return results.sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
 interface KeepReminderModalProps {
   bottles: BottleWithWineInfo[]; // all due reminders
   onOpenBottle: (bottle: BottleWithWineInfo) => void; // open standard mark-as-opened flow

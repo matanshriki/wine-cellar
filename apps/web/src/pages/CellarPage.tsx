@@ -24,7 +24,8 @@ import { WineEventBanner, type WineEvent } from '../components/WineEventBanner';
 import { useDuplicateDetection } from '../hooks/useDuplicateDetection'; // Duplicate detection
 import { ReceiptReviewModal } from '../components/ReceiptReviewModal'; // Receipt scanning
 import { DrinkWindowDebugPanel } from '../components/DrinkWindowDebugPanel'; // DEV: Debug drink windows
-import { KeepReminderModal, findDueReminders } from '../components/KeepReminderModal'; // Keep date reminders
+import { KeepReminderModal, findDueReminders, findUpcomingReminders } from '../components/KeepReminderModal'; // Keep date reminders
+import { KeepUpcomingBanner } from '../components/KeepUpcomingBanner'; // Keep upcoming banner
 // Onboarding v1 – value first: Onboarding components (DEV ONLY)
 import { WelcomeModal } from '../components/WelcomeModal';
 import { DemoBanner } from '../components/DemoBanner';
@@ -158,8 +159,10 @@ export function CellarPage() {
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
 
-  // Keep/Reserve reminders: bottles whose reserved_date has arrived
+  // Keep/Reserve reminders: bottles whose reserved_date has arrived (popup)
   const [keepReminders, setKeepReminders] = useState<bottleService.BottleWithWineInfo[]>([]);
+  // Keep/Reserve upcoming: bottles whose reserved_date is 1–7 days away (banner)
+  const [keepUpcoming, setKeepUpcoming] = useState<(bottleService.BottleWithWineInfo & { daysUntil: number })[]>([]);
 
   // Wine World Moments: Wine events state
   const [activeEvents, setActiveEvents] = useState<WineEvent[]>([]);
@@ -525,11 +528,12 @@ export function CellarPage() {
     }
   }
 
-  // Keep reminders: check for due reserved bottles after load
+  // Keep reminders: check for due (popup) and upcoming (banner) reserved bottles after load
   useEffect(() => {
     if (loading || bottles.length === 0) return;
     const due = findDueReminders(bottles);
     if (due.length > 0) setKeepReminders(due);
+    setKeepUpcoming(findUpcomingReminders(bottles));
   }, [bottles, loading]);
 
   // Infinite scroll: Load more bottles
@@ -1654,6 +1658,11 @@ export function CellarPage() {
           onDismiss={handleEventDismiss}
           onViewMatches={handleViewEventMatches}
         />
+      )}
+
+      {/* Keep / Reserve — upcoming reservation banner (1–7 days before) */}
+      {!isDemoMode && keepUpcoming.length > 0 && !searchQuery && activeFilters.length === 0 && (
+        <KeepUpcomingBanner bottles={keepUpcoming} />
       )}
 
       {/* Innovation Widgets - Tonight's Orbit and Drink Window */}

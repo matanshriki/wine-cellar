@@ -293,6 +293,8 @@
       "removeKeep": "הסר שמירה",
       "keepUpdated": "ההקצאה נשמרה",
       "keepRemoved": "ההקצאה הוסרה",
+      "keepBannerTomorrow": "מחר זה היום!",
+      "keepBannerDays": "עוד {{count}} ימים",
       "keepReminderTitle": "האירוע המיוחד שלך הגיע! 🎉",
       "keepReminderSubtitle": "בקבוק ששמרת מוכן להערב.",
       "keepReminderFor": "שמור עבור",
