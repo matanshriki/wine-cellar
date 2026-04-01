@@ -288,8 +288,18 @@ export function KeepReminderModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 sm:p-6"
-          style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.55)' }}
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+          style={{
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.55)',
+            /* leave room at the top so the card doesn't go full-height on very small screens */
+            paddingTop: '4rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            /* push up above bottom nav + home indicator */
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) handleDone();
           }}
@@ -300,8 +310,13 @@ export function KeepReminderModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.94, opacity: 0, y: 24 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            className="luxury-card w-full overflow-hidden"
-            style={{ maxWidth: '26rem' }}
+            className="luxury-card w-full flex flex-col"
+            style={{
+              maxWidth: '26rem',
+              /* cap height and make body scrollable so nothing is ever clipped */
+              maxHeight: 'calc(100dvh - env(safe-area-inset-bottom, 0px) - 6rem)',
+              overflow: 'hidden',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -340,8 +355,8 @@ export function KeepReminderModal({
               </p>
             </div>
 
-            {/* Body */}
-            <div className="px-6 py-5">
+            {/* Body – scrollable so buttons are always reachable on small screens */}
+            <div className="px-6 py-5 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current.id + '-card'}
