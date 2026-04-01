@@ -960,7 +960,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     style={{
                       background: 'white',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                      transform: isReserved ? 'translateX(22px)' : 'translateX(2px)',
+                      transform: i18n.dir() === 'rtl'
+                        ? (isReserved ? 'translateX(-4px)' : 'translateX(-22px)')
+                        : (isReserved ? 'translateX(22px)' : 'translateX(2px)'),
                     }}
                   />
                 </div>
