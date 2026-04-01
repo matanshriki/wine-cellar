@@ -290,7 +290,7 @@
       "keepTooltip": "שמור · לא בהמלצות",
       "keepReservedFor": "שמור עבור {{name}}",
       "keepDate": "בתאריך {{date}}",
-      "removeKeep": "הסר שמירה",
+      "removeKeep": "הסר הקצאה",
       "keepUpdated": "ההקצאה נשמרה",
       "keepRemoved": "ההקצאה הוסרה",
       "keepBannerTomorrow": "מחר זה היום!",

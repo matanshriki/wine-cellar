@@ -291,7 +291,7 @@
       "keepTooltip": "Reserved · not in suggestions",
       "keepReservedFor": "Reserved for {{name}}",
       "keepDate": "on {{date}}",
-      "removeKeep": "Remove Keep",
+      "removeKeep": "Remove Reservation",
       "keepUpdated": "Reservation saved",
       "keepRemoved": "Reservation removed",
       "keepBannerTomorrow": "Tomorrow is the day!",
