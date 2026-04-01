@@ -286,7 +286,7 @@
       "markOpened": "סמן כנפתח",
       "markOpenedFailed": "סימון הבקבוק כנפתח נכשל",
       "keep": "לשמור",
-      "keepBadge": "לשמור",
+      "keepBadge": "שמור",
       "keepTooltip": "שמור · לא בהמלצות",
       "keepReservedFor": "שמור עבור {{name}}",
       "keepDate": "בתאריך {{date}}",
