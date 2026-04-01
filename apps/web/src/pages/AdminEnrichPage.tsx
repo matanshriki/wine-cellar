@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/SupabaseAuthContext';
+import { AdminHeTranslationsBackfill } from '../components/AdminHeTranslationsBackfill';
 
 interface EnrichWineDetail {
   wine_id: string;
@@ -1288,6 +1289,10 @@ VALUES ('${user?.id}');`}
           <li>Safe to stop and re-run — already-analyzed bottles are skipped automatically in missing_only mode</li>
           <li>Results appear in the user's cellar immediately after each page</li>
         </ul>
+      </div>
+
+      <div style={{ marginTop: '2rem' }}>
+        <AdminHeTranslationsBackfill />
       </div>
     </div>
   );
