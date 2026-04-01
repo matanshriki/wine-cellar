@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
@@ -10,6 +10,7 @@ import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
 import * as storageImageService from '../services/storageImageService';
+import { uploadLabelImage } from '../services/labelScanService';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -101,10 +102,32 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   const [autoFetchingVivino, setAutoFetchingVivino] = useState(false); // Background auto-fetch indicator
   const autoFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer
 
+  // Image upload state
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [newImagePath, setNewImagePath] = useState<string | null>(null); // Storage path for edit-mode update
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
+
   // Reset loading when form is opened for a new bottle/scan (so Save is never stuck disabled)
   useEffect(() => {
     setLoading(false);
   }, [bottle?.id ?? 'new', prefillData?.data?.wine_name ?? '', prefillData?.imagePath ?? '']);
+
+  // Initialise image preview from existing bottle data (edit mode)
+  useEffect(() => {
+    if (!bottle) return;
+    const wine = bottle.wine as any;
+    const existingPath: string | null = wine.label_image_path || wine.image_path || null;
+    const existingUrl: string | null = wine.image_url || null;
+
+    if (existingPath) {
+      storageImageService.getStorageImageUrl(wine.label_image_bucket || 'labels', existingPath)
+        .then(url => { if (url) setImagePreview(url); })
+        .catch(() => {});
+    } else if (existingUrl) {
+      setImagePreview(existingUrl);
+    }
+  }, [bottle?.id]);
 
   // Update displayed price when language changes
   useEffect(() => {
@@ -340,6 +363,38 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
+  const handleImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show local preview immediately
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreview(objectUrl);
+    setNewImagePath(null);
+    setImageUploading(true);
+
+    try {
+      const { path, bucket } = await uploadLabelImage(file);
+      // Store stable storage path in formData (used by createBottle on submit)
+      setFormData(prev => ({ ...prev, label_image_path: path, label_image_bucket: bucket }));
+      setNewImagePath(path);
+    } catch (err: any) {
+      console.error('[BottleForm] Image upload failed:', err);
+      toast.error(err.message || 'Image upload failed. Please try again.');
+      setImagePreview(null);
+      if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+    } finally {
+      setImageUploading(false);
+    }
+  }, []);
+
+  const handleImageClear = useCallback(() => {
+    setImagePreview(null);
+    setNewImagePath(null);
+    setFormData(prev => ({ ...prev, label_image_path: '', label_image_bucket: 'labels' }));
+    if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+  }, []);
+
   function handleClose() {
     console.log('[BottleForm] User closed form without submitting');
     // Clear sessionStorage when user closes form (they're abandoning this wine)
@@ -421,6 +476,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         console.log('[BottleForm] Updating wine fields:', wineUpdates);
         await bottleService.updateWineInfo(bottle.wine_id, wineUpdates);
         console.log('[BottleForm] ✅ Wine fields updated');
+
+        // If a new photo was uploaded in edit mode, persist the storage path
+        if (newImagePath) {
+          console.log('[BottleForm] Updating wine image path:', newImagePath);
+          await bottleService.updateWineStorageImage(
+            bottle.wine_id,
+            newImagePath,
+            formData.label_image_bucket || 'labels'
+          );
+          console.log('[BottleForm] ✅ Wine image path updated');
+        }
         
         trackBottle.edit(); // Track bottle edit
         toast.success(t('bottleForm.bottleUpdated'));
@@ -635,6 +701,102 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               </div>
             </div>
           )}
+
+          {/* Wine Photo Upload */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              {t('bottleForm.photo', 'Wine Photo')}
+              <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+                ({t('bottleForm.optional')})
+              </span>
+            </label>
+
+            {/* Hidden file input */}
+            <input
+              ref={imageFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageFileChange}
+            />
+
+            {imagePreview ? (
+              /* Show preview with replace/remove options */
+              <div className="flex items-center gap-3">
+                <div
+                  className="relative flex-shrink-0 rounded-xl overflow-hidden"
+                  style={{ width: '72px', height: '96px', background: 'var(--bg-muted)' }}
+                >
+                  <img
+                    src={imagePreview}
+                    alt="Wine"
+                    className="w-full h-full object-cover"
+                  />
+                  {imageUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                      <svg className="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => imageFileInputRef.current?.click()}
+                    disabled={imageUploading}
+                    className="btn-luxury-secondary text-sm w-full"
+                    style={{ minHeight: '40px' }}
+                  >
+                    {imageUploading
+                      ? t('bottleForm.photoUploading', 'Uploading...')
+                      : t('bottleForm.photoChange', 'Change Photo')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImageClear}
+                    disabled={imageUploading}
+                    className="btn-ghost text-sm w-full"
+                    style={{ minHeight: '40px' }}
+                  >
+                    {t('bottleForm.photoRemove', 'Remove')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Pick photo button */
+              <button
+                type="button"
+                onClick={() => imageFileInputRef.current?.click()}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-dashed transition-all"
+                style={{
+                  borderColor: 'var(--border-base)',
+                  background: 'var(--bg-surface-elevated)',
+                  color: 'var(--text-secondary)',
+                  minHeight: '56px',
+                }}
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'var(--bg-muted)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {t('bottleForm.photoAdd', 'Add Photo')}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    {t('bottleForm.photoHint', 'Take a photo or choose from your library')}
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">

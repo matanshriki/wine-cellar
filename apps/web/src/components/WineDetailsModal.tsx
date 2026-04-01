@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
+import * as storageImageService from '../services/storageImageService';
 import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { useLocalizedWine } from '../hooks/useLocalizedWine';
 import { AddWineImageDialog } from './AddWineImageDialog';
@@ -879,6 +880,23 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           isOpen={showImageDialog}
           onClose={() => setShowImageDialog(false)}
           onSave={handleSaveImage}
+          onSaveStoragePath={async (storagePath, bucket) => {
+            if (isDemoBottle) {
+              toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+              return;
+            }
+            try {
+              await bottleService.updateWineStorageImage(wine.id, storagePath, bucket);
+              storageImageService.clearImageCache(bucket, storagePath);
+              trackUpload.bottleImageSuccess();
+              toast.success(t('wineImage.updateSuccess', 'Wine image updated!'));
+              if (onRefresh) onRefresh();
+            } catch (error: any) {
+              console.error('Error updating wine storage image:', error);
+              trackUpload.bottleImageError(error.message || 'unknown_error');
+              throw error;
+            }
+          }}
           currentImageUrl={displayImage.imageUrl ?? undefined}
           wineName={localizedWine.wine_name}
         />

@@ -488,3 +488,42 @@ export async function updateWineImage(
   }
 }
 
+/**
+ * Update wine image from Supabase Storage path
+ * Stores the stable storage path and derives the public URL.
+ * Preferred over updateWineImage for user-uploaded photos.
+ */
+export async function updateWineStorageImage(
+  wineId: string,
+  storagePath: string | null,
+  bucket: string = 'labels'
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  let publicUrl: string | null = null;
+  if (storagePath) {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+    publicUrl = data.publicUrl;
+  }
+
+  const { error } = await supabase
+    .from('wines')
+    .update({
+      label_image_path: storagePath,
+      image_url: publicUrl,
+      updated_at: new Date().toISOString(),
+    } as any)
+    .eq('id', wineId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error updating wine storage image:', error);
+    throw new Error('Failed to update wine image');
+  }
+}
+
