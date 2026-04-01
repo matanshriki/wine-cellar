@@ -88,6 +88,7 @@ export function findDueReminders(
 interface KeepReminderModalProps {
   bottles: BottleWithWineInfo[]; // all due reminders
   onOpenBottle: (bottle: BottleWithWineInfo) => void; // open standard mark-as-opened flow
+  onViewDetails: (bottle: BottleWithWineInfo) => void; // open full wine details page
   onRefresh: () => void;
 }
 
@@ -95,11 +96,13 @@ interface KeepReminderModalProps {
 function ReminderCard({
   bottle,
   onOpenBottle,
+  onViewDetails,
   onRefresh,
   onDone,
 }: {
   bottle: BottleWithWineInfo;
   onOpenBottle: (b: BottleWithWineInfo) => void;
+  onViewDetails: (b: BottleWithWineInfo) => void;
   onRefresh: () => void;
   onDone: () => void;
 }) {
@@ -164,15 +167,26 @@ function ReminderCard({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Bottle info */}
-      <div className="flex gap-4 items-center">
+      {/* Bottle info — tappable to open full wine details */}
+      <button
+        onClick={() => onViewDetails(bottle)}
+        className="flex gap-4 items-center w-full text-start rounded-2xl transition-all duration-150 active:scale-[0.98]"
+        style={{
+          background: 'var(--bg-muted)',
+          border: '1px solid var(--border-base)',
+          padding: '0.75rem',
+          WebkitTapHighlightColor: 'transparent',
+          cursor: 'pointer',
+        }}
+        aria-label={localizedWine.wine_name}
+      >
         {/* Label image */}
-        {displayImage.imageUrl && (
+        {displayImage.imageUrl ? (
           <div className="flex-shrink-0">
             <img
               src={displayImage.imageUrl}
               alt={localizedWine.wine_name}
-              className="w-20 h-28 object-cover rounded-xl"
+              className="w-16 h-24 object-cover rounded-xl"
               style={{
                 border: '1px solid var(--border-base)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
@@ -180,18 +194,27 @@ function ReminderCard({
               loading="lazy"
             />
           </div>
+        ) : (
+          /* Placeholder when no image */
+          <div
+            className="flex-shrink-0 w-16 h-24 rounded-xl flex items-center justify-center text-2xl"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}
+            aria-hidden="true"
+          >
+            🍷
+          </div>
         )}
 
         {/* Wine details */}
         <div className="flex-1 min-w-0">
           <p
-            className="text-xl font-bold leading-tight mb-1 line-clamp-2"
+            className="text-lg font-bold leading-tight mb-1 line-clamp-2"
             style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
           >
             {localizedWine.wine_name}
           </p>
           {localizedWine.producer && (
-            <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
               {localizedWine.producer}
             </p>
           )}
@@ -202,7 +225,17 @@ function ReminderCard({
             </p>
           )}
         </div>
-      </div>
+
+        {/* Chevron hint */}
+        <svg
+          className="flex-shrink-0 ms-1"
+          width="16" height="16" viewBox="0 0 16 16" fill="none"
+          aria-hidden="true"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
 
       {/* Occasion card */}
       <div
@@ -302,6 +335,7 @@ function ReminderCard({
 export function KeepReminderModal({
   bottles,
   onOpenBottle,
+  onViewDetails,
   onRefresh,
 }: KeepReminderModalProps) {
   const { t } = useTranslation();
@@ -405,6 +439,7 @@ export function KeepReminderModal({
                   <ReminderCard
                     bottle={current}
                     onOpenBottle={onOpenBottle}
+                    onViewDetails={onViewDetails}
                     onRefresh={onRefresh}
                     onDone={handleDone}
                   />

@@ -2571,6 +2571,11 @@ export function CellarPage() {
             setKeepReminders([]);
             handleMarkOpened(bottle);
           }}
+          onViewDetails={(bottle) => {
+            setKeepReminders([]);
+            setSelectedBottle(bottle);
+            setShowDetailsModal(true);
+          }}
           onRefresh={() => loadBottles(true)}
         />
       )}
