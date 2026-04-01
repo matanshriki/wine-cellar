@@ -21,48 +21,67 @@ import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { toast } from '../lib/toast';
 
 const DISMISSED_KEY = 'keep-reminder-dismissed'; // localStorage key
+const SNOOZE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
-/** Returns the set of bottle IDs dismissed today. */
-function getDismissedToday(): Set<string> {
+/**
+ * Stored shape: Record<bottleId, expiresAt (ms timestamp)>
+ * "Opened" or "Remove reservation" actions store expiry = Infinity (permanent for day).
+ * "Keep for later" stores expiry = now + 1 hour.
+ */
+type DismissedMap = Record<string, number>;
+
+function readDismissed(): DismissedMap {
   try {
     const raw = localStorage.getItem(DISMISSED_KEY);
-    if (!raw) return new Set();
-    const parsed: { date: string; ids: string[] } = JSON.parse(raw);
-    const today = new Date().toISOString().slice(0, 10);
-    if (parsed.date !== today) return new Set();
-    return new Set(parsed.ids);
+    return raw ? JSON.parse(raw) : {};
   } catch {
-    return new Set();
+    return {};
   }
 }
 
-/** Mark a bottle ID as dismissed for today. */
-function dismissForToday(bottleId: string) {
+function writeDismissed(map: DismissedMap) {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const existing = getDismissedToday();
-    existing.add(bottleId);
-    localStorage.setItem(
-      DISMISSED_KEY,
-      JSON.stringify({ date: today, ids: Array.from(existing) })
-    );
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(map));
   } catch {
     // non-critical
   }
 }
 
-/** Returns bottles whose reserved_date ≤ today and haven't been dismissed today. */
+/** Returns the set of bottle IDs whose snooze/dismiss window has not yet expired. */
+function getActivelySnoozed(): Set<string> {
+  const now = Date.now();
+  const map = readDismissed();
+  return new Set(Object.entries(map).filter(([, exp]) => now < exp).map(([id]) => id));
+}
+
+/** Snooze a bottle for 1 hour ("Keep for later"). */
+function snoozeFor1Hour(bottleId: string) {
+  const map = readDismissed();
+  map[bottleId] = Date.now() + SNOOZE_DURATION_MS;
+  writeDismissed(map);
+}
+
+/** Permanently dismiss for the rest of the day (opened / removed). */
+function dismissUntilMidnight(bottleId: string) {
+  const map = readDismissed();
+  const midnight = new Date();
+  midnight.setHours(23, 59, 59, 999);
+  map[bottleId] = midnight.getTime();
+  writeDismissed(map);
+}
+
+/** Returns bottles whose reserved_date ≤ today and whose snooze has expired. */
 export function findDueReminders(
   bottles: BottleWithWineInfo[]
 ): BottleWithWineInfo[] {
   const today = new Date().toISOString().slice(0, 10);
-  const dismissed = getDismissedToday();
+  const snoozed = getActivelySnoozed();
   return bottles.filter(
     (b) =>
       b.is_reserved &&
       b.reserved_date &&
       b.reserved_date <= today &&
-      !dismissed.has(b.id)
+      !snoozed.has(b.id)
   );
 }
 
@@ -98,12 +117,12 @@ function ReminderCard({
     });
 
   const handleSnooze = () => {
-    dismissForToday(bottle.id);
+    snoozeFor1Hour(bottle.id);
     onDone();
   };
 
   const handleOpen = () => {
-    dismissForToday(bottle.id);
+    dismissUntilMidnight(bottle.id);
     onDone();
     onOpenBottle(bottle);
   };
@@ -118,7 +137,7 @@ function ReminderCard({
         reserved_note: null,
       });
       toast.success(t('cellar.bottle.keepRemoved'));
-      dismissForToday(bottle.id);
+      dismissUntilMidnight(bottle.id);
       onRefresh();
       onDone();
     } catch {
