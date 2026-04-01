@@ -107,6 +107,7 @@ function ReminderCard({
   const localizedWine = useLocalizedWine(bottle.wine);
   const displayImage = useWineDisplayImage(bottle.wine);
   const [removing, setRemoving] = useState(false);
+  const [opening, setOpening] = useState(false);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString(i18n.language, {
@@ -121,7 +122,21 @@ function ReminderCard({
     onDone();
   };
 
-  const handleOpen = () => {
+  const handleOpen = async () => {
+    setOpening(true);
+    // Clear the reservation first — the occasion has arrived, Keep is fulfilled.
+    // This ensures the popup never comes back even if the bottle has multiple units.
+    try {
+      await bottleService.updateBottle(bottle.id, {
+        is_reserved: false,
+        reserved_for: null,
+        reserved_date: null,
+        reserved_note: null,
+      });
+      onRefresh();
+    } catch {
+      // non-critical — dismissUntilMidnight still prevents re-showing today
+    }
     dismissUntilMidnight(bottle.id);
     onDone();
     onOpenBottle(bottle);
@@ -233,16 +248,19 @@ function ReminderCard({
         {/* Primary: Open bottle */}
         <button
           onClick={handleOpen}
+          disabled={opening || removing}
           className="w-full py-3.5 px-5 rounded-xl font-semibold text-base transition-all duration-200"
           style={{
             background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
             color: 'white',
             boxShadow: '0 4px 16px rgba(164,77,90,0.3)',
             minHeight: '52px',
+            opacity: opening ? 0.75 : 1,
+            cursor: opening ? 'not-allowed' : 'pointer',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          {t('cellar.bottle.keepReminderOpenNow')}
+          {opening ? '…' : t('cellar.bottle.keepReminderOpenNow')}
         </button>
 
         {/* Secondary: Snooze + Remove */}
