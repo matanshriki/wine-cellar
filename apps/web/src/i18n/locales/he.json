@@ -496,7 +496,30 @@
       "hint": "בנה את האוסף שלך ואנחנו נעזור לך לגלות את הבקבוק המושלם לכל אירוע.",
       "goToCellar": "עבור למרתף שלי"
     },
-    "checkingCellar": "בודק את המרתף שלך..."
+    "checkingCellar": "בודק את המרתף שלך...",
+    "generated": {
+      "explainTop": "יין {{color}} מ{{origin}} הוא בחירה מצוינת ל{{meal}}.",
+      "explainOther": "אפשרות {{color}} נהדרת מ{{origin}} שמשתלבת היטב עם {{meal}}.",
+      "readinessReady": "הסומלייה מאשר שהיין מוכן לשתייה הערב.",
+      "readinessPeakSoon": "הוא מתקרב לשיאו — זמן מצוין לפתוח אותו.",
+      "readinessHold": "הערה: הסומלייה ממליץ שהיין עדיין ירוויח מיישון נוסף, אבל הוא ההתאמה הטובה ביותר במרתף שלך להערב.",
+      "readinessPeak": "הוא בשיא מצב השתייה שלו עכשיו!",
+      "readinessInWindow": "הוא מוכן לשתייה ויתבטא יפה.",
+      "occasionCelebration": "מושלם לאירוע מיוחד.",
+      "occasionDate": "נהדר לערב רומנטי.",
+      "occasionFriends": "האורחים שלך יאהבו את זה.",
+      "serveAt": "הגש ב-{{temp}}.",
+      "decantFor": "דקנט ל-{{minutes}} דקות",
+      "decantForBest": "דקנט ל-30 דקות לתוצאה מיטבית",
+      "decantHelpful": "אין צורך בדקנטור, אבל 15 דקות יכולות לעזור",
+      "noDecanting": "אין צורך בדקנטור",
+      "serveImmediately": "הגש מיד, אל תעביר לדקנטור",
+      "affinityBoldStructured": "מתאים לטעם שלך: עשיר ומובנה",
+      "affinityFreshElegant": "מתאים לטעם שלך: רענן ואלגנטי",
+      "affinityRichOaky": "מתאים לטעם שלך: עשיר ואלוני",
+      "affinityDryBalanced": "מתאים לטעם שלך: יבש ומאוזן",
+      "affinityGreatMatch": "התאמה מצוינת לחיך שלך"
+    }
   },
   "history": {
     "title": "היסטוריה וסטטיסטיקות",

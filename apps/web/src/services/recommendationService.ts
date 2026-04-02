@@ -9,6 +9,7 @@
  * - Session rotation (tracks shown bottles in localStorage)
  */
 
+import i18n from '../i18n/config';
 import { supabase } from '../lib/supabase';
 import type { Database, TasteProfile } from '../types/supabase';
 import * as labelArtService from './labelArtService';
@@ -405,71 +406,68 @@ function trackShownBottles(bottleIds: string[]) {
 }
 
 function generateExplanation(bottle: BottleWithWine, wine: Wine, input: RecommendationInput, rank: number): string {
+  const t = i18n.t.bind(i18n);
   const mealType = input.mealType || 'your meal';
   const occasion = input.occasion || 'this occasion';
   const wineColor = wine.color.toLowerCase();
-  
-  let explanation = '';
+  const origin = wine.region || wine.producer;
 
-  if (rank === 1) {
-    explanation = `This ${wineColor} wine from ${wine.region || wine.producer} is an excellent choice for ${mealType}. `;
-  } else {
-    explanation = `A great ${wineColor} option from ${wine.region || wine.producer} that pairs well with ${mealType}. `;
-  }
+  let explanation = rank === 1
+    ? t('recommendation.generated.explainTop', { color: wineColor, origin, meal: mealType })
+    : t('recommendation.generated.explainOther', { color: wineColor, origin, meal: mealType });
 
-  // Add readiness info — prefer the AI label when available
   const aiLabel = (bottle as any).readiness_label as string | undefined;
   if (aiLabel === 'READY') {
-    explanation += 'The sommelier AI confirms it\'s ready to drink tonight. ';
+    explanation += ' ' + t('recommendation.generated.readinessReady');
   } else if (aiLabel === 'PEAK_SOON') {
-    explanation += 'It\'s approaching its peak — a great time to open it. ';
+    explanation += ' ' + t('recommendation.generated.readinessPeakSoon');
   } else if (aiLabel === 'HOLD') {
-    explanation += 'Note: the sommelier analysis suggests this wine still benefits from more aging, but it\'s the best match in your cellar for tonight. ';
+    explanation += ' ' + t('recommendation.generated.readinessHold');
   } else if (bottle.readiness_status) {
     const status = bottle.readiness_status.toLowerCase();
     if (status === 'peak') {
-      explanation += 'It\'s at peak drinking condition right now! ';
+      explanation += ' ' + t('recommendation.generated.readinessPeak');
     } else if (status === 'inwindow' || status === 'ready') {
-      explanation += 'It\'s ready to drink and will show beautifully. ';
+      explanation += ' ' + t('recommendation.generated.readinessInWindow');
     }
   }
 
-  // Add occasion-specific note
   if (occasion.includes('celebration') || occasion.includes('special')) {
-    explanation += 'Perfect for a special occasion. ';
+    explanation += ' ' + t('recommendation.generated.occasionCelebration');
   } else if (occasion.includes('date')) {
-    explanation += 'Great for a romantic evening. ';
+    explanation += ' ' + t('recommendation.generated.occasionDate');
   } else if (occasion.includes('friends') || occasion.includes('hosting')) {
-    explanation += 'Your guests will love this. ';
+    explanation += ' ' + t('recommendation.generated.occasionFriends');
   }
 
   return explanation.trim();
 }
 
 function generateServingInstructions(bottle: BottleWithWine, wine: Wine): string {
+  const t = i18n.t.bind(i18n);
   const wineColor = wine.color.toLowerCase();
-  
+
   let temp = '16°C';
-  let decanting = 'No decanting needed';
-  
+  let decanting = t('recommendation.generated.noDecanting');
+
   if (wineColor === 'red') {
     temp = bottle.serve_temp_c ? `${bottle.serve_temp_c}°C` : '16-18°C';
-    
+
     if (bottle.decant_minutes && bottle.decant_minutes > 0) {
-      decanting = `Decant for ${bottle.decant_minutes} minutes`;
+      decanting = t('recommendation.generated.decantFor', { minutes: bottle.decant_minutes });
     } else if (wine.vintage && wine.vintage < new Date().getFullYear() - 5) {
-      decanting = 'Decant for 30 minutes for best results';
+      decanting = t('recommendation.generated.decantForBest');
     } else {
-      decanting = 'No decanting needed, but 15 minutes can help';
+      decanting = t('recommendation.generated.decantHelpful');
     }
   } else if (wineColor === 'white' || wineColor === 'rose') {
     temp = bottle.serve_temp_c ? `${bottle.serve_temp_c}°C` : '8-12°C';
-    decanting = 'No decanting needed';
+    decanting = t('recommendation.generated.noDecanting');
   } else if (wineColor === 'sparkling') {
     temp = '6-8°C';
-    decanting = 'Serve immediately, do not decant';
+    decanting = t('recommendation.generated.serveImmediately');
   }
 
-  return `Serve at ${temp}. ${decanting}.`;
+  return `${t('recommendation.generated.serveAt', { temp })} ${decanting}.`;
 }
 

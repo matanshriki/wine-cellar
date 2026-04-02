@@ -5,6 +5,7 @@
  * Used to personalize recommendations across the app.
  */
 
+import i18n from '../i18n/config';
 import { supabase } from '../lib/supabase';
 import type { TasteProfile, TasteProfileVector, TasteProfilePreferences } from '../types/supabase';
 import * as wineProfileService from './wineProfileService';
@@ -471,20 +472,21 @@ export function generateAffinityReason(
   const highOak = userVector.oak > 0.6 && wineProfile.oak >= 4;
   const lowSweetness = userVector.sweetness < 0.3 && wineProfile.sweetness <= 1;
   
+  const t = i18n.t.bind(i18n);
   if (highBody && highTannin) {
-    return 'Matches your taste: bold & structured';
+    return t('recommendation.generated.affinityBoldStructured');
   }
   if (highAcidity && !highBody) {
-    return 'Matches your taste: fresh & elegant';
+    return t('recommendation.generated.affinityFreshElegant');
   }
   if (highOak && highBody) {
-    return 'Matches your taste: rich & oaky';
+    return t('recommendation.generated.affinityRichOaky');
   }
   if (lowSweetness && bodyMatch) {
-    return 'Matches your taste: dry & balanced';
+    return t('recommendation.generated.affinityDryBalanced');
   }
   if (bodyMatch && tanninMatch && acidityMatch) {
-    return 'Great match for your palate';
+    return t('recommendation.generated.affinityGreatMatch');
   }
   
   return null;

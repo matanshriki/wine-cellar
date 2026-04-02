@@ -517,7 +517,30 @@
       "hint": "Build your collection and we'll help you discover the perfect bottle for any occasion.",
       "goToCellar": "Go to My Cellar"
     },
-    "checkingCellar": "Checking your cellar..."
+    "checkingCellar": "Checking your cellar...",
+    "generated": {
+      "explainTop": "This {{color}} wine from {{origin}} is an excellent choice for {{meal}}.",
+      "explainOther": "A great {{color}} option from {{origin}} that pairs well with {{meal}}.",
+      "readinessReady": "The sommelier AI confirms it's ready to drink tonight.",
+      "readinessPeakSoon": "It's approaching its peak — a great time to open it.",
+      "readinessHold": "Note: the sommelier analysis suggests this wine still benefits from more aging, but it's the best match in your cellar for tonight.",
+      "readinessPeak": "It's at peak drinking condition right now!",
+      "readinessInWindow": "It's ready to drink and will show beautifully.",
+      "occasionCelebration": "Perfect for a special occasion.",
+      "occasionDate": "Great for a romantic evening.",
+      "occasionFriends": "Your guests will love this.",
+      "serveAt": "Serve at {{temp}}.",
+      "decantFor": "Decant for {{minutes}} minutes",
+      "decantForBest": "Decant for 30 minutes for best results",
+      "decantHelpful": "No decanting needed, but 15 minutes can help",
+      "noDecanting": "No decanting needed",
+      "serveImmediately": "Serve immediately, do not decant",
+      "affinityBoldStructured": "Matches your taste: bold & structured",
+      "affinityFreshElegant": "Matches your taste: fresh & elegant",
+      "affinityRichOaky": "Matches your taste: rich & oaky",
+      "affinityDryBalanced": "Matches your taste: dry & balanced",
+      "affinityGreatMatch": "Great match for your palate"
+    }
   },
   "history": {
     "title": "History & Stats",
