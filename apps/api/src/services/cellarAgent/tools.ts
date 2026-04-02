@@ -194,7 +194,9 @@ export function extractConstraints(message: string): ExtractedConstraints {
 
 /**
  * Whether we should nudge the model toward a clarifying question first.
- * Conservative: only when input is extremely underspecified.
+ *
+ * Triggers when key pairing/occasion context is missing — a real sommelier
+ * always asks what you're eating before picking a bottle.
  */
 export function needsClarification(
   intent: CellarIntent,
@@ -214,6 +216,27 @@ export function needsClarification(
     );
     const anyMatch = constraints.colors.some((c) => set.has(c));
     if (!anyMatch) return true;
+  }
+
+  // Meal occasion mentioned (lunch, dinner) but no specific food — ask what they're eating
+  const ml = message.toLowerCase();
+  const mentionsMealOccasion =
+    /\b(lunch|dinner|supper|brunch|meal|tonight)\b/i.test(ml) ||
+    /ארוח[הת]|צהריים|ערב/.test(message);
+  if (mentionsMealOccasion && constraints.foodKeywords.length === 0 && historyLen === 0) {
+    return true;
+  }
+
+  // Very generic request with almost no constraints on a first turn
+  if (
+    historyLen === 0 &&
+    intent === 'single_recommendation' &&
+    constraints.foodKeywords.length === 0 &&
+    constraints.regionHints.length === 0 &&
+    constraints.grapeHints.length === 0 &&
+    constraints.colors.length === 0
+  ) {
+    return true;
   }
 
   return false;
@@ -255,7 +278,10 @@ export function buildReasoningContext(
   let clarificationHint: string | undefined;
   if (clarificationNeeded) {
     clarificationHint =
-      'The user may need a brief clarifying question before locking a bottle, unless the cellar makes the answer obvious.';
+      'IMPORTANT: The user has NOT provided enough context for a confident recommendation. ' +
+      'You MUST ask a short, friendly clarifying question FIRST (e.g., what are you eating? ' +
+      'what is the occasion? how many guests?). Use the "followUpQuestion" field and OMIT ' +
+      '"recommendation" / "bottles". Do NOT guess — a great sommelier asks before pouring.';
   }
 
   return {
