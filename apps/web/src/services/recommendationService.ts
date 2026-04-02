@@ -405,16 +405,29 @@ function trackShownBottles(bottleIds: string[]) {
   }
 }
 
+function translateColor(color: string): string {
+  const key = `cellar.wineStyles.${color.toLowerCase()}`;
+  const translated = i18n.t(key);
+  return translated !== key ? translated : color;
+}
+
+function translateMeal(meal: string): string {
+  const key = `recommendation.form.mealTypes.${meal}`;
+  const translated = i18n.t(key);
+  return translated !== key ? translated : meal;
+}
+
 function generateExplanation(bottle: BottleWithWine, wine: Wine, input: RecommendationInput, rank: number): string {
   const t = i18n.t.bind(i18n);
-  const mealType = input.mealType || 'your meal';
+  const mealRaw = input.mealType || 'your meal';
   const occasion = input.occasion || 'this occasion';
-  const wineColor = wine.color.toLowerCase();
+  const color = translateColor(wine.color);
+  const meal = translateMeal(mealRaw);
   const origin = wine.region || wine.producer;
 
   let explanation = rank === 1
-    ? t('recommendation.generated.explainTop', { color: wineColor, origin, meal: mealType })
-    : t('recommendation.generated.explainOther', { color: wineColor, origin, meal: mealType });
+    ? t('recommendation.generated.explainTop', { color, origin, meal })
+    : t('recommendation.generated.explainOther', { color, origin, meal });
 
   const aiLabel = (bottle as any).readiness_label as string | undefined;
   if (aiLabel === 'READY') {
