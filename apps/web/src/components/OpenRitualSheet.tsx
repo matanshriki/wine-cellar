@@ -9,7 +9,7 @@
  * Calls markBottleOpened at Step 2 → 3 transition (no DB writes if cancelled).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Transition } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import * as historyService from '../services/historyService';
@@ -286,20 +286,26 @@ export function OpenRitualSheet({
 
   const serving = bottle ? deriveServingInfo(bottle) : null;
 
-  // Reset state when sheet opens
-  const handleOpen = useCallback(() => {
+  // Reset all state whenever the sheet opens for a new bottle.
+  // Using useEffect on isOpen is more reliable than onAnimationComplete,
+  // which fires for both enter AND exit animations and can skip the reset
+  // when the previous ritual ended at step 'done'.
+  useEffect(() => {
+    if (!isOpen) return;
     setStep('open');
     setDirection(1);
     setQty(1);
     setLoading(false);
     setHistoryId(null);
+    setRateLaterEnabled(false);
     if (serving) {
       const defaultDecant = serving.decantMins > 0 ? serving.decantMins : 30;
       setTimerEnabled(serving.decantMins > 0);
       setTimerDuration(defaultDecant);
       setRateLaterMins(defaultRateLaterMins(serving.decantMins));
     }
-  }, [serving]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Navigate steps
   function goTo(nextStep: Step) {
@@ -307,8 +313,10 @@ export function OpenRitualSheet({
     setStep(nextStep);
   }
 
-  // Perform the actual open action (Step 2 → 3)
-  async function handleStartAndOpen() {
+  // Perform the actual open action (Step 2 → 3).
+  // skipTimer: true when the user clicks "Open without timer" — avoids a React
+  // state-batching race where timerEnabled could still read as true.
+  async function handleStartAndOpen(skipTimer = false) {
     if (!bottle) return;
     setLoading(true);
     try {
@@ -322,27 +330,32 @@ export function OpenRitualSheet({
 
       setHistoryId(history.id);
 
-      // Start decant timer if enabled
-      if (timerEnabled && timerDuration > 0) {
-        createTimer({
-          bottle_id: bottle.id,
-          wine_id: bottle.wine_id,
-          wine_name: bottle.wine.wine_name,
-          producer: bottle.wine.producer,
-          history_id: history.id,
-          started_at: new Date().toISOString(),
-          duration_minutes: timerDuration,
-          type: 'decant',
-          label: t('openRitual.timer.decantLabel', 'Decanting'),
-        });
-      }
-
+      // Advance the UI immediately — timer creation is best-effort and must
+      // not block the success path (createTimer throws if userId isn't loaded yet).
       onComplete(history.id);
       setDirection(1);
       setStep('done');
+
+      // Start decant timer if enabled (non-critical: swallow errors silently)
+      if (!skipTimer && timerEnabled && timerDuration > 0) {
+        try {
+          createTimer({
+            bottle_id: bottle.id,
+            wine_id: bottle.wine_id,
+            wine_name: bottle.wine.wine_name,
+            producer: bottle.wine.producer,
+            history_id: history.id,
+            started_at: new Date().toISOString(),
+            duration_minutes: timerDuration,
+            type: 'decant',
+            label: t('openRitual.timer.decantLabel', 'Decanting'),
+          });
+        } catch (timerErr) {
+          console.warn('[OpenRitual] Decant timer creation failed (non-critical):', timerErr);
+        }
+      }
     } catch (err: any) {
       const msg = err?.message || t('openRitual.errorOpen', 'Failed to open bottle');
-      // Show toast via built-in import
       import('../lib/toast').then(({ toast }) => toast.error(msg));
     } finally {
       setLoading(false);
@@ -412,7 +425,6 @@ export function OpenRitualSheet({
             role="dialog"
             aria-modal="true"
             aria-label={t('openRitual.ariaLabel', 'Open bottle ritual')}
-            onAnimationComplete={() => step === 'open' && handleOpen()}
           >
             <Handle />
 
@@ -715,10 +727,7 @@ export function OpenRitualSheet({
                       : t('openRitual.step2.open', 'Open Bottle')}
                   </motion.button>
                   <button
-                    onClick={() => {
-                      setTimerEnabled(false);
-                      handleStartAndOpen();
-                    }}
+                    onClick={() => handleStartAndOpen(true)}
                     disabled={loading}
                     className="w-full py-3 text-sm rounded-xl transition-colors"
                     style={{ color: 'var(--text-tertiary)' }}
