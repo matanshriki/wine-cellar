@@ -12,6 +12,7 @@
 import i18n from '../i18n/config';
 import { supabase } from '../lib/supabase';
 import type { Database, TasteProfile } from '../types/supabase';
+import { getLocalizedWineData } from '../utils/wineTranslations';
 import * as labelArtService from './labelArtService';
 import * as wineProfileService from './wineProfileService';
 import * as tasteProfileService from './tasteProfileService';
@@ -309,8 +310,9 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   const recommendations: Recommendation[] = topBottles.map((item, index) => {
     const { bottle, score, affinityReason } = item;
     const wine = bottle.wine;
+    const localized = getLocalizedWineData(wine, i18n.language);
 
-    // Generate explanation
+    // Generate explanation (uses localized color/region internally)
     let explanation = generateExplanation(bottle, wine, input, index + 1);
 
     // Generate serving instructions
@@ -318,16 +320,16 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
 
     // Get display image using centralized logic (user image > AI generated > placeholder)
     const displayImage = labelArtService.getWineDisplayImage(wine);
-    
+
     return {
       bottleId: bottle.id,
       bottle: {
         id: bottle.id,
-        name: wine.wine_name,
-        producer: wine.producer,
+        name: localized.wine_name,
+        producer: localized.producer,
         vintage: wine.vintage || undefined,
         style: wine.color,
-        region: wine.region || undefined,
+        region: localized.region || undefined,
         quantity: bottle.quantity,
         rating: wine.rating || null,
         vivinoUrl: wine.vivino_url || null,
@@ -423,7 +425,8 @@ function generateExplanation(bottle: BottleWithWine, wine: Wine, input: Recommen
   const occasion = input.occasion || 'this occasion';
   const color = translateColor(wine.color);
   const meal = translateMeal(mealRaw);
-  const origin = wine.region || wine.producer;
+  const localized = getLocalizedWineData(wine, i18n.language);
+  const origin = localized.region || localized.producer;
 
   let explanation = rank === 1
     ? t('recommendation.generated.explainTop', { color, origin, meal })
