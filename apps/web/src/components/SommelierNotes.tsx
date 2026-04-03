@@ -153,6 +153,39 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
         {analysis.analysis_summary}
       </p>
 
+      {(analysis.barrel_aging_note ||
+        (analysis.barrel_aging_months_est !== null && analysis.barrel_aging_months_est !== undefined)) && (
+        <div
+          className="text-sm mb-3 p-3 rounded-lg"
+          style={{
+            backgroundColor: 'var(--bg-muted)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+            {t('cellar.sommelier.barrelAging', 'Barrel aging (estimate)')}
+          </div>
+          {analysis.barrel_aging_note ? (
+            <p className="leading-relaxed mb-1" style={{ color: 'var(--text-secondary)' }}>
+              {analysis.barrel_aging_note}
+            </p>
+          ) : null}
+          {analysis.barrel_aging_months_est !== null && analysis.barrel_aging_months_est !== undefined ? (
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {t('cellar.sommelier.barrelMonthsEst', '~{{months}} months in barrel (estimate)', {
+                months: analysis.barrel_aging_months_est,
+              })}
+            </p>
+          ) : null}
+          <p className="text-xs mt-2 italic" style={{ color: 'var(--text-tertiary)' }}>
+            {t(
+              'cellar.sommelier.barrelDisclaimer',
+              'From public wine knowledge — not verified for this bottle.',
+            )}
+          </p>
+        </div>
+      )}
+
       {/* Serving Suggestions */}
       <div className="flex items-center gap-3 mb-3 text-sm">
         {analysis.serving_temp_c && (

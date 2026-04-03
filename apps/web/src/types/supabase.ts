@@ -114,6 +114,8 @@ export interface Database {
           notes: string | null
           image_url: string | null
           translations: Json | null
+          barrel_aging_note: string | null
+          barrel_aging_months_est: number | null
           created_at: string
           updated_at: string
         }
@@ -132,6 +134,8 @@ export interface Database {
           notes?: string | null
           image_url?: string | null
           translations?: Json | null
+          barrel_aging_note?: string | null
+          barrel_aging_months_est?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -150,6 +154,8 @@ export interface Database {
           notes?: string | null
           image_url?: string | null
           translations?: Json | null
+          barrel_aging_note?: string | null
+          barrel_aging_months_est?: number | null
           created_at?: string
           updated_at?: string
         }

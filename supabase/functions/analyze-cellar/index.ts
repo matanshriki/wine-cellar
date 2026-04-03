@@ -11,6 +11,12 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  buildWineAnalysisSystemPrompt,
+  buildWineAnalysisUserPrompt,
+  normalizeBarrelFields,
+  type WineAnalysisInput,
+} from '../_shared/wineAiAnalysis.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -25,6 +31,8 @@ interface AnalysisRequest {
   limit?: number;
   pageSize?: number;
   offset?: number;
+  /** 'en' | 'he' — matches single-bottle analyze-wine language */
+  language?: string;
 }
 
 interface BottleStatus {
@@ -93,8 +101,9 @@ serve(async (req) => {
     const limit = Math.min(body.limit || MAX_BOTTLES_PER_REQUEST, MAX_BOTTLES_PER_REQUEST);
     const pageSize = body.pageSize || 50; // Default page size for pagination
     const offset = body.offset || 0; // Starting offset for pagination
+    const language = body.language === 'he' ? 'he' : 'en';
 
-    console.log('[Analyze Cellar] Mode:', mode, 'Limit:', limit, 'PageSize:', pageSize, 'Offset:', offset);
+    console.log('[Analyze Cellar] Mode:', mode, 'Limit:', limit, 'PageSize:', pageSize, 'Offset:', offset, 'Lang:', language);
 
     // Fetch user's bottles with pagination
     // This prevents memory issues with large cellars
@@ -103,6 +112,7 @@ serve(async (req) => {
       .select(`
         id,
         wine_id,
+        notes,
         analyzed_at,
         analysis_summary,
         readiness_label,
@@ -111,6 +121,8 @@ serve(async (req) => {
           producer,
           vintage,
           region,
+          country,
+          appellation,
           grapes,
           color
         )
@@ -178,7 +190,7 @@ serve(async (req) => {
 
     for (const chunk of chunks) {
       const chunkResults = await Promise.all(
-        chunk.map((bottle: any) => analyzeBottle(bottle, supabaseAdmin))
+        chunk.map((bottle: any) => analyzeBottle(bottle, supabaseAdmin, language))
       );
       results.push(...chunkResults);
     }
@@ -213,21 +225,24 @@ serve(async (req) => {
 /**
  * Analyze a single bottle
  */
-async function analyzeBottle(bottle: any, supabase: any): Promise<BottleStatus> {
+async function analyzeBottle(bottle: any, supabase: any, language: string): Promise<BottleStatus> {
   try {
     console.log('[Analyze Cellar] Processing:', bottle.wine.wine_name);
 
     // Call OpenAI for analysis
-    const wineInfo = {
+    const wineInput: WineAnalysisInput = {
       wine_name: bottle.wine.wine_name,
       producer: bottle.wine.producer,
       vintage: bottle.wine.vintage,
       region: bottle.wine.region,
-      grapes: Array.isArray(bottle.wine.grapes) ? bottle.wine.grapes.join(', ') : '',
+      country: bottle.wine.country,
+      appellation: bottle.wine.appellation,
+      grapes: bottle.wine.grapes,
       color: bottle.wine.color,
+      notes: bottle.notes,
     };
 
-    const analysis = await generateAIAnalysis(wineInfo);
+    const analysis = await generateAIAnalysis(wineInput, language);
 
     // Store results in database
     const updateData = {
@@ -261,6 +276,19 @@ async function analyzeBottle(bottle: any, supabase: any): Promise<BottleStatus> 
       };
     }
 
+    if (bottle.wine_id) {
+      const { error: wineErr } = await supabase
+        .from('wines')
+        .update({
+          barrel_aging_note: analysis.barrel_aging_note ?? null,
+          barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+        })
+        .eq('id', bottle.wine_id);
+      if (wineErr) {
+        console.warn('[Analyze Cellar] Wine barrel update failed:', bottle.wine_id, wineErr);
+      }
+    }
+
     console.log('[Analyze Cellar] ✅ Success:', bottle.wine.wine_name);
 
     return {
@@ -281,38 +309,19 @@ async function analyzeBottle(bottle: any, supabase: any): Promise<BottleStatus> 
 }
 
 /**
- * Generate AI analysis using OpenAI
+ * Generate AI analysis using OpenAI (aligned with analyze-wine / single-bottle flow)
  */
-async function generateAIAnalysis(wineInfo: any): Promise<any> {
+async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Promise<any> {
   if (!OPENAI_API_KEY) {
     console.warn('[Analyze Cellar] No OpenAI API key, using fallback');
-    return generateFallbackAnalysis(wineInfo);
+    return generateFallbackAnalysis(wine);
   }
 
+  const currentYear = new Date().getFullYear();
+  const systemPrompt = buildWineAnalysisSystemPrompt('cellar', language);
+  const userPrompt = buildWineAnalysisUserPrompt(wine, currentYear, language, 'cellar');
+
   try {
-    const prompt = `As an expert sommelier, analyze this wine and provide detailed tasting notes and recommendations.
-
-Wine Details:
-- Name: ${wineInfo.wine_name}
-- Producer: ${wineInfo.producer || 'Unknown'}
-- Vintage: ${wineInfo.vintage || 'NV'}
-- Region: ${wineInfo.region || 'Unknown'}
-- Grapes: ${wineInfo.grapes || 'Unknown'}
-- Color: ${wineInfo.color}
-
-Provide a JSON response with:
-- analysis_summary: A 2-3 sentence sommelier's note about this wine
-- analysis_reasons: Array of 3-4 bullet points explaining the analysis
-- readiness_label: "READY", "HOLD", or "PEAK_SOON"
-- serving_temp_c: Optimal serving temperature in Celsius
-- decant_minutes: Recommended decanting time in minutes
-- drink_window_start: Year to start drinking (null if ready now)
-- drink_window_end: Year to drink by (null if no specific window)
-- confidence: "LOW", "MEDIUM", or "HIGH"
-- assumptions: Any assumptions made (or null)
-
-Focus on practical advice, elegance, and luxury. Be concise but insightful.`;
-
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -322,14 +331,8 @@ Focus on practical advice, elegance, and luxury. Be concise but insightful.`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          {
-            role: 'system',
-            content: 'You are an expert sommelier providing professional wine analysis.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
         response_format: { type: 'json_object' },
@@ -338,25 +341,22 @@ Focus on practical advice, elegance, and luxury. Be concise but insightful.`;
 
     if (!response.ok) {
       console.error('[Analyze Cellar] OpenAI error:', response.status);
-      return generateFallbackAnalysis(wineInfo);
+      return generateFallbackAnalysis(wine);
     }
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    const analysis = JSON.parse(content);
-
-    return analysis;
-
+    return normalizeBarrelFields(JSON.parse(content) as Record<string, unknown>);
   } catch (error) {
     console.error('[Analyze Cellar] OpenAI failed, using fallback:', error);
-    return generateFallbackAnalysis(wineInfo);
+    return generateFallbackAnalysis(wine);
   }
 }
 
 /**
  * Fallback deterministic analysis
  */
-function generateFallbackAnalysis(wineInfo: any): any {
+function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
   const currentYear = new Date().getFullYear();
   const age = wineInfo.vintage ? currentYear - wineInfo.vintage : 0;
   const color = wineInfo.color || 'red';
@@ -400,6 +400,8 @@ function generateFallbackAnalysis(wineInfo: any): any {
     drink_window_end: null,
     confidence: confidence,
     assumptions: 'Analysis based on general wine aging principles.',
+    barrel_aging_note: null,
+    barrel_aging_months_est: null,
   };
 }
 

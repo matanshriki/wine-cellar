@@ -25,6 +25,9 @@ export interface AIAnalysis {
   confidence: 'LOW' | 'MEDIUM' | 'HIGH';
   assumptions?: string | null;
   analyzed_at: string;
+  /** From wines row — populated after AI analysis (bulk or single) */
+  barrel_aging_note?: string | null;
+  barrel_aging_months_est?: number | null;
 }
 
 const CACHE_FRESHNESS_DAYS = 30;
@@ -46,7 +49,10 @@ export function isAnalysisFresh(analyzedAt: string): boolean {
 export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | null> {
   const { data, error } = await supabase
     .from('bottles')
-    .select('*')
+    .select(`
+      *,
+      wine:wines(barrel_aging_note, barrel_aging_months_est)
+    `)
     .eq('id', bottleId)
     .single();
 
@@ -59,6 +65,8 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     return null;
   }
 
+  const wine = (data as { wine?: { barrel_aging_note?: string | null; barrel_aging_months_est?: number | null } }).wine;
+
   return {
     analysis_summary: data.analysis_summary,
     analysis_reasons: data.analysis_reasons || [],
@@ -70,6 +78,8 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     confidence: data.confidence as 'LOW' | 'MEDIUM' | 'HIGH',
     assumptions: data.assumptions,
     analyzed_at: data.analyzed_at || data.updated_at,
+    barrel_aging_note: wine?.barrel_aging_note ?? null,
+    barrel_aging_months_est: wine?.barrel_aging_months_est ?? null,
   };
 }
 
@@ -345,6 +355,7 @@ export async function analyzeCellarBulk(
         limit,
         pageSize: 50,
         offset: 0,
+        language: 'en',
       },
     });
 
@@ -476,6 +487,8 @@ export async function analyzeCellarInBatches(
     maxBottles?: number;
     onProgress?: AnalysisProgressCallback;
     abortSignal?: AbortSignal;
+    /** Match single-bottle analyze language ('en' | 'he') */
+    language?: string;
   } = {}
 ): Promise<BulkAnalysisResult> {
   // Use getUser() to validate + auto-refresh the session before invoking the edge function
@@ -492,6 +505,7 @@ export async function analyzeCellarInBatches(
   const maxBottles = options.maxBottles || 1000; // Safety limit
   const onProgress = options.onProgress;
   const abortSignal = options.abortSignal;
+  const language = options.language?.startsWith('he') ? 'he' : 'en';
 
   console.log('[Batch Analysis] 🚀 Starting batch analysis', { mode, pageSize, maxBottles });
   const startTime = Date.now();
@@ -560,6 +574,7 @@ export async function analyzeCellarInBatches(
           limit: Math.min(pageSize, maxBottles - totalProcessed), // Don't exceed max
           pageSize,
           offset,
+          language,
         },
       });
 

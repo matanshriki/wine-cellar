@@ -659,6 +659,8 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         confidence: (bottle as any).confidence || 'MEDIUM',
                         assumptions: (bottle as any).assumptions,
                         analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
+                        barrel_aging_note: bottle.wine.barrel_aging_note ?? null,
+                        barrel_aging_months_est: bottle.wine.barrel_aging_months_est ?? null,
                       }}
                       onRefresh={handleRefreshAnalysis}
                       isRefreshing={isRefreshing}

@@ -355,7 +355,10 @@
         "high": "High confidence",
         "medium": "Medium confidence",
         "low": "Low confidence"
-      }
+      },
+      "barrelAging": "Barrel aging (estimate)",
+      "barrelMonthsEst": "~{{months}} months in barrel (estimate)",
+      "barrelDisclaimer": "From public wine knowledge — not verified for this bottle."
     }
   },
   "wineDetails": {

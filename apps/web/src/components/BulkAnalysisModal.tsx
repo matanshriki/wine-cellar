@@ -31,7 +31,7 @@ export function BulkAnalysisModal({
   totalBottles,
   unanalyzedCount,
 }: BulkAnalysisModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<aiAnalysisService.BulkAnalysisMode>('missing_only');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +65,7 @@ export function BulkAnalysisModal({
       const result = await aiAnalysisService.analyzeCellarInBatches(mode, {
         pageSize: 50,
         maxBottles: 1000,
+        language: i18n.language,
         abortSignal: controller.signal,
         onProgress: (p) => {
           console.log('[BulkAnalysisModal] 📊 Progress:', p);

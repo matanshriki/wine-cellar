@@ -3,6 +3,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import {
+  buildWineAnalysisSystemPrompt,
+  buildWineAnalysisUserPrompt,
+  normalizeBarrelFields,
+} from '../_shared/wineAiAnalysis.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,6 +38,8 @@ interface AnalysisResult {
   drink_window_end?: number
   confidence: 'LOW' | 'MEDIUM' | 'HIGH'
   assumptions?: string
+  barrel_aging_note?: string | null
+  barrel_aging_months_est?: number | null
   he_translations?: {
     wine_name?: string
     producer?: string
@@ -97,83 +104,24 @@ serve(async (req) => {
 
     console.log('[Analyze Wine] Generating analysis in language:', language)
 
-    // Build ChatGPT prompt
     const currentYear = new Date().getFullYear()
-    const age = wineData.vintage ? currentYear - wineData.vintage : null
-    
-    // Language-specific instructions
-    const languageInstruction = language === 'he' 
-      ? 'CRITICAL: You MUST write ALL text fields in HEBREW (עברית). The analysis_summary, analysis_reasons, and assumptions must be in Hebrew.'
-      : 'Write all text fields in English.'
-    
-    const systemPrompt = `You are an expert sommelier analyzing wines. You MUST respond with valid JSON only, using this exact structure:
-
-{
-  "analysis_summary": "2-3 sentence sommelier note",
-  "analysis_reasons": ["bullet 1", "bullet 2", "bullet 3"],
-  "readiness_label": "READY" | "HOLD" | "PEAK_SOON",
-  "serving_temp_c": number,
-  "decant_minutes": number,
-  "drink_window_start": number | null,
-  "drink_window_end": number | null,
-  "confidence": "LOW" | "MEDIUM" | "HIGH",
-  "assumptions": "string or null",
-  "he_translations": {
-    "wine_name": "Hebrew transliteration of the wine name",
-    "producer": "Hebrew transliteration of the producer name",
-    "region": "Hebrew name of the region (e.g. Bordeaux → בורדו)",
-    "country": "Hebrew name of the country (e.g. France → צרפת)",
-    "appellation": "Hebrew transliteration of the appellation or null",
-    "grapes": ["Hebrew names of grape varieties"]
-  }
-}
-
-IMPORTANT:
-- Reference the SPECIFIC wine details (producer, region, vintage) in your analysis
-- Do NOT use generic template language
-- If data is missing, lower confidence and mention assumptions
-- Analysis must be unique per bottle
-- ${languageInstruction}
-- ALWAYS include the "he_translations" object with Hebrew transliterations/translations of the wine metadata. Use standard Hebrew wine terminology. For proper nouns (wine names, producers), provide the commonly used Hebrew transliteration. For geographic names and grape varieties, use the standard Hebrew equivalents.
-
-READINESS LABEL RULES — follow strictly based on the wine's actual age:
-- "HOLD": Wine is too young; tannins and structure need time. Typically reds under 5 years, structured whites under 2 years.
-- "PEAK_SOON": Wine is approaching but has not yet reached its optimal window; generally 5–15 years for most quality reds.
-- "READY": Wine is in its drinking window now. ANY wine 15 years or older must use "READY". For wines 30+ years old, ALWAYS use "READY" — they are at peak or already declining and should be consumed soon. NEVER assign "HOLD" or "PEAK_SOON" to a wine that is over 20 years old. Mention explicitly in the summary whether the wine is at its peak or may be past it.`
-
-    const userPrompt = language === 'he'
-      ? `נתח את היין הזה וספק הערות סומלייה:
-
-שם היין: ${wineData.wine_name}
-יצרן: ${wineData.producer || 'לא ידוע'}
-בציר: ${wineData.vintage || 'ללא בציר'}
-גיל: ${age ? `${age} שנים` : 'לא ידוע'}
-אזור: ${wineData.region || 'לא ידוע'}
-מדינה: ${wineData.country || 'לא ידוע'}
-אפלסיון: ${wineData.appellation || 'לא ידוע'}
-ענבים: ${wineData.grapes?.join(', ') || 'לא ידוע'}
-סגנון: ${wineData.color}
-הערות משתמש: ${wineData.notes || 'אין'}
-
-שנה נוכחית: ${currentYear}
-
-ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY". כתוב הכל בעברית. הוסף גם תרגומים לעברית בשדה he_translations.`
-      : `Analyze this wine and provide sommelier notes:
-
-Wine Name: ${wineData.wine_name}
-Producer: ${wineData.producer || 'Unknown'}
-Vintage: ${wineData.vintage || 'NV'}
-Age: ${age ? `${age} years` : 'Unknown'}
-Region: ${wineData.region || 'Unknown'}
-Country: ${wineData.country || 'Unknown'}
-Appellation: ${wineData.appellation || 'Unknown'}
-Grapes: ${wineData.grapes?.join(', ') || 'Unknown'}
-Style: ${wineData.color}
-User Notes: ${wineData.notes || 'None'}
-
-Current Year: ${currentYear}
-
-Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY". Also include Hebrew translations in he_translations.`
+    const systemPrompt = buildWineAnalysisSystemPrompt('single', language)
+    const userPrompt = buildWineAnalysisUserPrompt(
+      {
+        wine_name: wineData.wine_name,
+        producer: wineData.producer,
+        vintage: wineData.vintage,
+        region: wineData.region,
+        country: wineData.country,
+        appellation: wineData.appellation,
+        grapes: wineData.grapes,
+        color: wineData.color,
+        notes: wineData.notes,
+      },
+      currentYear,
+      language,
+      'single',
+    )
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -207,37 +155,39 @@ Provide a detailed, bottle-specific analysis. Reference the actual producer, reg
     }
 
     // Parse ChatGPT response
-    const analysis: AnalysisResult = JSON.parse(content)
+    const analysis: AnalysisResult = normalizeBarrelFields(JSON.parse(content) as Record<string, unknown>) as AnalysisResult
 
     // Validate response structure
     if (!analysis.analysis_summary || !analysis.analysis_reasons || !analysis.readiness_label) {
       throw new Error('Invalid response structure from ChatGPT')
     }
 
-    // Store Hebrew translations in the wines table if available
-    if (wine_id && analysis.he_translations) {
+    // Persist wine-level fields (translations + barrel estimates)
+    if (wine_id) {
       try {
-        // Fetch current translations to merge (don't overwrite other locales)
         const { data: currentWine } = await supabaseAdmin
           .from('wines')
           .select('translations')
           .eq('id', wine_id)
           .single()
 
-        const existingTranslations = (currentWine?.translations as Record<string, unknown>) || {}
-        const mergedTranslations = {
-          ...existingTranslations,
-          he: analysis.he_translations,
+        const patch: Record<string, unknown> = {
+          barrel_aging_note: analysis.barrel_aging_note ?? null,
+          barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
         }
 
-        await supabaseAdmin
-          .from('wines')
-          .update({ translations: mergedTranslations })
-          .eq('id', wine_id)
+        if (analysis.he_translations) {
+          const existingTranslations = (currentWine?.translations as Record<string, unknown>) || {}
+          patch.translations = {
+            ...existingTranslations,
+            he: analysis.he_translations,
+          }
+        }
 
-        console.log('[Analyze Wine] Stored Hebrew translations for wine:', wine_id)
-      } catch (translationError) {
-        console.error('[Analyze Wine] Failed to store translations:', translationError)
+        await supabaseAdmin.from('wines').update(patch).eq('id', wine_id)
+        console.log('[Analyze Wine] Updated wine profile fields:', wine_id)
+      } catch (wineUpdateError) {
+        console.error('[Analyze Wine] Failed to update wines row:', wineUpdateError)
       }
     }
 
