@@ -128,6 +128,12 @@
       "importButton": "Import CSV"
     },
     "loading": "Loading your cellar...",
+    "offline": {
+      "title": "We can’t uncork your cellar just yet",
+      "subtitle": "You’re offline — your sommelier needs the internet to reach your bottles. Reconnect to Wi‑Fi or mobile data, then tap below.",
+      "tryAgain": "Try again",
+      "metaDescription": "Connect to the internet to load your wine cellar."
+    },
     "loadingMore": "Loading more bottles...",
     "allBottlesLoaded": "All {{count}} bottles loaded",
     "search": {

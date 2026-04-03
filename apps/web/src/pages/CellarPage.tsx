@@ -15,6 +15,7 @@ import { AddBottleSheet } from '../components/AddBottleSheet';
 import { LabelCapture } from '../components/LabelCapture';
 import { BulkAnalysisModal } from '../components/BulkAnalysisModal';
 import { WineLoader } from '../components/WineLoader';
+import { OfflineCellarScreen } from '../components/OfflineCellarScreen';
 import { TonightsOrbit } from '../components/TonightsOrbit';
 import { TonightsOrbitCinematic } from '../components/TonightsOrbitCinematic';
 import { DrinkWindowTimeline } from '../components/DrinkWindowTimeline';
@@ -49,6 +50,7 @@ import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature fla
 import * as onboardingUtils from '../utils/onboarding';
 import { DEMO_BOTTLES } from '../data/demoCellar';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
@@ -64,6 +66,7 @@ export function CellarPage() {
   const featureFlags = useFeatureFlags(); // Load user's feature flags (beta features)
   const wishlistEnabled = useFeatureFlag('wishlistEnabled'); // Wishlist feature flag
   const csvImportEnabled = useFeatureFlag('csvImportEnabled'); // CSV Import permission flag
+  const isOnline = useOnlineStatus();
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const [loading, setLoading] = useState(true); // Keep true for proper initial load
   const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll: loading more bottles
@@ -383,6 +386,8 @@ export function CellarPage() {
   useEffect(() => {
     // Wait until initial cellar load finishes so we don't treat a loaded cellar as empty
     if (loading) return;
+    // Offline empty cellar uses dedicated screen — no welcome modal on top
+    if (!isOnline) return;
     // Only check once to avoid multiple modals
     if (hasCheckedOnboarding.current) return;
     hasCheckedOnboarding.current = true;
@@ -407,7 +412,7 @@ export function CellarPage() {
       console.log('[CellarPage] Demo mode active');
       setIsDemoMode(true);
     }
-  }, [loading, bottles.length]);
+  }, [loading, bottles.length, isOnline]);
 
   // Wine World Moments: Load active events
   useEffect(() => {
@@ -509,6 +514,11 @@ export function CellarPage() {
   const PAGE_SIZE = 100; // Increased to load more bottles initially
 
   async function loadBottles(reset = false) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
     try {
       const offset = reset ? 0 : bottles.length;
       const data = await bottleService.listBottles({ offset, limit: PAGE_SIZE });
@@ -522,7 +532,11 @@ export function CellarPage() {
       setHasMore(data.length === PAGE_SIZE);
     } catch (error: any) {
       console.error('[CellarPage] Error loading bottles:', error);
-      toast.error(error.message || t('errors.generic'));
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Offline: dedicated full-screen state; avoid stacking toast
+      } else {
+        toast.error(error.message || t('errors.generic'));
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -1295,8 +1309,14 @@ export function CellarPage() {
 
   const currentSortOption = sortOptions.find(opt => opt.by === sortBy && opt.dir === sortDir) || sortOptions[0];
 
-  if (loading) {
+  const showCellarOffline = !isOnline && bottles.length === 0;
+
+  if (loading && !showCellarOffline) {
     return <WineLoader variant="page" size="lg" message={t('cellar.loading')} />;
+  }
+
+  if (showCellarOffline) {
+    return <OfflineCellarScreen />;
   }
 
   return (
@@ -2512,7 +2532,7 @@ export function CellarPage() {
 
       {/* Onboarding v1 – production: Welcome Modal */}
       <WelcomeModal
-        isOpen={showWelcomeModal}
+        isOpen={showWelcomeModal && isOnline}
         onShowDemo={handleShowDemo}
         onSkip={handleSkipOnboarding}
       />
