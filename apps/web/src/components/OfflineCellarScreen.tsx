@@ -39,7 +39,7 @@ export function OfflineCellarScreen() {
 
   return (
     <div
-      className="flex flex-col w-full -mt-5 sm:-mt-4"
+      className="flex flex-col w-full -mt-2 sm:-mt-1"
       style={{
         background:
           'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-secondary, var(--bg-surface)) 45%, var(--bg-surface) 100%)',
@@ -57,7 +57,7 @@ export function OfflineCellarScreen() {
        * Use justify-start + tight gaps so title, copy, and CTA stay above the fold on phones.
        */}
       <main
-        className="flex w-full max-w-md mx-auto flex-col items-center text-center justify-start gap-4 pt-0 pb-3 px-2 sm:px-0"
+        className="flex w-full max-w-md mx-auto flex-col items-center text-center justify-start gap-4 pt-4 sm:pt-5 pb-3 px-2 sm:px-0"
         aria-labelledby="offline-cellar-title"
       >
         <OfflineIllustration phase={illustrationPhase} reducedMotion={reduceMotion} />

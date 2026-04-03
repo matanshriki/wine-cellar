@@ -1,6 +1,6 @@
 /**
- * Offline hero: readable “no Wi‑Fi” motif + small wine-glass accent (on-brand).
- * Framer Motion; respects reduced motion via props + useReducedMotion.
+ * Offline hero: centered column — Wi‑Fi “signal seeking” + soft fading barrier + wine oscillation.
+ * Framer Motion; respects reduced motion.
  */
 
 import { useEffect, useId, useState } from 'react';
@@ -32,6 +32,10 @@ function useDataTheme(): ThemeHint {
 }
 
 const easeLuxury = [0.45, 0, 0.55, 1] as const;
+/** Keyframe times for one full seek cycle (outer → mid → inner peak) */
+const SEEK_TIMES = [0, 0.22, 0.44, 0.66, 1] as const;
+const DIM = 0.26;
+const PEAK = 0.94;
 
 interface Props {
   phase: OfflineIllustrationPhase;
@@ -46,25 +50,38 @@ export function OfflineIllustration({ phase, reducedMotion }: Props) {
   const theme = useDataTheme();
   const reconnecting = phase === 'reconnect';
 
-  const glowA = theme === 'red' ? 0.12 : 0.07;
-  const glowB = theme === 'red' ? 0.04 : 0.025;
+  const glowA = theme === 'red' ? 0.11 : 0.065;
+  const glowB = theme === 'red' ? 0.035 : 0.022;
+
+  const cx = 84;
+  const bowl = {
+    left: 68,
+    right: 100,
+    top: 78,
+    bottom: 114,
+    mid: 84,
+  };
+
+  const wineBaseY = bowl.bottom;
+  const wineH = { low: 13, mid: 15.5, high: 17 };
+  const wineY = (h: number) => wineBaseY - h;
 
   return (
     <div
       className="relative flex justify-center items-center mx-auto shrink-0"
-      style={{ width: 168, height: 124 }}
+      style={{ width: 168, height: 148 }}
       aria-hidden
     >
       <svg
         width={168}
-        height={124}
-        viewBox="0 0 168 124"
+        height={148}
+        viewBox="0 0 168 148"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="overflow-visible"
       >
         <defs>
-          <radialGradient id={`${id}-glow`} cx="50%" cy="45%" r="50%">
+          <radialGradient id={`${id}-glow`} cx="50%" cy="42%" r="48%">
             <stop offset="0%" stopColor="var(--wine-400)" stopOpacity={glowA} />
             <stop offset="70%" stopColor="var(--wine-300)" stopOpacity={glowB} />
             <stop offset="100%" stopColor="var(--wine-300)" stopOpacity="0" />
@@ -74,129 +91,171 @@ export function OfflineIllustration({ phase, reducedMotion }: Props) {
             <stop offset="100%" stopColor="var(--wine-700)" />
           </linearGradient>
           <clipPath id={`${id}-bowl`}>
-            <path d="M 52 98 L 56 112 Q 62 118 70 118 Q 78 118 84 112 L 88 98 Z" />
+            <path d="M 68 78 L 72 108 Q 77 114 84 114 Q 91 114 96 108 L 100 78 Z" />
           </clipPath>
         </defs>
 
         <motion.g
-          animate={staticMode ? { scale: 1 } : { scale: [1, 1.04, 1] }}
-          transition={{ duration: 3.2, repeat: staticMode ? 0 : Infinity, ease: easeLuxury }}
-          style={{ transformOrigin: '84px 56px' }}
+          animate={staticMode ? { scale: 1 } : { scale: [1, 1.03, 1] }}
+          transition={{ duration: 3.6, repeat: staticMode ? 0 : Infinity, ease: easeLuxury }}
+          style={{ transformOrigin: `${cx}px 44px` }}
         >
-          <circle cx={84} cy={56} r={44} fill={`url(#${id}-glow)`} />
+          <circle cx={cx} cy={44} r={42} fill={`url(#${id}-glow)`} />
         </motion.g>
 
-        {/* Wi‑Fi arcs — large, obvious */}
-        <g stroke="var(--wine-600)" strokeWidth={3} strokeLinecap="round" fill="none">
+        {/* Wi‑Fi arcs — symmetric around cx; signal-seeking stagger */}
+        <g stroke="var(--wine-600)" strokeWidth={2.8} strokeLinecap="round" fill="none">
           <motion.path
-            d="M 36 68 Q 84 28 132 68"
+            d={`M 36 56 Q ${cx} 18 132 56`}
             animate={
               reconnecting
                 ? { opacity: 1 }
                 : staticMode
-                  ? { opacity: 0.5 }
-                  : { opacity: [0.35, 0.75, 0.35] }
+                  ? { opacity: 0.45 }
+                  : { opacity: [DIM, PEAK, DIM, DIM, DIM] }
             }
             transition={
               reconnecting
                 ? { duration: 0.35, ease: easeLuxury }
                 : staticMode
                   ? {}
-                  : { duration: 2.8, repeat: Infinity, ease: easeLuxury }
+                  : {
+                      duration: 2.85,
+                      repeat: Infinity,
+                      ease: easeLuxury,
+                      times: [...SEEK_TIMES],
+                    }
             }
           />
           <motion.path
-            d="M 48 68 Q 84 42 120 68"
+            d={`M 48 56 Q ${cx} 34 120 56`}
             animate={
               reconnecting
                 ? { opacity: 1 }
                 : staticMode
-                  ? { opacity: 0.65 }
-                  : { opacity: [0.45, 0.9, 0.45] }
+                  ? { opacity: 0.55 }
+                  : { opacity: [DIM, DIM, PEAK, DIM, DIM] }
             }
             transition={
               reconnecting
                 ? { duration: 0.35, ease: easeLuxury }
                 : staticMode
                   ? {}
-                  : { duration: 2.8, repeat: Infinity, ease: easeLuxury, delay: 0.08 }
+                  : {
+                      duration: 2.85,
+                      repeat: Infinity,
+                      ease: easeLuxury,
+                      times: [...SEEK_TIMES],
+                    }
             }
           />
           <motion.path
-            d="M 60 68 Q 84 52 108 68"
+            d={`M 60 56 Q ${cx} 44 108 56`}
             animate={
               reconnecting
                 ? { opacity: 1 }
                 : staticMode
-                  ? { opacity: 0.8 }
-                  : { opacity: [0.55, 1, 0.55] }
+                  ? { opacity: 0.7 }
+                  : { opacity: [DIM, DIM, DIM, PEAK, DIM] }
             }
             transition={
               reconnecting
                 ? { duration: 0.35, ease: easeLuxury }
                 : staticMode
                   ? {}
-                  : { duration: 2.8, repeat: Infinity, ease: easeLuxury, delay: 0.16 }
+                  : {
+                      duration: 2.85,
+                      repeat: Infinity,
+                      ease: easeLuxury,
+                      times: [...SEEK_TIMES],
+                    }
             }
           />
         </g>
 
-        <circle cx={84} cy={72} r={4} fill="var(--wine-700)" opacity={0.9} />
+        <circle cx={cx} cy={62} r={3.5} fill="var(--wine-700)" opacity={0.92} />
 
-        {/* “No signal” slash — hidden when reconnecting */}
+        {/* Soft symmetric “no signal” veil — horizontal, fades (no harsh diagonal) */}
         {!reconnecting && (
-          <motion.line
-            x1={44}
-            y1={38}
-            x2={124}
-            y2={82}
-            stroke="var(--text-tertiary)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            animate={staticMode ? { opacity: 0.55 } : { opacity: [0.4, 0.75, 0.4] }}
-            transition={{ duration: 2.8, repeat: staticMode ? 0 : Infinity, ease: easeLuxury }}
-          />
-        )}
-
-        {/* Small wine glass — brand tie-in; liquid bobs gently */}
-        <path
-          d="M 52 98 L 56 112 Q 62 118 70 118 Q 78 118 84 112 L 88 98 Z"
-          stroke="var(--border-medium)"
-          strokeWidth={1.2}
-          fill="var(--bg-surface)"
-          fillOpacity={0.2}
-        />
-        <g clipPath={`url(#${id}-bowl)`}>
           <motion.rect
-            x={52}
-            width={36}
-            fill={`url(#${id}-wine)`}
-            opacity={0.85}
-            initial={false}
-            animate={{
-              y: reconnecting ? 100 : 104,
-              height: reconnecting ? 18 : 14,
-            }}
+            x={cx - 40}
+            y={41}
+            width={80}
+            height={6}
+            rx={3}
+            fill="var(--wine-600)"
+            animate={
+              staticMode
+                ? { opacity: 0.12 }
+                : { opacity: [0.05, 0.2, 0.05] }
+            }
             transition={{
-              duration: reconnecting ? (staticMode ? 0.12 : 0.55) : 0,
+              duration: 2.75,
+              repeat: staticMode ? 0 : Infinity,
               ease: easeLuxury,
             }}
           />
-          {!staticMode && !reconnecting && (
+        )}
+
+        {/* Wine glass — centered on cx */}
+        <path
+          d="M 68 78 L 72 108 Q 77 114 84 114 Q 91 114 96 108 L 100 78 Z"
+          stroke="var(--border-medium)"
+          strokeWidth={1.2}
+          fill="var(--bg-surface)"
+          fillOpacity={0.22}
+        />
+        <g clipPath={`url(#${id}-bowl)`}>
+          {reconnecting || staticMode ? (
             <motion.rect
-              x={52}
-              y={102}
-              width={36}
-              height={4}
-              fill="var(--wine-400)"
-              fillOpacity={0.45}
-              animate={{ x: [51.5, 52.5, 51.5] }}
-              transition={{ duration: 3.4, repeat: Infinity, ease: easeLuxury }}
+              x={bowl.left}
+              width={bowl.right - bowl.left}
+              fill={`url(#${id}-wine)`}
+              opacity={0.88}
+              initial={false}
+              animate={{
+                y: reconnecting ? wineY(wineH.high) : wineY(wineH.mid),
+                height: reconnecting ? wineH.high : wineH.mid,
+              }}
+              transition={{
+                duration: reconnecting ? (staticMode ? 0.12 : 0.55) : 0,
+                ease: easeLuxury,
+              }}
+            />
+          ) : (
+            <motion.rect
+              x={bowl.left}
+              width={bowl.right - bowl.left}
+              fill={`url(#${id}-wine)`}
+              opacity={0.88}
+              initial={false}
+              animate={{
+                y: [wineY(wineH.low), wineY(wineH.high), wineY(wineH.low)],
+                height: [wineH.low, wineH.high, wineH.low],
+              }}
+              transition={{
+                duration: 3.9,
+                repeat: Infinity,
+                ease: easeLuxury,
+              }}
             />
           )}
         </g>
-        <path d="M 68 118 L 68 122 M 72 118 L 72 122" stroke="var(--border-medium)" strokeWidth={1.5} strokeLinecap="round" />
-        <line x1={64} y1={122} x2={76} y2={122} stroke="var(--border-medium)" strokeWidth={1.5} strokeLinecap="round" />
+        <path
+          d={`M ${cx - 4} 114 L ${cx - 4} 118 M ${cx + 4} 114 L ${cx + 4} 118`}
+          stroke="var(--border-medium)"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+        />
+        <line
+          x1={cx - 8}
+          y1={118}
+          x2={cx + 8}
+          y2={118}
+          stroke="var(--border-medium)"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
