@@ -1,12 +1,14 @@
 /**
  * OpenRitualSheet
  *
- * A luxury 3-step bottom sheet that guides the user through opening a bottle:
+ * A luxury 4-step bottom sheet that guides the user through opening a bottle:
  *   Step 1 – "Open":  confirm quantity
  *   Step 2 – "Serve": serving temp + decant suggestion + optional timer
- *   Step 3 – "Now":   celebratory success + optional rate-later reminder
+ *   Step 3 – "Done":  celebratory success → quick-star teaser + clear CTAs
+ *   Step 4 – "Rate":  full inline rating (stars + mood chips + notes)
  *
  * Calls markBottleOpened at Step 2 → 3 transition (no DB writes if cancelled).
+ * Rating is saved inline at Step 4, no navigation to History required.
  */
 
 import { useState, useEffect } from 'react';
@@ -16,6 +18,7 @@ import * as historyService from '../services/historyService';
 import * as labelArtService from '../services/labelArtService';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import type { WineTimer } from '../hooks/useTimerManager';
+import { MOOD_CHIPS } from './RateRitualSheet';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 // ─── Serving guidance derivation ──────────────────────────────────────────────
@@ -79,6 +82,10 @@ const stepVariants = {
 };
 
 const stepTransition: Transition = { type: 'tween', duration: reduce ? 0 : 0.28, ease: [0.4, 0, 0.2, 1] };
+
+// Step ordering used to derive slide direction
+const STEP_ORDER = ['open', 'serve', 'done', 'rate'] as const;
+type Step = (typeof STEP_ORDER)[number];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -245,9 +252,49 @@ function DurationPreset({
   );
 }
 
-// ─── Primary component ────────────────────────────────────────────────────────
+/** Large interactive stars used in the inline rating step */
+function InlineStarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [hovered, setHovered] = useState(0);
 
-type Step = 'open' | 'serve' | 'done';
+  return (
+    <div className="flex gap-1 justify-center" role="group" aria-label="Star rating">
+      {[1, 2, 3, 4, 5].map(star => {
+        const filled = star <= (hovered || value);
+        return (
+          <motion.button
+            key={star}
+            whileTap={{ scale: 0.8 }}
+            onClick={() => onChange(star)}
+            onMouseEnter={() => setHovered(star)}
+            onMouseLeave={() => setHovered(0)}
+            onTouchStart={() => setHovered(star)}
+            onTouchEnd={() => setHovered(0)}
+            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            className="p-1"
+            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+          >
+            <motion.span
+              animate={{ scale: filled ? 1.2 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className="text-4xl block"
+              style={{ filter: filled ? 'none' : 'grayscale(1) opacity(0.3)' }}
+            >
+              ⭐
+            </motion.span>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Primary component ────────────────────────────────────────────────────────
 
 export interface OpenRitualSheetProps {
   isOpen: boolean;
@@ -279,17 +326,21 @@ export function OpenRitualSheet({
   const [qty, setQty] = useState(1);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerDuration, setTimerDuration] = useState(30);
-  const [rateLaterEnabled, setRateLaterEnabled] = useState(false);
   const [rateLaterMins, setRateLaterMins] = useState(45);
   const [loading, setLoading] = useState(false);
   const [historyId, setHistoryId] = useState<string | null>(null);
 
+  // Rating state (step 4)
+  const [rating, setRating] = useState(0);
+  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set());
+  const [ratingNotes, setRatingNotes] = useState('');
+  const [ratingSaving, setRatingSaving] = useState(false);
+
   const serving = bottle ? deriveServingInfo(bottle) : null;
 
   // Reset all state whenever the sheet opens for a new bottle.
-  // Using useEffect on isOpen is more reliable than onAnimationComplete,
-  // which fires for both enter AND exit animations and can skip the reset
-  // when the previous ritual ended at step 'done'.
+  // useEffect on isOpen is reliable and avoids the onAnimationComplete pitfall
+  // (which fires on both enter AND exit animations).
   useEffect(() => {
     if (!isOpen) return;
     setStep('open');
@@ -297,7 +348,10 @@ export function OpenRitualSheet({
     setQty(1);
     setLoading(false);
     setHistoryId(null);
-    setRateLaterEnabled(false);
+    setRating(0);
+    setSelectedChips(new Set());
+    setRatingNotes('');
+    setRatingSaving(false);
     if (serving) {
       const defaultDecant = serving.decantMins > 0 ? serving.decantMins : 30;
       setTimerEnabled(serving.decantMins > 0);
@@ -307,15 +361,18 @@ export function OpenRitualSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Navigate steps
+  // Navigate between steps, inferring slide direction from step order
   function goTo(nextStep: Step) {
-    setDirection(nextStep === 'done' || (nextStep === 'serve' && step === 'open') ? 1 : -1);
+    const cur = STEP_ORDER.indexOf(step);
+    const next = STEP_ORDER.indexOf(nextStep);
+    setDirection(next >= cur ? 1 : -1);
     setStep(nextStep);
   }
 
-  // Perform the actual open action (Step 2 → 3).
-  // skipTimer: true when the user clicks "Open without timer" — avoids a React
-  // state-batching race where timerEnabled could still read as true.
+  // ── Step 2 → 3: mark bottle as opened ─────────────────────────────────────
+
+  // skipTimer: true when user clicks "Open without timer" — bypasses state-batching
+  // race where timerEnabled could still read as true after setTimerEnabled(false).
   async function handleStartAndOpen(skipTimer = false) {
     if (!bottle) return;
     setLoading(true);
@@ -362,27 +419,83 @@ export function OpenRitualSheet({
     }
   }
 
-  // Set rate-later timer from Step 3
-  function handleSetRateLater() {
-    if (!bottle || !historyId) return;
-    createTimer({
-      bottle_id: bottle.id,
-      wine_id: bottle.wine_id,
-      wine_name: bottle.wine.wine_name,
-      producer: bottle.wine.producer,
-      history_id: historyId,
-      started_at: new Date().toISOString(),
-      duration_minutes: rateLaterMins,
-      type: 'rate',
-      label: t('openRitual.timer.rateLabel', 'Rate reminder'),
-    });
+  // ── Step 3: "Remind me later" ──────────────────────────────────────────────
+
+  function handleRemindLater() {
+    if (bottle && historyId) {
+      try {
+        createTimer({
+          bottle_id: bottle.id,
+          wine_id: bottle.wine_id,
+          wine_name: bottle.wine.wine_name,
+          producer: bottle.wine.producer,
+          history_id: historyId,
+          started_at: new Date().toISOString(),
+          duration_minutes: rateLaterMins,
+          type: 'rate',
+          label: t('openRitual.timer.rateLabel', 'Rate reminder'),
+        });
+      } catch (err) {
+        console.warn('[OpenRitual] Rate reminder timer failed (non-critical):', err);
+      }
+    }
     onClose();
+  }
+
+  // ── Step 4: save inline rating ─────────────────────────────────────────────
+
+  function toggleChip(id: string) {
+    setSelectedChips(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleSaveRating() {
+    if (!historyId || rating === 0) return;
+    setRatingSaving(true);
+    try {
+      const chipsText =
+        selectedChips.size > 0
+          ? Array.from(selectedChips)
+              .map(id => MOOD_CHIPS.find(c => c.id === id)?.emoji)
+              .join(' ')
+          : undefined;
+      const combinedNotes = [chipsText, ratingNotes.trim()].filter(Boolean).join(' · ') || undefined;
+
+      await historyService.updateConsumptionHistory(historyId, {
+        user_rating: rating,
+        tasting_notes: combinedNotes,
+      });
+
+      import('../lib/toast').then(({ toast }) =>
+        toast.success(t('rateRitual.saved', 'Rating saved!'))
+      );
+      onClose();
+    } catch (err: any) {
+      import('../lib/toast').then(({ toast }) =>
+        toast.error(err?.message || t('rateRitual.saveFailed', 'Failed to save rating'))
+      );
+    } finally {
+      setRatingSaving(false);
+    }
+  }
+
+  // Tapping a star on the "done" step pre-selects and slides into rating step
+  function handleQuickStarTap(star: number) {
+    setRating(star);
+    goTo('rate');
   }
 
   if (!bottle) return null;
 
   const DECANT_PRESETS = [15, 30, 45, 60];
-  const RATE_PRESETS = [20, 45, 90];
+
+  // Progress dots: 3 dots (open / serve / done+rate share the 3rd)
+  const PROGRESS_STEPS = ['open', 'serve', 'done'] as const;
+  const progressActive = step === 'rate' ? 'done' : step;
 
   return (
     <AnimatePresence>
@@ -400,7 +513,7 @@ export function OpenRitualSheet({
               backdropFilter: 'var(--blur-medium)',
               WebkitBackdropFilter: 'var(--blur-medium)',
             }}
-            onClick={step !== 'done' ? onClose : undefined}
+            onClick={step === 'open' || step === 'serve' ? onClose : undefined}
           />
 
           {/* Sheet */}
@@ -430,16 +543,16 @@ export function OpenRitualSheet({
 
             {/* Step indicators */}
             <div className="flex justify-center gap-2 pb-3 px-6 flex-shrink-0">
-              {(['open', 'serve', 'done'] as Step[]).map((s, i) => (
+              {PROGRESS_STEPS.map((s, i) => (
                 <div
                   key={s}
                   className="h-1 rounded-full transition-all duration-300"
                   style={{
-                    width: step === s ? 24 : 8,
+                    width: progressActive === s ? 24 : 8,
                     background:
-                      step === s
+                      progressActive === s
                         ? 'var(--wine-600)'
-                        : i < ['open', 'serve', 'done'].indexOf(step)
+                        : i < PROGRESS_STEPS.indexOf(progressActive as typeof PROGRESS_STEPS[number])
                         ? 'var(--wine-400)'
                         : 'var(--border-medium)',
                   }}
@@ -450,6 +563,8 @@ export function OpenRitualSheet({
             {/* Step content – scrollable */}
             <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
               <AnimatePresence mode="wait" custom={direction}>
+
+                {/* ── Step 1: Confirm bottle ─────────────────────────────── */}
                 {step === 'open' && (
                   <motion.div
                     key="step-open"
@@ -461,7 +576,6 @@ export function OpenRitualSheet({
                     transition={stepTransition}
                     className="space-y-5"
                   >
-                    {/* Header */}
                     <div>
                       <h2
                         className="text-xl font-bold"
@@ -470,13 +584,12 @@ export function OpenRitualSheet({
                         {t('openRitual.step1.title', 'Ready to open?')}
                       </h2>
                       <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                        {t('openRitual.step1.subtitle', 'Confirm the bottle you\'re opening tonight.')}
+                        {t('openRitual.step1.subtitle', "Confirm the bottle you're opening tonight.")}
                       </p>
                     </div>
 
                     <WineMiniCard bottle={bottle} />
 
-                    {/* Quantity stepper – only if qty > 1 */}
                     {bottle.quantity > 1 && (
                       <div className="space-y-3">
                         <p className="text-sm font-medium text-center" style={{ color: 'var(--text-secondary)' }}>
@@ -496,6 +609,7 @@ export function OpenRitualSheet({
                   </motion.div>
                 )}
 
+                {/* ── Step 2: Serving & timer ────────────────────────────── */}
                 {step === 'serve' && serving && (
                   <motion.div
                     key="step-serve"
@@ -507,7 +621,6 @@ export function OpenRitualSheet({
                     transition={stepTransition}
                     className="space-y-5"
                   >
-                    {/* Header */}
                     <div>
                       <h2
                         className="text-xl font-bold"
@@ -520,7 +633,6 @@ export function OpenRitualSheet({
                       </p>
                     </div>
 
-                    {/* Serving chips */}
                     <div className="space-y-2">
                       <InfoChip
                         icon="🌡️"
@@ -534,7 +646,6 @@ export function OpenRitualSheet({
                       />
                     </div>
 
-                    {/* Timer toggle */}
                     {serving.decantMins > 0 && (
                       <div className="space-y-3">
                         <button
@@ -588,6 +699,7 @@ export function OpenRitualSheet({
                   </motion.div>
                 )}
 
+                {/* ── Step 3: Celebration + quick-rate teaser ────────────── */}
                 {step === 'done' && (
                   <motion.div
                     key="step-done"
@@ -597,14 +709,14 @@ export function OpenRitualSheet({
                     animate="center"
                     exit="exit"
                     transition={stepTransition}
-                    className="space-y-5 text-center"
+                    className="space-y-6 text-center"
                   >
                     {/* Celebratory icon */}
                     <motion.div
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
-                      className="flex justify-center py-2"
+                      className="flex justify-center pt-2"
                     >
                       <div className="text-6xl">🍷</div>
                     </motion.div>
@@ -614,72 +726,139 @@ export function OpenRitualSheet({
                         className="text-xl font-bold"
                         style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
                       >
-                        {t('openRitual.step3.title', 'Enjoy')}
+                        {t('openRitual.step3.title', 'Enjoy!')}
                       </h2>
                       <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                        {t('openRitual.step3.subtitle', 'Want a reminder to rate it later?')}
+                        {bottle.wine.wine_name}
+                        {bottle.wine.producer ? ` · ${bottle.wine.producer}` : ''}
                       </p>
                     </div>
 
-                    {/* Rate later toggle */}
-                    <div className="space-y-3">
-                      <button
-                        onClick={() => setRateLaterEnabled(v => !v)}
-                        className="w-full flex items-center justify-between p-3 rounded-xl transition-colors"
-                        style={{
-                          background: rateLaterEnabled ? 'var(--wine-50, #fdf2f5)' : 'var(--bg-muted)',
-                          border: rateLaterEnabled ? '1px solid var(--wine-300)' : '1px solid var(--border-subtle)',
-                        }}
-                      >
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                          ⭐ {t('openRitual.step3.rateLater', 'Remind me to rate it')}
-                        </span>
-                        <div
-                          className="w-10 h-6 rounded-full relative transition-colors"
-                          style={{ background: rateLaterEnabled ? 'var(--wine-600)' : 'var(--border-medium)' }}
-                        >
-                          <motion.div
-                            animate={{ x: rateLaterEnabled ? 16 : 2 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            className="absolute top-1 w-4 h-4 rounded-full bg-white"
-                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
-                          />
-                        </div>
-                      </button>
+                    {/* Divider with label */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                        {t('openRitual.step3.howWasIt', 'How was it?')}
+                      </span>
+                      <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+                    </div>
 
-                      {rateLaterEnabled && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="space-y-2"
-                        >
-                          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                            {t('openRitual.step3.remindIn', 'Remind me in')}
-                          </p>
-                          <div className="flex gap-2 justify-center flex-wrap">
-                            {RATE_PRESETS.map(m => (
-                              <DurationPreset
-                                key={m}
-                                minutes={m}
-                                selected={rateLaterMins === m}
-                                onSelect={() => setRateLaterMins(m)}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
+                    {/* Quick-star teaser — tap to jump straight into rating */}
+                    <div className="space-y-2">
+                      <div className="flex gap-1 justify-center">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <motion.button
+                            key={star}
+                            whileTap={{ scale: 0.8 }}
+                            onClick={() => handleQuickStarTap(star)}
+                            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                            className="p-1.5"
+                            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                          >
+                            <motion.span
+                              whileHover={{ scale: 1.25 }}
+                              className="text-3xl block"
+                              style={{ filter: 'grayscale(1) opacity(0.35)' }}
+                            >
+                              ⭐
+                            </motion.span>
+                          </motion.button>
+                        ))}
+                      </div>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {t('openRitual.step3.tapToRate', 'Tap a star to rate now')}
+                      </p>
                     </div>
                   </motion.div>
                 )}
+
+                {/* ── Step 4: Full inline rating ─────────────────────────── */}
+                {step === 'rate' && (
+                  <motion.div
+                    key="step-rate"
+                    custom={direction}
+                    variants={stepVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={stepTransition}
+                    className="space-y-6"
+                  >
+                    {/* Header */}
+                    <div className="text-center">
+                      <h2
+                        className="text-xl font-bold"
+                        style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+                      >
+                        {t('rateRitual.title', 'How was it?')}
+                      </h2>
+                      <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                        {bottle.wine.producer} · {bottle.wine.wine_name}
+                      </p>
+                    </div>
+
+                    {/* Stars */}
+                    <InlineStarRating value={rating} onChange={setRating} />
+
+                    {/* Mood chips */}
+                    <div className="flex gap-2 justify-center flex-wrap">
+                      {MOOD_CHIPS.map(chip => {
+                        const active = selectedChips.has(chip.id);
+                        return (
+                          <motion.button
+                            key={chip.id}
+                            whileTap={{ scale: 0.93 }}
+                            onClick={() => toggleChip(chip.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                            style={{
+                              background: active ? 'var(--wine-50, #fdf2f5)' : 'var(--bg-muted)',
+                              color: active ? 'var(--wine-700)' : 'var(--text-secondary)',
+                              border: active ? '1px solid var(--wine-400)' : '1px solid var(--border-subtle)',
+                            }}
+                          >
+                            <span>{chip.emoji}</span>
+                            <span>{t(chip.labelKey)}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label
+                        className="block text-xs mb-1.5 font-medium"
+                        style={{ color: 'var(--text-tertiary)' }}
+                        htmlFor="ritual-tasting-notes"
+                      >
+                        {t('rateRitual.notesLabel', 'Tasting notes (optional)')}
+                      </label>
+                      <textarea
+                        id="ritual-tasting-notes"
+                        value={ratingNotes}
+                        onChange={e => setRatingNotes(e.target.value)}
+                        placeholder={t('rateRitual.notesPlaceholder', 'Describe what you tasted…')}
+                        rows={3}
+                        maxLength={400}
+                        className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none transition-colors"
+                        style={{
+                          background: 'var(--bg-muted)',
+                          border: '1px solid var(--border-medium)',
+                          color: 'var(--text-primary)',
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
               </AnimatePresence>
             </div>
 
-            {/* Sticky footer actions */}
+            {/* ── Sticky footer actions ─────────────────────────────────── */}
             <div
               className="flex-shrink-0 px-6 pt-3 pb-4 space-y-2"
               style={{ borderTop: '1px solid var(--border-subtle)' }}
             >
+              {/* Step 1 footer */}
               {step === 'open' && (
                 <>
                   <motion.button
@@ -705,12 +884,13 @@ export function OpenRitualSheet({
                 </>
               )}
 
+              {/* Step 2 footer */}
               {step === 'serve' && (
                 <>
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={handleStartAndOpen}
+                    onClick={() => handleStartAndOpen()}
                     disabled={loading}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm transition-opacity"
                     style={{
@@ -737,43 +917,79 @@ export function OpenRitualSheet({
                 </>
               )}
 
+              {/* Step 3 footer — three clear, unambiguous options */}
               {step === 'done' && (
                 <>
-                  {rateLaterEnabled ? (
-                    <motion.button
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleSetRateLater}
-                      className="w-full py-3.5 rounded-xl font-semibold text-sm"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                        color: 'white',
-                        border: '1px solid var(--wine-700)',
-                      }}
-                    >
-                      {t('openRitual.step3.setReminder', 'Set reminder')}
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={onClose}
-                      className="w-full py-3.5 rounded-xl font-semibold text-sm"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                        color: 'white',
-                        border: '1px solid var(--wine-700)',
-                      }}
-                    >
-                      {t('openRitual.step3.cheers', 'Cheers!')}
-                    </motion.button>
-                  )}
+                  {/* Primary: Rate now */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => goTo('rate')}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      color: 'white',
+                      border: '1px solid var(--wine-700)',
+                    }}
+                  >
+                    ⭐ {t('openRitual.step3.rateNow', 'Rate now')}
+                  </motion.button>
+
+                  {/* Secondary: Remind me later */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleRemindLater}
+                    className="w-full py-3 rounded-xl font-medium text-sm transition-colors"
+                    style={{
+                      background: 'var(--wine-50, #fdf2f5)',
+                      color: 'var(--wine-700)',
+                      border: '1px solid var(--wine-200, #f0c5ce)',
+                    }}
+                  >
+                    ⏰ {t('openRitual.step3.remindLater', 'Remind me later')}
+                  </motion.button>
+
+                  {/* Tertiary: Skip */}
                   <button
                     onClick={onClose}
-                    className="w-full py-3 text-sm rounded-xl transition-colors"
+                    className="w-full py-2.5 text-sm rounded-xl transition-colors"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
-                    {t('openRitual.step3.noThanks', 'No thanks')}
+                    {t('openRitual.step3.skip', 'Skip')}
+                  </button>
+                </>
+              )}
+
+              {/* Step 4 footer */}
+              {step === 'rate' && (
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSaveRating}
+                    disabled={ratingSaving || rating === 0}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm transition-opacity"
+                    style={{
+                      background:
+                        rating === 0
+                          ? 'var(--bg-muted)'
+                          : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      color: rating === 0 ? 'var(--text-tertiary)' : 'white',
+                      border: rating === 0 ? '1px solid var(--border-medium)' : '1px solid var(--wine-700)',
+                      opacity: ratingSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {ratingSaving
+                      ? t('rateRitual.saving', 'Saving…')
+                      : t('rateRitual.save', 'Save rating')}
+                  </motion.button>
+                  <button
+                    onClick={onClose}
+                    className="w-full py-2.5 text-sm rounded-xl transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {t('rateRitual.skipRating', 'Skip for now')}
                   </button>
                 </>
               )}
