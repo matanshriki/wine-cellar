@@ -246,7 +246,7 @@ export function RecommendationPage() {
   }
 
   async function handleAnalyzeBottle() {
-    if (!selectedBottle) return;
+    if (!selectedBottle) return undefined;
     try {
       const analysisResult = await aiAnalysisService.generateAIAnalysis(
         selectedBottle,
@@ -258,8 +258,10 @@ export function RecommendationPage() {
           aiAnalysisService.mergeBottleWineWithAnalysisBarrel(updated, analysisResult),
         );
       }
+      return analysisResult;
     } catch (error: any) {
       toast.error(error?.message || t('cellar.sommelier.failed'));
+      return undefined;
     }
   }
 

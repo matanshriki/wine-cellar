@@ -19,6 +19,7 @@ import { KeepBadge } from './KeepBadge';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
+import type { AIAnalysis } from '../services/aiAnalysisService';
 
 interface WineDetailsModalProps {
   isOpen: boolean;
@@ -26,8 +27,11 @@ interface WineDetailsModalProps {
   bottle: BottleWithWineInfo | null;
   onMarkAsOpened?: (bottle: BottleWithWineInfo) => void;
   onRefresh?: () => void;
-  /** Called when the user clicks the re-analyse button. May return a Promise. */
-  onAnalyze?: () => Promise<void> | void;
+  /**
+   * Re-run AI analysis. Return the analysis object so barrel fields can render
+   * immediately (they live on `wines` and may not be in `bottle` yet).
+   */
+  onAnalyze?: () => Promise<AIAnalysis | void | undefined> | AIAnalysis | void | undefined;
 }
 
 export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh, onAnalyze }: WineDetailsModalProps) {
@@ -39,9 +43,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [isRemovingKeep, setIsRemovingKeep] = useState(false);
 
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
+  /** After refresh, show barrel from the API response until bottle.wine catches up */
+  const [barrelFromRefresh, setBarrelFromRefresh] = useState<{
+    note: string | null;
+    months: number | null;
+  } | null>(null);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
   const localizedWine = useLocalizedWine(bottle?.wine);
+
+  useEffect(() => {
+    setBarrelFromRefresh(null);
+  }, [bottle?.id]);
 
   /**
    * Wraps the parent's onAnalyze so the modal can show a spinner while the
@@ -51,7 +64,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     ? async () => {
         setIsRefreshing(true);
         try {
-          await onAnalyze();
+          const result = await onAnalyze();
+          if (result && typeof result === 'object' && 'readiness_label' in result) {
+            const ar = result as AIAnalysis;
+            setBarrelFromRefresh({
+              note: ar.barrel_aging_note ?? null,
+              months: ar.barrel_aging_months_est ?? null,
+            });
+          }
         } finally {
           setIsRefreshing(false);
         }
@@ -659,8 +679,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         confidence: (bottle as any).confidence || 'MEDIUM',
                         assumptions: (bottle as any).assumptions,
                         analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
-                        barrel_aging_note: bottle.wine.barrel_aging_note ?? null,
-                        barrel_aging_months_est: bottle.wine.barrel_aging_months_est ?? null,
+                        barrel_aging_note:
+                          barrelFromRefresh !== null
+                            ? barrelFromRefresh.note
+                            : (bottle.wine.barrel_aging_note ?? null),
+                        barrel_aging_months_est:
+                          barrelFromRefresh !== null
+                            ? barrelFromRefresh.months
+                            : (bottle.wine.barrel_aging_months_est ?? null),
                       }}
                       onRefresh={handleRefreshAnalysis}
                       isRefreshing={isRefreshing}

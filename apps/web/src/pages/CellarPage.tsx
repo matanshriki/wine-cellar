@@ -38,6 +38,7 @@ import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 import * as aiAnalysisService from '../services/aiAnalysisService';
+import type { AIAnalysis } from '../services/aiAnalysisService';
 import type { ExtractedWineData } from '../services/labelScanService';
 import * as labelParseService from '../services/labelParseService';
 import * as smartScanService from '../services/smartScanService';
@@ -601,7 +602,7 @@ export function CellarPage() {
     }
   }
 
-  async function handleAnalyze(id: string) {
+  async function handleAnalyze(id: string): Promise<AIAnalysis | undefined> {
     try {
       // Find the bottle to analyze
       const bottle = bottles.find((b) => b.id === id);
@@ -655,6 +656,8 @@ export function CellarPage() {
       } else {
         await loadBottles(true);
       }
+
+      return analysisResult;
     } catch (error: any) {
       console.error('Error analyzing bottle:', error);
       trackSommelier.error('analysis_failed'); // Track analysis error
@@ -667,6 +670,7 @@ export function CellarPage() {
           b.id === id ? { ...b, isAnalyzing: false } as any : b
         )
       );
+      return undefined;
     }
   }
 

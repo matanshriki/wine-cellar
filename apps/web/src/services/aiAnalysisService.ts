@@ -188,6 +188,20 @@ export async function generateAIAnalysis(
     // Store in database
     await storeAnalysis(bottle.id, analysis);
 
+    // Mirror barrel fields on wines from the client too (covers edge update failures / RLS / cache lag).
+    if (bottle.wine_id) {
+      const { error: wineErr } = await supabase
+        .from('wines')
+        .update({
+          barrel_aging_note: analysis.barrel_aging_note ?? null,
+          barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+        })
+        .eq('id', bottle.wine_id);
+      if (wineErr) {
+        console.warn('[AI Analysis] Client wines barrel update failed:', wineErr.message);
+      }
+    }
+
     return {
       ...analysis,
       analyzed_at: new Date().toISOString(),
