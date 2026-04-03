@@ -238,12 +238,21 @@ async function runOrchestratedRecommendation(params: {
 
   const intent = intentOverride ?? detectIntent(message, historyLen);
   const constraints = extractConstraints(message);
+
+  // Extract user messages from recent history for food-context detection
+  const recentUserMessages: Array<{ role?: string; content?: string }> = conversationHistory
+    .map((m) => ({
+      role: 'role' in m ? String(m.role) : undefined,
+      content: 'content' in m && typeof m.content === 'string' ? m.content : undefined,
+    }));
+
   const clarificationNeeded = needsClarification(
     intent,
     constraints,
     cellarBottles,
     message,
-    historyLen
+    historyLen,
+    recentUserMessages
   );
 
   // Detect if user explicitly wants to include reserved bottles (param overrides detection)

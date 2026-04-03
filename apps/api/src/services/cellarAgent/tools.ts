@@ -19,7 +19,7 @@ const BROWSE_PATTERNS =
   /\b(what\s+do\s+i\s+have|what'?s\s+in\s+my\s+cellar|show\s+my\s+cellar|browse|inventory|collection)\b/i;
 
 const FOOD_HINT =
-  /\b(with|for|pair|pairing|dinner|lunch|steak|fish|salmon|chicken|pasta|cheese|dessert|sushi|bbq|grill|roast|curry|spicy|cream|tomato)\b/i;
+  /\b(pair(ing|ed)?|with\s+(the\s+)?(steak|fish|salmon|chicken|pasta|cheese|sushi|bbq|lamb|beef|pork|duck)|dinner\s+with|for\s+(the\s+)?(steak|fish|salmon|chicken|pasta|cheese|sushi|bbq|lamb|beef|pork|duck)|steak|fish|salmon|chicken|pasta|cheese|dessert|sushi|bbq|grill|roast|curry|spicy|cream|tomato|lamb|beef|seafood)\b/i;
 
 function normalizeMessage(s: string): string {
   return s.trim().toLowerCase();
@@ -197,13 +197,17 @@ export function extractConstraints(message: string): ExtractedConstraints {
  *
  * Triggers when key pairing/occasion context is missing — a real sommelier
  * always asks what you're eating before picking a bottle.
+ *
+ * `recentHistory` (when provided) is used to check if prior turns already
+ * supply food/occasion context, so the agent doesn't re-ask.
  */
 export function needsClarification(
   intent: CellarIntent,
   constraints: ExtractedConstraints,
   bottles: CellarBottleInput[],
   message: string,
-  historyLen: number
+  historyLen: number,
+  recentHistory?: Array<{ role?: string; content?: string }>
 ): boolean {
   const t = message.trim();
   if (t.length > 0 && t.length < 3 && historyLen === 0) return true;
@@ -218,29 +222,51 @@ export function needsClarification(
     if (!anyMatch) return true;
   }
 
-  // Meal occasion mentioned (lunch, dinner) but no specific food — ask what they're eating
+  // Check if prior user messages in this conversation already supply food context
+  const historyHasFoodContext = recentHistory
+    ? recentHistory.some(
+        (m) =>
+          m.role === 'user' &&
+          m.content &&
+          FOOD_CONTEXT_RE.test(m.content)
+      )
+    : false;
+
+  // Meal occasion mentioned (lunch, dinner, tonight) but no specific food —
+  // ask what they're eating, even mid-conversation, unless food was already mentioned
   const ml = message.toLowerCase();
   const mentionsMealOccasion =
-    /\b(lunch|dinner|supper|brunch|meal|tonight)\b/i.test(ml) ||
-    /ארוח[הת]|צהריים|ערב/.test(message);
-  if (mentionsMealOccasion && constraints.foodKeywords.length === 0 && historyLen === 0) {
+    /\b(lunch|dinner|supper|brunch|meal|tonight|recommend|drinking|drink)\b/i.test(ml) ||
+    /ארוח[הת]|צהריים|ערב|לשתות|לפתוח/.test(message);
+  if (
+    mentionsMealOccasion &&
+    constraints.foodKeywords.length === 0 &&
+    !historyHasFoodContext
+  ) {
     return true;
   }
 
-  // Very generic request with almost no constraints on a first turn
-  if (
-    historyLen === 0 &&
-    intent === 'single_recommendation' &&
+  // Very generic request with almost no constraints — ask for context
+  const hasNoConstraints =
     constraints.foodKeywords.length === 0 &&
     constraints.regionHints.length === 0 &&
     constraints.grapeHints.length === 0 &&
-    constraints.colors.length === 0
+    constraints.colors.length === 0;
+
+  if (
+    intent === 'single_recommendation' &&
+    hasNoConstraints &&
+    !historyHasFoodContext
   ) {
     return true;
   }
 
   return false;
 }
+
+/** Matches food keywords in any message — used to detect if history already has food context */
+const FOOD_CONTEXT_RE =
+  /\b(steak|beef|lamb|fish|salmon|chicken|pasta|cheese|sushi|bbq|grill|curry|dessert|tomato|pizza|seafood|pork|veal|duck|risotto|burger|salad)\b|בשר|סטייק|טלה|כבש|דג|סלמון|עוף|פסטה|גבינ|עוגה|קינוח|פיצה|סושי|המבורגר|סלט/i;
 
 export function buildReasoningContext(
   intent: CellarIntent,
