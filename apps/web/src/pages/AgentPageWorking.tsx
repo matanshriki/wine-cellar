@@ -12,6 +12,7 @@ import {
   sendAgentMessage,
   transcribeAudio,
   type AgentMessage,
+  type BuySuggestion,
   type SendAgentMessageOptions,
 } from '../services/agentService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
@@ -32,6 +33,7 @@ import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
 import { BotSingleWineResultCard } from '../components/BotSingleWineResultCard';
 import * as labelArtService from '../services/labelArtService';
 import { trackSommelier } from '../services/analytics';
+import { addWishlistItem } from '../services/wishlistService';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -46,6 +48,147 @@ function formatConversationDate(dateStr: string): string {
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays}d ago`;
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+const COLOR_DOTS: Record<string, string> = {
+  red: '#8B1A1A',
+  white: '#F5E6B8',
+  'rosé': '#E8A0BF',
+  sparkling: '#FFD700',
+};
+
+function BuySuggestionCard({ suggestion, onAddToWishlist }: {
+  suggestion: BuySuggestion;
+  onAddToWishlist: (s: BuySuggestion) => void;
+}) {
+  const { t } = useTranslation();
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  const handleAdd = async () => {
+    setAdding(true);
+    try {
+      await onAddToWishlist(suggestion);
+      setAdded(true);
+    } catch {
+      // toast handled in parent
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #fefefe 0%, #faf5f5 100%)',
+      border: '1px solid #e8e0e0',
+      borderRadius: '14px',
+      padding: '16px',
+      boxShadow: '0 2px 8px rgba(124,48,48,0.06)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        {/* Color dot */}
+        {suggestion.color && (
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: COLOR_DOTS[suggestion.color] || '#999',
+            border: suggestion.color === 'white' ? '1px solid #ccc' : 'none',
+            flexShrink: 0,
+            marginTop: '4px',
+          }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: '#333' }}>
+              {suggestion.title}
+            </span>
+            {suggestion.priceTier && (
+              <span style={{
+                fontSize: '12px',
+                color: '#7c3030',
+                backgroundColor: '#fdf0f0',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontWeight: 500,
+              }}>
+                {suggestion.priceTier}
+              </span>
+            )}
+          </div>
+          {suggestion.region && (
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+              {suggestion.region}
+            </div>
+          )}
+          <p style={{ fontSize: '13px', color: '#555', margin: '8px 0 0', lineHeight: 1.5 }}>
+            {suggestion.reason}
+          </p>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
+        <a
+          href={`https://www.vivino.com/search/wines?q=${encodeURIComponent(suggestion.title)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontSize: '13px',
+            color: '#7c3030',
+            textDecoration: 'none',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: '1px solid #e8e0e0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 500,
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg style={{ width: '14px', height: '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          Vivino
+        </a>
+        <button
+          onClick={handleAdd}
+          disabled={adding || added}
+          style={{
+            fontSize: '13px',
+            color: added ? '#16a34a' : 'white',
+            backgroundColor: added ? '#f0fdf4' : '#7c3030',
+            border: added ? '1px solid #86efac' : 'none',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            cursor: adding || added ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 500,
+            transition: 'all 0.15s',
+          }}
+        >
+          {added ? (
+            <>
+              <svg style={{ width: '14px', height: '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {t('cellarSommelier.addedToWishlist', 'Added!')}
+            </>
+          ) : (
+            <>
+              <svg style={{ width: '14px', height: '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              {adding ? '...' : t('cellarSommelier.addToWishlist', 'Add to Wishlist')}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function AgentPageWorking() {
@@ -227,6 +370,9 @@ export function AgentPageWorking() {
           title: response.title,
           bottles: response.bottles,
         } : undefined,
+        buySuggestions: response.type === 'buy_suggestions' && response.suggestions?.length
+          ? response.suggestions
+          : undefined,
       };
 
       const finalMessages = [...newMessages, assistantMsg];
@@ -329,6 +475,30 @@ export function AgentPageWorking() {
       }
     } catch {
       toast.error(t('errors.generic', 'Something went wrong'));
+    }
+  }
+
+  async function handleAddBuyToWishlist(suggestion: BuySuggestion) {
+    try {
+      await addWishlistItem({
+        producer: '',
+        wineName: suggestion.title,
+        vintage: null,
+        region: suggestion.region || null,
+        country: null,
+        grapes: suggestion.grape || null,
+        color: (suggestion.color === 'rosé' ? 'rose' : suggestion.color) as 'red' | 'white' | 'rose' | 'sparkling' | null || null,
+        imageUrl: null,
+        restaurantName: null,
+        note: suggestion.reason,
+        vivinoUrl: null,
+        source: 'sommelier-buy',
+        extractionConfidence: null,
+      });
+      toast.success(t('cellarSommelier.wishlistAdded', 'Added to your wishlist!'));
+    } catch (e: any) {
+      toast.error(e.message || t('errors.generic', 'Something went wrong'));
+      throw e;
     }
   }
 
@@ -987,6 +1157,19 @@ export function AgentPageWorking() {
                     />
                   );
                 })()}
+
+                {/* Buy Suggestion Cards */}
+                {msg.buySuggestions && msg.buySuggestions.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                    {msg.buySuggestions.map((sug, sIdx) => (
+                      <BuySuggestionCard
+                        key={sIdx}
+                        suggestion={sug}
+                        onAddToWishlist={handleAddBuyToWishlist}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );

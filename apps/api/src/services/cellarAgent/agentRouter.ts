@@ -36,6 +36,13 @@ function soundsLikeQuestionHebrew(t: string): boolean {
   );
 }
 
+/** "Buy / purchase / shopping / expand cellar" — user wants wine suggestions to purchase, not from cellar */
+const BUY_INTENT_EN =
+  /\b(what\s+(wine|bottle)s?\s+should\s+i\s+buy|recommend.{0,30}(to\s+buy|to\s+purchase|for\s+purchase)|wines?\s+to\s+buy|buy\s+new\s+wine|buy\s+something\s+new|expand\s+my\s+(cellar|collection)|add\s+to\s+my\s+(cellar|collection)|new\s+wines?\s+to\s+try|what\s+should\s+i\s+(add|get|purchase)|shopping\s+list|wine\s+shopping|looking\s+to\s+buy|want\s+to\s+buy|next\s+purchase|what\s+to\s+buy|suggest.{0,20}(to\s+buy|new\s+wine))\b/i;
+
+const BUY_INTENT_HE =
+  /(מה\s+(כדאי|אפשר|צריך)\s+(לי\s+)?לקנות|המלץ\s+(לי\s+)?על\s+יין\s+לקנייה|יינות?\s+לקנייה|לקנות\s+יין\s+חדש|להרחיב\s+את\s+(המרתף|האוסף)|יין\s+חדש\s+לנסות|מה\s+להוסיף\s+(למרתף|לאוסף)|רשימת\s+קניות|רוצה\s+לקנות|מה\s+לרכוש|קנייה\s+הבאה|איזה\s+יין\s+לקנות|תמליץ\s+(לי\s+)?מה\s+לקנות|מה\s+כדאי\s+לי\s+לקנות|אני\s+רוצה\s+לקנות\s+יינות?\s+חדשים?)/;
+
 /**
  * Order matters: more specific routes before generic recommend.
  * Uses optional `actionContext` so follow-ups after a recommendation (“open it”) route correctly.
@@ -119,6 +126,10 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
 
   if (t.length < 100 && !looksLikeQuestion && shortFeedback) {
     return 'feedback_inline';
+  }
+
+  if (BUY_INTENT_EN.test(lower) || BUY_INTENT_HE.test(t)) {
+    return 'buy_recommendation';
   }
 
   return 'recommend';

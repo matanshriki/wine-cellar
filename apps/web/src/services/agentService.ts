@@ -27,6 +27,15 @@ export interface AgentResponseMeta {
   processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar';
 }
 
+export interface BuySuggestion {
+  title: string;
+  grape?: string;
+  region?: string;
+  color?: 'red' | 'white' | 'rosé' | 'sparkling';
+  priceTier?: '$' | '$$' | '$$$' | '$$$$';
+  reason: string;
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -57,10 +66,11 @@ export interface AgentMessage {
       shortWhy: string;
     }>;
   };
+  buySuggestions?: BuySuggestion[];
 }
 
 export interface AgentResponse {
-  type?: 'single' | 'bottle_list';
+  type?: 'single' | 'bottle_list' | 'buy_suggestions';
   message: string;
   title?: string;
   recommendation?: {
@@ -82,6 +92,7 @@ export interface AgentResponse {
     decantMinutes?: number | null;
     shortWhy: string;
   }>;
+  suggestions?: BuySuggestion[];
   followUpQuestion?: string;
   /** Optional Phase 2 fields */
   agentMeta?: AgentResponseMeta;

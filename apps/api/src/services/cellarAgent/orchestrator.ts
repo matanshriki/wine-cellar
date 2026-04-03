@@ -16,7 +16,7 @@ import {
   shortlistCandidates,
   takeTopForCap,
 } from './candidateSelection.js';
-import { buildOrchestratedSystemPrompt } from './prompt.js';
+import { buildOrchestratedSystemPrompt, buildBuyRecommendationPrompt } from './prompt.js';
 import type { CellarBottleInput, CellarIntent, OrchestrationLogPayload, ScoredCandidate } from './types.js';
 import { validateModelOutput } from './validation.js';
 import {
@@ -50,6 +50,68 @@ import {
 } from './sommelierActions.js';
 import { logSommelier, logSommelierError, logSommelierWarn, shortUser } from './sommelierLog.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
+
+function buildCellarSummaryForBuy(bottles: CellarBottleInput[]): string {
+  if (bottles.length === 0) return 'The user has an empty cellar.';
+
+  const colorCounts: Record<string, number> = {};
+  const regionCounts: Record<string, number> = {};
+  const grapeCounts: Record<string, number> = {};
+  const producers = new Set<string>();
+
+  for (const b of bottles) {
+    const color = (b.color || 'unknown').toLowerCase();
+    colorCounts[color] = (colorCounts[color] || 0) + 1;
+
+    if (b.region) {
+      regionCounts[b.region] = (regionCounts[b.region] || 0) + 1;
+    }
+    if (b.grapes) {
+      const gs = typeof b.grapes === 'string' ? b.grapes.split(/[,;]+/) : [];
+      for (const g of gs) {
+        const t = g.trim();
+        if (t) grapeCounts[t] = (grapeCounts[t] || 0) + 1;
+      }
+    }
+    if (b.producer) producers.add(b.producer);
+  }
+
+  const topRegions = Object.entries(regionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([r, c]) => `${r} (${c})`)
+    .join(', ');
+
+  const topGrapes = Object.entries(grapeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([g, c]) => `${g} (${c})`)
+    .join(', ');
+
+  const colorLine = Object.entries(colorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c, n]) => `${c}: ${n}`)
+    .join(', ');
+
+  return [
+    `Total bottles: ${bottles.length}`,
+    `Colors: ${colorLine}`,
+    `Top regions: ${topRegions || 'N/A'}`,
+    `Top grapes: ${topGrapes || 'N/A'}`,
+    `Producers: ${producers.size} unique`,
+  ].join('\n');
+}
+
+function formatMemoryForPrompt(mem: SommelierPreferenceMemory): string {
+  const parts: string[] = [];
+  if (mem.bodyPreference) parts.push(`Body preference: ${mem.bodyPreference}`);
+  if (mem.favoriteRegions?.length) parts.push(`Favorite regions: ${mem.favoriteRegions.join(', ')}`);
+  if (mem.favoriteGrapes?.length) parts.push(`Favorite grapes: ${mem.favoriteGrapes.join(', ')}`);
+  if (mem.preferredStyles?.length) parts.push(`Preferred styles: ${mem.preferredStyles.join(', ')}`);
+  if (mem.dislikedProfiles?.length) parts.push(`Dislikes: ${mem.dislikedProfiles.join(', ')}`);
+  if (mem.occasionPreference) parts.push(`Occasion style: ${mem.occasionPreference}`);
+  return parts.join('\n') || 'No specific preferences stored yet.';
+}
 
 function constraintsSummaryText(c: ReturnType<typeof extractConstraints>): string {
   const parts: string[] = [];
@@ -676,6 +738,69 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         } catch (e) {
           logSommelierError('action', e, { user: shortUser(userId), action: 'feedback_inline' });
           return withMeta(safeActionErrorMessage(), { routedAction: 'feedback_inline', actionResult: 'error', processingMode: 'deterministic_action' });
+        }
+      }
+
+      case 'buy_recommendation': {
+        try {
+          const cellarSummary = buildCellarSummaryForBuy(cellarBottles);
+          const memoryBlock = memoryPrefs ? formatMemoryForPrompt(memoryPrefs) : '';
+
+          const systemContent = buildBuyRecommendationPrompt({
+            cellarSummary,
+            memoryBlock,
+            tasteContext,
+            language,
+          });
+
+          const conversationHistory = sliceHistoryForChat(history, 8);
+
+          const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              { role: 'system', content: systemContent },
+              ...conversationHistory,
+              { role: 'user', content: message },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.85,
+          });
+
+          const content = response.choices[0]?.message?.content;
+          if (!content) throw new Error('empty_buy_recommendation_content');
+
+          let parsed: Record<string, unknown>;
+          try {
+            parsed = JSON.parse(content);
+          } catch {
+            throw new Error('buy_recommendation_json_parse_failed');
+          }
+
+          parsed.type = 'buy_suggestions';
+
+          logSommelier('orchestration', {
+            route: 'buy_recommendation',
+            user: shortUser(userId),
+            suggestionsCount: String(Array.isArray(parsed.suggestions) ? parsed.suggestions.length : 0),
+          });
+
+          return withMeta(parsed, {
+            routedAction: 'buy_recommendation',
+            processingMode: 'orchestrated_shortlist',
+          });
+        } catch (e) {
+          logSommelierError('llm', e, { user: shortUser(userId), route: 'buy_recommendation' });
+          return withMeta(
+            {
+              type: 'buy_suggestions',
+              message: m(language,
+                "I'd love to help you find wines to buy, but I ran into an issue. Try asking again!",
+                "אשמח לעזור לך למצוא יינות לקנייה, אבל נתקלתי בבעיה. נסה לשאול שוב!"
+              ),
+              suggestions: [],
+            },
+            { routedAction: 'buy_recommendation', actionResult: 'error', processingMode: 'deterministic_action' }
+          );
         }
       }
 

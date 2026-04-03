@@ -45,7 +45,8 @@ export type AgentRoute =
   | 'memory_update'
   | 'similar'
   | 'tasting_draft'
-  | 'feedback_inline';
+  | 'feedback_inline'
+  | 'buy_recommendation';
 
 export interface ActionContext {
   lastRecommendationBottleId?: string;
