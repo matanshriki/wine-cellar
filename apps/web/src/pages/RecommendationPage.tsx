@@ -248,10 +248,16 @@ export function RecommendationPage() {
   async function handleAnalyzeBottle() {
     if (!selectedBottle) return;
     try {
-      await aiAnalysisService.generateAIAnalysis(selectedBottle, i18n.language);
-      // Reload the bottle so the modal picks up the fresh analysis
+      const analysisResult = await aiAnalysisService.generateAIAnalysis(
+        selectedBottle,
+        i18n.language,
+      );
       const updated = await bottleService.getBottle(selectedBottle.id);
-      if (updated) setSelectedBottle(updated);
+      if (updated) {
+        setSelectedBottle(
+          aiAnalysisService.mergeBottleWineWithAnalysisBarrel(updated, analysisResult),
+        );
+      }
     } catch (error: any) {
       toast.error(error?.message || t('cellar.sommelier.failed'));
     }

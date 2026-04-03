@@ -33,6 +33,49 @@ export interface AIAnalysis {
 const CACHE_FRESHNESS_DAYS = 30;
 
 /**
+ * Parse barrel fields from analyze-wine JSON (handles missing keys / string months).
+ */
+function parseBarrelFromAnalysisPayload(a: Record<string, unknown>): {
+  barrel_aging_note: string | null;
+  barrel_aging_months_est: number | null;
+} {
+  const note = a.barrel_aging_note;
+  let barrel_aging_note: string | null = null;
+  if (typeof note === 'string' && note.trim()) barrel_aging_note = note.trim().slice(0, 2000);
+
+  let barrel_aging_months_est: number | null = null;
+  const m = a.barrel_aging_months_est;
+  if (typeof m === 'number' && Number.isFinite(m)) barrel_aging_months_est = Math.round(m);
+  else if (typeof m === 'string' && m.trim()) {
+    const p = parseInt(m.trim(), 10);
+    if (!Number.isNaN(p)) barrel_aging_months_est = p;
+  } else if (m === null || m === undefined) barrel_aging_months_est = null;
+
+  if (barrel_aging_months_est !== null && (barrel_aging_months_est < 0 || barrel_aging_months_est > 240)) {
+    barrel_aging_months_est = null;
+  }
+  return { barrel_aging_note, barrel_aging_months_est };
+}
+
+/**
+ * After analyze, overlay barrel fields from the API onto the fetched bottle so the UI
+ * updates immediately even if the wines row or PostgREST cache lags behind.
+ */
+export function mergeBottleWineWithAnalysisBarrel(
+  bottle: BottleWithWineInfo,
+  analysis: AIAnalysis,
+): BottleWithWineInfo {
+  return {
+    ...bottle,
+    wine: {
+      ...bottle.wine,
+      barrel_aging_note: analysis.barrel_aging_note ?? null,
+      barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+    },
+  };
+}
+
+/**
  * Check if existing analysis is still fresh (< 30 days old)
  */
 export function isAnalysisFresh(analyzedAt: string): boolean {
@@ -135,16 +178,20 @@ export async function generateAIAnalysis(
       throw new Error('Invalid response');
     }
 
-    const analysis = data.analysis as AIAnalysis;
-    
+    const raw = data.analysis as Record<string, unknown>;
+    const barrel = parseBarrelFromAnalysisPayload(raw);
+    const analysis: AIAnalysis = {
+      ...(data.analysis as AIAnalysis),
+      ...barrel,
+    };
+
     // Store in database
     await storeAnalysis(bottle.id, analysis);
-    
+
     return {
       ...analysis,
       analyzed_at: new Date().toISOString(),
     };
-    
   } catch (error) {
     console.warn('AI analysis failed, using deterministic fallback:', error);
     
@@ -229,6 +276,8 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
     confidence: drinkWindow.confidence,
     assumptions: drinkWindow.assumptions,
     analyzed_at: new Date().toISOString(),
+    barrel_aging_note: null,
+    barrel_aging_months_est: null,
   };
 }
 

@@ -640,15 +640,18 @@ export function CellarPage() {
       );
 
       // Generate AI analysis
-      const analysis = await aiAnalysisService.generateAIAnalysis(bottle, i18n.language);
+      const analysisResult = await aiAnalysisService.generateAIAnalysis(bottle, i18n.language);
       trackSommelier.success();
-      
+
       // Patch only the analyzed bottle in state — avoids a full refetch
       const updated = await bottleService.getBottle(id);
       if (updated) {
-        setBottles(prev => prev.map(b => b.id === id ? updated : b));
-        // Also update the open modal so it shows fresh analysis immediately
-        setSelectedBottle(prev => (prev?.id === id ? updated : prev));
+        const withBarrel = aiAnalysisService.mergeBottleWineWithAnalysisBarrel(
+          updated,
+          analysisResult,
+        );
+        setBottles((prev) => prev.map((b) => (b.id === id ? withBarrel : b)));
+        setSelectedBottle((prev) => (prev?.id === id ? withBarrel : prev));
       } else {
         await loadBottles(true);
       }

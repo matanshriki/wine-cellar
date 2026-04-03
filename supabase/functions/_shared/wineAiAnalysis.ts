@@ -29,8 +29,9 @@ const READINESS_RULES = `READINESS LABEL RULES — follow strictly based on the 
 - "READY": Wine is in its drinking window now. ANY wine 15 years or older must use "READY". For wines 30+ years old, ALWAYS use "READY" — they are at peak or already declining and should be consumed soon. NEVER assign "HOLD" or "PEAK_SOON" to a wine that is over 20 years old. Mention explicitly in the summary whether the wine is at its peak or may be past it.`;
 
 const BARREL_RULES = `BARREL / OAK (wine-level, for catalog + user preference learning):
-- barrel_aging_note: Short phrase (max ~200 chars) describing typical barrel regimen for THIS wine/producer/style if known from public wine knowledge (e.g. "≈18 months French oak barriques, partial new oak"). If unknown or wine is typically unoaked, use null.
-- barrel_aging_months_est: Your best estimate of total months in oak/barrel for this wine style, as an integer (0 if unoaked or negligible). Use null only if you truly cannot estimate.
+- For most quality RED wines and many structured whites, you MUST provide your best estimate (do not leave both fields null unless the wine is almost always unoaked in that region/style, e.g. many crisp whites).
+- barrel_aging_note: Short phrase (max ~200 chars) describing typical barrel regimen (e.g. "≈12–18 months American/French oak"). If genuinely no oak is typical, say "Typically little or no oak" and set months to 0.
+- barrel_aging_months_est: Integer — total months in oak/barrel you judge typical for this producer/style (0 = unoaked). Only use null if you have no reasonable basis at all.
 - These are ESTIMATES from general knowledge, not guaranteed facts for this bottle.`;
 
 export function buildWineAnalysisSystemPrompt(
