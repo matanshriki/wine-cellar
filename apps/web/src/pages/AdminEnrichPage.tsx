@@ -32,6 +32,7 @@ interface AnalysisProgress {
   fetchedCount: number;
   nextOffset: number;
   isComplete: boolean;
+  pipeline?: string;
 }
 
 export const AdminEnrichPage: React.FC = () => {
@@ -65,6 +66,16 @@ export const AdminEnrichPage: React.FC = () => {
   const [analysisTotals,  setAnalysisTotals]     = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
   const [analysisLog,     setAnalysisLog]        = useState<string[]>([]);
   const [analysisDone,    setAnalysisDone]       = useState(false);
+
+  // ── Queued modern sommelier (barrel + app-aligned prompts, admin only) ────
+  const [modernQueueRunning, setModernQueueRunning] = useState(false);
+  const [modernQueueDone, setModernQueueDone] = useState(false);
+  const [modernQueueMode, setModernQueueMode] = useState<'already_analyzed' | 'stale_only' | 'force_all'>('already_analyzed');
+  const [modernQueueBatch, setModernQueueBatch] = useState(25);
+  const [modernQueuePauseMs, setModernQueuePauseMs] = useState(2000);
+  const [modernQueueLang, setModernQueueLang] = useState<'en' | 'he'>('en');
+  const [modernQueueLog, setModernQueueLog] = useState<string[]>([]);
+  const [modernQueueTotals, setModernQueueTotals] = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
 
   // ── Rule-based wine metadata (internal, no Vivino) ─────────────────────────
   const [rulesDryRun, setRulesDryRun] = useState(true);
@@ -531,6 +542,112 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${err.message}`);
     } finally {
       setAnalysisRunning(false);
+    }
+  };
+
+  /** Batched modern pipeline (shared prompts + barrel on wines). Throttled client-side. */
+  const runModernSommelierQueue = async () => {
+    const modeLabel =
+      modernQueueMode === 'already_analyzed'
+        ? 'only bottles that already have sommelier analysis (recommended rollout)'
+        : modernQueueMode === 'stale_only'
+          ? 'bottles whose analysis is older than 30 days'
+          : 'every bottle in the cellar (expensive)';
+    if (
+      !confirm(
+        `Run QUEUED modern sommelier re-analysis?\n\n` +
+          `Scope: ${modeLabel}\n` +
+          `Batch: ${modernQueueBatch} bottles per page\n` +
+          `Pause: ${modernQueuePauseMs} ms between pages\n` +
+          `Language: ${modernQueueLang}\n\n` +
+          `Uses the same AI pipeline as the app (including barrel aging on wines).\n` +
+          `Leaves this tab open until complete. Continue?`,
+      )
+    ) {
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session ?? contextSession;
+    if (!session) {
+      alert('Session expired — please refresh the page.');
+      return;
+    }
+
+    setModernQueueRunning(true);
+    setModernQueueDone(false);
+    setModernQueueTotals({ processed: 0, skipped: 0, failed: 0, pages: 0 });
+    setModernQueueLog([
+      `[${new Date().toLocaleTimeString()}] Starting modern queue — mode: ${modernQueueMode}, batch: ${modernQueueBatch}, pause: ${modernQueuePauseMs}ms`,
+    ]);
+
+    let offset = 0;
+    let totalProcessed = 0;
+    let totalSkipped = 0;
+    let totalFailed = 0;
+    let pages = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-analysis`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              mode: modernQueueMode,
+              pipeline: 'modern',
+              batchSize: modernQueueBatch,
+              offset,
+              language: modernQueueLang,
+            }),
+          },
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+
+        const data: AnalysisProgress = await res.json();
+        pages++;
+        totalProcessed += data.processedCount;
+        totalSkipped += data.skippedCount;
+        totalFailed += data.failedCount;
+        offset = data.nextOffset;
+
+        const logLine =
+          `[${new Date().toLocaleTimeString()}] Page ${pages} — next offset ${offset} | ` +
+          `✅ ${data.processedCount} processed, ⏭ ${data.skippedCount} skipped, ❌ ${data.failedCount} failed` +
+          (data.pipeline ? ` [${data.pipeline}]` : '');
+        setModernQueueLog((prev) => [...prev, logLine]);
+        setModernQueueTotals({
+          processed: totalProcessed,
+          skipped: totalSkipped,
+          failed: totalFailed,
+          pages,
+        });
+
+        if (data.isComplete) break;
+
+        await new Promise((r) => setTimeout(r, modernQueuePauseMs));
+      }
+
+      setModernQueueLog((prev) => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] ✅ COMPLETE — ${totalProcessed} processed, ${totalSkipped} skipped, ${totalFailed} failed (${pages} pages)`,
+      ]);
+      setModernQueueDone(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setModernQueueLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ERROR: ${message}`]);
+      alert(`Error: ${message}`);
+    } finally {
+      setModernQueueRunning(false);
     }
   };
 
@@ -1288,6 +1405,159 @@ VALUES ('${user?.id}');`}
           <li>Processing pauses 1 second between pages to avoid rate limits</li>
           <li>Safe to stop and re-run — already-analyzed bottles are skipped automatically in missing_only mode</li>
           <li>Results appear in the user's cellar immediately after each page</li>
+        </ul>
+      </div>
+
+      {/* ── Queued modern re-analysis (barrel + current app prompts) ─────────── */}
+      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+
+      <h1>🔄 Queued modern sommelier refresh</h1>
+      <p style={{ color: '#666', marginBottom: '2rem' }}>
+        For users who already had analysis before barrel aging and newer prompts existed. Runs the{' '}
+        <strong>same pipeline as bulk analyze in the app</strong> (including <code>wines.barrel_aging_*</code>
+        ), in small pages with pauses so OpenAI and the database are not overwhelmed.
+      </p>
+
+      <div style={{ backgroundColor: '#e8f4fd', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #b8daff' }}>
+        <h3 style={{ marginTop: 0 }}>Settings</h3>
+
+        <label style={{ display: 'block', marginBottom: '1rem' }}>
+          <strong>Scope:</strong>
+          <select
+            value={modernQueueMode}
+            onChange={(e) => setModernQueueMode(e.target.value as typeof modernQueueMode)}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+          >
+            <option value="already_analyzed">
+              Already analyzed only — bottles with existing sommelier notes (rollout default)
+            </option>
+            <option value="stale_only">Stale only — analysis older than 30 days</option>
+            <option value="force_all">All bottles — re-run everyone (very expensive)</option>
+          </select>
+        </label>
+
+        <label style={{ display: 'block', marginBottom: '1rem' }}>
+          <strong>Bottles per page:</strong>
+          <input
+            type="number"
+            value={modernQueueBatch}
+            onChange={(e) =>
+              setModernQueueBatch(Math.min(50, Math.max(5, parseInt(e.target.value, 10) || 25)))
+            }
+            min={5}
+            max={50}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '70px' }}
+          />
+          <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '0.875rem' }}>5–50 (lower = gentler)</span>
+        </label>
+
+        <label style={{ display: 'block', marginBottom: '1rem' }}>
+          <strong>Pause between pages (ms):</strong>
+          <input
+            type="number"
+            value={modernQueuePauseMs}
+            onChange={(e) =>
+              setModernQueuePauseMs(Math.min(10000, Math.max(500, parseInt(e.target.value, 10) || 2000)))
+            }
+            min={500}
+            max={10000}
+            step={100}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '90px' }}
+          />
+        </label>
+
+        <label style={{ display: 'block', marginBottom: '0' }}>
+          <strong>Analysis language:</strong>
+          <select
+            value={modernQueueLang}
+            onChange={(e) => setModernQueueLang(e.target.value as 'en' | 'he')}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+          >
+            <option value="en">English</option>
+            <option value="he">Hebrew</option>
+          </select>
+        </label>
+      </div>
+
+      <button
+        type="button"
+        onClick={runModernSommelierQueue}
+        disabled={modernQueueRunning}
+        style={{
+          backgroundColor: modernQueueRunning ? '#6c757d' : '#0d6efd',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: '8px',
+          border: 'none',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          cursor: modernQueueRunning ? 'not-allowed' : 'pointer',
+          opacity: modernQueueRunning ? 0.7 : 1,
+          width: '100%',
+          marginBottom: '2rem',
+        }}
+      >
+        {modernQueueRunning ? '⏳ Queue running… (keep this tab open)' : '🚀 Start queued modern refresh'}
+      </button>
+
+      {(modernQueueRunning || modernQueueDone) && (
+        <div
+          style={{
+            backgroundColor: modernQueueDone ? '#d4edda' : '#fff3cd',
+            border: `1px solid ${modernQueueDone ? '#c3e6cb' : '#ffc107'}`,
+            borderRadius: '8px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>{modernQueueDone ? '✅ Queue finished' : '⏳ In progress…'}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            {[
+              { label: 'Pages', value: modernQueueTotals.pages, color: '#495057' },
+              { label: 'Processed', value: modernQueueTotals.processed, color: '#28a745' },
+              { label: 'Skipped', value: modernQueueTotals.skipped, color: '#6c757d' },
+              { label: 'Failed', value: modernQueueTotals.failed, color: '#dc3545' },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
+                <div style={{ fontSize: '0.875rem', color: '#666' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {modernQueueLog.length > 0 && (
+        <div style={{ marginBottom: '2rem' }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>📋 Modern queue log</h4>
+          <pre
+            style={{
+              backgroundColor: '#1e1e1e',
+              color: '#d4d4d4',
+              padding: '1rem',
+              borderRadius: '8px',
+              fontSize: '0.75rem',
+              maxHeight: '320px',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {modernQueueLog.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '2rem' }}>
+        <h4 style={{ marginTop: 0 }}>ℹ️ How the queue behaves</h4>
+        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+          <li>Server runs up to <strong>2 bottles in parallel</strong> per page (modern pipeline).</li>
+          <li>Your browser waits between pages — tune pause if you hit rate limits.</li>
+          <li>
+            <strong>Already analyzed only</strong> skips bottles that never had a summary; use this to add barrel
+            data without paying for untouched inventory.
+          </li>
+          <li>Deploy <code>backfill-analysis</code> after pulling this code.</li>
         </ul>
       </div>
 
