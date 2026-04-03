@@ -1141,16 +1141,28 @@
       "opening": "Opening…",
       "startAndOpen": "Start Timer & Open",
       "open": "Open Bottle",
-      "skipTimer": "Open without timer"
+      "skipTimer": "Open without timer",
+      "decantNotes": {
+        "sparkling": "Serve immediately – no decanting",
+        "noDecant": "No decanting needed",
+        "heavyRed": "Decant to soften tannins and open aromas",
+        "mediumRed": "A brief decant brings out complexity",
+        "lightRed": "Ready to enjoy immediately"
+      }
     },
     "step3": {
-      "title": "Enjoy",
+      "title": "Enjoy!",
       "subtitle": "Want a reminder to rate it later?",
       "rateLater": "Remind me to rate it",
       "remindIn": "Remind me in",
       "setReminder": "Set reminder",
       "cheers": "Cheers!",
-      "noThanks": "No thanks"
+      "noThanks": "No thanks",
+      "howWasIt": "How was it?",
+      "tapToRate": "Tap a star to rate now",
+      "rateNow": "Rate now",
+      "remindLater": "Remind me later",
+      "skip": "Skip"
     },
     "timer": {
       "decantLabel": "Decanting",

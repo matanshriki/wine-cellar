@@ -1188,16 +1188,28 @@
       "opening": "פותח...",
       "startAndOpen": "הפעל טיימר ופתח",
       "open": "פתח בקבוק",
-      "skipTimer": "פתח ללא טיימר"
+      "skipTimer": "פתח ללא טיימר",
+      "decantNotes": {
+        "sparkling": "הגש מיד – ללא דקנטציה",
+        "noDecant": "אין צורך בדקנטציה",
+        "heavyRed": "דקנט להרכיך טאנינים ולפתוח ארומות",
+        "mediumRed": "דקנטציה קצרה תחשוף את מורכבות היין",
+        "lightRed": "מוכן ליהנות מיידית"
+      }
     },
     "step3": {
-      "title": "תהנה",
+      "title": "תהנה!",
       "subtitle": "רוצה תזכורת לדרג מאוחר יותר?",
       "rateLater": "הזכר לי לדרג",
       "remindIn": "הזכר לי בעוד",
       "setReminder": "קבע תזכורת",
       "cheers": "לחיים!",
-      "noThanks": "לא תודה"
+      "noThanks": "לא תודה",
+      "howWasIt": "איך היה?",
+      "tapToRate": "לחץ על כוכב לדירוג",
+      "rateNow": "דרג עכשיו",
+      "remindLater": "הזכר לי מאוחר יותר",
+      "skip": "דלג"
     },
     "timer": {
       "decantLabel": "דקנטציה",

@@ -29,7 +29,9 @@ interface ServingInfo {
   decantNote: string;
 }
 
-function deriveServingInfo(bottle: BottleWithWineInfo): ServingInfo {
+type TFn = (key: string, fallback: string) => string;
+
+function deriveServingInfo(bottle: BottleWithWineInfo, t: TFn): ServingInfo {
   const color = bottle.wine.color;
   const profile = (bottle.wine as any).wine_profile as {
     power?: number;
@@ -38,25 +40,49 @@ function deriveServingInfo(bottle: BottleWithWineInfo): ServingInfo {
   } | null;
 
   if (color === 'sparkling') {
-    return { temp: '6–9 °C / 43–48 °F', decantMins: 0, decantNote: 'Serve immediately – no decanting' };
+    return {
+      temp: '6–9 °C / 43–48 °F',
+      decantMins: 0,
+      decantNote: t('openRitual.step2.decantNotes.sparkling', 'Serve immediately – no decanting'),
+    };
   }
   if (color === 'white') {
-    return { temp: '8–12 °C / 46–54 °F', decantMins: 0, decantNote: 'No decanting needed' };
+    return {
+      temp: '8–12 °C / 46–54 °F',
+      decantMins: 0,
+      decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed'),
+    };
   }
   if (color === 'rose') {
-    return { temp: '8–12 °C / 46–54 °F', decantMins: 0, decantNote: 'No decanting needed' };
+    return {
+      temp: '8–12 °C / 46–54 °F',
+      decantMins: 0,
+      decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed'),
+    };
   }
 
   // Red wine
   const power = profile?.power ?? 5;
   const tannin = profile?.tannin ?? 3;
   if (power >= 7 || tannin >= 4) {
-    return { temp: '16–18 °C / 61–64 °F', decantMins: 45, decantNote: 'Decant to soften tannins and open aromas' };
+    return {
+      temp: '16–18 °C / 61–64 °F',
+      decantMins: 45,
+      decantNote: t('openRitual.step2.decantNotes.heavyRed', 'Decant to soften tannins and open aromas'),
+    };
   }
   if (power >= 5 || tannin >= 3) {
-    return { temp: '14–16 °C / 57–61 °F', decantMins: 20, decantNote: 'A brief decant brings out complexity' };
+    return {
+      temp: '14–16 °C / 57–61 °F',
+      decantMins: 20,
+      decantNote: t('openRitual.step2.decantNotes.mediumRed', 'A brief decant brings out complexity'),
+    };
   }
-  return { temp: '12–14 °C / 54–57 °F', decantMins: 0, decantNote: 'Ready to enjoy immediately' };
+  return {
+    temp: '12–14 °C / 54–57 °F',
+    decantMins: 0,
+    decantNote: t('openRitual.step2.decantNotes.lightRed', 'Ready to enjoy immediately'),
+  };
 }
 
 function defaultRateLaterMins(decantMins: number): number {
@@ -336,7 +362,7 @@ export function OpenRitualSheet({
   const [ratingNotes, setRatingNotes] = useState('');
   const [ratingSaving, setRatingSaving] = useState(false);
 
-  const serving = bottle ? deriveServingInfo(bottle) : null;
+  const serving = bottle ? deriveServingInfo(bottle, t as TFn) : null;
 
   // Reset all state whenever the sheet opens for a new bottle.
   // useEffect on isOpen is reliable and avoids the onAnimationComplete pitfall
@@ -661,6 +687,7 @@ export function OpenRitualSheet({
                           </span>
                           <div
                             className="w-10 h-6 rounded-full relative transition-colors"
+                            dir="ltr"
                             style={{ background: timerEnabled ? 'var(--wine-600)' : 'var(--border-medium)' }}
                           >
                             <motion.div
