@@ -19,6 +19,7 @@ import {
   listConversations,
   createConversation,
   updateConversation,
+  deleteConversation,
   generateConversationTitle,
   type SommelierConversation,
 } from '../services/sommelierConversationService';
@@ -31,6 +32,21 @@ import { BottleCarouselLuxury } from '../components/BottleCarouselLuxury';
 import { BotSingleWineResultCard } from '../components/BotSingleWineResultCard';
 import * as labelArtService from '../services/labelArtService';
 import { trackSommelier } from '../services/analytics';
+
+function formatConversationDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
@@ -51,11 +67,15 @@ export function AgentPageWorking() {
   const [loadingBottleDetails, setLoadingBottleDetails] = useState(false);
   const [currentConversation, setCurrentConversation] = useState<SommelierConversation | null>(null);
   const [isSavingConversation, setIsSavingConversation] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const greetingInjectedRef = useRef(false);
+  const restoredRef = useRef(false);
 
   /** Correlates follow-up actions (open, similar, feedback) with the last recommendation turn */
   function buildActionContextFromHistory(
@@ -100,13 +120,29 @@ export function AgentPageWorking() {
     }
   }, [flags]);
 
-  // Load bottles on mount — always start a fresh conversation session.
-  // Previous conversations are saved in DB but not auto-restored, to avoid
-  // the agent responding in the context of an old session when the user says "Hi".
+  // Load bottles + restore most recent conversation on mount
   useEffect(() => {
     async function load() {
       try {
         await loadBottles();
+        if (!restoredRef.current) {
+          restoredRef.current = true;
+          try {
+            const conversations = await listConversations();
+            setConversationList(conversations);
+            if (conversations.length > 0) {
+              const mostRecent = conversations[0];
+              const msgs = mostRecent.messages || [];
+              if (msgs.length > 0) {
+                setCurrentConversation(mostRecent);
+                setMessages(msgs);
+                greetingInjectedRef.current = true;
+              }
+            }
+          } catch {
+            // Silent — fall through to fresh greeting
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -129,7 +165,7 @@ export function AgentPageWorking() {
     };
   }
 
-  // Inject warm greeting once bottles load (only for fresh sessions with no saved conversation)
+  // Inject warm greeting once bottles load (only for fresh sessions with no restored conversation)
   useEffect(() => {
     if (loading || greetingInjectedRef.current || messages.length > 0) return;
     const bottlesInCellar = bottles.filter(b => b.quantity > 0);
@@ -142,7 +178,7 @@ export function AgentPageWorking() {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, [loading, bottles, messages.length, t]);
 
-  // Refresh greeting when user returns to the tab (e.g. left open overnight)
+  // Refresh greeting when user returns to the tab (only if just a greeting is showing)
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState !== 'visible') return;
@@ -159,7 +195,6 @@ export function AgentPageWorking() {
   }, [bottles, t]);
 
   async function handleSend(text: string) {
-    // Filter bottles in cellar (quantity > 0) - same logic as CellarPage
     const bottlesInCellar = bottles.filter(bottle => bottle.quantity > 0);
     
     if (!text.trim() || isSubmitting || bottlesInCellar.length === 0) return;
@@ -197,7 +232,6 @@ export function AgentPageWorking() {
       const finalMessages = [...newMessages, assistantMsg];
       setMessages(finalMessages);
       
-      // Auto-save conversation after each exchange
       await saveConversation(finalMessages);
     } catch (error: any) {
       toast.error(error.message || 'Failed to get recommendation');
@@ -230,7 +264,6 @@ export function AgentPageWorking() {
   }
 
   async function handleMarkOpened(bottle: BottleWithWineInfo) {
-    // Reload bottles after marking as opened
     await loadBottles();
     handleCloseDetailsModal();
   }
@@ -241,20 +274,6 @@ export function AgentPageWorking() {
       setBottles(data);
     } catch (error) {
       toast.error('Failed to load cellar');
-    }
-  }
-
-  async function loadMostRecentConversation() {
-    try {
-      const conversations = await listConversations();
-      if (conversations.length > 0) {
-        const mostRecent = conversations[0];
-        setCurrentConversation(mostRecent);
-        setMessages(mostRecent.messages || []);
-      }
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-      // Don't show error toast - just start fresh
     }
   }
 
@@ -270,10 +289,14 @@ export function AgentPageWorking() {
           currentConversation.title
         );
         setCurrentConversation(updated);
+        setConversationList((prev) =>
+          prev.map((c) => (c.id === updated.id ? updated : c))
+        );
       } else {
         const title = generateConversationTitle(persistable);
         const created = await createConversation(persistable, title);
         setCurrentConversation(created);
+        setConversationList((prev) => [created, ...prev]);
       }
     } catch (error) {
       console.error('Failed to save conversation:', error);
@@ -286,6 +309,40 @@ export function AgentPageWorking() {
     greetingInjectedRef.current = false;
     setMessages([]);
     setCurrentConversation(null);
+    setSidebarOpen(false);
+  }
+
+  function resumeConversation(conv: SommelierConversation) {
+    greetingInjectedRef.current = true;
+    setCurrentConversation(conv);
+    setMessages(conv.messages || []);
+    setSidebarOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 200);
+  }
+
+  async function handleDeleteConversation(convId: string) {
+    try {
+      await deleteConversation(convId);
+      setConversationList((prev) => prev.filter((c) => c.id !== convId));
+      if (currentConversation?.id === convId) {
+        startNewConversation();
+      }
+    } catch {
+      toast.error(t('errors.generic', 'Something went wrong'));
+    }
+  }
+
+  async function openSidebar() {
+    setSidebarOpen(true);
+    setLoadingConversations(true);
+    try {
+      const conversations = await listConversations();
+      setConversationList(conversations);
+    } catch {
+      // keep whatever we have
+    } finally {
+      setLoadingConversations(false);
+    }
   }
 
   async function startRecording() {
@@ -353,6 +410,8 @@ export function AgentPageWorking() {
     );
   }
 
+  const isRtl = i18n.language === 'he';
+
   return (
     <>
       <style>{`
@@ -367,7 +426,189 @@ export function AgentPageWorking() {
             height: 100dvh !important;
           }
         }
+
+        .sidebar-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.35);
+          z-index: 40;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          pointer-events: none;
+        }
+        .sidebar-overlay.open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .sidebar-panel {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          width: min(320px, 85vw);
+          background: white;
+          z-index: 50;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+          transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-panel.ltr {
+          left: 0;
+          transform: translateX(-100%);
+        }
+        .sidebar-panel.rtl {
+          right: 0;
+          transform: translateX(100%);
+        }
+        .sidebar-panel.open {
+          transform: translateX(0);
+        }
+
+        .conv-item {
+          padding: 14px 16px;
+          cursor: pointer;
+          border-bottom: 1px solid #f0f0f0;
+          transition: background 0.15s;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .conv-item:hover { background: #f8f5f5; }
+        .conv-item.active { background: #fdf0f0; border-inline-start: 3px solid #7c3030; }
+
+        .conv-delete-btn {
+          opacity: 0;
+          transition: opacity 0.15s;
+          background: none;
+          border: none;
+          color: #999;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          flex-shrink: 0;
+        }
+        .conv-delete-btn:hover { color: #dc3545; background: #fee; }
+        .conv-item:hover .conv-delete-btn { opacity: 1; }
       `}</style>
+
+      {/* Sidebar overlay */}
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      {/* Sidebar panel */}
+      <div className={`sidebar-panel ${isRtl ? 'rtl' : 'ltr'} ${sidebarOpen ? 'open' : ''}`}>
+        {/* Sidebar header */}
+        <div style={{
+          padding: '20px 16px 12px',
+          borderBottom: '1px solid #e8e0e0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#333', margin: 0 }}>
+            {t('cellarSommelier.conversationHistory', 'Conversations')}
+          </h2>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#999', padding: '4px', borderRadius: '6px',
+            }}
+          >
+            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* New conversation button */}
+        <div style={{ padding: '12px 16px', flexShrink: 0 }}>
+          <button
+            onClick={startNewConversation}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '10px',
+              border: '1.5px dashed #d4c4c4',
+              background: 'none',
+              color: '#7c3030',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('cellarSommelier.newConversation', 'New conversation')}
+          </button>
+        </div>
+
+        {/* Conversation list */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {loadingConversations && conversationList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#999', fontSize: '14px' }}>
+              {t('cellarSommelier.loading', 'Loading...')}
+            </div>
+          ) : conversationList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#999', fontSize: '14px' }}>
+              {t('cellarSommelier.noConversations', 'No past conversations yet')}
+            </div>
+          ) : (
+            conversationList.map((conv) => {
+              const isActive = currentConversation?.id === conv.id;
+              const msgCount = (conv.messages || []).filter((m: AgentMessage) => m.role === 'user').length;
+              return (
+                <div
+                  key={conv.id}
+                  className={`conv-item ${isActive ? 'active' : ''}`}
+                  onClick={() => resumeConversation(conv)}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: isActive ? 600 : 500,
+                      color: '#333',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {conv.title || t('cellarSommelier.newConversation', 'New conversation')}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px', display: 'flex', gap: '8px' }}>
+                      <span>{formatConversationDate(conv.last_message_at || conv.updated_at)}</span>
+                      <span>·</span>
+                      <span>{msgCount} {msgCount === 1 ? t('cellarSommelier.message', 'message') : t('cellarSommelier.messages', 'messages')}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="conv-delete-btn"
+                    title={t('cellarSommelier.deleteConversation', 'Delete')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteConversation(conv.id);
+                    }}
+                  >
+                    <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
       <div 
         className="agent-container"
         style={{
@@ -416,36 +657,53 @@ export function AgentPageWorking() {
             </p>
           </div>
 
-          <button
-            onClick={startNewConversation}
-            disabled={messages.length === 0}
-            title={t('cellarSommelier.newConversation', 'New conversation')}
-            style={{
-              padding: '8px',
-              borderRadius: '8px',
-              border: '1px solid #e0e0e0',
-              backgroundColor: 'white',
-              color: '#666',
-              cursor: messages.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: messages.length === 0 ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (messages.length > 0) {
-                e.currentTarget.style.backgroundColor = '#f8f9fa';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
-          >
-            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {/* History / sidebar toggle */}
+            <button
+              onClick={openSidebar}
+              title={t('cellarSommelier.conversationHistory', 'Conversations')}
+              style={{
+                padding: '8px',
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0',
+                backgroundColor: 'white',
+                color: '#666',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}
+            >
+              <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+
+            {/* New conversation */}
+            <button
+              onClick={startNewConversation}
+              disabled={messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)}
+              title={t('cellarSommelier.newConversation', 'New conversation')}
+              style={{
+                padding: '8px',
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0',
+                backgroundColor: 'white',
+                color: '#666',
+                cursor: (messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)) ? 'not-allowed' : 'pointer',
+                opacity: (messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)) ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}
+            >
+              <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -457,7 +715,7 @@ export function AgentPageWorking() {
         position: 'relative',
       }}>
         {/* Scenario chips — shown right after the greeting bubble when there's only 1 assistant message */}
-        {messages.length === 1 && messages[0].role === 'assistant' && bottles.filter(b => b.quantity > 0).length > 0 && (() => {
+        {messages.length === 1 && messages[0].role === 'assistant' && messages[0].isGreeting && bottles.filter(b => b.quantity > 0).length > 0 && (() => {
           const scenarioChips = [
             { emoji: '🥩', label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
             { emoji: '💕', label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
@@ -623,7 +881,6 @@ export function AgentPageWorking() {
                       </svg>
                     )
                   ) : (
-                    // Sommelier avatar - elegant sommelier image
                     <img
                       src="/assets/sommelier-icon.png"
                       alt="Sommelier"
@@ -825,7 +1082,7 @@ export function AgentPageWorking() {
             }}
           />
 
-          {/* Microphone button (dev only) */}
+          {/* Microphone button */}
           {micSupported && (
             <button
               type="button"
@@ -870,7 +1127,6 @@ export function AgentPageWorking() {
           <button
             type="button"
             onClick={() => {
-              console.log('Send clicked');
               handleSend(inputValue);
             }}
             disabled={isSubmitting || !inputValue.trim() || bottles.filter(b => b.quantity > 0).length === 0 || isRecording}
