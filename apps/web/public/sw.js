@@ -1,129 +1,120 @@
 /**
- * Service Worker for Wine Cellar Brain PWA
- * Provides offline support and session persistence
+ * Service Worker — Wine Cellar Brain PWA
+ * Production build replaces CACHE_NAME + PRECACHE_ASSETS with hashed /assets/* URLs.
+ * Offline: app shell (index.html + JS/CSS) must be precached or cache-first served.
  */
 
+// Replaced at build time (vite closeBundle) — dev/preview keeps these fallbacks
 const CACHE_NAME = 'wine-cellar-v1';
 const RUNTIME_CACHE = 'wine-cellar-runtime';
 
-// Assets to cache on install
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.ico',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
   '/wine.svg',
 ];
 
-// Install event - precache critical assets
+function precacheInstall(cache) {
+  return Promise.allSettled(PRECACHE_ASSETS.map((url) => cache.add(url))).then((results) => {
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.warn('[Service Worker] Precache skip:', PRECACHE_ASSETS[i], r.reason);
+      }
+    });
+  });
+}
+
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
+  console.log('[Service Worker] Installing…', CACHE_NAME);
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Precaching assets');
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => {
-      // Force the waiting service worker to become the active service worker
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME).then((cache) => precacheInstall(cache)).then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
+  console.log('[Service Worker] Activating…', CACHE_NAME);
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
           .map((name) => {
             console.log('[Service Worker] Deleting old cache:', name);
             return caches.delete(name);
           })
-      );
-    }).then(() => {
-      // Take control of all pages immediately
-      return self.clients.claim();
-    })
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch event - network first, then cache fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
-  // Skip cross-origin requests
-  if (url.origin !== location.origin) {
-    return;
-  }
+  if (url.href.includes('supabase.co')) return;
 
-  // Skip Supabase API requests (always go to network)
-  if (url.href.includes('supabase.co')) {
-    return;
-  }
-
-  // For navigation requests (pages)
+  // SPA navigations: network, then cached index.html (paths like /cellar are not files)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
           if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
+            const clone = response.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(request, clone));
           }
           return response;
         })
-        .catch(() => {
-          // Fallback to cache if offline
-          return caches.match(request).then((cached) => {
-            return cached || caches.match('/index.html');
-          });
-        })
+        .catch(() =>
+          caches.match(request).then((hit) => hit || caches.match('/index.html'))
+        )
     );
     return;
   }
 
-  // For all other requests - network first, cache fallback
+  // Immutable hashed bundles: cache first (critical for offline after precache)
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Other same-origin static files: try cache, then network, then cache again
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // Cache successful responses for static assets
-        if (response.status === 200 && (
-          request.url.endsWith('.js') ||
-          request.url.endsWith('.css') ||
-          request.url.endsWith('.svg') ||
-          request.url.endsWith('.png') ||
-          request.url.endsWith('.jpg') ||
-          request.url.endsWith('.woff2')
-        )) {
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Try to serve from cache
-        return caches.match(request);
-      })
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request)
+        .then((response) => {
+          if (
+            response.status === 200 &&
+            /\.(js|css|svg|png|jpg|jpeg|webp|woff2|ico|json)$/i.test(url.pathname)
+          ) {
+            const clone = response.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request));
+    })
   );
 });
-
-// ── Local notification scheduling ─────────────────────────────────────────────
-//
-// The app posts SCHEDULE_NOTIFICATION when a timer is created and
-// CANCEL_NOTIFICATION when one is cancelled.  The service worker holds a
-// Map of pending setTimeout handles so that notifications fire even when
-// the browser tab is in the background.
-//
-// Limitation: if the OS fully terminates the service worker (e.g. the device
-// is restarted, or the browser aggressively culls background SWs) the timeout
-// is lost.  The in-app FloatingTimerPill modal is the fallback for that case.
 
 /** Map<timerId, timeoutHandle> */
 const pendingNotifications = new Map();
@@ -140,7 +131,6 @@ self.addEventListener('message', (event) => {
   if (data.type === 'SCHEDULE_NOTIFICATION') {
     const { timerId, title, body, delayMs, tag } = data;
 
-    // Clear any existing timeout for this timer (e.g. re-scheduling)
     if (pendingNotifications.has(timerId)) {
       clearTimeout(pendingNotifications.get(timerId));
     }
@@ -170,31 +160,24 @@ self.addEventListener('message', (event) => {
       clearTimeout(pendingNotifications.get(timerId));
       pendingNotifications.delete(timerId);
     }
-    // Also dismiss any already-shown notification with this tag
-    self.registration.getNotifications({ tag: `wine-timer-${timerId}` })
-      .then(notifications => notifications.forEach(n => n.close()))
+    self.registration
+      .getNotifications({ tag: `wine-timer-${timerId}` })
+      .then((notifications) => notifications.forEach((n) => n.close()))
       .catch(() => {});
     return;
   }
 });
 
-// Open / focus the app when the user taps a notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) || '/';
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If the app is already open, focus it
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }
-      // Otherwise open a new window
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
-
-
-
-
