@@ -21,6 +21,9 @@ interface AddWineImageDialogProps {
   onSaveStoragePath?: (storagePath: string, bucket: string) => Promise<void>;
   currentImageUrl?: string | null;
   wineName: string;
+  /** Stack above modals that use high z-index (e.g. wishlist details at 200). Defaults: 50 / 60. */
+  overlayZIndex?: number;
+  contentZIndex?: number;
 }
 
 type Tab = 'upload' | 'url';
@@ -32,6 +35,8 @@ export function AddWineImageDialog({
   onSaveStoragePath,
   currentImageUrl,
   wineName,
+  overlayZIndex,
+  contentZIndex,
 }: AddWineImageDialogProps) {
   const { t } = useTranslation();
 
@@ -149,6 +154,8 @@ export function AddWineImageDialog({
   if (!isOpen) return null;
 
   const isLoading = isUploading || isSavingUrl || isRemoving;
+  const backdropZ = overlayZIndex ?? 50;
+  const panelZ = contentZIndex ?? 60;
 
   return (
     <AnimatePresence>
@@ -159,15 +166,21 @@ export function AddWineImageDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
-            style={{ backdropFilter: 'blur(4px)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="fixed inset-0 bg-black bg-opacity-50"
+            style={{ backdropFilter: 'blur(4px)', zIndex: backdropZ }}
           />
 
           {/* Dialog Container */}
           <div
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{
+              zIndex: panelZ,
+              paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+            }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}

@@ -201,6 +201,31 @@ export function WishlistPage() {
     }
   }
 
+  async function handleSaveWishlistImage(imageUrl: string) {
+    const id = selectedItem?.id;
+    if (!id) return;
+
+    const trimmed = imageUrl.trim();
+    const nextUrl = trimmed ? trimmed : null;
+
+    try {
+      const updated = await wishlistService.updateWishlistItem(id, {
+        imageUrl: nextUrl,
+      });
+      setSelectedItem(updated);
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      toast.success(
+        nextUrl
+          ? t('wineImage.updateSuccess', 'Wine image updated!')
+          : t('wineImage.removeSuccess', 'Wine image removed')
+      );
+    } catch (error: any) {
+      console.error('[WishlistPage] Failed to update wishlist image:', error);
+      toast.error(error.message || t('errors.generic'));
+      throw error;
+    }
+  }
+
   // Filter items by search query (client-side)
   const filteredItems = searchQuery.trim()
     ? items.filter(item => {
@@ -792,6 +817,7 @@ export function WishlistPage() {
         item={selectedItem}
         onMoveToCellar={handleMoveToCellar}
         onRemove={handleRemove}
+        onSaveWishlistImage={handleSaveWishlistImage}
       />
 
       {/* Luxury Confirmation Modal */}

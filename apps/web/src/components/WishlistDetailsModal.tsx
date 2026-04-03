@@ -4,10 +4,12 @@
  * Displays comprehensive wine information for wishlist items in a beautiful modal
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WishlistItem } from '../services/wishlistService';
+import { AddWineImageDialog } from './AddWineImageDialog';
+import * as storageImageService from '../services/storageImageService';
 
 interface WishlistDetailsModalProps {
   isOpen: boolean;
@@ -15,6 +17,8 @@ interface WishlistDetailsModalProps {
   item: WishlistItem | null;
   onMoveToCellar?: (item: WishlistItem) => void;
   onRemove?: (id: string) => void;
+  /** Persist label image URL (empty string = remove). Same upload/URL flow as cellar wines. */
+  onSaveWishlistImage?: (imageUrl: string) => Promise<void>;
 }
 
 export function WishlistDetailsModal({ 
@@ -23,8 +27,10 @@ export function WishlistDetailsModal({
   item,
   onMoveToCellar,
   onRemove,
+  onSaveWishlistImage,
 }: WishlistDetailsModalProps) {
   const { t, i18n } = useTranslation();
+  const [showImageDialog, setShowImageDialog] = useState(false);
 
   // Lock body scroll when modal is open (prevents iOS background scroll).
   // We save scrollY and restore it via window.scrollTo on close — without this,
@@ -51,6 +57,10 @@ export function WishlistDetailsModal({
         window.scrollTo(0, scrollY);
       };
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setShowImageDialog(false);
   }, [isOpen]);
 
   // Don't render anything if no item is available
@@ -206,6 +216,79 @@ export function WishlistDetailsModal({
                 backgroundColor: 'var(--bg-surface)',
               }}
             >
+              {/* Label image — add or change after saving (e.g. manual entry) */}
+              {onSaveWishlistImage && (
+                <div
+                  className="pb-6"
+                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                >
+                  <h3 
+                    className="text-sm font-semibold mb-3 flex items-center gap-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    <span>🖼️</span>
+                    {t('wishlist.labelPhoto', 'Label photo')}
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
+                    <div className="flex-shrink-0 mx-auto sm:mx-0">
+                      <div className="relative">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt=""
+                            className="w-28 h-36 sm:w-32 sm:h-40 object-cover rounded-lg"
+                            style={{
+                              border: '2px solid var(--border-base)',
+                              boxShadow: 'var(--shadow-md)',
+                            }}
+                          />
+                        ) : (
+                          <div
+                            className="w-28 h-36 sm:w-32 sm:h-40 rounded-lg flex flex-col items-center justify-center px-2"
+                            style={{
+                              border: '2px dashed var(--border-base)',
+                              background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
+                            }}
+                          >
+                            <svg className="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
+                              {t('wishlist.noLabelPhotoYet', 'No photo yet')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        {t('wishlist.labelPhotoHint', 'Upload a label shot or paste an image link — same as in your cellar.')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowImageDialog(true)}
+                        className="w-full sm:w-auto py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                        style={{
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border-base)',
+                          color: 'var(--text-secondary)',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>
+                          {item.imageUrl
+                            ? t('wineImage.updateButton', 'Update Image')
+                            : t('wineImage.addButton', 'Add Image')}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Quick Stats */}
               {(item.vintage || item.color) && (
                 <div className="flex flex-wrap gap-6">
@@ -407,6 +490,26 @@ export function WishlistDetailsModal({
               </button>
             </div>
           </motion.div>
+
+          {onSaveWishlistImage && (
+            <AddWineImageDialog
+              isOpen={showImageDialog}
+              onClose={() => setShowImageDialog(false)}
+              overlayZIndex={220}
+              contentZIndex={221}
+              wineName={`${item.producer} ${item.wineName}`.trim()}
+              currentImageUrl={item.imageUrl ?? undefined}
+              onSave={onSaveWishlistImage}
+              onSaveStoragePath={async (path, bucket) => {
+                const publicUrl = await storageImageService.getStorageImageUrl(bucket, path);
+                if (!publicUrl) {
+                  throw new Error('Could not resolve uploaded image URL');
+                }
+                storageImageService.clearImageCache(bucket, path);
+                await onSaveWishlistImage(publicUrl);
+              }}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

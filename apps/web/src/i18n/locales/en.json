@@ -1035,6 +1035,9 @@
     "removeConfirm": "Remove this wine from your wishlist?",
     "restaurantInfo": "Where You Found It",
     "personalNote": "Your Note",
+    "labelPhoto": "Label photo",
+    "noLabelPhotoYet": "No photo yet",
+    "labelPhotoHint": "Upload a label shot or paste an image link — same as in your cellar.",
     "form": {
       "title": "Add to Wishlist",
       "validation": "Producer and wine name are required",

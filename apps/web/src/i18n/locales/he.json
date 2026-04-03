@@ -904,6 +904,9 @@
     "removeConfirm": "להסיר יין זה מרשימת המשאלות?",
     "restaurantInfo": "היכן מצאת אותו",
     "personalNote": "ההערה שלך",
+    "labelPhoto": "תמונת תווית",
+    "noLabelPhotoYet": "אין תמונה עדיין",
+    "labelPhotoHint": "העלה צילום תווית או הדבק קישור לתמונה — כמו במרתף.",
     "form": {
       "title": "הוסף לרשימת משאלות",
       "validation": "יצרן ושם היין הם שדות חובה",
