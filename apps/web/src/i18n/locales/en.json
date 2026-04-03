@@ -868,16 +868,20 @@
     "modeLabel": "Analysis Mode",
     "missingOnly": "Missing only",
     "recommended": "Recommended",
-    "missingOnlyDesc": "Analyze only bottles without sommelier notes",
+    "missingOnlyDesc": "Analyze only bottles without sommelier notes ({{count}} bottles)",
     "reanalyzeAll": "Re-analyze all",
     "reanalyzeAllDesc": "Regenerate notes for all bottles (up to 20 per session)",
     "startAnalysis": "Start Analysis",
-    "analyzing": "Analyzing...",
+    "analyzing": "Analyzing your cellar…",
     "pleaseWait": "This may take a minute...",
     "complete": "Analysis complete!",
     "error": "Failed to analyze cellar",
+    "errorTitle": "Analysis Error",
     "cooldownTooltip": "Please wait before running another analysis",
-    "buttonLabel": "Analyze Cellar"
+    "buttonLabel": "Analyze Cellar",
+    "progressWithTotal": "Processed {{processed}} / {{total}} wines",
+    "progressWithoutTotal": "Processed {{processed}} wines",
+    "largeCollectionNote": "Large cellars take a bit longer…"
   },
   "onboarding": {
     "welcome": {

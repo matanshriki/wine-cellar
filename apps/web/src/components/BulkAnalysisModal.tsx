@@ -353,10 +353,10 @@ export function BulkAnalysisModal({
                       className="text-xs"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      {t(
-                        'bulkAnalysis.missingOnlyDesc',
-                        `Analyze only bottles without sommelier notes (${unanalyzedCount} bottles)`
-                      )}
+                      {t('bulkAnalysis.missingOnlyDesc', {
+                        count: unanalyzedCount,
+                        defaultValue: `Analyze only bottles without sommelier notes (${unanalyzedCount} bottles)`,
+                      })}
                     </p>
                   </div>
                 </label>
@@ -432,8 +432,15 @@ export function BulkAnalysisModal({
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {progress.total
-                        ? t('bulkAnalysis.progressWithTotal', `Processed ${progress.processed} / ${progress.total} wines`)
-                        : t('bulkAnalysis.progressWithoutTotal', `Processed ${progress.processed} wines`)}
+                        ? t('bulkAnalysis.progressWithTotal', {
+                            processed: progress.processed,
+                            total: progress.total,
+                            defaultValue: `Processed ${progress.processed} / ${progress.total} wines`,
+                          })
+                        : t('bulkAnalysis.progressWithoutTotal', {
+                            processed: progress.processed,
+                            defaultValue: `Processed ${progress.processed} wines`,
+                          })}
                     </p>
                   </div>
 
