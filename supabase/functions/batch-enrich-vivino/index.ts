@@ -21,7 +21,7 @@ interface WineDetail {
   producer: string;
   vintage: number | null;
   vivino_url: string | null;
-  status: 'enriched' | 'skipped' | 'failed';
+  status: "enriched" | "skipped" | "failed";
   skip_reason: string | null;
   fields_updated: string[] | null;
   error: string | null;
@@ -37,70 +37,90 @@ interface BatchProgress {
   details: WineDetail[];
 }
 
+/** missing_only: Vivino URL + any core field null. refresh_all: every wine with a Vivino URL. */
+type EnrichmentScope = "missing_only" | "refresh_all";
+
 // Rate limiting: 1 request per second (safe for Vivino, stays within Edge Function time limit)
 const DELAY_BETWEEN_REQUESTS = 1000;
 // Hard cap per invocation to stay well within Supabase's 150s wall-clock limit.
-// The client calls this function in a loop until all wines are processed.
 const MAX_PER_INVOCATION = 10;
 const BATCH_SIZE = 10;
 
 Deno.serve(async (req) => {
-  console.log("[Batch Enrich] ========== NEW REQUEST ==========");
-  console.log("[Batch Enrich] Method:", req.method);
-  console.log("[Batch Enrich] URL:", req.url);
-  
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    console.log("[Batch Enrich] CORS preflight request");
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // TEMPORARILY SKIP ALL AUTH FOR DEBUGGING
-    console.log("[Batch Enrich] ⚠️⚠️⚠️ ALL AUTH TEMPORARILY DISABLED FOR DEBUGGING ⚠️⚠️⚠️");
-    
-    const authHeader = req.headers.get("Authorization");
-    console.log("[Batch Enrich] Authorization header present:", !!authHeader);
-    console.log("[Batch Enrich] Auth header:", authHeader?.substring(0, 50));
-    
-    // Create service role client for database operations
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
-    console.log("[Batch Enrich] Supabase URL:", supabaseUrl);
-    console.log("[Batch Enrich] Service Role Key present:", !!serviceRoleKey);
-    console.log("[Batch Enrich] Anon Key present:", !!anonKey);
-    
-    const supabaseClient = createClient(
-      supabaseUrl ?? "",
-      serviceRoleKey ?? ""
-    );
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(
+        JSON.stringify({ error: "Server misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    // Hardcode user for testing
-    const testUserId = "5782c9f4-b52d-486b-adaf-80263b39012f";
-    console.log(`[Batch Enrich] ⚠️ Using hardcoded test user: ${testUserId}`);
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    // Parse request options
-    const { dryRun = false, limit = MAX_PER_INVOCATION, offset = 0 } = await req.json().catch(() => ({}));
-    // Never process more than MAX_PER_INVOCATION wines per call regardless of what the client requests
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const { data: isAdmin } = await supabase.rpc("is_admin", { check_user_id: user.id });
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Admin access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const dryRun = !!body.dryRun;
+    const limit = typeof body.limit === "number" ? body.limit : MAX_PER_INVOCATION;
+    const offset = typeof body.offset === "number" ? body.offset : 0;
+    const enrichmentScope: EnrichmentScope = body.enrichment_scope === "refresh_all"
+      ? "refresh_all"
+      : "missing_only";
+
     const effectiveLimit = Math.min(limit, MAX_PER_INVOCATION);
 
-    // Fetch all wines that need enrichment
-    // Criteria: Have vivino_url but missing other data (rating, region, grapes, or regional_wine_style)
-    const { data: wines, error: fetchError } = await supabaseClient
+    let query = supabase
       .from("wines")
-      .select("id, wine_name, producer, vintage, vivino_url, rating, region, country, grapes, regional_wine_style, user_id")
+      .select(
+        "id, wine_name, producer, vintage, vivino_url, rating, region, country, grapes, regional_wine_style, user_id",
+      )
       .not("vivino_url", "is", null)
-      .or("rating.is.null,region.is.null,country.is.null,grapes.is.null,regional_wine_style.is.null")
-      .order("id")                                         // stable ordering so offset is consistent
-      .range(offset, offset + effectiveLimit - 1);         // page forward past already-attempted wines
+      .order("id");
+
+    if (enrichmentScope === "missing_only") {
+      query = query.or(
+        "rating.is.null,region.is.null,country.is.null,grapes.is.null,regional_wine_style.is.null",
+      );
+    }
+
+    const { data: wines, error: fetchError } = await query.range(
+      offset,
+      offset + effectiveLimit - 1,
+    );
 
     if (fetchError) {
       console.error("[Batch Enrich] Error fetching wines:", fetchError);
       return new Response(
         JSON.stringify({ error: "Failed to fetch wines", details: fetchError }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -114,24 +134,26 @@ Deno.serve(async (req) => {
       details: [],
     };
 
-    console.log(`[Batch Enrich] Found ${progress.total} wines to process`);
+    console.log(
+      `[Batch Enrich] scope=${enrichmentScope} found ${progress.total} wines (offset=${offset})`,
+    );
 
     if (dryRun) {
       return new Response(
         JSON.stringify({
           message: "Dry run completed",
+          enrichment_scope: enrichmentScope,
           progress,
           winesToProcess: wines?.slice(0, 10),
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Helper to push a detail record
     const addDetail = (
       wine: Wine,
-      status: WineDetail['status'],
-      opts: { skip_reason?: string; fields_updated?: string[]; error?: string } = {}
+      status: WineDetail["status"],
+      opts: { skip_reason?: string; fields_updated?: string[]; error?: string } = {},
     ) => {
       progress.details.push({
         wine_id: wine.id,
@@ -146,7 +168,41 @@ Deno.serve(async (req) => {
       });
     };
 
-    // Process wines in batches
+    const buildUpdateData = (wine: Wine, wineData: Record<string, unknown>): Record<string, unknown> => {
+      const updateData: Record<string, unknown> = {};
+      const vivinoStyle = (wineData.wine_style ?? wineData.regional_wine_style) as string | undefined;
+
+      if (enrichmentScope === "refresh_all") {
+        if (typeof wineData.rating === "number") updateData.rating = wineData.rating;
+        if (wineData.region && String(wineData.region).trim()) {
+          updateData.region = String(wineData.region).trim();
+        }
+        if (wineData.country && String(wineData.country).trim()) {
+          updateData.country = String(wineData.country).trim();
+        }
+        const g = wineData.grapes;
+        if (Array.isArray(g) && g.length > 0) updateData.grapes = g;
+        if (vivinoStyle && String(vivinoStyle).trim()) {
+          updateData.regional_wine_style = String(vivinoStyle).trim();
+        }
+        return updateData;
+      }
+
+      // missing_only: only fill empty fields
+      if (wineData.rating != null && typeof wineData.rating === "number" && wine.rating == null) {
+        updateData.rating = wineData.rating;
+      }
+      if (wineData.region && !wine.region) updateData.region = wineData.region;
+      if (wineData.country && !wine.country) updateData.country = wineData.country;
+      if (wineData.grapes && Array.isArray(wineData.grapes) && (!wine.grapes || wine.grapes.length === 0)) {
+        updateData.grapes = wineData.grapes;
+      }
+      if (vivinoStyle && !wine.regional_wine_style) {
+        updateData.regional_wine_style = vivinoStyle;
+      }
+      return updateData;
+    };
+
     for (let i = 0; i < (wines?.length || 0); i += BATCH_SIZE) {
       const batch = wines!.slice(i, i + BATCH_SIZE);
       console.log(`[Batch Enrich] Processing batch ${i / BATCH_SIZE + 1} (${batch.length} wines)`);
@@ -155,101 +211,71 @@ Deno.serve(async (req) => {
         try {
           progress.processed++;
 
-          console.log(`[Batch Enrich] [${progress.processed}/${progress.total}] Processing: ${wine.wine_name} (ID: ${wine.id})`);
-          console.log(`[Batch Enrich] Current data - Rating: ${wine.rating}, Region: ${wine.region}, Grapes: ${JSON.stringify(wine.grapes)}, Style: ${wine.regional_wine_style}`);
-          console.log(`[Batch Enrich] Vivino URL: ${wine.vivino_url}`);
+          console.log(
+            `[Batch Enrich] [${progress.processed}/${progress.total}] ${wine.wine_name} (ID: ${wine.id}) scope=${enrichmentScope}`,
+          );
 
-          // Extract wine_id from vivino_url
           const vivinoIdMatch = wine.vivino_url?.match(/\/w\/(\d+)/);
           if (!vivinoIdMatch) {
             const reason = `Invalid Vivino URL format: "${wine.vivino_url}"`;
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
-            addDetail(wine, 'skipped', { skip_reason: reason });
+            addDetail(wine, "skipped", { skip_reason: reason });
             continue;
           }
 
           const vivinoWineId = vivinoIdMatch[1];
-          console.log(`[Batch Enrich] Extracted Vivino ID: ${vivinoWineId}`);
 
-          // Fetch Vivino data using the wine ID.
-          // Must use the service role key for function-to-function calls —
-          // the anon key is rejected by Supabase JWT verification in this context.
           const vivinoResponse = await fetch(
-            `${Deno.env.get("SUPABASE_URL")}/functions/v1/fetch-vivino-data`,
+            `${supabaseUrl}/functions/v1/fetch-vivino-data`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                "Authorization": `Bearer ${serviceRoleKey}`,
               },
               body: JSON.stringify({ wine_id: vivinoWineId }),
-            }
+            },
           );
 
-          // Rate limiting delay
           await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
-
-          console.log(`[Batch Enrich] Vivino API response status: ${vivinoResponse.status}`);
 
           if (!vivinoResponse.ok) {
             const errorText = await vivinoResponse.text();
             const reason = `Vivino HTTP error ${vivinoResponse.status}: ${errorText.slice(0, 200)}`;
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
             progress.skipped++;
-            addDetail(wine, 'skipped', { skip_reason: reason });
+            addDetail(wine, "skipped", { skip_reason: reason });
             continue;
           }
 
           const vivinoData = await vivinoResponse.json();
-          console.log(`[Batch Enrich] Vivino data received:`, JSON.stringify(vivinoData, null, 2));
+          const wineData = (vivinoData.data || vivinoData) as Record<string, unknown>;
 
-          // Extract wine data from response (handle both formats)
-          const wineData = vivinoData.data || vivinoData;
-          console.log(`[Batch Enrich] Wine data extracted:`, JSON.stringify(wineData, null, 2));
+          const hasRating = typeof wineData.rating === "number";
+          const hasRegion = !!(wineData.region && String(wineData.region).trim());
+          const hasCountry = !!(wineData.country && String(wineData.country).trim());
+          const hasGrapes = Array.isArray(wineData.grapes) && wineData.grapes.length > 0;
+          const hasStyle = !!(wineData.wine_style || wineData.regional_wine_style);
 
-          // Check if we got valid data (country is now included in the check)
-          if (!wineData.rating && !wineData.region && !wineData.country && !wineData.grapes && !wineData.wine_style) {
-            const reason = "Vivino returned no enrichable data (no rating, region, country, grapes, or style)";
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
+          if (!hasRating && !hasRegion && !hasCountry && !hasGrapes && !hasStyle) {
+            const reason =
+              "Vivino returned no enrichable data (no rating, region, country, grapes, or style)";
             progress.skipped++;
-            addDetail(wine, 'skipped', { skip_reason: reason });
+            addDetail(wine, "skipped", { skip_reason: reason });
             continue;
           }
 
-          // Update wine with Vivino data (only update missing fields)
-          const updateData: any = {};
-          if (wineData.rating && !wine.rating) updateData.rating = wineData.rating;
-          if (wineData.region && !wine.region) updateData.region = wineData.region;
-          if (wineData.country && !wine.country) updateData.country = wineData.country;
-          if (wineData.grapes && (!wine.grapes || wine.grapes.length === 0)) {
-            updateData.grapes = wineData.grapes;
-          }
-          // Map wine_style → regional_wine_style (both field names tried for safety)
-          const vivinoStyle = wineData.wine_style || wineData.regional_wine_style;
-          if (vivinoStyle && !wine.regional_wine_style) {
-            updateData.regional_wine_style = vivinoStyle;
-          }
+          const updateData = buildUpdateData(wine, wineData);
 
-          console.log(`[Batch Enrich] Fields to update:`, Object.keys(updateData));
-
-          // Only update if we have new data
           if (Object.keys(updateData).length === 0) {
-            const missingFields: string[] = [];
-            if (!wine.rating) missingFields.push('rating');
-            if (!wine.region) missingFields.push('region');
-            if (!wine.country) missingFields.push('country');
-            if (!wine.grapes || wine.grapes.length === 0) missingFields.push('grapes');
-            if (!wine.regional_wine_style) missingFields.push('regional_wine_style');
-            const reason = `Wine already has all data available from Vivino (missing locally: ${missingFields.join(', ') || 'none'})`;
-            console.log(`[Batch Enrich] ⏭️ SKIP REASON: ${reason}`);
-            console.log(`[Batch Enrich] Wine has - Rating: ${!!wine.rating}, Region: ${!!wine.region}, Grapes: ${wine.grapes?.length || 0}, Style: ${!!wine.regional_wine_style}`);
+            const reason = enrichmentScope === "refresh_all"
+              ? "Vivino returned no mappable fields to write"
+              : "All target fields already populated locally; nothing to fill";
             progress.skipped++;
-            addDetail(wine, 'skipped', { skip_reason: reason });
+            addDetail(wine, "skipped", { skip_reason: reason });
             continue;
           }
 
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await supabase
             .from("wines")
             .update(updateData)
             .eq("id", wine.id);
@@ -258,30 +284,28 @@ Deno.serve(async (req) => {
             console.error(`[Batch Enrich] Error updating wine ${wine.id}:`, updateError);
             progress.failed++;
             progress.errors.push({ wine_id: wine.id, error: updateError.message });
-            addDetail(wine, 'failed', { error: updateError.message });
+            addDetail(wine, "failed", { error: updateError.message });
           } else {
-            console.log(`[Batch Enrich] ✅ Enriched ${wine.id} with:`, Object.keys(updateData).join(", "));
+            console.log(`[Batch Enrich] ✅ ${wine.id}:`, Object.keys(updateData).join(", "));
             progress.enriched++;
-            addDetail(wine, 'enriched', { fields_updated: Object.keys(updateData) });
+            addDetail(wine, "enriched", { fields_updated: Object.keys(updateData) });
           }
         } catch (error) {
           console.error(`[Batch Enrich] Error processing wine ${wine.id}:`, error);
           const errMsg = error instanceof Error ? error.message : "Unknown error";
           progress.failed++;
           progress.errors.push({ wine_id: wine.id, error: errMsg });
-          addDetail(wine, 'failed', { error: errMsg });
+          addDetail(wine, "failed", { error: errMsg });
         }
       }
     }
 
-    console.log(`[Batch Enrich] Completed:`, progress);
-
-    // has_more = true when we got a full page — there may be more wines after the current offset
     const has_more = progress.total === effectiveLimit;
 
     return new Response(
       JSON.stringify({
         message: "Batch enrichment completed",
+        enrichment_scope: enrichmentScope,
         has_more,
         progress,
         summary: {
@@ -289,12 +313,12 @@ Deno.serve(async (req) => {
           enriched: progress.enriched,
           skipped: progress.skipped,
           failed: progress.failed,
-          successRate: progress.total > 0 
+          successRate: progress.total > 0
             ? `${((progress.enriched / progress.total) * 100).toFixed(1)}%`
             : "0%",
         },
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("[Batch Enrich] Fatal error:", error);
@@ -303,8 +327,7 @@ Deno.serve(async (req) => {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
-

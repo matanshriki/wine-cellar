@@ -39,6 +39,7 @@ export const AdminEnrichPage: React.FC = () => {
   const { user, session: contextSession } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
+  const [vivinoEnrichmentScope, setVivinoEnrichmentScope] = useState<'missing_only' | 'refresh_all'>('missing_only');
   const [limit, setLimit] = useState(100);
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -177,8 +178,17 @@ export const AdminEnrichPage: React.FC = () => {
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ dryRun: isDryRun, limit: 10, offset }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          dryRun: isDryRun,
+          limit: 10,
+          offset,
+          enrichment_scope: vivinoEnrichmentScope,
+        }),
       }
     );
 
@@ -197,8 +207,13 @@ export const AdminEnrichPage: React.FC = () => {
     if (!user) { alert('You must be logged in to run batch enrichment'); return; }
 
     const totalWanted = limit;
+    const scopeHint =
+      vivinoEnrichmentScope === 'refresh_all'
+        ? 'Scope: ALL wines with a Vivino URL (refreshes ratings, region, grapes, etc. from Vivino).\n\n'
+        : 'Scope: Only wines missing at least one of rating / region / country / grapes / style.\n\n';
     if (!isDryRun && !confirm(
       `⚠️ This will fetch Vivino data for up to ${totalWanted} wines.\n\n` +
+      scopeHint +
       `Processed in chunks of 10 wines (~15s each) to stay within server limits.\n\nContinue?`
     )) return;
 
@@ -881,7 +896,8 @@ VALUES ('${user?.id}');`}
 
       <h2 style={{ fontSize: '1.15rem' }}>Batch Vivino enrichment</h2>
       <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-        Fetch Vivino data for wines that have a URL but incomplete fields.
+        Fetch Vivino data for wines that have a Vivino URL. Choose whether to fill only missing fields or
+        refresh everyone (e.g. updated ratings).
       </p>
 
       <div style={{
@@ -891,6 +907,22 @@ VALUES ('${user?.id}');`}
         marginBottom: '2rem',
       }}>
         <h3 style={{ marginTop: 0 }}>Settings</h3>
+
+        <label style={{ display: 'block', marginBottom: '1rem' }}>
+          <strong>Scope:</strong>
+          <select
+            value={vivinoEnrichmentScope}
+            onChange={(e) => setVivinoEnrichmentScope(e.target.value as 'missing_only' | 'refresh_all')}
+            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', maxWidth: '100%' }}
+          >
+            <option value="missing_only">
+              Missing data only — skip wines that already have rating, region, country, grapes, and style
+            </option>
+            <option value="refresh_all">
+              Refresh all with Vivino URL — re-fetch and overwrite mapped fields (use for updated Vivino ratings)
+            </option>
+          </select>
+        </label>
         
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
           <input
@@ -1131,11 +1163,19 @@ VALUES ('${user?.id}');`}
       }}>
         <h4 style={{ marginTop: 0 }}>ℹ️ How it works:</h4>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-          <li>Finds wines that <strong>already have Vivino URLs</strong> but missing other data</li>
-          <li>Fetches full wine details from Vivino (rating, region, grapes, etc.)</li>
-          <li>Updates only empty/missing fields (won't overwrite existing data)</li>
-          <li>Rate limited: 2 seconds between requests (30 wines/minute)</li>
-          <li>Safe to run multiple times - idempotent operation</li>
+          <li>
+            <strong>Missing data only</strong>: wines with a Vivino URL and at least one empty field among
+            rating, region, country, grapes, regional style
+          </li>
+          <li>
+            <strong>Refresh all</strong>: every wine with a Vivino URL; writes current Vivino values for those
+            fields (more API calls — use occasionally)
+          </li>
+          <li>Fetches details via the <code>fetch-vivino-data</code> function</li>
+          <li>
+            Requires admin (<code>is_admin</code>). Deploy <code>batch-enrich-vivino</code> after pulling this code.
+          </li>
+          <li>~1 second delay between each Vivino fetch inside a chunk (stays within edge time limits)</li>
         </ul>
         <p style={{ fontSize: '0.875rem', color: '#856404', backgroundColor: '#fff3cd', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
           <strong>💡 Tip:</strong> This only enriches wines with existing Vivino URLs. 
