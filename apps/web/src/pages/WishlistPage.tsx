@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
+import { supabase } from '../lib/supabase';
 import * as wishlistService from '../services/wishlistService';
 import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';

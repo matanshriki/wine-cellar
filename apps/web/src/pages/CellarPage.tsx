@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
+import { supabase } from '../lib/supabase';
 import { BottleCard } from '../components/BottleCard';
 import { BottleForm } from '../components/BottleForm';
 import { CSVImport } from '../components/CSVImport';
