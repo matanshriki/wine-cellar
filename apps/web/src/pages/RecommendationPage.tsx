@@ -26,6 +26,10 @@ import * as bottleService from '../services/bottleService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import { trackRecommendation } from '../services/analytics';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
+import { OfflineCellarScreen } from '../components/OfflineCellarScreen';
+import { WineLoader } from '../components/WineLoader';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 
 type WineType = 'red' | 'white' | 'rose' | 'mixed';
 type PriceRange = 0 | 1 | 2 | 3 | 4;
@@ -59,9 +63,11 @@ const vibes = [
 export function RecommendationPage() {
   const { t, i18n } = useTranslation();
   const { openRitual } = useOpenRitual();
+  const isOnline = useOnlineStatus();
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
-  const [checkingCellar, setCheckingCellar] = useState(false);
+  /** Initial cellar probe: needed for offline UI (same as cellar page) */
+  const [cellarProbe, setCellarProbe] = useState<'pending' | 'ok' | 'offline'>('pending');
   const [hasCellarBottles, setHasCellarBottles] = useState(true);
   const [context, setContext] = useState({
     mealType: '',
@@ -97,21 +103,31 @@ export function RecommendationPage() {
 
   useEffect(() => {
     async function checkCellar() {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setCellarProbe('offline');
+        return;
+      }
       try {
         const bottles = await bottleService.listBottles();
         const activeBottles = bottles.filter((b) => b.quantity > 0);
-        const hasBottles = activeBottles.length > 0;
-
-        if (!hasBottles) {
-          setHasCellarBottles(false);
-        }
+        setHasCellarBottles(activeBottles.length > 0);
+        setCellarProbe('ok');
       } catch (error) {
         console.error('[RecommendationPage] Error checking cellar:', error);
+        const msg = String((error as Error)?.message || '');
+        const isAuth =
+          msg === 'Not authenticated' || msg.includes('Not authenticated');
+        if (!isAuth && isConnectivityFetchFailure(error)) {
+          setCellarProbe('offline');
+        } else {
+          setHasCellarBottles(false);
+          setCellarProbe('ok');
+        }
       }
     }
 
     checkCellar();
-  }, []);
+  }, [isOnline]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -239,6 +255,10 @@ export function RecommendationPage() {
     } catch (error: any) {
       toast.error(error?.message || t('cellar.sommelier.failed'));
     }
+  }
+
+  if (cellarProbe === 'offline') {
+    return <OfflineCellarScreen />;
   }
 
   // Results View
@@ -496,6 +516,12 @@ export function RecommendationPage() {
 
         <SommelierChatButton />
       </motion.div>
+    );
+  }
+
+  if (cellarProbe === 'pending') {
+    return (
+      <WineLoader variant="page" size="lg" message={t('recommendation.checkingCellar')} />
     );
   }
 
