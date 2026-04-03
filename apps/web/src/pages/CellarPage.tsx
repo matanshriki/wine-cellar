@@ -51,6 +51,7 @@ import * as onboardingUtils from '../utils/onboarding';
 import { DEMO_BOTTLES } from '../data/demoCellar';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
@@ -162,6 +163,8 @@ export function CellarPage() {
   const [showFirstBottleSuccess, setShowFirstBottleSuccess] = useState(false);
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
+  /** True when initial cellar load failed with a network-style error while list is still empty */
+  const [cellarUnreachableEmpty, setCellarUnreachableEmpty] = useState(false);
 
   // Keep/Reserve reminders: bottles whose reserved_date has arrived (popup)
   const [keepReminders, setKeepReminders] = useState<bottleService.BottleWithWineInfo[]>([]);
@@ -386,8 +389,8 @@ export function CellarPage() {
   useEffect(() => {
     // Wait until initial cellar load finishes so we don't treat a loaded cellar as empty
     if (loading) return;
-    // Offline empty cellar uses dedicated screen — no welcome modal on top
-    if (!isOnline) return;
+    // Offline / unreachable empty cellar uses dedicated screen — no welcome modal on top
+    if (!isOnline || cellarUnreachableEmpty) return;
     // Only check once to avoid multiple modals
     if (hasCheckedOnboarding.current) return;
     hasCheckedOnboarding.current = true;
@@ -412,7 +415,7 @@ export function CellarPage() {
       console.log('[CellarPage] Demo mode active');
       setIsDemoMode(true);
     }
-  }, [loading, bottles.length, isOnline]);
+  }, [loading, bottles.length, isOnline, cellarUnreachableEmpty]);
 
   // Wine World Moments: Load active events
   useEffect(() => {
@@ -522,19 +525,30 @@ export function CellarPage() {
     try {
       const offset = reset ? 0 : bottles.length;
       const data = await bottleService.listBottles({ offset, limit: PAGE_SIZE });
-      
+
+      setCellarUnreachableEmpty(false);
+
       if (reset) {
         setBottles(data);
       } else {
         setBottles(prev => [...prev, ...data]);
       }
-      
+
       setHasMore(data.length === PAGE_SIZE);
     } catch (error: any) {
       console.error('[CellarPage] Error loading bottles:', error);
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        // Offline: dedicated full-screen state; avoid stacking toast
-      } else {
+      const msg = String(error?.message || '');
+      const isAuthFailure =
+        msg === 'Not authenticated' || msg.includes('Not authenticated');
+      const looksLikeNoNetwork =
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        (!isAuthFailure && reset && isConnectivityFetchFailure(error));
+
+      if (!isAuthFailure && reset && isConnectivityFetchFailure(error)) {
+        setCellarUnreachableEmpty(true);
+      }
+
+      if (!looksLikeNoNetwork) {
         toast.error(error.message || t('errors.generic'));
       }
     } finally {
@@ -1309,7 +1323,8 @@ export function CellarPage() {
 
   const currentSortOption = sortOptions.find(opt => opt.by === sortBy && opt.dir === sortDir) || sortOptions[0];
 
-  const showCellarOffline = !isOnline && bottles.length === 0;
+  const showCellarOffline =
+    (!isOnline || cellarUnreachableEmpty) && bottles.length === 0;
 
   if (loading && !showCellarOffline) {
     return <WineLoader variant="page" size="lg" message={t('cellar.loading')} />;
@@ -2532,7 +2547,7 @@ export function CellarPage() {
 
       {/* Onboarding v1 – production: Welcome Modal */}
       <WelcomeModal
-        isOpen={showWelcomeModal && isOnline}
+        isOpen={showWelcomeModal && isOnline && !cellarUnreachableEmpty}
         onShowDemo={handleShowDemo}
         onSkip={handleSkipOnboarding}
       />

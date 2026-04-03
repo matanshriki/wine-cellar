@@ -58,7 +58,9 @@ export async function listBottles(options?: {
 
   if (error) {
     console.error('Error fetching bottles:', error);
-    throw new Error('Failed to fetch bottles');
+    const wrapped = new Error('Failed to fetch bottles') as Error & { cause?: unknown };
+    wrapped.cause = error;
+    throw wrapped;
   }
 
   // Analysis data is already in the bottles table, no need to flatten
