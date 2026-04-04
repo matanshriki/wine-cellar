@@ -341,7 +341,8 @@ export function OfflineHeroAnimation({
                 textAnchor="middle"
                 dominantBaseline="central"
                 direction={bottleTextRtl ? 'rtl' : 'ltr'}
-                unicodeBidi={bottleTextRtl ? 'plaintext' : undefined}
+                unicodeBidi={bottleTextRtl ? 'embed' : undefined}
+                lang={bottleTextRtl ? 'he' : 'en'}
                 fill="#FFFFFF"
                 fontSize={19}
                 fontWeight={700}
@@ -349,6 +350,7 @@ export function OfflineHeroAnimation({
                 style={{
                   fontFamily:
                     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  direction: bottleTextRtl ? 'rtl' : 'ltr',
                 }}
                 initial={{ opacity: rm ? 1 : 0 }}
                 animate={{
