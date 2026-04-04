@@ -1,10 +1,10 @@
 /**
- * Premium offline hero: horizontal bottle + Wi‑Fi slash, wine with animated wavy
- * surface and “NO CONNECTION” in the liquid. Framer Motion; no heavy filters;
- * respects reduced motion. Copy outside SVG remains on OfflineCellarScreen.
+ * Premium offline hero: horizontal bottle + Wi‑Fi slash, wine fills from empty then
+ * “breathes”; “NO CONNECTION” fades in as the liquid reaches the label. Framer Motion;
+ * respects reduced motion; reconnect fills to 100%.
  */
 
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { motion } from 'framer-motion';
 
 export type OfflineHeroPhase = 'offline' | 'reconnect';
@@ -18,15 +18,17 @@ const CLIP_H = 78;
 const CLIP_RX = 8;
 const WINE_MAX_W = 292;
 
-const W_OFFLINE_LOW = WINE_MAX_W * 0.68;
-const W_OFFLINE_HIGH = WINE_MAX_W * 0.72;
-const W_OFFLINE_MID = WINE_MAX_W * 0.7;
+/** After intro: liquid ~50–60% of bottle (reference). */
+const W_INTRO_TARGET = WINE_MAX_W * 0.64;
+const W_OFFLINE_LOW = WINE_MAX_W * 0.58;
+const W_OFFLINE_HIGH = WINE_MAX_W * 0.7;
+
+const INTRO_S = 3.5;
 
 const LIQUID_LEFT = 80;
 const LIQUID_RIGHT = 372;
 const LIQUID_BOTTOM = 294;
 
-/** Closed polygon: flat bottom, wavy top (y samples left→right at x steps). */
 function liquidPath(ys: readonly [number, number, number, number, number, number, number]): string {
   const [y0, y1, y2, y3, y4, y5, y6] = ys;
   return [
@@ -48,7 +50,6 @@ function shinePath(ys: readonly [number, number, number, number, number, number,
   return `M 92 ${ys[0] + 2} L 120 ${y1 - 1} L 180 ${y2 + 1} L 240 ${y3 - 1} L 300 ${y4 + 1} L 360 ${y5 - 1}`;
 }
 
-/** Offline slosh keyframes — same topology for Framer path morph. */
 const WAVE_FRAMES = [
   liquidPath([222, 216, 228, 218, 232, 220, 224]),
   liquidPath([226, 230, 218, 228, 216, 226, 222]),
@@ -78,8 +79,41 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
   const rm = reducedMotion;
   const reconnecting = phase === 'reconnect';
 
-  const liquidD = rm || reconnecting ? WAVE_STATIC : WAVE_FRAMES;
-  const shineD = rm || reconnecting ? SHINE_STATIC : SHINE_FRAMES;
+  const [fillIntroDone, setFillIntroDone] = useState(rm);
+
+  useEffect(() => {
+    if (rm || reconnecting) return;
+    const t = window.setTimeout(() => setFillIntroDone(true), INTRO_S * 1000);
+    return () => window.clearTimeout(t);
+  }, [rm, reconnecting]);
+
+  useEffect(() => {
+    if (rm) setFillIntroDone(true);
+  }, [rm]);
+
+  const allowSlosh = fillIntroDone && !rm && !reconnecting;
+  const liquidKeyframes = [...WAVE_FRAMES, WAVE_FRAMES[0]] as string[];
+  const shineKeyframes = [...SHINE_FRAMES, SHINE_FRAMES[0]] as string[];
+
+  const clipAnimate =
+    rm
+      ? { width: W_INTRO_TARGET }
+      : reconnecting
+        ? { width: WINE_MAX_W }
+        : fillIntroDone
+          ? { width: [W_INTRO_TARGET, W_OFFLINE_HIGH, W_OFFLINE_LOW, W_INTRO_TARGET] }
+          : { width: W_INTRO_TARGET };
+
+  const clipTransition =
+    rm
+      ? { duration: 0 }
+      : reconnecting
+        ? { duration: 0.6, ease: easeInOut }
+        : fillIntroDone
+          ? { duration: 4.2, repeat: Infinity, ease: easeInOut }
+          : { duration: INTRO_S, ease: easeInOut };
+
+  const clipInitial = rm ? { width: W_INTRO_TARGET } : { width: 0 };
 
   return (
     <div
@@ -101,21 +135,9 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
               height={CLIP_H}
               rx={CLIP_RX}
               ry={CLIP_RX}
-              initial={false}
-              animate={
-                rm
-                  ? { width: W_OFFLINE_MID }
-                  : reconnecting
-                    ? { width: WINE_MAX_W }
-                    : { width: [W_OFFLINE_LOW, W_OFFLINE_HIGH, W_OFFLINE_LOW] }
-              }
-              transition={
-                rm
-                  ? { duration: 0 }
-                  : reconnecting
-                    ? { duration: 0.6, ease: easeInOut }
-                    : { duration: 4.2, repeat: Infinity, ease: easeInOut }
-              }
+              initial={clipInitial}
+              animate={clipAnimate}
+              transition={clipTransition}
             />
           </clipPath>
         </defs>
@@ -248,28 +270,26 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
             style={{ transformOrigin: '226px 255px' }}
             initial={false}
             animate={
-              rm
-                ? { x: 0, rotate: 0 }
-                : reconnecting
-                  ? { x: 0, rotate: 0 }
-                  : { x: [-5, 5, -5], rotate: [-0.35, 0.35, -0.35] }
+              allowSlosh
+                ? { x: [-5, 5, -5], rotate: [-0.35, 0.35, -0.35] }
+                : { x: 0, rotate: 0 }
             }
             transition={
-              rm || reconnecting
-                ? { duration: 0 }
-                : { duration: 2.8, repeat: Infinity, ease: easeInOut }
+              allowSlosh
+                ? { duration: 2.8, repeat: Infinity, ease: easeInOut }
+                : { duration: 0.35, ease: easeInOut }
             }
           >
             <motion.path
               id="wine-liquid"
-              fill="var(--wine-700)"
-              opacity={reconnecting ? 1 : 0.96}
+              fill="#6B1431"
+              opacity={reconnecting ? 1 : 0.97}
               initial={false}
-              animate={{ d: Array.isArray(liquidD) ? [...liquidD, liquidD[0]] : liquidD }}
+              animate={{ d: allowSlosh ? liquidKeyframes : WAVE_STATIC }}
               transition={
-                rm || reconnecting
-                  ? { duration: 0 }
-                  : { duration: 3.2, repeat: Infinity, ease: easeInOut }
+                allowSlosh
+                  ? { duration: 3.2, repeat: Infinity, ease: easeInOut }
+                  : { duration: 0 }
               }
             />
             <motion.path
@@ -278,16 +298,16 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
-              opacity={0.42}
+              opacity={0.4}
               initial={false}
-              animate={{ d: Array.isArray(shineD) ? [...shineD, shineD[0]] : shineD }}
+              animate={{ d: allowSlosh ? shineKeyframes : SHINE_STATIC }}
               transition={
-                rm || reconnecting
-                  ? { duration: 0 }
-                  : { duration: 3.2, repeat: Infinity, ease: easeInOut }
+                allowSlosh
+                  ? { duration: 3.2, repeat: Infinity, ease: easeInOut }
+                  : { duration: 0 }
               }
             />
-            <text
+            <motion.text
               id="no-connection-text"
               x={226}
               y={256}
@@ -301,12 +321,38 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
                 fontFamily:
                   'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               }}
+              initial={{ opacity: rm ? 1 : 0 }}
+              animate={{
+                opacity:
+                  rm || reconnecting
+                    ? 1
+                    : fillIntroDone
+                      ? 1
+                      : [0, 0, 0.08, 0.45, 1],
+              }}
+              transition={
+                rm || reconnecting
+                  ? { duration: 0 }
+                  : fillIntroDone
+                    ? { duration: 0.2 }
+                    : {
+                        duration: INTRO_S,
+                        times: [0, 0.38, 0.52, 0.72, 1],
+                        ease: easeInOut,
+                      }
+              }
             >
               NO CONNECTION
-            </text>
+            </motion.text>
           </motion.g>
 
-          <g id="bottle-outline" stroke="var(--text-secondary)" strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <g
+            id="bottle-outline"
+            stroke="var(--text-secondary)"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          >
             <path
               d="M375 210 H80 c-16.5 0 -30 13.5 -30 30 v30 c0 16.5 13.5 30 30 30 h295"
               strokeWidth={10}
@@ -324,7 +370,7 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
               d="M90 220 h260"
               stroke="var(--text-inverse, #fff)"
               strokeWidth={4}
-              opacity={0.25}
+              opacity={0.22}
             />
           </g>
         </g>
