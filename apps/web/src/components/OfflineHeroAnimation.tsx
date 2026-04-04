@@ -1,6 +1,7 @@
 /**
- * Premium offline hero: horizontal bottle + Wi‑Fi slash, inline SVG + Framer Motion.
- * AppleTV-adjacent micro-motion; PWA-friendly (transforms/lightweight); respects reduced motion.
+ * Premium offline hero: horizontal bottle + Wi‑Fi slash, wine with animated wavy
+ * surface and “NO CONNECTION” in the liquid. Framer Motion; no heavy filters;
+ * respects reduced motion. Copy outside SVG remains on OfflineCellarScreen.
  */
 
 import { useId } from 'react';
@@ -21,6 +22,50 @@ const W_OFFLINE_LOW = WINE_MAX_W * 0.68;
 const W_OFFLINE_HIGH = WINE_MAX_W * 0.72;
 const W_OFFLINE_MID = WINE_MAX_W * 0.7;
 
+const LIQUID_LEFT = 80;
+const LIQUID_RIGHT = 372;
+const LIQUID_BOTTOM = 294;
+
+/** Closed polygon: flat bottom, wavy top (y samples left→right at x steps). */
+function liquidPath(ys: readonly [number, number, number, number, number, number, number]): string {
+  const [y0, y1, y2, y3, y4, y5, y6] = ys;
+  return [
+    `M ${LIQUID_LEFT} ${LIQUID_BOTTOM}`,
+    `L ${LIQUID_LEFT} ${y0}`,
+    `L 100 ${y1}`,
+    `L 160 ${y2}`,
+    `L 220 ${y3}`,
+    `L 280 ${y4}`,
+    `L 340 ${y5}`,
+    `L ${LIQUID_RIGHT} ${y6}`,
+    `L ${LIQUID_RIGHT} ${LIQUID_BOTTOM}`,
+    'Z',
+  ].join(' ');
+}
+
+function shinePath(ys: readonly [number, number, number, number, number, number, number]): string {
+  const [, y1, y2, y3, y4, y5] = ys;
+  return `M 92 ${ys[0] + 2} L 120 ${y1 - 1} L 180 ${y2 + 1} L 240 ${y3 - 1} L 300 ${y4 + 1} L 360 ${y5 - 1}`;
+}
+
+/** Offline slosh keyframes — same topology for Framer path morph. */
+const WAVE_FRAMES = [
+  liquidPath([222, 216, 228, 218, 232, 220, 224]),
+  liquidPath([226, 230, 218, 228, 216, 226, 222]),
+  liquidPath([220, 224, 226, 220, 228, 218, 226]),
+  liquidPath([224, 218, 232, 222, 226, 224, 220]),
+] as const;
+
+const SHINE_FRAMES = [
+  shinePath([222, 216, 228, 218, 232, 220, 224]),
+  shinePath([226, 230, 218, 228, 216, 226, 222]),
+  shinePath([220, 224, 226, 220, 228, 218, 226]),
+  shinePath([224, 218, 232, 222, 226, 224, 220]),
+] as const;
+
+const WAVE_STATIC = liquidPath([224, 220, 226, 222, 224, 222, 224]);
+const SHINE_STATIC = shinePath([224, 220, 226, 222, 224, 222, 224]);
+
 interface Props {
   phase: OfflineHeroPhase;
   reducedMotion: boolean;
@@ -32,6 +77,9 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
 
   const rm = reducedMotion;
   const reconnecting = phase === 'reconnect';
+
+  const liquidD = rm || reconnecting ? WAVE_STATIC : WAVE_FRAMES;
+  const shineD = rm || reconnecting ? SHINE_STATIC : SHINE_FRAMES;
 
   return (
     <div
@@ -72,7 +120,6 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
           </clipPath>
         </defs>
 
-        {/* A) Glow — soft ellipse, no filters */}
         <motion.g
           id="glow"
           style={{ transformOrigin: '256px 270px', transformBox: 'fill-box' }}
@@ -83,9 +130,7 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
               : { opacity: [0.1, 0.16, 0.1], scale: [1, 1.02, 1] }
           }
           transition={
-            rm
-              ? { duration: 0 }
-              : { duration: 3.8, repeat: Infinity, ease: easeInOut }
+            rm ? { duration: 0 } : { duration: 3.8, repeat: Infinity, ease: easeInOut }
           }
         >
           <ellipse
@@ -98,7 +143,6 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
           />
         </motion.g>
 
-        {/* Wi‑Fi offline — split arcs + dot + slash */}
         <g id="wifi-offline" stroke="var(--text-secondary)" strokeLinecap="round">
           <motion.path
             id="wifi-arc-1"
@@ -198,7 +242,6 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
         </g>
 
         <g id="bottle-group" transform="translate(0, 30)">
-          {/* B+C) Wine: liquid clip + wave micro-motion */}
           <motion.g
             id="wine-wave"
             clipPath={`url(#${clipId})`}
@@ -209,25 +252,58 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
                 ? { x: 0, rotate: 0 }
                 : reconnecting
                   ? { x: 0, rotate: 0 }
-                  : { x: [-6, 6, -6], rotate: [-0.2, 0.2, -0.2] }
+                  : { x: [-5, 5, -5], rotate: [-0.35, 0.35, -0.35] }
             }
             transition={
               rm || reconnecting
                 ? { duration: 0 }
-                : { duration: 2.9, repeat: Infinity, ease: easeInOut }
+                : { duration: 2.8, repeat: Infinity, ease: easeInOut }
             }
           >
-            <rect
+            <motion.path
               id="wine-liquid"
-              x={80}
-              y={216}
-              width={WINE_MAX_W}
-              height={78}
-              rx={8}
-              ry={8}
               fill="var(--wine-700)"
-              opacity={reconnecting ? 1 : 0.94}
+              opacity={reconnecting ? 1 : 0.96}
+              initial={false}
+              animate={{ d: Array.isArray(liquidD) ? [...liquidD, liquidD[0]] : liquidD }}
+              transition={
+                rm || reconnecting
+                  ? { duration: 0 }
+                  : { duration: 3.2, repeat: Infinity, ease: easeInOut }
+              }
             />
+            <motion.path
+              fill="none"
+              stroke="var(--text-inverse, #fff)"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.42}
+              initial={false}
+              animate={{ d: Array.isArray(shineD) ? [...shineD, shineD[0]] : shineD }}
+              transition={
+                rm || reconnecting
+                  ? { duration: 0 }
+                  : { duration: 3.2, repeat: Infinity, ease: easeInOut }
+              }
+            />
+            <text
+              id="no-connection-text"
+              x={226}
+              y={256}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="#FFFFFF"
+              fontSize={19}
+              fontWeight={700}
+              letterSpacing="0.12em"
+              style={{
+                fontFamily:
+                  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+              }}
+            >
+              NO CONNECTION
+            </text>
           </motion.g>
 
           <g id="bottle-outline" stroke="var(--text-secondary)" strokeLinecap="round" strokeLinejoin="round" fill="none">
