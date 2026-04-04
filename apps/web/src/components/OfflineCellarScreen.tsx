@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { MetaHead } from './MetaHead';
-import { OfflineIllustration } from './OfflineIllustration';
+import { OfflineHeroAnimation } from './OfflineHeroAnimation';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
@@ -28,7 +28,7 @@ export function OfflineCellarScreen() {
       setIllustrationPhase('reconnect');
       const tId = window.setTimeout(() => {
         window.location.reload();
-      }, 1350);
+      }, 1300);
       return () => clearTimeout(tId);
     }
   }, [isOnline]);
@@ -60,7 +60,7 @@ export function OfflineCellarScreen() {
         className="flex w-full max-w-md mx-auto flex-col items-center text-center justify-start gap-4 pt-4 sm:pt-5 pb-3 px-2 sm:px-0"
         aria-labelledby="offline-cellar-title"
       >
-        <OfflineIllustration phase={illustrationPhase} reducedMotion={reduceMotion} />
+        <OfflineHeroAnimation phase={illustrationPhase} reducedMotion={reduceMotion} />
 
         <div className="space-y-2" role="status" aria-live="polite">
           <h1
