@@ -44,6 +44,7 @@ import * as labelParseService from '../services/labelParseService';
 import * as smartScanService from '../services/smartScanService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
+import { translateRegion, translateCountry, translateGrapes } from '../utils/wineTranslations';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
 import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
 import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature flags context
@@ -852,27 +853,48 @@ export function CellarPage() {
       // Handle pipe-separated queries (from wine events with multiple tag variants)
       // E.g., "syrah|shiraz" should match bottles with either "syrah" OR "shiraz"
       const queries = searchQuery.toLowerCase().split('|').map(q => q.trim()).filter(Boolean);
+      const isHebrew = i18n.language === 'he';
       
       result = result.filter((bottle) => {
         // Handle grapes as either string or array
         let grapesText = '';
+        const grapesArr: string[] = [];
         if (bottle.wine.grapes) {
           if (Array.isArray(bottle.wine.grapes)) {
+            grapesArr.push(...bottle.wine.grapes);
             grapesText = bottle.wine.grapes.join(' ');
           } else if (typeof bottle.wine.grapes === 'string') {
             grapesText = bottle.wine.grapes;
           }
         }
-        
-        const searchableText = [
+
+        // Pull AI-generated Hebrew translations stored on the wine object
+        const heTranslations = (bottle.wine as any).translations?.he as
+          | { wine_name?: string; producer?: string; region?: string; country?: string; grapes?: string[] }
+          | undefined;
+
+        // Build Hebrew-translated variants using static dictionaries + AI translations
+        const heRegion = heTranslations?.region ?? translateRegion(bottle.wine.region) ?? '';
+        const heCountry = heTranslations?.country ?? translateCountry(bottle.wine.country) ?? '';
+        const heGrapes = (heTranslations?.grapes ?? translateGrapes(grapesArr) ?? []).join(' ');
+        const heWineName = heTranslations?.wine_name ?? '';
+        const heProducer = heTranslations?.producer ?? '';
+
+        // Primary fields (always included)
+        const primaryFields = [
           bottle.wine.wine_name,
           bottle.wine.producer,
           bottle.wine.region,
           bottle.wine.country,
           bottle.wine.vintage?.toString(),
           grapesText,
-          bottle.wine.color, // Also search by color/style
-        ]
+          bottle.wine.color,
+        ];
+
+        // Hebrew translated fields (always added for cross-language search)
+        const heFields = [heWineName, heProducer, heRegion, heCountry, heGrapes];
+
+        const searchableText = [...primaryFields, ...heFields]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
