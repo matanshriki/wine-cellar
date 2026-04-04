@@ -844,7 +844,15 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
-          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'similar', language });
+          try {
+            return await legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'similar', language });
+          } catch (legacyErr) {
+            logSommelierError('fallback', legacyErr, { user: shortUser(userId) });
+            return withMeta(
+              { message: m(language, "I'm having trouble right now. Please try again in a moment.", "אני נתקל בבעיה כרגע. נסה שוב בעוד רגע.") },
+              { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
+            );
+          }
         }
       }
 
@@ -868,7 +876,15 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });
-          return legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'recommend', language });
+          try {
+            return await legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'recommend', language });
+          } catch (legacyErr) {
+            logSommelierError('fallback', legacyErr, { user: shortUser(userId) });
+            return withMeta(
+              { message: m(language, "I'm having trouble right now. Please try again in a moment.", "אני נתקל בבעיה כרגע. נסה שוב בעוד רגע.") },
+              { routedAction: 'recommend', actionResult: 'error', processingMode: 'deterministic_action' }
+            );
+          }
         }
       }
   }

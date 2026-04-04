@@ -192,6 +192,14 @@ export function extractConstraints(message: string): ExtractedConstraints {
   };
 }
 
+/** Matches food keywords in any message — used to detect if history already has food context */
+const FOOD_CONTEXT_RE =
+  /\b(steak|beef|lamb|fish|salmon|chicken|pasta|cheese|sushi|bbq|grill|curry|dessert|tomato|pizza|seafood|pork|veal|duck|risotto|burger|salad)\b|בשר|סטייק|טלה|כבש|דג|סלמון|עוף|פסטה|גבינ|עוגה|קינוח|פיצה|סושי|המבורגר|סלט/i;
+
+/** Matches price/value follow-up requests — these should NOT demand food clarification */
+const PRICE_FOLLOWUP_RE =
+  /\b(cheap(er|est)?|budget|affordable|value|inexpensive|least expensive|most affordable|price)\b|זול(ה?|ים|יותר|ביותר)|יקר(ה?|יותר)|מחיר|כסף/i;
+
 /**
  * Whether we should nudge the model toward a clarifying question first.
  *
@@ -222,7 +230,10 @@ export function needsClarification(
     if (!anyMatch) return true;
   }
 
-  // Check if prior user messages in this conversation already supply food context
+  // Price/value requests never need food clarification — user wants cheapest/most affordable
+  if (PRICE_FOLLOWUP_RE.test(message)) return false;
+
+  // Check if prior user messages already supply food or occasion context
   const historyHasFoodContext = recentHistory
     ? recentHistory.some(
         (m) =>
@@ -232,12 +243,12 @@ export function needsClarification(
       )
     : false;
 
-  // Meal occasion mentioned (lunch, dinner, tonight) but no specific food —
-  // ask what they're eating, even mid-conversation, unless food was already mentioned
+  // On first turn: meal occasion mentioned (lunch, dinner, tonight) but no specific food — ask what they're eating
+  // Mid-conversation: only ask if this specific message mentions a meal occasion without food context
   const ml = message.toLowerCase();
   const mentionsMealOccasion =
-    /\b(lunch|dinner|supper|brunch|meal|tonight|recommend|drinking|drink)\b/i.test(ml) ||
-    /ארוח[הת]|צהריים|ערב|לשתות|לפתוח/.test(message);
+    /\b(lunch|dinner|supper|brunch|meal|tonight)\b/i.test(ml) ||
+    /ארוח[הת]|צהריים|ערב/.test(message);
   if (
     mentionsMealOccasion &&
     constraints.foodKeywords.length === 0 &&
@@ -246,7 +257,8 @@ export function needsClarification(
     return true;
   }
 
-  // Very generic request with almost no constraints — ask for context
+  // Very generic first-turn request with no context at all — ask for occasion/mood/food
+  // Mid-conversation: trust the LLM to use conversation history for context
   const hasNoConstraints =
     constraints.foodKeywords.length === 0 &&
     constraints.regionHints.length === 0 &&
@@ -254,19 +266,15 @@ export function needsClarification(
     constraints.colors.length === 0;
 
   if (
+    historyLen === 0 &&
     intent === 'single_recommendation' &&
-    hasNoConstraints &&
-    !historyHasFoodContext
+    hasNoConstraints
   ) {
     return true;
   }
 
   return false;
 }
-
-/** Matches food keywords in any message — used to detect if history already has food context */
-const FOOD_CONTEXT_RE =
-  /\b(steak|beef|lamb|fish|salmon|chicken|pasta|cheese|sushi|bbq|grill|curry|dessert|tomato|pizza|seafood|pork|veal|duck|risotto|burger|salad)\b|בשר|סטייק|טלה|כבש|דג|סלמון|עוף|פסטה|גבינ|עוגה|קינוח|פיצה|סושי|המבורגר|סלט/i;
 
 export function buildReasoningContext(
   intent: CellarIntent,
