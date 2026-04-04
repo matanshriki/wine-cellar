@@ -3,6 +3,9 @@
     "title": "Wine Cellar Brain",
     "tagline": "Smart wine management & recommendations"
   },
+  "offline": {
+    "bottleText": "NO CONNECTION"
+  },
   "nav": {
     "cellar": "Cellar",
     "tonight": "Tonight?",
@@ -129,10 +132,10 @@
     },
     "loading": "Loading your cellar...",
     "offline": {
-      "title": "We can’t uncork your cellar just yet",
-      "subtitle": "You’re offline — your sommelier needs the internet to reach your bottles. Reconnect to Wi‑Fi or mobile data, then tap below.",
+      "title": "The sommelier is taking a break 🍷",
+      "description": "You’re offline, so we can’t reach your cellar right now. Reconnect to Wi-Fi or mobile data and try again.",
       "tryAgain": "Try again",
-      "metaDescription": "Connect to the internet to load your wine cellar."
+      "metaDescription": "You’re offline. Reconnect to Wi-Fi or mobile data to load your wine cellar."
     },
     "loadingMore": "Loading more bottles...",
     "allBottlesLoaded": "All {{count}} bottles loaded",

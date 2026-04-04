@@ -14,7 +14,7 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 const easeLuxury = [0.45, 0, 0.55, 1] as const;
 
 export function OfflineCellarScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const reduceMotion = shouldReduceMotion();
   const isOnline = useOnlineStatus();
   const prevOnlineRef = useRef<boolean | null>(null);
@@ -60,7 +60,12 @@ export function OfflineCellarScreen() {
         className="flex w-full max-w-md mx-auto flex-col items-center text-center justify-start gap-4 pt-4 sm:pt-5 pb-3 px-2 sm:px-0"
         aria-labelledby="offline-cellar-title"
       >
-        <OfflineHeroAnimation phase={illustrationPhase} reducedMotion={reduceMotion} />
+        <OfflineHeroAnimation
+          phase={illustrationPhase}
+          reducedMotion={reduceMotion}
+          labelText={t('offline.bottleText')}
+          bottleTextRtl={i18n.dir() === 'rtl'}
+        />
 
         <div className="space-y-2" role="status" aria-live="polite">
           <h1
@@ -79,7 +84,7 @@ export function OfflineCellarScreen() {
             className="text-sm sm:text-base leading-relaxed max-w-sm mx-auto px-1"
             style={{ color: 'var(--text-secondary)' }}
           >
-            {t('cellar.offline.subtitle')}
+            {t('cellar.offline.description')}
           </p>
         </div>
 

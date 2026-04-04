@@ -85,9 +85,18 @@ const SHINE_STATIC = shinePath([234, 230, 236, 232, 234, 232, 234]);
 interface Props {
   phase: OfflineHeroPhase;
   reducedMotion: boolean;
+  /** Localized label inside the wine fill (e.g. NO CONNECTION / אין אינטרנט). */
+  labelText: string;
+  /** When true, SVG text uses RTL bidi hints for Hebrew. */
+  bottleTextRtl?: boolean;
 }
 
-export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
+export function OfflineHeroAnimation({
+  phase,
+  reducedMotion,
+  labelText,
+  bottleTextRtl = false,
+}: Props) {
   const uid = useId().replace(/:/g, '');
   const cavityClipId = `cavity-${uid}`;
   const fillClipId = `fill-${uid}`;
@@ -331,6 +340,8 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
                 y={262}
                 textAnchor="middle"
                 dominantBaseline="central"
+                direction={bottleTextRtl ? 'rtl' : 'ltr'}
+                unicodeBidi={bottleTextRtl ? 'plaintext' : undefined}
                 fill="#FFFFFF"
                 fontSize={19}
                 fontWeight={700}
@@ -360,7 +371,7 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
                         }
                 }
               >
-                NO CONNECTION
+                {labelText}
               </motion.text>
             </motion.g>
           </g>
