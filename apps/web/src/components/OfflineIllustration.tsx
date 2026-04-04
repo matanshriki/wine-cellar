@@ -1,10 +1,12 @@
 /**
- * Offline hero: vintage-print style tilted bottle, cork-born broken Wi‑Fi arcs,
- * floating grape garland with vein / thread glow. Framer Motion; respects reduced motion.
+ * Offline hero: horizontal empty bottle on a lit surface; wine strains to pour in
+ * from the “vault” (stream + rising level) but the level ebbs—broken Wi‑Fi at the
+ * neck signals no connection. Luxury gradients and soft depth; Framer Motion;
+ * respects reduced motion and reconnect phase.
  */
 
 import { useEffect, useId, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export type OfflineIllustrationPhase = 'offline' | 'reconnect';
 
@@ -33,6 +35,10 @@ function useDataTheme(): ThemeHint {
 
 const easeLuxury = [0.45, 0, 0.55, 1] as const;
 
+/** Inner cavity for wine clip (horizontal bottle, neck left) */
+const WINE_CLIP_PATH =
+  'M 62 73 L 94 69 C 145 63 205 63 246 72 C 254 76 258 78 258 78 C 258 78 254 80 246 84 C 205 93 145 93 94 87 L 62 83 C 56 82 52 78 52 78 C 52 78 56 74 62 73 Z';
+
 interface Props {
   phase: OfflineIllustrationPhase;
   reducedMotion: boolean;
@@ -41,19 +47,17 @@ interface Props {
 export function OfflineIllustration({ phase, reducedMotion }: Props) {
   const rawId = useId().replace(/:/g, '');
   const id = `off-${rawId}`;
-  const sysReduce = useReducedMotion();
-  const staticMode = reducedMotion || !!sysReduce;
+  /** Parent passes `shouldReduceMotion()` (PWA overrides iOS false positives); do not OR with `useReducedMotion` here. */
+  const staticMode = reducedMotion;
   const theme = useDataTheme();
   const reconnecting = phase === 'reconnect';
 
-  const glowA = theme === 'red' ? 0.14 : 0.08;
-  const glowB = theme === 'red' ? 0.04 : 0.028;
+  const glowA = theme === 'red' ? 0.13 : 0.075;
+  const glowB = theme === 'red' ? 0.038 : 0.024;
 
-  const W = 260;
-  const H = 200;
-  /** Scene origin for bottle tilt (base center) */
-  const ox = 128;
-  const oy = 158;
+  const W = 300;
+  const H = 152;
+  const fillMaxW = 198;
 
   return (
     <div
@@ -61,361 +65,253 @@ export function OfflineIllustration({ phase, reducedMotion }: Props) {
       style={{ width: W, height: H, maxWidth: '100%' }}
       aria-hidden
     >
-      <svg
-        width={W}
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="overflow-visible max-w-full h-auto"
-        style={{ width: '100%', height: 'auto', maxHeight: H }}
+      {/**
+       * PWA / WebKit: run the gentle bob + reconnect scale on HTML, not SVG &lt;g&gt;,
+       * so transforms stay on a stable compositor layer (iOS Safari + Android Chrome).
+       */}
+      <motion.div
+        className="flex max-w-full justify-center"
+        style={{
+          width: '100%',
+          willChange: 'transform',
+          transformOrigin: '50% 45%',
+          WebkitTransformOrigin: '50% 45%',
+        }}
+        initial={false}
+        animate={
+          staticMode
+            ? { y: 0, scale: 1 }
+            : reconnecting
+              ? { y: -3, scale: 1.02 }
+              : { y: [0, 1.8, 0], scale: 1 }
+        }
+        transition={
+          staticMode
+            ? { duration: 0 }
+            : reconnecting
+              ? { duration: 0.5, ease: easeLuxury }
+              : { duration: 4.8, repeat: Infinity, ease: easeLuxury }
+        }
       >
+        <svg
+          width={W}
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="block overflow-visible max-w-full h-auto"
+          style={{ width: '100%', height: 'auto', maxHeight: H }}
+        >
         <defs>
-          <radialGradient id={`${id}-vignette`} cx="50%" cy="38%" r="65%">
+          <clipPath id={`${id}-cavity`} clipPathUnits="userSpaceOnUse">
+            <path d={WINE_CLIP_PATH} />
+          </clipPath>
+          <radialGradient id={`${id}-wash`} cx="50%" cy="42%" r="68%">
             <stop offset="0%" stopColor="var(--wine-400)" stopOpacity={glowA} />
             <stop offset="55%" stopColor="var(--wine-300)" stopOpacity={glowB} />
             <stop offset="100%" stopColor="var(--wine-300)" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id={`${id}-warm`} cx="28%" cy="32%" r="72%">
-            <stop offset="0%" stopColor="#f4e4c8" stopOpacity="0.45" />
-            <stop offset="35%" stopColor="#d4a574" stopOpacity="0.12" />
+          <radialGradient id={`${id}-key`} cx="22%" cy="35%" r="55%">
+            <stop offset="0%" stopColor="#f8ecd8" stopOpacity="0.5" />
+            <stop offset="40%" stopColor="#d4a574" stopOpacity="0.14" />
             <stop offset="100%" stopColor="transparent" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id={`${id}-bottleGlass`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--wine-300)" stopOpacity="0.35" />
-            <stop offset="40%" stopColor="var(--bg-surface)" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="var(--wine-600)" stopOpacity="0.25" />
-          </linearGradient>
-          <linearGradient id={`${id}-bottleWine`} x1="50%" y1="100%" x2="50%" y2="0%">
+          <linearGradient id={`${id}-wineFill`} x1="0%" y1="50%" x2="100%" y2="50%">
             <stop offset="0%" stopColor="var(--wine-700)" />
-            <stop offset="55%" stopColor="var(--wine-600)" />
-            <stop offset="100%" stopColor="var(--wine-500)" />
+            <stop offset="40%" stopColor="var(--wine-600)" />
+            <stop offset="100%" stopColor="var(--wine-500)" stopOpacity="0.94" />
           </linearGradient>
-          <linearGradient id={`${id}-cork`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#c4a574" />
-            <stop offset="50%" stopColor="#8b6914" />
-            <stop offset="100%" stopColor="#5c4510" />
+          <linearGradient id={`${id}-glass`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="var(--wine-300)" stopOpacity="0.22" />
+            <stop offset="45%" stopColor="var(--bg-surface)" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="var(--wine-400)" stopOpacity="0.18" />
           </linearGradient>
-          <linearGradient id={`${id}-grape`} x1="30%" y1="20%" x2="70%" y2="90%">
-            <stop offset="0%" stopColor="#6b2d4a" />
-            <stop offset="45%" stopColor="var(--wine-700)" />
-            <stop offset="100%" stopColor="#3d1528" />
+          <linearGradient id={`${id}-pour`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="var(--wine-400)" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="var(--wine-700)" stopOpacity="0.35" />
           </linearGradient>
-          <linearGradient id={`${id}-grapeHi`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f0d4a8" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+          <linearGradient id={`${id}-rim`} x1="100%" y1="50%" x2="0%" y2="50%">
+            <stop offset="0%" stopColor="#c9a063" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#8b6914" stopOpacity="0.2" />
           </linearGradient>
-          <filter id={`${id}-softBlur`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3.2" />
+          <filter id={`${id}-blur`} x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="2.8" />
           </filter>
-          <filter id={`${id}-dofFar`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="5.5" />
+          <filter id={`${id}-blurFar`} x="-35%" y="-35%" width="170%" height="170%">
+            <feGaussianBlur stdDeviation="6" />
           </filter>
-          <filter id={`${id}-glowSoft`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.8" result="b" />
+          <filter id={`${id}-sheen`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.2" result="s" />
             <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id={`${id}-veinGlow`} x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="0.8" result="v" />
-            <feMerge>
-              <feMergeNode in="v" />
+              <feMergeNode in="s" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
 
-        {/* Depth: distant warm wash */}
+        {/* Ambient depth */}
         <ellipse
-          cx={ox - 8}
-          cy={oy - 52}
-          rx={88}
-          ry={62}
-          fill={`url(#${id}-vignette)`}
-          filter={`url(#${id}-dofFar)`}
-          opacity={0.85}
+          cx={148}
+          cy={72}
+          rx={118}
+          ry={48}
+          fill={`url(#${id}-wash)`}
+          filter={`url(#${id}-blurFar)`}
+          opacity={0.9}
         />
-        <ellipse cx={ox} cy={oy - 48} rx={72} ry={50} fill={`url(#${id}-warm)`} opacity={0.7} />
+        <ellipse cx={135} cy={68} rx={90} ry={38} fill={`url(#${id}-key)`} opacity={0.65} />
 
-        {/* Bottle + cork + Wi‑Fi — tilted */}
-        <motion.g
-          style={{ transformOrigin: `${ox}px ${oy}px` }}
-          animate={
-            staticMode
-              ? { rotate: -12, x: 0, y: 0 }
-              : reconnecting
-                ? { rotate: -9, x: 0, y: -2, scale: 1.02 }
-                : {
-                    rotate: [-13.5, -11, -13.5],
-                    y: [0, 2.2, 0],
-                    x: [0, 0.6, 0],
-                  }
-          }
-          transition={
-            staticMode
-              ? { duration: 0 }
-              : reconnecting
-                ? { duration: 0.45, ease: easeLuxury }
-                : {
-                    duration: 5.2,
-                    repeat: Infinity,
-                    ease: easeLuxury,
-                  }
-          }
-        >
-          <g transform={`translate(${ox},${oy})`}>
-            {/* Ground shadow */}
-            <ellipse
-              cx={4}
-              cy={6}
-              rx={38}
-              ry={9}
-              fill="var(--wine-700)"
-              opacity={0.14}
-              filter={`url(#${id}-softBlur)`}
-            />
+          {/* Surface shadow */}
+          <ellipse
+            cx={158}
+            cy={108}
+            rx={102}
+            ry={7}
+            fill="var(--wine-700)"
+            opacity={0.12}
+            filter={`url(#${id}-blur)`}
+          />
 
-            {/* Bottle body (local: base ~ y=0) */}
-            <path
-              d="M -15 2 L -18 10 L 18 10 L 15 2 C 24 0 28 -38 26 -66 C 25 -82 18 -94 9 -100 L 7 -100 L 7 -118 L 9 -124 L 8 -136 L -8 -136 L -9 -124 L -7 -118 L -7 -100 L -9 -100 C -18 -94 -25 -82 -26 -66 C -28 -38 -24 0 -15 2 Z"
-              fill={`url(#${id}-bottleWine)`}
-              stroke="var(--wine-700)"
-              strokeWidth={1.1}
-              opacity={0.92}
-            />
-            <path
-              d="M -15 2 L -18 10 L 18 10 L 15 2 C 24 0 28 -38 26 -66 C 25 -82 18 -94 9 -100 L 7 -100 L 7 -118 L 9 -124 L 8 -136 L -8 -136 L -9 -124 L -7 -118 L -7 -100 L -9 -100 C -18 -94 -25 -82 -26 -66 C -28 -38 -24 0 -15 2 Z"
-              fill={`url(#${id}-bottleGlass)`}
-              stroke="var(--border-medium)"
-              strokeWidth={0.6}
-              opacity={0.55}
-            />
-            {/* Vintage label */}
-            <rect x={-9} y={-78} width={18} height={26} rx={1.5} fill="var(--bg-surface)" opacity={0.42} />
-            <rect x={-8} y={-77} width={16} height={24} rx={1} fill="none" stroke="var(--wine-600)" strokeWidth={0.45} opacity={0.5} />
-            <line x1={-5} y1={-68} x2={5} y2={-68} stroke="var(--wine-600)" strokeWidth={0.35} opacity={0.35} />
-            <line x1={-6} y1={-62} x2={6} y2={-62} stroke="var(--wine-600)" strokeWidth={0.35} opacity={0.35} />
-            <line x1={-7} y1={-54} x2={7} y2={-58} stroke="var(--wine-600)" strokeWidth={0.2} opacity={0.2} />
-            <line x1={-6} y1={-50} x2={6} y2={-54} stroke="var(--wine-600)" strokeWidth={0.2} opacity={0.18} />
-            {/* Highlight edge */}
-            <path
-              d="M -22 -58 C -24 -40 -22 -15 -16 2"
-              stroke="#f8ead0"
-              strokeWidth={1.2}
-              strokeLinecap="round"
-              opacity={0.35}
-            />
+          {/* Bottle body — horizontal, neck at left */}
+          <path
+            d="M 68 66 L 92 62.5 C 138 56 208 56 248 66.5 C 262 70 268 74 270 78 C 268 82 262 86 248 89.5 C 208 100 138 100 92 93.5 L 68 90 C 56 88 48 84 46 78 C 48 72 56 68 68 66 Z"
+            fill={`url(#${id}-glass)`}
+            stroke="var(--border-medium)"
+            strokeWidth={0.85}
+            opacity={0.95}
+          />
+          <path
+            d="M 68 66 L 92 62.5 C 138 56 208 56 248 66.5 C 262 70 268 74 270 78 C 268 82 262 86 248 89.5 C 208 100 138 100 92 93.5 L 68 90 C 56 88 48 84 46 78 C 48 72 56 68 68 66 Z"
+            fill="none"
+            stroke="var(--wine-600)"
+            strokeWidth={0.45}
+            opacity={0.35}
+          />
 
-            {/* Cork */}
-            <rect x={-6.5} y={-150} width={13} height={16} rx={2} fill={`url(#${id}-cork)`} stroke="#4a3a18" strokeWidth={0.5} />
-            <ellipse cx={0} cy={-150} rx={6.5} ry={2.2} fill="#d9bc86" opacity={0.9} />
+          {/* Neck opening ring — empty bottle */}
+          <ellipse cx={52} cy={78} rx={11} ry={14} stroke={`url(#${id}-rim)`} strokeWidth={2.2} fill="#1a0d10" fillOpacity={0.35} />
+          <ellipse cx={52} cy={78} rx={7} ry={9} fill="#0d0608" fillOpacity={0.5} />
 
-            {/* Broken Wi‑Fi arcs from cork */}
-            <g transform="translate(0 -142)" fill="none" strokeLinecap="round">
-              {[
-                { d: 'M 0 0 Q -32 -42 -58 -28', delay: 0 },
-                { d: 'M 0 0 Q -18 -52 -28 -68', delay: 0.12 },
-                { d: 'M 0 0 Q 32 -42 58 -28', delay: 0.24 },
-                { d: 'M 0 0 Q 18 -52 28 -68', delay: 0.08 },
-              ].map((arc, i) => (
-                <motion.path
-                  key={i}
-                  d={arc.d}
-                  stroke="var(--wine-600)"
-                  strokeWidth={2.4}
-                  strokeDasharray={reconnecting ? undefined : '5 10 3 14'}
-                  animate={
-                    reconnecting
-                      ? { opacity: 1, strokeDashoffset: 0 }
-                      : staticMode
-                        ? { opacity: 0.38, strokeDashoffset: 0 }
-                        : {
-                            opacity: [0.2, 0.85, 0.25, 0.65, 0.15, 0.75, 0.22],
-                            strokeDashoffset: [0, -18, -6, -24, -12],
-                          }
-                  }
-                  transition={
-                    reconnecting
-                      ? { duration: 0.35, ease: easeLuxury }
-                      : staticMode
-                        ? {}
-                        : {
-                            duration: 2.1 + i * 0.15,
-                            repeat: Infinity,
-                            ease: 'linear',
-                            delay: arc.delay,
-                          }
-                  }
-                />
-              ))}
-              {/* Center arc — most “broken” */}
+          {/* Label band */}
+          <rect x={118} y={64} width={52} height={22} rx={2} fill="var(--bg-surface)" opacity={0.38} />
+          <rect x={119} y={65} width={50} height={20} rx={1.5} fill="none" stroke="var(--wine-600)" strokeWidth={0.4} opacity={0.45} />
+          <line x1={124} y1={72} x2={164} y2={72} stroke="var(--wine-600)" strokeWidth={0.35} opacity={0.3} />
+          <line x1={126} y1={78} x2={162} y2={78} stroke="var(--wine-600)" strokeWidth={0.35} opacity={0.28} />
+
+          {/* Glass highlight */}
+          <path
+            d="M 95 64 C 150 58 210 60 245 69"
+            stroke="#fdf6eb"
+            strokeWidth={1.1}
+            strokeLinecap="round"
+            opacity={0.28}
+          />
+
+          {/* Wine level — struggles to fill, then ebbs (offline) */}
+          <g clipPath={`url(#${id}-cavity)`}>
+            <motion.rect
+              x={62}
+              y={66}
+              height={24}
+              fill={`url(#${id}-wineFill)`}
+              initial={false}
+              animate={
+                reconnecting
+                  ? { width: fillMaxW, opacity: 1 }
+                  : staticMode
+                    ? { width: fillMaxW * 0.12, opacity: 0.45 }
+                    : {
+                        width: [0, fillMaxW * 0.88, fillMaxW * 0.92, fillMaxW * 0.35, fillMaxW * 0.08, 0],
+                        opacity: [0.5, 0.95, 0.88, 0.55, 0.4, 0.35],
+                      }
+              }
+              transition={
+                reconnecting
+                  ? { duration: 0.55, ease: easeLuxury }
+                  : staticMode
+                    ? {}
+                    : {
+                        duration: 5.6,
+                        repeat: Infinity,
+                        ease: easeLuxury,
+                        times: [0, 0.28, 0.42, 0.58, 0.78, 1],
+                      }
+              }
+            />
+            {!staticMode && !reconnecting && (
+              <motion.rect
+                x={62}
+                y={66}
+                width={fillMaxW}
+                height={24}
+                fill="#fff9f2"
+                initial={false}
+                animate={{ opacity: [0, 0.14, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: easeLuxury, repeatDelay: 2.8 }}
+              />
+            )}
+          </g>
+
+          {/* “Pour from the cellar” — stream stutters when offline */}
+          <motion.path
+            d="M 28 22 Q 42 48 50 72"
+            stroke={`url(#${id}-pour)`}
+            strokeWidth={3.2}
+            strokeLinecap="round"
+            fill="none"
+            filter={`url(#${id}-sheen)`}
+            strokeDasharray={reconnecting ? undefined : '6 10 4 14'}
+            animate={
+              reconnecting
+                ? { opacity: 0.95, strokeDashoffset: 0 }
+                : staticMode
+                  ? { opacity: 0.35, strokeDashoffset: 0 }
+                  : {
+                      opacity: [0.25, 0.75, 0.3, 0.65, 0.2, 0.55, 0.22],
+                      strokeDashoffset: [0, -14, -4, -20, -8],
+                    }
+            }
+            transition={
+              reconnecting
+                ? { duration: 0.4, ease: easeLuxury }
+                : staticMode
+                  ? {}
+                  : { duration: 2.4, repeat: Infinity, ease: 'linear' }
+            }
+          />
+
+          {/* Broken Wi‑Fi at the neck — no link to the vault */}
+          <g transform="translate(44 58)" fill="none" strokeLinecap="round">
+            {[
+              { d: 'M 0 0 Q -14 -18 -28 -10', o: 0 },
+              { d: 'M 0 0 Q -8 -24 -14 -34', o: 0.1 },
+              { d: 'M 0 0 Q 14 -18 28 -10', o: 0.05 },
+            ].map((arc, i) => (
               <motion.path
-                d="M 0 0 Q 0 -48 2 -72"
-                stroke="var(--wine-700)"
-                strokeWidth={2.2}
-                strokeDasharray={reconnecting ? undefined : '2 9 4 11'}
+                key={i}
+                d={arc.d}
+                stroke="var(--wine-600)"
+                strokeWidth={2}
+                strokeDasharray={reconnecting ? undefined : '3 8 2 10'}
                 animate={
                   reconnecting
                     ? { opacity: 1 }
                     : staticMode
                       ? { opacity: 0.32 }
-                      : { opacity: [0.12, 0.55, 0.18, 0.5, 0.1, 0.62, 0.14] }
+                      : { opacity: [0.15, 0.72, 0.2, 0.6, 0.12] }
                 }
                 transition={
                   reconnecting
                     ? { duration: 0.35 }
                     : staticMode
                       ? {}
-                      : { duration: 1.65, repeat: Infinity, ease: easeLuxury }
+                      : { duration: 1.8 + i * 0.2, repeat: Infinity, ease: easeLuxury, delay: arc.o }
                 }
               />
-            </g>
-
-            {/* Grape garland — local to bottle, near neck */}
-            <motion.g
-              style={{ transformOrigin: '20px -108px' }}
-              animate={
-                staticMode
-                  ? { x: 0, y: 0, rotate: 0 }
-                  : { x: [0, 1.2, 0], y: [0, -2.5, 0], rotate: [-1.2, 0.8, -1.2] }
-              }
-              transition={
-                staticMode
-                  ? {}
-                  : { duration: 4.2, repeat: Infinity, ease: easeLuxury }
-              }
-            >
-              {/* Vine */}
-              <path
-                d="M -4 -112 Q 12 -128 34 -118 Q 48 -108 52 -92"
-                stroke="#3d5c3a"
-                strokeWidth={1.6}
-                strokeLinecap="round"
-                fill="none"
-                opacity={0.85}
-              />
-              <path
-                d="M -4 -112 Q 12 -128 34 -118 Q 48 -108 52 -92"
-                stroke="#7a9e72"
-                strokeWidth={0.45}
-                strokeLinecap="round"
-                fill="none"
-                opacity={0.4}
-              />
-
-              {(
-                [
-                  { cx: 8, cy: -120, r: 5.2 },
-                  { cx: 18, cy: -114, r: 6 },
-                  { cx: 28, cy: -118, r: 5.4 },
-                  { cx: 38, cy: -110, r: 5.8 },
-                  { cx: 46, cy: -100, r: 4.8 },
-                  { cx: 22, cy: -106, r: 4.2 },
-                ] as const
-              ).map((g, idx) => (
-                <g key={idx}>
-                  <circle
-                    cx={g.cx}
-                    cy={g.cy}
-                    r={g.r + 0.8}
-                    fill="var(--wine-700)"
-                    opacity={0.22}
-                    filter={`url(#${id}-softBlur)`}
-                  />
-                  <motion.circle
-                    cx={g.cx}
-                    cy={g.cy}
-                    r={g.r}
-                    fill={`url(#${id}-grape)`}
-                    stroke="var(--wine-700)"
-                    strokeWidth={0.45}
-                    initial={false}
-                    animate={
-                      staticMode
-                        ? { r: g.r }
-                        : { r: [g.r, g.r * 1.045, g.r * 0.985, g.r] }
-                    }
-                    transition={
-                      staticMode
-                        ? {}
-                        : {
-                            duration: 3.2 + idx * 0.2,
-                            repeat: Infinity,
-                            ease: easeLuxury,
-                            delay: idx * 0.08,
-                          }
-                    }
-                  />
-                  <ellipse
-                    cx={g.cx - g.r * 0.35}
-                    cy={g.cy - g.r * 0.35}
-                    rx={g.r * 0.35}
-                    ry={g.r * 0.28}
-                    fill={`url(#${id}-grapeHi)`}
-                    opacity={0.5}
-                  />
-                  {/* Glowing veins */}
-                  <motion.path
-                    d={`M ${g.cx - 1.2} ${g.cy + 1} Q ${g.cx + 0.5} ${g.cy - 0.5} ${g.cx + 1.5} ${g.cy - 2}`}
-                    stroke="#f5e6d3"
-                    strokeWidth={0.35}
-                    fill="none"
-                    filter={`url(#${id}-veinGlow)`}
-                    animate={
-                      staticMode
-                        ? { opacity: 0.35 }
-                        : { opacity: [0.2, 0.75, 0.35, 0.65, 0.25] }
-                    }
-                    transition={
-                      staticMode
-                        ? {}
-                        : {
-                            duration: 2.4 + idx * 0.17,
-                            repeat: Infinity,
-                            ease: easeLuxury,
-                            delay: idx * 0.11,
-                          }
-                    }
-                  />
-                </g>
-              ))}
-
-              {/* Light threads */}
-              {[0, 1, 2].map((i) => (
-                <motion.line
-                  key={`th-${i}`}
-                  x1={14 + i * 10}
-                  y1={-122 - i * 2}
-                  x2={10 + i * 8}
-                  y2={-148 - i * 5}
-                  stroke="#fcefd9"
-                  strokeWidth={0.35}
-                  strokeLinecap="round"
-                  opacity={0.5}
-                  filter={`url(#${id}-glowSoft)`}
-                  animate={
-                    staticMode
-                      ? { opacity: 0.25 }
-                      : { opacity: [0.15, 0.55, 0.2, 0.45, 0.18] }
-                  }
-                  transition={
-                    staticMode
-                      ? {}
-                      : {
-                          duration: 3 + i * 0.4,
-                          repeat: Infinity,
-                          ease: easeLuxury,
-                          delay: i * 0.25,
-                        }
-                  }
-                />
-              ))}
-            </motion.g>
+            ))}
           </g>
-        </motion.g>
-      </svg>
+        </svg>
+      </motion.div>
     </div>
   );
 }
