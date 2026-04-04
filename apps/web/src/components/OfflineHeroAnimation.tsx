@@ -18,10 +18,10 @@ const CLIP_H = 78;
 const CLIP_RX = 8;
 const WINE_MAX_W = 292;
 
-/** After intro: liquid ~50–60% of bottle (reference). */
-const W_INTRO_TARGET = WINE_MAX_W * 0.64;
-const W_OFFLINE_LOW = WINE_MAX_W * 0.58;
-const W_OFFLINE_HIGH = WINE_MAX_W * 0.7;
+/** After intro: liquid fills enough to reveal full "NO CONNECTION" (text ends ~x 311). */
+const W_INTRO_TARGET = WINE_MAX_W * 0.82;
+const W_OFFLINE_LOW = WINE_MAX_W * 0.76;
+const W_OFFLINE_HIGH = WINE_MAX_W * 0.88;
 
 const INTRO_S = 3.5;
 
@@ -346,31 +346,19 @@ export function OfflineHeroAnimation({ phase, reducedMotion }: Props) {
             </motion.text>
           </motion.g>
 
-          <g
-            id="bottle-outline"
-            stroke="var(--text-secondary)"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          >
+          <g id="bottle-outline" fill="none">
             <path
-              d="M375 210 H80 c-16.5 0 -30 13.5 -30 30 v30 c0 16.5 13.5 30 30 30 h295"
+              d="M375 300 H80 c-16.5 0 -30 -13.5 -30 -30 v-30 c0 -16.5 13.5 -30 30 -30 h295 c30 0 35 15 45 25 l45 5 c11 1.2 20 10 20 21 v18 c0 11 -9 19.8 -20 21 l-45 5 c-10 10 -15 25 -45 25 Z"
+              stroke="var(--text-secondary)"
               strokeWidth={10}
-            />
-            <path
-              d="M375 210 c30 0 35 15 45 25 l45 5 c11 1.2 20 10 20 21 v18 c0 11 -9 19.8 -20 21 l-45 5 c-10 10 -15 25 -45 25"
-              strokeWidth={10}
-            />
-            <path
-              d="M60 240s15-15 15 0-15 15-15 0"
-              strokeWidth={6}
-              opacity={0.6}
+              strokeLinejoin="round"
             />
             <path
               d="M90 220 h260"
               stroke="var(--text-inverse, #fff)"
               strokeWidth={4}
               opacity={0.22}
+              strokeLinecap="round"
             />
           </g>
         </g>
