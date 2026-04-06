@@ -12,6 +12,7 @@ import { historyRouter } from './routes/history.js';
 import { importsRouter } from './routes/imports.js';
 import { agentRouter } from './routes/agent.js'; // Cellar Agent (localhost only)
 import { eventsRouter } from './routes/events.js'; // Wine World Moments
+import { billingRouter } from './routes/billing.js'; // Paddle Billing
 
 const app = express();
 
@@ -58,6 +59,11 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
+// NOTE: /api/billing/webhook needs raw body for Paddle HMAC verification.
+// It is mounted BEFORE express.json() so it can read the raw stream itself.
+// All other /api/billing routes use json() normally (mounted again below).
+app.use('/api/billing/webhook', billingRouter);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
@@ -76,6 +82,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/imports', importsRouter);
 app.use('/api/agent', agentRouter); // Cellar Agent (localhost only)
 app.use('/api/events', eventsRouter); // Wine World Moments
+app.use('/api/billing', billingRouter); // Paddle Billing (checkout-config, portal)
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

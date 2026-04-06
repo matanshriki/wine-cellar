@@ -6,10 +6,6 @@
  * Never accessible to non-flagged users — the guard is enforced here
  * AND at every callsite.
  *
- * Stripe is NOT wired. CTA handlers are placeholder-ready:
- *   handleSelectPlan(planKey)  → replace with Stripe Checkout
- *   handleTopUp(packageKey)    → replace with Stripe one-time payment
- *
  * Entry points:
  *   - Compact credit badge in Layout nav bar
  *   - Upgrade CTA in SommelierCreditsDisplay (low / blocked state)
@@ -19,11 +15,13 @@
 
 import React, { useEffect, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight } from 'lucide-react';
+import { X, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, TOP_UP_OPTIONS, type PlanDefinition } from '../lib/creditPolicy';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
+import { openCheckout } from '../lib/paddle';
+import { supabase } from '../lib/supabase';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,25 +54,21 @@ const PLAN_GRADIENT: Record<string, string> = {
   collector: 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04))',
 };
 
-// ── Handlers (placeholder — replace with Stripe) ─────────────────────────────
+// ── Checkout helpers ──────────────────────────────────────────────────────────
 
-function handleSelectPlan(planKey: string, currentPlan: string | null) {
-  if (planKey === currentPlan) return;
-
-  trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'pricing_modal' });
-
-  console.log('[PricingModal] Plan selected (Stripe not wired yet):', planKey);
-  toast.success(
-    `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan coming soon — ` +
-    `you're among the first to be notified.`,
-  );
+async function getAuthToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? '';
 }
 
-function handleTopUp(credits: number, price: number) {
-  trackEvent('pricing_topup_selected', { credits, price, source: 'pricing_modal' });
+async function launchPlanCheckout(planKey: string) {
+  const token = await getAuthToken();
+  await openCheckout({ plan: planKey }, { authToken: token });
+}
 
-  console.log('[PricingModal] Top-up selected (Stripe not wired yet):', credits, 'credits');
-  toast.success(`${credits} Sommelier Credits — top-ups coming soon!`);
+async function launchTopUpCheckout(credits: number) {
+  const token = await getAuthToken();
+  await openCheckout({ topup: String(credits) }, { authToken: token });
 }
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
@@ -84,11 +78,13 @@ function PlanCard({
   isCurrent,
   isRecommended,
   onSelect,
+  loading,
 }: {
   plan: PlanDefinition;
   isCurrent: boolean;
   isRecommended: boolean;
   onSelect: () => void;
+  loading?: boolean;
 }) {
   const isHighlighted = plan.highlight || isRecommended;
 
@@ -180,8 +176,8 @@ function PlanCard({
       <button
         type="button"
         onClick={onSelect}
-        disabled={isCurrent}
-        className="mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition-all active:scale-[0.98] disabled:cursor-default"
+        disabled={isCurrent || loading}
+        className="mt-5 w-full rounded-xl py-2.5 text-sm font-medium transition-all active:scale-[0.98] disabled:cursor-default flex items-center justify-center gap-2"
         style={
           isCurrent
             ? { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)' }
@@ -197,7 +193,8 @@ function PlanCard({
             : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }
         }
       >
-        {isCurrent ? 'Your current plan' : PLAN_CTA[plan.key]}
+        {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+        {isCurrent ? 'Your current plan' : loading ? 'Opening checkout…' : PLAN_CTA[plan.key]}
       </button>
     </div>
   );
@@ -213,6 +210,34 @@ export function PricingModal({
 }: PricingModalProps) {
   const { monetizationEnabled, planKey: currentPlan, effectiveBalance, monthlyLimit } = useMonetizationAccess();
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+
+  async function handleSelectPlan(planKey: string) {
+    if (planKey === currentPlan || planKey === 'free') return;
+    trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'pricing_modal' });
+    setCheckoutLoading(`plan:${planKey}`);
+    try {
+      await launchPlanCheckout(planKey);
+    } catch (err: any) {
+      console.error('[PricingModal] Checkout error:', err);
+      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
+  async function handleTopUp(credits: number, price: number) {
+    trackEvent('pricing_topup_selected', { credits, price, source: 'pricing_modal' });
+    setCheckoutLoading(`topup:${credits}`);
+    try {
+      await launchTopUpCheckout(credits);
+    } catch (err: any) {
+      console.error('[PricingModal] Top-up checkout error:', err);
+      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   // ── Dark launch guard ─────────────────────────────────────────────────────
   const visible = isOpen && monetizationEnabled;
@@ -371,7 +396,8 @@ export function PricingModal({
                         plan={plan}
                         isCurrent={currentPlan === plan.key}
                         isRecommended={recommendedPlanKey === plan.key && currentPlan !== plan.key}
-                        onSelect={() => handleSelectPlan(plan.key, currentPlan)}
+                        onSelect={() => handleSelectPlan(plan.key)}
+                        loading={checkoutLoading === `plan:${plan.key}`}
                       />
                     ))}
                   </motion.div>
@@ -394,7 +420,8 @@ export function PricingModal({
                           key={opt.credits}
                           type="button"
                           onClick={() => handleTopUp(opt.credits, opt.price)}
-                          className="group relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-5 py-4 text-left transition-all hover:border-white/20 hover:bg-white/7 active:scale-[0.98]"
+                          disabled={!!checkoutLoading}
+                          className="group relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-5 py-4 text-left transition-all hover:border-white/20 hover:bg-white/7 active:scale-[0.98] disabled:opacity-60"
                         >
                           <div>
                             <div className="flex items-center gap-2">
@@ -444,7 +471,7 @@ export function PricingModal({
 
               {/* Fine print */}
               <p className="mt-6 text-center text-[11px] text-white/20">
-                Subscriptions and payments are coming soon — you'll be the first to know.
+                Secured by Paddle · Cancel anytime from your account portal
               </p>
             </div>
           </motion.div>

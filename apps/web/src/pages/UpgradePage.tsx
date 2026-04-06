@@ -20,14 +20,16 @@
  *  - The rest of the page (tabs, top-up, explainer) scrolls normally.
  */
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, TOP_UP_OPTIONS } from '../lib/creditPolicy';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
+import { openCheckout, getPortalUrl } from '../lib/paddle';
+import { supabase } from '../lib/supabase';
 
 // ── Per-plan accent config (always on dark bg) ─────────────────────────────
 
@@ -67,28 +69,18 @@ const PLAN_CTA: Record<string, string> = {
   collector: 'Upgrade to Collector',
 };
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
+// ── Checkout helpers ──────────────────────────────────────────────────────────
 
-function handleSelectPlan(planKey: string, currentPlan: string | null) {
-  if (planKey === currentPlan) return;
-  trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'upgrade_page' });
-  console.log('[UpgradePage] Plan selected (Stripe not wired yet):', planKey);
-  toast.success(
-    `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan coming soon — ` +
-    `you'll be among the first to know.`,
-  );
-}
-
-function handleTopUp(credits: number, price: number) {
-  trackEvent('pricing_topup_selected', { credits, price, source: 'upgrade_page' });
-  console.log('[UpgradePage] Top-up selected (Stripe not wired yet):', credits);
-  toast.success(`${credits} Sommelier Credits — top-ups coming soon!`);
+async function getAuthToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? '';
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function UpgradePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     planKey: currentPlan,
     effectiveBalance,
@@ -98,6 +90,61 @@ export function UpgradePage() {
   } = useMonetizationAccess();
 
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // Show success toast when returning from Paddle checkout
+  useEffect(() => {
+    if (searchParams.get('success') === '1') {
+      toast.success('Payment successful! Your credits will update shortly.');
+      // Remove the ?success=1 param without a full navigation
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('success');
+      navigate({ search: newParams.toString() }, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
+  async function handleSelectPlan(planKey: string) {
+    if (planKey === currentPlan || planKey === 'free') return;
+    trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'upgrade_page' });
+    setCheckoutLoading(`plan:${planKey}`);
+    try {
+      const token = await getAuthToken();
+      await openCheckout({ plan: planKey }, { authToken: token });
+    } catch (err: any) {
+      console.error('[UpgradePage] Checkout error:', err);
+      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
+  async function handleTopUp(credits: number, price: number) {
+    trackEvent('pricing_topup_selected', { credits, price, source: 'upgrade_page' });
+    setCheckoutLoading(`topup:${credits}`);
+    try {
+      const token = await getAuthToken();
+      await openCheckout({ topup: String(credits) }, { authToken: token });
+    } catch (err: any) {
+      console.error('[UpgradePage] Top-up error:', err);
+      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    try {
+      const token = await getAuthToken();
+      const url = await getPortalUrl(token);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not open billing portal.');
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   if (creditsLoading) {
     return (
@@ -273,16 +320,23 @@ export function UpgradePage() {
                       {/* CTA */}
                       <button
                         type="button"
-                        onClick={() => handleSelectPlan(plan.key, currentPlan)}
-                        disabled={isCurrent}
-                        className="mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-default"
+                        onClick={() => handleSelectPlan(plan.key)}
+                        disabled={isCurrent || !!checkoutLoading}
+                        className="mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-default flex items-center justify-center gap-2"
                         style={
                           isCurrent
                             ? { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.25)' }
                             : accent.cta
                         }
                       >
-                        {isCurrent ? 'Your current plan' : PLAN_CTA[plan.key]}
+                        {checkoutLoading === `plan:${plan.key}` && (
+                          <Loader2 size={14} className="animate-spin" />
+                        )}
+                        {isCurrent
+                          ? 'Your current plan'
+                          : checkoutLoading === `plan:${plan.key}`
+                          ? 'Opening checkout…'
+                          : PLAN_CTA[plan.key]}
                       </button>
                     </div>
                   );
@@ -294,8 +348,21 @@ export function UpgradePage() {
                 Swipe to compare plans
               </p>
 
-              <p className="mt-5 text-center text-[11px] text-white/20">
-                Subscriptions and payments are coming soon.
+              <p className="mt-5 text-center text-[11px] text-white/25">
+                Secured by Paddle · Cancel anytime
+                {currentPlan && currentPlan !== 'free' && (
+                  <>
+                    {' · '}
+                    <button
+                      type="button"
+                      onClick={handleManageBilling}
+                      disabled={portalLoading}
+                      className="underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40"
+                    >
+                      {portalLoading ? 'Loading…' : 'Manage billing'}
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           </motion.div>
@@ -325,7 +392,8 @@ export function UpgradePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22, delay: i * 0.07 }}
                   onClick={() => handleTopUp(opt.credits, opt.price)}
-                  className="group flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition-all active:scale-[0.98]"
+                  disabled={!!checkoutLoading}
+                  className="group flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition-all active:scale-[0.98] disabled:opacity-60"
                   style={{ borderColor: 'var(--border-medium)', background: 'var(--bg-muted)' }}
                 >
                   <div>
@@ -372,7 +440,7 @@ export function UpgradePage() {
             </div>
 
             <p className="mt-5 text-center text-xs" style={{ color: 'var(--text-tertiary)', opacity: 0.5 }}>
-              Payments coming soon — you'll be the first to know.
+              Secured by Paddle · No subscription required for top-ups
             </p>
           </motion.div>
         )}

@@ -32,6 +32,17 @@ export const config = {
   // URLs
   apiUrl: process.env.API_URL || 'http://localhost:3001',
   webUrl: process.env.WEB_URL || 'http://localhost:5173',
+
+  // Paddle Billing
+  paddleApiKey:       process.env.PADDLE_API_KEY || '',
+  paddleWebhookSecret: process.env.PADDLE_WEBHOOK_SECRET || '',
+  paddleEnvironment:  (process.env.PADDLE_ENVIRONMENT || 'production') as 'sandbox' | 'production',
+
+  // Paddle Price IDs (set on the billing server only — never sent to the browser)
+  paddlePricePremiumMonthly:  process.env.PADDLE_PRICE_PREMIUM_MONTHLY  || '',
+  paddlePriceCollectorMonthly: process.env.PADDLE_PRICE_COLLECTOR_MONTHLY || '',
+  paddlePriceTopup50:         process.env.PADDLE_PRICE_TOPUP_50          || '',
+  paddlePriceTopup150:        process.env.PADDLE_PRICE_TOPUP_150         || '',
 };
 
 // Log configuration on startup (without sensitive data)
@@ -42,4 +53,13 @@ console.log('[Config] Supabase URL:', config.supabaseUrl ? 'SET ✓' : 'NOT SET 
 console.log('[Config] Supabase Anon Key:', config.supabaseAnonKey ? 'SET ✓' : 'NOT SET ✗');
 console.log('[Config] Supabase Service Role Key:', config.supabaseServiceRoleKey ? 'SET ✓' : 'NOT SET (credit deduction will be best-effort) ✗');
 console.log('[Config] Web URL:', config.webUrl);
+console.log('[Config] Paddle API Key:', config.paddleApiKey ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Paddle Webhook Secret:', config.paddleWebhookSecret ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Paddle Environment:', config.paddleEnvironment);
+console.log('[Config] Paddle Price IDs:', [
+  config.paddlePricePremiumMonthly,
+  config.paddlePriceCollectorMonthly,
+  config.paddlePriceTopup50,
+  config.paddlePriceTopup150,
+].every(Boolean) ? 'ALL SET ✓' : 'SOME MISSING ✗');
 

@@ -12,6 +12,7 @@
     "lint": "eslint . --ext ts,tsx"
   },
   "dependencies": {
+    "@paddle/paddle-js": "^1.6.2",
     "@supabase/supabase-js": "^2.89.0",
     "@tanstack/react-query": "^5.17.19",
     "@types/canvas-confetti": "^1.9.0",
