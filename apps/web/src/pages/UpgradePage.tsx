@@ -3,18 +3,21 @@
  *
  * Full-page Sommelier Credits / plan selection experience.
  * Protected by MonetizationRoute — only accessible to users with
- * monetization_enabled = true. Completely invisible to all other users.
+ * monetization_enabled = true.
  *
  * Route: /upgrade
- * Entry points:
- *  - Low-credit CTA in SommelierCreditsDisplay (full-card variant)
- *  - Agent page insufficient-credits blocked state
- *  - Any future deep-link in a test email / in-app notification
  *
- * The page renders the same plan content as PricingModal but in a
- * full-page layout with more breathing room, suitable for desktop and
- * tablet use. It shares the same placeholder handlers — easy to
- * replace with Stripe Checkout later.
+ * Design approach:
+ *  - Page chrome (header, back, tabs, top-up section) uses theme CSS variables
+ *    so it respects the user's light / dark theme preference.
+ *  - Plan cards live inside a permanently-dark "pricing island" — this gives
+ *    the premium dark-glass look regardless of the page theme, and avoids
+ *    white text on a white background in light mode.
+ *
+ * Mobile UX:
+ *  - Plan cards are a horizontal snap-scroll carousel on mobile so all three
+ *    tiers are visible with a swipe without deep vertical scrolling.
+ *  - The rest of the page (tabs, top-up, explainer) scrolls normally.
  */
 
 import React, { useState } from 'react';
@@ -26,34 +29,37 @@ import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
 
-// ── Plan visual config ────────────────────────────────────────────────────────
+// ── Per-plan accent config (always on dark bg) ─────────────────────────────
 
 const PLAN_ICONS: Record<string, React.ReactNode> = {
-  free:      <Sparkles size={20} className="text-white/40" />,
-  premium:   <Star size={20} className="text-amber-400" />,
-  collector: <TrendingUp size={20} className="text-violet-400" />,
+  free:      <Sparkles size={18} className="text-white/40" />,
+  premium:   <Star     size={18} className="text-amber-400" />,
+  collector: <TrendingUp size={18} className="text-violet-400" />,
 };
 
-const PLAN_ACCENT: Record<string, { border: string; glow: string; cta: string; check: string }> = {
+const PLAN_ACCENT = {
   free: {
-    border: 'rgba(255,255,255,0.1)',
-    glow:   'none',
-    cta:    'rgba(255,255,255,0.08)',
-    check:  'rgba(255,255,255,0.3)',
+    border:   'rgba(255,255,255,0.12)',
+    cardBg:   'rgba(255,255,255,0.04)',
+    check:    'rgba(255,255,255,0.35)',
+    cta:      { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)' } as React.CSSProperties,
+    badge:    undefined as string | undefined,
   },
   premium: {
-    border: 'rgba(251,191,36,0.35)',
-    glow:   '0 0 40px rgba(251,191,36,0.08)',
-    cta:    'linear-gradient(135deg, #F59E0B, #D97706)',
-    check:  'rgba(251,191,36,0.7)',
+    border:   'rgba(251,191,36,0.4)',
+    cardBg:   'linear-gradient(160deg, rgba(251,191,36,0.12) 0%, rgba(251,191,36,0.04) 100%)',
+    check:    '#FBB524',
+    cta:      { background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', boxShadow: '0 4px 14px rgba(245,158,11,0.35)' } as React.CSSProperties,
+    badge:    'linear-gradient(135deg, #F59E0B, #D97706)',
   },
   collector: {
-    border: 'rgba(167,139,250,0.35)',
-    glow:   '0 0 40px rgba(167,139,250,0.08)',
-    cta:    'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-    check:  'rgba(167,139,250,0.7)',
+    border:   'rgba(167,139,250,0.4)',
+    cardBg:   'linear-gradient(160deg, rgba(167,139,250,0.12) 0%, rgba(167,139,250,0.04) 100%)',
+    check:    '#A78BFA',
+    cta:      { background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', color: '#fff', boxShadow: '0 4px 14px rgba(139,92,246,0.35)' } as React.CSSProperties,
+    badge:    undefined as string | undefined,
   },
-};
+} as const;
 
 const PLAN_CTA: Record<string, string> = {
   free:      'Continue with Free',
@@ -61,7 +67,7 @@ const PLAN_CTA: Record<string, string> = {
   collector: 'Upgrade to Collector',
 };
 
-// ── Placeholder handlers ──────────────────────────────────────────────────────
+// ── Handlers ──────────────────────────────────────────────────────────────────
 
 function handleSelectPlan(planKey: string, currentPlan: string | null) {
   if (planKey === currentPlan) return;
@@ -69,7 +75,7 @@ function handleSelectPlan(planKey: string, currentPlan: string | null) {
   console.log('[UpgradePage] Plan selected (Stripe not wired yet):', planKey);
   toast.success(
     `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan coming soon — ` +
-    `you'll be among the first to be notified.`,
+    `you'll be among the first to know.`,
   );
 }
 
@@ -79,7 +85,7 @@ function handleTopUp(credits: number, price: number) {
   toast.success(`${credits} Sommelier Credits — top-ups coming soon!`);
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function UpgradePage() {
   const navigate = useNavigate();
@@ -96,271 +102,277 @@ export function UpgradePage() {
   if (creditsLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+        <div
+          className="h-6 w-6 animate-spin rounded-full border-2"
+          style={{ borderColor: 'var(--border-subtle)', borderTopColor: 'var(--text-secondary)' }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl py-6">
-      {/* Back navigation */}
+    <div className="mx-auto max-w-4xl py-4 sm:py-6">
+
+      {/* Back */}
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="mb-8 flex items-center gap-1.5 text-sm text-white/40 transition-colors hover:text-white/70"
+        className="mb-5 flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
+        style={{ color: 'var(--text-tertiary)' }}
       >
         <ArrowLeft size={14} />
         Back
       </button>
 
-      {/* Hero */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-10"
+        transition={{ duration: 0.3 }}
+        className="mb-6"
       >
-        <div className="flex items-center gap-3 mb-3">
-          <Sparkles size={20} className="text-amber-400" />
-          <span className="text-sm font-medium uppercase tracking-widest text-white/40">
+        <div className="mb-2 flex items-center gap-2">
+          <Sparkles size={15} className="text-amber-500" />
+          <span
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
             Sommelier Credits
           </span>
         </div>
         <h1
-          className="text-2xl font-bold text-white sm:text-3xl"
-          style={{ fontFamily: 'var(--font-display, inherit)', letterSpacing: '-0.01em' }}
+          className="text-xl font-bold leading-snug sm:text-3xl"
+          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display, inherit)', letterSpacing: '-0.01em' }}
         >
-          Choose the plan that fits how you discover,<br className="hidden sm:block" /> collect, and enjoy wine.
+          Choose the plan that fits how you
+          <br className="hidden sm:block" /> discover, collect, and enjoy wine.
         </h1>
-        <p className="mt-3 text-base text-white/45 max-w-xl">
+        <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
           Upgrade for deeper cellar insights and more Sommelier sessions.
         </p>
 
-        {/* Current balance pill (shown when low) */}
         {isLowBalance && (
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-4 py-2 text-sm text-amber-300">
-            <Sparkles size={13} className="text-amber-400" />
-            {effectiveBalance} Sommelier Credit{effectiveBalance === 1 ? '' : 's'} remaining
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm font-medium text-amber-600">
+            <Sparkles size={12} className="text-amber-500" />
+            {effectiveBalance} credit{effectiveBalance === 1 ? '' : 's'} remaining
             {monthlyLimit > 0 ? ` of ${monthlyLimit}` : ''}
           </div>
         )}
       </motion.div>
 
-      {/* Tab switcher */}
-      <div className="mb-8 flex gap-1 rounded-xl bg-white/5 p-1 max-w-xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab('plans')}
-          className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors"
-          style={
-            activeTab === 'plans'
-              ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
-              : { color: 'rgba(255,255,255,0.4)' }
-          }
-        >
-          Monthly plans
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('topup')}
-          className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors"
-          style={
-            activeTab === 'topup'
-              ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
-              : { color: 'rgba(255,255,255,0.4)' }
-          }
-        >
-          Top-up credits
-        </button>
+      {/* ── Tab switcher ──────────────────────────────────────────────────── */}
+      <div
+        className="mb-6 flex gap-1 rounded-xl p-1 w-fit"
+        style={{ background: 'var(--bg-muted)' }}
+      >
+        {(['plans', 'topup'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className="rounded-lg px-4 py-2 text-sm font-medium transition-all"
+            style={
+              activeTab === tab
+                ? { background: 'var(--bg-surface)', color: 'var(--text-primary)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+                : { color: 'var(--text-tertiary)' }
+            }
+          >
+            {tab === 'plans' ? 'Monthly plans' : 'Top-up credits'}
+          </button>
+        ))}
       </div>
 
-      {/* Tab content */}
+      {/* ── Content ───────────────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
-        {activeTab === 'plans' ? (
+
+        {/* Plans tab */}
+        {activeTab === 'plans' && (
           <motion.div
             key="plans"
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18 }}
           >
-            {/* Plan grid */}
-            <div className="grid gap-5 sm:grid-cols-3">
-              {PLANS.map((plan, i) => {
-                const isCurrent = currentPlan === plan.key;
-                const accent = PLAN_ACCENT[plan.key];
+            {/*
+             * Dark pricing island — always dark so plan cards look premium
+             * regardless of light / dark page theme.
+             * Extends past the parent padding on mobile (-mx-4 sm:mx-0) so the
+             * horizontal scroll area fills edge-to-edge.
+             */}
+            <div
+              className="-mx-4 rounded-none px-4 py-6 sm:mx-0 sm:rounded-3xl sm:px-8 sm:py-8"
+              style={{ background: 'linear-gradient(160deg, #11101e 0%, #0e0c1b 100%)' }}
+            >
+              {/* Plan grid: snap-scroll carousel on mobile, 3-col grid on sm+ */}
+              <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-5">
+                {PLANS.map((plan) => {
+                  const isCurrent = currentPlan === plan.key;
+                  const accent = PLAN_ACCENT[plan.key as keyof typeof PLAN_ACCENT];
 
-                return (
-                  <motion.div
-                    key={plan.key}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.06 }}
-                    className="relative flex flex-col rounded-2xl border p-6 transition-all"
-                    style={{
-                      borderColor: accent.border,
-                      boxShadow: accent.glow,
-                      background: plan.highlight
-                        ? 'linear-gradient(160deg, rgba(251,191,36,0.08) 0%, rgba(0,0,0,0) 60%)'
-                        : plan.key === 'collector'
-                        ? 'linear-gradient(160deg, rgba(167,139,250,0.08) 0%, rgba(0,0,0,0) 60%)'
-                        : 'rgba(255,255,255,0.02)',
-                    }}
-                  >
-                    {/* Popular badge */}
-                    {plan.highlight && (
-                      <span
-                        className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white"
-                        style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
-                      >
-                        Most popular
-                      </span>
-                    )}
-
-                    {/* Plan icon + name */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        {PLAN_ICONS[plan.key]}
-                        <span className="font-semibold text-white">{plan.label}</span>
-                      </div>
-                      {isCurrent && (
-                        <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
-                          Your plan
+                  return (
+                    <div
+                      key={plan.key}
+                      className="relative flex w-[78vw] max-w-[300px] shrink-0 snap-center flex-col rounded-2xl border p-5 transition-all sm:w-auto sm:max-w-none sm:shrink sm:p-6"
+                      style={{ borderColor: accent.border, background: accent.cardBg }}
+                    >
+                      {/* Popular badge */}
+                      {plan.highlight && (
+                        <span
+                          className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white"
+                          style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
+                        >
+                          Most popular
                         </span>
                       )}
-                    </div>
 
-                    {/* Credits */}
-                    <div className="mt-5">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold tabular-nums text-white">
-                          {plan.monthlyCredits}
-                        </span>
-                        <span className="text-xs leading-snug text-white/35">
-                          credits<br />/ month
-                        </span>
-                      </div>
-                      <div className="mt-1.5">
-                        {plan.priceMonthly !== null ? (
-                          <span className="text-sm text-white/50">
-                            <span className="font-semibold text-white/80">
-                              ${plan.priceMonthly}
-                            </span>{' '}
-                            / month
+                      {/* Plan header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {PLAN_ICONS[plan.key]}
+                          <span className="font-semibold text-white">{plan.label}</span>
+                        </div>
+                        {isCurrent && (
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/50">
+                            Your plan
                           </span>
-                        ) : (
-                          <span className="text-sm text-white/50">Always free</span>
                         )}
                       </div>
+
+                      {/* Credits (primary metric) */}
+                      <div className="mt-4">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-4xl font-bold tabular-nums text-white">
+                            {plan.monthlyCredits}
+                          </span>
+                          <span className="text-xs leading-snug text-white/35">
+                            credits<br />/ month
+                          </span>
+                        </div>
+                        <div className="mt-1.5 text-sm text-white/50">
+                          {plan.priceMonthly !== null ? (
+                            <>
+                              <span className="font-semibold text-white/80">${plan.priceMonthly}</span> / month
+                            </>
+                          ) : (
+                            'Always free'
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <ul className="mt-5 flex-1 space-y-2.5">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-start gap-2.5">
+                            <Check size={13} className="mt-0.5 shrink-0" style={{ color: accent.check }} />
+                            <span className="text-sm leading-relaxed text-white/55">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* CTA */}
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlan(plan.key, currentPlan)}
+                        disabled={isCurrent}
+                        className="mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-default"
+                        style={
+                          isCurrent
+                            ? { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.25)' }
+                            : accent.cta
+                        }
+                      >
+                        {isCurrent ? 'Your current plan' : PLAN_CTA[plan.key]}
+                      </button>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Features */}
-                    <ul className="mt-6 flex-1 space-y-3">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-3">
-                          <Check
-                            size={14}
-                            className="mt-0.5 shrink-0"
-                            style={{ color: accent.check }}
-                          />
-                          <span className="text-sm leading-relaxed text-white/55">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
+              {/* Swipe hint — mobile only */}
+              <p className="mt-4 text-center text-[11px] text-white/20 sm:hidden">
+                Swipe to compare plans
+              </p>
 
-                    {/* CTA */}
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPlan(plan.key, currentPlan)}
-                      disabled={isCurrent}
-                      className="mt-7 w-full rounded-xl py-3 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-default"
-                      style={
-                        isCurrent
-                          ? { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)' }
-                          : { background: accent.cta, color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }
-                      }
-                    >
-                      {isCurrent ? 'Your current plan' : PLAN_CTA[plan.key]}
-                    </button>
-                  </motion.div>
-                );
-              })}
+              <p className="mt-5 text-center text-[11px] text-white/20">
+                Subscriptions and payments are coming soon.
+              </p>
             </div>
-
-            {/* Fine print */}
-            <p className="mt-8 text-center text-xs text-white/25">
-              Subscriptions and payments are coming soon — you'll be among the first to know.
-            </p>
           </motion.div>
-        ) : (
+        )}
+
+        {/* Top-up tab */}
+        {activeTab === 'topup' && (
           <motion.div
             key="topup"
-            initial={{ opacity: 0, x: 10 }}
+            initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, x: 8 }}
+            transition={{ duration: 0.18 }}
             className="max-w-2xl"
           >
-            <p className="text-base text-white/45">
+            <p className="text-sm sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
               Need more? Add extra Sommelier Credits anytime — they stack on top of your
               monthly allowance and never expire.
             </p>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {TOP_UP_OPTIONS.map((opt, i) => (
                 <motion.button
                   key={opt.credits}
                   type="button"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: i * 0.08 }}
+                  transition={{ duration: 0.22, delay: i * 0.07 }}
                   onClick={() => handleTopUp(opt.credits, opt.price)}
-                  className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-6 py-5 text-left transition-all hover:border-white/20 hover:bg-white/7 active:scale-[0.98]"
+                  className="group flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition-all active:scale-[0.98]"
+                  style={{ borderColor: 'var(--border-medium)', background: 'var(--bg-muted)' }}
                 >
                   <div>
-                    <div className="flex items-center gap-2.5">
-                      <Zap
-                        size={16}
-                        className="text-white/35 transition-colors group-hover:text-amber-400"
-                      />
-                      <span className="text-lg font-bold text-white">{opt.label}</span>
+                    <div className="flex items-center gap-2">
+                      <Zap size={15} style={{ color: 'var(--text-tertiary)' }} />
+                      <span className="text-base font-bold" style={{ color: 'var(--text-heading)' }}>
+                        {opt.label}
+                      </span>
                     </div>
-                    <p className="mt-1.5 text-sm text-white/40">
-                      One-time purchase — no subscription required
+                    <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      One-time purchase — no subscription
                     </p>
                   </div>
-                  <div className="shrink-0 pl-4 text-right">
-                    <span className="text-2xl font-bold text-white">${opt.price}</span>
-                    <ArrowRight
-                      size={16}
-                      className="ml-1.5 inline text-white/25 transition-colors group-hover:text-white/60"
-                    />
+                  <div className="shrink-0 pl-4">
+                    <span className="text-xl font-bold" style={{ color: 'var(--text-heading)' }}>
+                      ${opt.price}
+                    </span>
+                    <ArrowRight size={13} className="ml-1 inline" style={{ color: 'var(--text-tertiary)' }} />
                   </div>
                 </motion.button>
               ))}
             </div>
 
-            {/* Explainer */}
-            <div className="mt-8 rounded-2xl border border-white/8 bg-white/3 px-5 py-5">
-              <h3 className="text-sm font-semibold text-white/70 mb-3">
+            {/* How it works */}
+            <div
+              className="mt-7 rounded-2xl border p-5"
+              style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-muted)' }}
+            >
+              <h3 className="mb-3 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                 How Sommelier Credits work
               </h3>
               <ul className="space-y-3">
                 {[
                   { icon: <Sparkles size={12} />, text: 'Each Sommelier conversation, wine analysis, or label scan uses a small number of credits.' },
-                  { icon: <Check size={12} />, text: 'Monthly plan credits reset on the 1st of each month.' },
-                  { icon: <Zap size={12} />, text: 'Top-up credits never expire and are used after your monthly allowance runs out.' },
+                  { icon: <Check size={12} />,    text: 'Monthly plan credits reset on the 1st of each month.' },
+                  { icon: <Zap size={12} />,      text: 'Top-up credits never expire and are used after your monthly allowance runs out.' },
                 ].map(({ icon, text }) => (
-                  <li key={text} className="flex items-start gap-3 text-sm text-white/40">
-                    <span className="mt-0.5 shrink-0 text-white/25">{icon}</span>
+                  <li key={text} className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                    <span className="mt-0.5 shrink-0 opacity-50">{icon}</span>
                     {text}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <p className="mt-6 text-center text-xs text-white/25">
-              Payments coming soon — you'll be the first to know when top-ups go live.
+            <p className="mt-5 text-center text-xs" style={{ color: 'var(--text-tertiary)', opacity: 0.5 }}>
+              Payments coming soon — you'll be the first to know.
             </p>
           </motion.div>
         )}

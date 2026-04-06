@@ -94,7 +94,7 @@ function PlanCard({
 
   return (
     <div
-      className="relative flex flex-col rounded-2xl border p-5 transition-all"
+      className="relative flex w-[72vw] max-w-[260px] shrink-0 snap-center flex-col rounded-2xl border p-5 transition-all sm:w-auto sm:max-w-none sm:shrink"
       style={{
         background: isHighlighted ? PLAN_GRADIENT[plan.key] : 'rgba(255,255,255,0.03)',
         borderColor: isHighlighted
@@ -267,7 +267,7 @@ export function PricingModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl overflow-y-auto rounded-t-3xl sm:inset-0 sm:my-auto sm:max-h-[90vh] sm:rounded-3xl"
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl overflow-y-auto rounded-t-3xl max-h-[92vh] sm:inset-0 sm:my-auto sm:max-h-[90vh] sm:rounded-3xl"
             style={{
               background: 'linear-gradient(160deg, #0e0c1b 0%, #13101f 60%, #0e0c1b 100%)',
               boxShadow: '0 -8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07)',
@@ -363,7 +363,7 @@ export function PricingModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -8 }}
                     transition={{ duration: 0.18 }}
-                    className="grid gap-4 sm:grid-cols-3"
+                    className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-4"
                   >
                     {PLANS.map((plan) => (
                       <PlanCard

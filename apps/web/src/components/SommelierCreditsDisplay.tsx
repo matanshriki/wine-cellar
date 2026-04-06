@@ -46,19 +46,24 @@ export function SommelierCreditsDisplay({
   const isBlocked   = creditEnforcementEnabled && effectiveBalance === 0;
 
   // ── Compact badge (for nav bar / sidebar) ────────────────────────────────
+  // Uses CSS variables so it's visible in both light (white nav) and dark themes.
   if (compact) {
+    const badgeStyle: React.CSSProperties = isBlocked
+      ? { background: 'rgba(220,38,38,0.1)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.18)' }
+      : isLowBalance
+      ? { background: 'rgba(217,119,6,0.1)', color: '#d97706', border: '1px solid rgba(217,119,6,0.18)' }
+      : {
+          background: 'var(--bg-muted)',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border-medium)',
+        };
+
     return (
       <button
         type="button"
         onClick={onUpgradeClick}
-        className={[
-          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-          isBlocked
-            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-            : isLowBalance
-            ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-            : 'bg-white/5 text-white/60 hover:bg-white/10',
-        ].join(' ')}
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-opacity hover:opacity-80 active:opacity-60"
+        style={badgeStyle}
         aria-label={balanceLabel}
       >
         <Sparkles size={12} />
