@@ -205,7 +205,7 @@ export function UpgradePage() {
               style={{ background: 'linear-gradient(160deg, #11101e 0%, #0e0c1b 100%)' }}
             >
               {/* Plan grid: snap-scroll carousel on mobile, 3-col grid on sm+ */}
-              <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-5">
+              <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-5">
                 {PLANS.map((plan) => {
                   const isCurrent = currentPlan === plan.key;
                   const accent = PLAN_ACCENT[plan.key as keyof typeof PLAN_ACCENT];

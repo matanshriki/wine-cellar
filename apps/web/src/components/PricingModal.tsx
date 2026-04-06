@@ -363,7 +363,7 @@ export function PricingModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -8 }}
                     transition={{ duration: 0.18 }}
-                    className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-4"
+                    className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-4"
                   >
                     {PLANS.map((plan) => (
                       <PlanCard
