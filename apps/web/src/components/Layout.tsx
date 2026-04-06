@@ -466,8 +466,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Mobile Floating Footer with Camera FAB — hidden while the PWA install prompt is open or on the upgrade/pricing page */}
-      {!pwaPrompt.isVisible && location.pathname !== '/upgrade' && (
+      {/* Mobile Floating Footer with Camera FAB — hidden while the PWA install prompt is open, the pricing modal is open, or on the upgrade page */}
+      {!pwaPrompt.isVisible && !pricingOpen && location.pathname !== '/upgrade' && (
         <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
       )}
 
