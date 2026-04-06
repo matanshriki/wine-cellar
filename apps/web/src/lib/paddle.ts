@@ -10,6 +10,7 @@ import { initializePaddle, type Paddle, type CheckoutOpenOptions } from '@paddle
 
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
 const ENVIRONMENT  = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as 'sandbox' | 'production';
+const API_BASE     = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 let paddleInstance: Paddle | null = null;
 let initPromise: Promise<Paddle | null> | null = null;
@@ -67,8 +68,8 @@ export async function openCheckout(
     Object.entries(params).filter(([, v]) => Boolean(v)) as [string, string][],
   ).toString();
 
-  // Fetch server-resolved config
-  const resp = await fetch(`/api/billing/checkout-config?${query}`, {
+  // Fetch server-resolved config (use absolute API URL to avoid hitting the SPA server)
+  const resp = await fetch(`${API_BASE}/api/billing/checkout-config?${query}`, {
     headers: { Authorization: `Bearer ${options?.authToken ?? ''}` },
   });
 
@@ -111,7 +112,7 @@ export async function openCheckout(
  * Fetches from our server which calls the Paddle API.
  */
 export async function getPortalUrl(authToken: string): Promise<string> {
-  const resp = await fetch('/api/billing/portal', {
+  const resp = await fetch(`${API_BASE}/api/billing/portal`, {
     headers: { Authorization: `Bearer ${authToken}` },
   });
   if (!resp.ok) {
