@@ -83,18 +83,13 @@ export async function openCheckout(
   const paddle = await getPaddle();
   if (!paddle) throw new Error('Paddle SDK not available');
 
+  // Pre-fill the customer email if we have it (Paddle handles returning customers by email)
+  // Do NOT pass paddleCustomerId into the customer object — not a valid overlay field.
   const checkoutOpts: CheckoutOpenOptions = {
     items: [{ priceId: cfg.priceId, quantity: 1 }],
     customData: { userId: cfg.userId },
+    ...(cfg.email ? { customer: { email: cfg.email } } : {}),
   };
-
-  if (cfg.email) {
-    checkoutOpts.customer = { email: cfg.email };
-  }
-  if (cfg.paddleCustomerId) {
-    // If the user already has a Paddle customer, pass their ID to avoid duplicates
-    checkoutOpts.customer = { id: cfg.paddleCustomerId } as any;
-  }
 
   paddle.Checkout.open({
     ...checkoutOpts,
@@ -102,7 +97,8 @@ export async function openCheckout(
       displayMode: 'overlay',
       theme: 'dark',
       locale: 'en',
-      successUrl: `${window.location.origin}/upgrade?success=1`,
+      // successUrl is for redirect mode only — overlay uses the onComplete event
+      // After payment the webhook provisions credits; the page can poll for changes
     },
   });
 }
