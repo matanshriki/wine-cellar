@@ -216,17 +216,25 @@ export function LoginPage() {
           </div>
         </div>
         
-        {/* Footer with Privacy Policy Link - Under login box */}
+        {/* Footer with legal links - Under login box */}
         <div className="mt-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span>© {new Date().getFullYear()} Wine Cellar Brain</span>
             <span>•</span>
-            <a 
+            <a
               href="/privacy"
               className="underline hover:opacity-70 transition-opacity"
               style={{ color: 'var(--wine-600)' }}
             >
               Privacy Policy
+            </a>
+            <span>•</span>
+            <a
+              href="/terms"
+              className="underline hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--wine-600)' }}
+            >
+              Terms &amp; Conditions
             </a>
           </div>
         </div>

@@ -374,10 +374,32 @@ export function AboutPage() {
         </div>
       </motion.section>
 
+      {/* ── Legal links ──────────────────────────────────────────────────── */}
+      <motion.div
+        {...item}
+        className="flex items-center justify-center gap-3 mt-10 mb-1"
+      >
+        <a
+          href="/privacy"
+          className="text-xs underline hover:opacity-70 transition-opacity"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          Privacy Policy
+        </a>
+        <span className="text-xs" style={{ color: 'var(--border-medium)' }}>·</span>
+        <a
+          href="/terms"
+          className="text-xs underline hover:opacity-70 transition-opacity"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          Terms &amp; Conditions
+        </a>
+      </motion.div>
+
       {/* ── Footer note ──────────────────────────────────────────────────── */}
       <motion.p
         {...item}
-        className="text-center text-xs mt-12 mb-2"
+        className="text-center text-xs mt-3 mb-2"
         style={{ color: 'var(--text-tertiary)', letterSpacing: '0.02em' }}
       >
         {t('about.footerNote')}

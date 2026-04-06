@@ -27,6 +27,7 @@ import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
 import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
 import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
+import TermsPage from './pages/TermsPage'; // Terms & Conditions (required for subscription model)
 import { AboutPage } from './pages/AboutPage';
 import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
 import { UpgradePage } from './pages/UpgradePage'; // Sommelier Credits — flagged users only
@@ -232,6 +233,10 @@ function AppRoutes() {
       <Route
         path="/privacy"
         element={<PrivacyPage />}
+      />
+      <Route
+        path="/terms"
+        element={<TermsPage />}
       />
       <Route
         path="/about"
