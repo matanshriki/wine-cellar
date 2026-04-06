@@ -41,6 +41,7 @@ interface ReviewBottle extends ExtractedBottleData {
 export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles, preScannedData }: Props) {
   const { t } = useTranslation();
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const hasInitializedBottles = useRef(false);
   
   const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving'>(
     preScannedData ? 'review' : 'upload'
@@ -51,9 +52,20 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
   const [bottles, setBottles] = useState<ReviewBottle[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  // Process pre-scanned data from smart scan (if provided)
+  // Reset the initialization flag whenever the modal closes so it re-runs on next open
   useEffect(() => {
-    if (preScannedData && isOpen) {
+    if (!isOpen) {
+      hasInitializedBottles.current = false;
+    }
+  }, [isOpen]);
+
+  // Process pre-scanned data from smart scan (if provided).
+  // Guard with a ref so this only runs once per open session — without it,
+  // any re-render that produces a new `existingBottles` reference (e.g. after
+  // the user toggles a checkbox) would reset all selections back to defaults.
+  useEffect(() => {
+    if (preScannedData && isOpen && !hasInitializedBottles.current) {
+      hasInitializedBottles.current = true;
       console.log('[MultiBottleImport] Processing pre-scanned data:', preScannedData.bottles.length, 'bottles');
       
       // Convert to review bottles
@@ -77,7 +89,8 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
       setImageBucket(preScannedData.imageBucket ?? 'labels');
       setStep('review');
     }
-  }, [preScannedData, isOpen, existingBottles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preScannedData, isOpen]);
 
   const handleFileSelect = async (file: File) => {
     if (!file) return;
