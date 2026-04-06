@@ -15,6 +15,7 @@ import { recommendCellar } from '../services/cellarAgent/orchestrator.js';
 import { saveSommelierFeedback } from '../services/cellarAgent/sommelierActions.js';
 import { updateRecommendationOutcome } from '../services/cellarAgent/sommelierRepo.js';
 import type { RecommendationOutcome } from '../services/cellarAgent/sommelierTypes.js';
+import { processAiCreditUsage, checkCreditBalance } from '../services/creditService.js';
 
 export const agentRouter = Router();
 
@@ -213,6 +214,31 @@ agentRouter.post(
         return res.status(400).json({ error: 'Cellar context is required' });
       }
 
+      // ── Credit pre-flight check (fast-fail when enforcement is enabled) ──
+      // During dark launch enforcement is OFF for all users → always passes.
+      // When Stage 3 begins (credit_enforcement_enabled = true), this gate
+      // will block users with insufficient Sommelier Credits before we waste
+      // an OpenAI request.
+      const creditCheck = await checkCreditBalance(req.userId!, 'sommelier_chat_message');
+      if (!creditCheck.allowed) {
+        console.log(
+          '[Sommelier]',
+          JSON.stringify({
+            phase: 'credit_block',
+            user: req.userId?.slice(0, 8),
+            reason: creditCheck.reason,
+            balance: creditCheck.effectiveBalance,
+            required: creditCheck.required,
+          }),
+        );
+        return res.status(402).json({
+          error: 'insufficient_credits',
+          message: 'You have used all your Sommelier Credits for this period.',
+          effectiveBalance: creditCheck.effectiveBalance,
+          required: creditCheck.required,
+        });
+      }
+
       console.log(
         '[Sommelier]',
         JSON.stringify({
@@ -242,14 +268,38 @@ agentRouter.post(
 
       if (!recommendation) {
         console.error('[Sommelier]', JSON.stringify({ phase: 'recommend_http', error: 'empty_result' }));
+        // Log failed usage — no credits charged
+        void processAiCreditUsage({
+          userId: req.userId!,
+          actionType: 'sommelier_chat_message',
+          requestStatus: 'failed',
+          metadata: { phase: 'empty_result' },
+        });
         return res.status(500).json({
           error: 'Failed to generate valid recommendation',
         });
       }
 
       const duration = Date.now() - startTime;
-      const meta = (recommendation as { agentMeta?: { routedAction?: string; processingMode?: string; actionResult?: string } })
+      const meta = (recommendation as { agentMeta?: { routedAction?: string; processingMode?: string; actionResult?: string; model?: string; usage?: { prompt_tokens?: number; completion_tokens?: number } } })
         .agentMeta;
+
+      // ── Log successful usage (best-effort, non-blocking) ──
+      void processAiCreditUsage({
+        userId:        req.userId!,
+        actionType:    'sommelier_chat_message',
+        requestStatus: 'success',
+        modelName:     meta?.model ?? null,
+        inputTokens:   meta?.usage?.prompt_tokens ?? null,
+        outputTokens:  meta?.usage?.completion_tokens ?? null,
+        metadata: {
+          processingMode: meta?.processingMode ?? null,
+          routedAction:   meta?.routedAction ?? null,
+          cellarEntries:  cellarContext.bottles.length,
+          durationMs:     duration,
+        },
+      });
+
       console.log(
         '[Sommelier]',
         JSON.stringify({
@@ -257,7 +307,6 @@ agentRouter.post(
           user: req.userId?.slice(0, 8),
           ms: duration,
           responseType: (recommendation as { type?: string })?.type ?? 'message',
-          /** deterministic_action = routed server action; orchestrated_shortlist = real agent shortlist+LLM; legacy_full_cellar = degraded */
           processingMode: meta?.processingMode ?? null,
           routedAction: meta?.routedAction ?? null,
           actionResult: meta?.actionResult ?? null,
@@ -276,6 +325,13 @@ agentRouter.post(
           err: error?.message?.slice(0, 120),
         })
       );
+      // Log error usage — no credits charged
+      void processAiCreditUsage({
+        userId:        req.userId!,
+        actionType:    'sommelier_chat_message',
+        requestStatus: 'error',
+        metadata:      { durationMs: duration, errMsg: error?.message?.slice(0, 120) },
+      });
       return res.status(500).json({ 
         error: 'Failed to generate recommendation. Please try again.' 
       });
@@ -400,11 +456,27 @@ agentRouter.post(
       const duration = Date.now() - startTime;
       console.log(`[Sommelier] Transcription | user: ${req.userId?.substring(0, 8)}... | duration: ${duration}ms`);
 
+      // Log transcription usage (0 credits — supporting feature, not charged separately).
+      // The resulting text feeds into a chat message which is charged via /recommend.
+      void processAiCreditUsage({
+        userId:        req.userId!,
+        actionType:    'voice_transcription',
+        requestStatus: 'success',
+        modelName:     'whisper-1',
+        metadata:      { durationMs: duration, textLength: transcription.text.length },
+      });
+
       return res.json({ text: transcription.text });
       
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.error('[Sommelier] Transcription error:', error.message, `| duration: ${duration}ms`);
+      void processAiCreditUsage({
+        userId:        req.userId!,
+        actionType:    'voice_transcription',
+        requestStatus: 'error',
+        metadata:      { durationMs: duration, errMsg: error?.message?.slice(0, 120) },
+      });
       return res.status(500).json({ 
         error: 'Failed to transcribe audio' 
       });

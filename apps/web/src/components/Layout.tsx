@@ -16,6 +16,8 @@ import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { CompactThemeToggle } from './ThemeToggle';
 import { SommelierChatButton } from './SommelierChatButton';
+import { SommelierCreditsDisplay } from './SommelierCreditsDisplay';
+import { PricingModal } from './PricingModal';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
@@ -24,6 +26,7 @@ import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { 
@@ -432,6 +435,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <CompactThemeToggle />
               <LanguageSwitcher />
+              {/* Sommelier Credits badge — only renders for monetization-enabled users */}
+              <SommelierCreditsDisplay
+                compact
+                onUpgradeClick={() => setPricingOpen(true)}
+              />
               <UserMenu />
             </div>
           </div>
@@ -582,6 +590,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         isOpen={showCompleteProfile}
         onComplete={handleProfileComplete}
         currentName={profile?.display_name || ''}
+      />
+
+      {/* Sommelier Credits pricing modal — dark launch, only for monetization-enabled users */}
+      <PricingModal
+        isOpen={pricingOpen}
+        onClose={() => setPricingOpen(false)}
       />
 
       {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}

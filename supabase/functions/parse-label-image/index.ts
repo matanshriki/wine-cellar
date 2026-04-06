@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,6 +129,29 @@ serve(async (req) => {
       hasImagePath: !!imagePath, 
       mode: mode || 'single' 
     });
+
+    // ── Credit pre-flight check ──────────────────────────────────────────────
+    // Multi-bottle / receipt mode costs more (8 credits) than single label (2 credits).
+    // Action type is confirmed after AI response (receipt vs label), but we determine
+    // cost at request time from the mode flag to fail fast before the AI call.
+    const labelActionType = isMultiBottle ? 'receipt_scan' : 'label_scan';
+    const labelCreditCost = isMultiBottle ? 8 : 2;
+
+    const labelCreditCheck = await checkCreditAccess(
+      supabaseClient, user.id, labelActionType, labelCreditCost
+    );
+    if (!labelCreditCheck.allowed) {
+      void logCreditUsage(supabaseClient, {
+        userId: user.id,
+        actionType: labelActionType,
+        creditsRequired: labelCreditCost,
+        requestStatus: 'error',
+        metadata: { blocked: true, reason: labelCreditCheck.reason, mode: mode || 'single' },
+      });
+      return insufficientCreditsResponse(
+        labelCreditCheck.effectiveBalance ?? 0, labelCreditCost, corsHeaders
+      );
+    }
 
     // Validate input
     if (!imageUrl && !imagePath) {
@@ -448,6 +472,18 @@ Return JSON in this exact format:
 
       console.log('[Parse Label] ✅ Receipt detected with', validatedItems.length, 'items');
 
+      // Log as receipt_scan (detected at response time — image was actually a receipt)
+      void logCreditUsage(supabaseClient, {
+        userId: user.id,
+        actionType: 'receipt_scan',
+        creditsRequired: 8,
+        requestStatus: 'success',
+        modelName: 'gpt-4o-mini',
+        inputTokens: openaiData.usage?.prompt_tokens ?? null,
+        outputTokens: openaiData.usage?.completion_tokens ?? null,
+        metadata: { image_type: 'receipt', item_count: validatedItems.length },
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -480,6 +516,18 @@ Return JSON in this exact format:
       }));
 
       console.log('[Parse Label] ✅ Success! Detected', validatedBottles.length, 'bottles');
+
+      // Multi-bottle label scan (charged as receipt_scan since multi-bottle mode was requested)
+      void logCreditUsage(supabaseClient, {
+        userId: user.id,
+        actionType: 'receipt_scan',
+        creditsRequired: 8,
+        requestStatus: 'success',
+        modelName: 'gpt-4o-mini',
+        inputTokens: openaiData.usage?.prompt_tokens ?? null,
+        outputTokens: openaiData.usage?.completion_tokens ?? null,
+        metadata: { image_type: 'label', bottle_count: validatedBottles.length, mode: 'multi-bottle' },
+      });
 
       return new Response(
         JSON.stringify({
@@ -524,6 +572,18 @@ Return JSON in this exact format:
           : 'low';
 
     console.log('[Parse Label] ✅ Success! Overall confidence:', overallConfidence);
+
+    // Single label scan
+    void logCreditUsage(supabaseClient, {
+      userId: user.id,
+      actionType: 'label_scan',
+      creditsRequired: 2,
+      requestStatus: 'success',
+      modelName: 'gpt-4o-mini',
+      inputTokens: openaiData.usage?.prompt_tokens ?? null,
+      outputTokens: openaiData.usage?.completion_tokens ?? null,
+      metadata: { image_type: 'label', overall_confidence: overallConfidence, fields_extracted: totalFields },
+    });
 
     return new Response(
       JSON.stringify({

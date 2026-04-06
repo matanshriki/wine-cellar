@@ -8,6 +8,7 @@ import {
   buildWineAnalysisUserPrompt,
   normalizeBarrelFields,
 } from '../_shared/wineAiAnalysis.ts'
+import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,7 +94,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { bottle_id, wine_data, wine_id } = await req.json()
+    const { bottle_id, wine_data, wine_id, trigger_source } = await req.json()
     
     if (!bottle_id || !wine_data) {
       throw new Error('Missing bottle_id or wine_data')
@@ -101,6 +102,24 @@ serve(async (req) => {
 
     const wineData = wine_data as WineData
     const language = wineData.language || 'en' // Default to English
+
+    // ── Credit pre-flight check ──────────────────────────────────────────────
+    // trigger_source: 'user' (manual) | 'system' (auto after bottle creation)
+    // During dark launch enforcement is OFF → always passes.
+    // When Stage 3 enforcement is enabled: system-triggered calls with 0 balance
+    // will be blocked. Stage 3 guidance: consider setting wine_bottle_analysis
+    // cost to 0 for system-triggered paths, or add a bypass flag here.
+    const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'wine_bottle_analysis', 1)
+    if (!creditCheck.allowed) {
+      void logCreditUsage(supabaseAdmin, {
+        userId: user.id,
+        actionType: 'wine_bottle_analysis',
+        creditsRequired: 1,
+        requestStatus: 'error',
+        metadata: { blocked: true, reason: creditCheck.reason, trigger_source: trigger_source ?? 'user' },
+      })
+      return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, 1, corsHeaders)
+    }
 
     console.log('[Analyze Wine] Generating analysis in language:', language)
 
@@ -144,6 +163,14 @@ serve(async (req) => {
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text()
       console.error('OpenAI API error:', errorData)
+      void logCreditUsage(supabaseAdmin, {
+        userId: user.id,
+        actionType: 'wine_bottle_analysis',
+        creditsRequired: 1,
+        requestStatus: 'failed',
+        modelName: 'gpt-4o-mini',
+        metadata: { openai_status: openaiResponse.status, trigger_source: trigger_source ?? 'user' },
+      })
       throw new Error(`OpenAI API error: ${openaiResponse.status}`)
     }
 
@@ -190,6 +217,22 @@ serve(async (req) => {
         console.error('[Analyze Wine] Failed to update wines row:', wineUpdateError)
       }
     }
+
+    // ── Log successful credit usage (best-effort, non-blocking) ────────────
+    void logCreditUsage(supabaseAdmin, {
+      userId: user.id,
+      actionType: 'wine_bottle_analysis',
+      creditsRequired: 1,
+      requestStatus: 'success',
+      modelName: 'gpt-4o-mini',
+      inputTokens: openaiData.usage?.prompt_tokens ?? null,
+      outputTokens: openaiData.usage?.completion_tokens ?? null,
+      metadata: {
+        language,
+        trigger_source: trigger_source ?? 'user',
+        wine_name: wineData.wine_name,
+      },
+    })
 
     // Return analysis result
     return new Response(

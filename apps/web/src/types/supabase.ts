@@ -401,6 +401,118 @@ export interface Database {
           last_message_at?: string
         }
       }
+      // ── Sommelier Credits (Phase 1) ─────────────────────────────────
+      user_entitlements: {
+        Row: {
+          user_id: string
+          monetization_enabled: boolean
+          credit_enforcement_enabled: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          monetization_enabled?: boolean
+          credit_enforcement_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          monetization_enabled?: boolean
+          credit_enforcement_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_ai_credits: {
+        Row: {
+          id: string
+          user_id: string
+          monthly_credit_limit: number
+          credit_balance: number
+          bonus_credits: number
+          plan_key: string | null
+          billing_status: string | null
+          current_period_start: string | null
+          current_period_end: string | null
+          lifetime_credits_used: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          monthly_credit_limit?: number
+          credit_balance?: number
+          bonus_credits?: number
+          plan_key?: string | null
+          billing_status?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          lifetime_credits_used?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          monthly_credit_limit?: number
+          credit_balance?: number
+          bonus_credits?: number
+          plan_key?: string | null
+          billing_status?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          lifetime_credits_used?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ai_usage_events: {
+        Row: {
+          id: string
+          user_id: string
+          action_type: string
+          credits_used: number
+          estimated_cost_usd: number | null
+          request_status: string
+          request_id: string | null
+          model_name: string | null
+          input_tokens: number | null
+          output_tokens: number | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action_type: string
+          credits_used?: number
+          estimated_cost_usd?: number | null
+          request_status?: string
+          request_id?: string | null
+          model_name?: string | null
+          input_tokens?: number | null
+          output_tokens?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action_type?: string
+          credits_used?: number
+          estimated_cost_usd?: number | null
+          request_status?: string
+          request_id?: string | null
+          model_name?: string | null
+          input_tokens?: number | null
+          output_tokens?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+      }
     }
     Views: {
       bottles_with_wine_info: {
@@ -440,13 +552,40 @@ export interface Database {
           vivino_wine_id: string | null
         }
       }
+      ai_credit_usage_summary: {
+        Row: {
+          user_id: string
+          action_type: string
+          total_events: number
+          total_credits_used: number
+          total_estimated_cost_usd: number | null
+          total_input_tokens: number | null
+          total_output_tokens: number | null
+          success_count: number
+          blocked_count: number
+          last_event_at: string | null
+        }
+      }
     }
     Functions: {
-      [_ in never]: never
+      process_ai_credit_usage: {
+        Args: {
+          p_user_id: string
+          p_action_type: string
+          p_credits_required: number
+          p_request_id?: string | null
+          p_model_name?: string | null
+          p_input_tokens?: number | null
+          p_output_tokens?: number | null
+          p_estimated_cost_usd?: number | null
+          p_metadata?: Json
+          p_request_status?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
     }
   }
 }
-

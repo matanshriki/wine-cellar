@@ -17,6 +17,7 @@ import {
   normalizeBarrelFields,
   type WineAnalysisInput,
 } from '../_shared/wineAiAnalysis.ts';
+import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -94,6 +95,26 @@ serve(async (req) => {
     }
 
     console.log('[Analyze Cellar] User authenticated:', user.id);
+
+    // ── Credit pre-flight check ──────────────────────────────────────────────
+    // cellar_analysis = 10 credits per bulk operation call.
+    // During dark launch enforcement is OFF → always passes.
+    const cellarCreditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'cellar_analysis', 10)
+    if (!cellarCreditCheck.allowed) {
+      void logCreditUsage(supabaseAdmin, {
+        userId: user.id,
+        actionType: 'cellar_analysis',
+        creditsRequired: 10,
+        requestStatus: 'error',
+        metadata: { blocked: true, reason: cellarCreditCheck.reason },
+      })
+      const corsH = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      }
+      return insufficientCreditsResponse(cellarCreditCheck.effectiveBalance ?? 0, 10, corsH)
+    }
 
     // Parse request body
     const body: AnalysisRequest = await req.json();
@@ -201,6 +222,24 @@ serve(async (req) => {
 
     console.log('[Analyze Cellar] ========== COMPLETE ==========');
     console.log('[Analyze Cellar] Success:', successCount, 'Failed:', failedCount, 'Skipped:', skippedCount);
+
+    // ── Log credit usage for the batch (best-effort, non-blocking) ──────────
+    // Charge once per batch call (not per bottle).
+    // requestStatus = 'success' if at least one bottle succeeded; 'failed' otherwise.
+    void logCreditUsage(supabaseAdmin, {
+      userId: user.id,
+      actionType: 'cellar_analysis',
+      creditsRequired: 10,
+      requestStatus: successCount > 0 ? 'success' : 'failed',
+      modelName: 'gpt-4o-mini',
+      metadata: {
+        mode,
+        bottlesSucceeded: successCount,
+        bottlesFailed: failedCount,
+        bottlesSkipped: skippedCount,
+        language,
+      },
+    })
 
     return corsResponse({
       success: true,

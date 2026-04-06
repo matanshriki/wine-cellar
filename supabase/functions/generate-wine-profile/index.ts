@@ -4,6 +4,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,6 +124,19 @@ serve(async (req) => {
 
     console.log('[generate-wine-profile] ✅ User authenticated:', user.id)
 
+    // ── Credit pre-flight check ──────────────────────────────────────────────
+    const profileCreditCheck = await checkCreditAccess(supabase, user.id, 'wine_profile_generation', 1)
+    if (!profileCreditCheck.allowed) {
+      void logCreditUsage(supabase, {
+        userId: user.id,
+        actionType: 'wine_profile_generation',
+        creditsRequired: 1,
+        requestStatus: 'error',
+        metadata: { blocked: true, reason: profileCreditCheck.reason },
+      })
+      return insufficientCreditsResponse(profileCreditCheck.effectiveBalance ?? 0, 1, corsHeaders)
+    }
+
     // Parse request body
     const input: WineProfileInput = await req.json()
 
@@ -236,6 +250,14 @@ Base your analysis on:
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text()
       console.error('[generate-wine-profile] OpenAI error:', errorText)
+      void logCreditUsage(supabase, {
+        userId: user.id,
+        actionType: 'wine_profile_generation',
+        creditsRequired: 1,
+        requestStatus: 'failed',
+        modelName: 'gpt-4o-mini',
+        metadata: { openai_status: openaiResponse.status, wine_name: input.name },
+      })
       throw new Error(`OpenAI API error: ${openaiResponse.status} ${errorText}`)
     }
 
@@ -276,6 +298,22 @@ Base your analysis on:
 
       console.log('[generate-wine-profile] ✅ Profile persisted to DB')
     }
+
+    // ── Log successful credit usage (best-effort) ────────────────────────────
+    void logCreditUsage(supabase, {
+      userId: user.id,
+      actionType: 'wine_profile_generation',
+      creditsRequired: 1,
+      requestStatus: 'success',
+      modelName: 'gpt-4o-mini',
+      inputTokens: openaiData.usage?.prompt_tokens ?? null,
+      outputTokens: openaiData.usage?.completion_tokens ?? null,
+      metadata: {
+        wine_name: input.name,
+        wine_id: input.wine_id ?? null,
+        confidence: profile.confidence,
+      },
+    })
 
     // Return success
     return new Response(

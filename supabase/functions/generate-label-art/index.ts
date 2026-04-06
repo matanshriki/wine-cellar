@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,6 +173,24 @@ serve(async (req) => {
 
     console.log('[AI Label] ✅ Authorization verified');
 
+    // ── Credit pre-flight check ──────────────────────────────────────────────
+    // DALL-E 3 is the most expensive AI call. Check BEFORE the AI call.
+    // Skip pre-flight if this will be served from cache (no AI cost).
+    const willUseCache = wine.generated_image_prompt_hash === promptHash && wine.generated_image_path;
+    if (!willUseCache) {
+      const artCreditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'label_art_generation', 5)
+      if (!artCreditCheck.allowed) {
+        void logCreditUsage(supabaseAdmin, {
+          userId: user.id,
+          actionType: 'label_art_generation',
+          creditsRequired: 5,
+          requestStatus: 'error',
+          metadata: { blocked: true, reason: artCreditCheck.reason, wine_id: wineId },
+        })
+        return insufficientCreditsResponse(artCreditCheck.effectiveBalance ?? 0, 5, corsHeaders)
+      }
+    }
+
     // Check for idempotency: if prompt hash matches and image exists, return cached
     if (wine.generated_image_prompt_hash === promptHash && wine.generated_image_path) {
       console.log('[AI Label] 🎨 Returning cached image:', wine.generated_image_path);
@@ -227,6 +246,15 @@ serve(async (req) => {
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
       console.error('[AI Label] ❌ OpenAI error:', openaiResponse.status, errorText);
+
+      void logCreditUsage(supabaseAdmin, {
+        userId: user.id,
+        actionType: 'label_art_generation',
+        creditsRequired: 5,
+        requestStatus: 'failed',
+        modelName: Deno.env.get('AI_IMAGE_MODEL') || 'dall-e-3',
+        metadata: { openai_status: openaiResponse.status, wine_id: wineId, style },
+      });
       
       // Check if it's a billing/credit issue
       if (openaiResponse.status === 429 || errorText.includes('insufficient_quota') || errorText.includes('billing')) {
@@ -317,6 +345,22 @@ serve(async (req) => {
       .getPublicUrl(storagePath);
 
     console.log('[AI Label] ✅ SUCCESS! Image available at:', publicUrlData.publicUrl);
+
+    // ── Log successful credit usage (best-effort) ────────────────────────────
+    void logCreditUsage(supabaseAdmin, {
+      userId: user.id,
+      actionType: 'label_art_generation',
+      creditsRequired: 5,
+      requestStatus: 'success',
+      modelName: Deno.env.get('AI_IMAGE_MODEL') || 'dall-e-3',
+      metadata: {
+        wine_id: wineId,
+        bottle_id: bottleId ?? null,
+        style,
+        image_size: Deno.env.get('AI_IMAGE_SIZE') || '1024x1024',
+        storage_path: storagePath,
+      },
+    });
 
     return new Response(
       JSON.stringify({

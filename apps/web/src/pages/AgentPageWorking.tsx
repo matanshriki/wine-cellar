@@ -34,6 +34,8 @@ import { BotSingleWineResultCard } from '../components/BotSingleWineResultCard';
 import * as labelArtService from '../services/labelArtService';
 import { trackSommelier } from '../services/analytics';
 import { addWishlistItem } from '../services/wishlistService';
+import { SommelierCreditsDisplay } from '../components/SommelierCreditsDisplay';
+import { PricingModal } from '../components/PricingModal';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -211,6 +213,7 @@ export function AgentPageWorking() {
   const [currentConversation, setCurrentConversation] = useState<SommelierConversation | null>(null);
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -827,7 +830,13 @@ export function AgentPageWorking() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Sommelier Credits badge — only renders for monetization-enabled users */}
+            <SommelierCreditsDisplay
+              compact
+              onUpgradeClick={() => setPricingOpen(true)}
+            />
+
             {/* History / sidebar toggle */}
             <button
               onClick={openSidebar}
@@ -1352,6 +1361,12 @@ export function AgentPageWorking() {
         bottle={selectedBottle}
         onMarkAsOpened={handleMarkOpened}
         onRefresh={loadBottles}
+      />
+
+      {/* Sommelier Credits pricing modal — dark launch, only for monetization-enabled users */}
+      <PricingModal
+        isOpen={pricingOpen}
+        onClose={() => setPricingOpen(false)}
       />
     </>
   );

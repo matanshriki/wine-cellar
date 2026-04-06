@@ -29,7 +29,9 @@ import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
 import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
 import { AboutPage } from './pages/AboutPage';
 import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
+import { UpgradePage } from './pages/UpgradePage'; // Sommelier Credits — flagged users only
 import { OpenRitualProvider } from './contexts/OpenRitualContext'; // Global open ritual + timers
+import { useMonetizationAccess } from './hooks/useMonetizationAccess';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -180,6 +182,29 @@ function FeatureFlagRoute({
   return <>{children}</>;
 }
 
+/**
+ * MonetizationRoute: Protects routes that require monetization_enabled = true.
+ * Redirects to /cellar for all non-flagged users (default for every user).
+ * Dark launch guard — no pricing pages are publicly routable.
+ */
+function MonetizationRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
+  const { monetizationEnabled, creditsLoading } = useMonetizationAccess();
+
+  if (authLoading || creditsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen luxury-background">
+        <WineLoader variant="default" size="lg" message="Loading..." />
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+  if (!monetizationEnabled) return <Navigate to="/cellar" replace />;
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -304,6 +329,17 @@ function AppRoutes() {
               <WishlistPage />
             </Layout>
           </FeatureFlagRoute>
+        }
+      />
+      {/* Sommelier Credits / upgrade page — dark launch, monetization-flagged users only */}
+      <Route
+        path="/upgrade"
+        element={
+          <MonetizationRoute>
+            <Layout>
+              <UpgradePage />
+            </Layout>
+          </MonetizationRoute>
         }
       />
       {/* Cellar Agent — full-screen, no Layout chrome */}

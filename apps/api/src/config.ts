@@ -25,6 +25,9 @@ export const config = {
   // Try both VITE_ prefixed and non-prefixed versions
   supabaseUrl: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
   supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
+  // Service role key — used for server-side credit deduction (bypasses RLS).
+  // Must NEVER be sent to the browser or logged.
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   
   // URLs
   apiUrl: process.env.API_URL || 'http://localhost:3001',
@@ -37,5 +40,6 @@ console.log('[Config] Port:', config.port);
 console.log('[Config] OpenAI API Key:', config.openaiApiKey ? 'SET ✓' : 'NOT SET ✗');
 console.log('[Config] Supabase URL:', config.supabaseUrl ? 'SET ✓' : 'NOT SET ✗');
 console.log('[Config] Supabase Anon Key:', config.supabaseAnonKey ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] Supabase Service Role Key:', config.supabaseServiceRoleKey ? 'SET ✓' : 'NOT SET (credit deduction will be best-effort) ✗');
 console.log('[Config] Web URL:', config.webUrl);
 
