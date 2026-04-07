@@ -16,6 +16,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { CookieConsent } from './components/CookieConsent';
 import { OpenRitualProvider } from './contexts/OpenRitualContext';
 import { useMonetizationAccess } from './hooks/useMonetizationAccess';
+import { MonetizationProvider } from './contexts/MonetizationContext';
 
 // ── Lazy-loaded page chunks ────────────────────────────────────────────────────
 // Each page is code-split into its own chunk. The browser downloads only what the
@@ -385,11 +386,13 @@ export function App() {
             <WinePourProvider>
               <SupabaseAuthProvider>
                 <FeatureFlagsProvider>
-                  <AddBottleProvider>
-                    <OpenRitualProvider>
-                      <AppRoutes />
-                    </OpenRitualProvider>
-                  </AddBottleProvider>
+                  <MonetizationProvider>
+                    <AddBottleProvider>
+                      <OpenRitualProvider>
+                        <AppRoutes />
+                      </OpenRitualProvider>
+                    </AddBottleProvider>
+                  </MonetizationProvider>
                 </FeatureFlagsProvider>
               </SupabaseAuthProvider>
             </WinePourProvider>
