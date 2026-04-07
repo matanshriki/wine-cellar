@@ -80,31 +80,32 @@ export function LanguageSwitcher() {
        */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[44px] min-w-[44px]"
+        className="flex items-center gap-1.5 px-2.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         style={{
+          height: '36px',
           background: 'var(--bg-surface)',
-          borderColor: 'var(--border-medium)',
+          border: '1px solid var(--border-subtle)',
         }}
         aria-label={t('languageSwitcher.changeLanguage')}
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        {/* Current language flag - slightly smaller on mobile */}
-        <span className="text-lg sm:text-xl" role="img" aria-label={currentLanguage.name}>
+        {/* Current language flag */}
+        <span className="text-lg leading-none" role="img" aria-label={currentLanguage.name}>
           {currentLanguage.flag}
         </span>
         
-        {/* Current language code - responsive sizing */}
+        {/* Current language code */}
         <span 
-          className="text-xs sm:text-sm font-medium uppercase"
+          className="text-xs font-medium uppercase"
           style={{ color: 'var(--text-secondary)' }}
         >
           {currentLanguage.code}
         </span>
         
-        {/* Dropdown arrow - responsive sizing */}
+        {/* Dropdown arrow */}
         <svg
-          className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
+          className={`w-3 h-3 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
           style={{ color: 'var(--text-tertiary)' }}

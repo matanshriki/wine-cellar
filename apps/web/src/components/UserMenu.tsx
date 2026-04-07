@@ -109,18 +109,22 @@ export function UserMenu() {
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity min-h-[44px] px-2 sm:px-3 py-2 rounded-lg"
-        style={{ background: 'var(--interactive-hover)' }}
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity px-1.5 rounded-xl"
+        style={{
+          height: '36px',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+        }}
         aria-label={t('profile.menu.openMenu')}
         aria-expanded={isOpen}
       >
         {/* Avatar */}
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+        <div className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm overflow-hidden">
           {profile?.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt={displayName}
-              className="w-full h-full rounded-full object-cover"
+              className="w-full h-full object-cover"
             />
           ) : (
             initials
@@ -135,9 +139,9 @@ export function UserMenu() {
           {displayName}
         </span>
 
-        {/* Dropdown arrow */}
+        {/* Dropdown arrow — visible only on desktop where the name is also shown */}
         <svg
-          className={`hidden sm:block w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`hidden lg:block w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           style={{ color: 'var(--text-tertiary)' }}
           fill="none"
           stroke="currentColor"

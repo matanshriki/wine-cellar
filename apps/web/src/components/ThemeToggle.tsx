@@ -98,13 +98,12 @@ export function CompactThemeToggle() {
   return (
     <motion.button
       onClick={handleClick}
-      className="relative flex items-center justify-center rounded-full"
+      className="relative flex items-center justify-center rounded-xl"
       style={{
         width: '36px',
         height: '36px',
-        background: theme === 'white'
-          ? 'rgba(0, 0, 0, 0.04)'
-          : 'rgba(255, 255, 255, 0.06)',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-subtle)',
         color: 'var(--text-secondary)',
       }}
       whileTap={{ scale: 0.9 }}

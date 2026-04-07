@@ -53,20 +53,20 @@ export function SommelierCreditsDisplay({
       : isLowBalance
       ? { background: 'rgba(217,119,6,0.1)', color: '#d97706', border: '1px solid rgba(217,119,6,0.18)' }
       : {
-          background: 'var(--bg-muted)',
+          background: 'var(--bg-surface)',
           color: 'var(--text-secondary)',
-          border: '1px solid var(--border-medium)',
+          border: '1px solid var(--border-subtle)',
         };
 
     return (
       <button
         type="button"
         onClick={onUpgradeClick}
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-opacity hover:opacity-80 active:opacity-60"
-        style={badgeStyle}
+        className="inline-flex items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-opacity hover:opacity-80 active:opacity-60"
+        style={{ ...badgeStyle, height: '36px' }}
         aria-label={balanceLabel}
       >
-        <Sparkles size={12} />
+        <Sparkles size={13} />
         <span>{effectiveBalance}</span>
       </button>
     );
