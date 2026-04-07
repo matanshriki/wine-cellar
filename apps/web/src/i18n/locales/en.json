@@ -1272,6 +1272,71 @@
       "dismiss": "Close"
     }
   },
+  "sommelierCredits": {
+    "title": "Sommelier Credits",
+    "subtitle": "Choose the plan that fits how you discover, collect, and enjoy wine.",
+    "upgradeSubtitle": "Upgrade for deeper cellar insights and more Sommelier sessions.",
+    "tabs": {
+      "monthlyPlans": "Monthly plans",
+      "topUp": "Top-up credits"
+    },
+    "badges": {
+      "mostPopular": "Most popular",
+      "recommended": "Recommended",
+      "active": "Active"
+    },
+    "plan": {
+      "creditsPerMonth": "credits\n/ month",
+      "perMonth": "/ month",
+      "alwaysFree": "Always free",
+      "creditsRemaining": "{{count}} credit remaining",
+      "creditsRemaining_plural": "{{count}} credits remaining",
+      "creditsRemainingOf": "{{count}} credit remaining of {{limit}}",
+      "creditsRemainingOf_plural": "{{count}} credits remaining of {{limit}}"
+    },
+    "cta": {
+      "free": "Continue with Free",
+      "premium": "Upgrade to Premium",
+      "collector": "Upgrade to Collector",
+      "currentPlan": "Your current plan",
+      "openingCheckout": "Opening checkout…",
+      "back": "Back",
+      "manageBilling": "Manage billing",
+      "manageBillingLoading": "Loading…",
+      "swipeHint": "Swipe to compare plans"
+    },
+    "topUp": {
+      "description": "Need more? Add extra Sommelier Credits anytime — they stack on top of your monthly allowance and never expire.",
+      "addCredits": "Add {{credits}} Credits"
+    },
+    "footer": "Secured by Paddle · Cancel anytime",
+    "manageSubscription": "Manage subscription",
+    "lowCreditPrompt": {
+      "title": "Running low on Sommelier Credits",
+      "description": "Upgrade to keep getting deep cellar insights and personalized sommelier sessions."
+    },
+    "toast": {
+      "welcomeTitle": "Welcome to {{plan}} ✦",
+      "welcomeMessage": "{{credits}} credits are now in your account — enjoy every sip.",
+      "topUpSuccess": "Payment successful! Your credits will update shortly.",
+      "checkoutError": "Could not open checkout — please try again.",
+      "portalError": "Could not open billing portal."
+    },
+    "balance": {
+      "title": "Sommelier Credits",
+      "depleted": "All Sommelier Credits used for this period",
+      "low": "Running low — consider upgrading for deeper insights",
+      "resetsMonthly": "Credits reset monthly",
+      "actionCost": "This action uses {{count}} credit",
+      "actionCost_plural": "This action uses {{count}} credits",
+      "upgradeCta": "Upgrade for deeper cellar insights and more Sommelier sessions"
+    },
+    "planFeatures": {
+      "free": ["15 Sommelier Credits / month", "Basic cellar management", "Limited AI access"],
+      "premium": ["150 Sommelier Credits / month", "Full Sommelier access", "Advanced recommendations", "Premium cellar insights"],
+      "collector": ["500 Sommelier Credits / month", "Advanced cellar analysis", "Bulk intelligence features"]
+    }
+  },
   "about": {
     "pageTitle": "About",
     "title": "About",

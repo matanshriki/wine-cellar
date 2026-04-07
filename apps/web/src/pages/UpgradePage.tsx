@@ -23,6 +23,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, TOP_UP_OPTIONS } from '../lib/creditPolicy';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
@@ -79,6 +80,7 @@ async function getAuthToken(): Promise<string> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function UpgradePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
@@ -97,7 +99,7 @@ export function UpgradePage() {
   // Show success toast when returning from Paddle checkout
   useEffect(() => {
     if (searchParams.get('success') === '1') {
-      toast.success('Payment successful! Your credits will update shortly.');
+      toast.success(t('sommelierCredits.toast.topUpSuccess'));
       // Remove the ?success=1 param without a full navigation
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('success');
@@ -118,14 +120,14 @@ export function UpgradePage() {
           refresh();
           trackEvent('pricing_plan_purchased', { plan_key: planKey });
           toast.success(
-            `${plan?.monthlyCredits} credits are now in your account — enjoy every sip.`,
-            `Welcome to ${plan?.label} ✦`,
+            t('sommelierCredits.toast.welcomeMessage', { credits: plan?.monthlyCredits }),
+            t('sommelierCredits.toast.welcomeTitle', { plan: plan?.label }),
           );
         },
       });
     } catch (err: any) {
       console.error('[UpgradePage] Checkout error:', err);
-      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+      toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));
     } finally {
       setCheckoutLoading(null);
     }
@@ -139,7 +141,7 @@ export function UpgradePage() {
       await openCheckout({ topup: String(credits) }, { authToken: token });
     } catch (err: any) {
       console.error('[UpgradePage] Top-up error:', err);
-      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+      toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));
     } finally {
       setCheckoutLoading(null);
     }
@@ -152,7 +154,7 @@ export function UpgradePage() {
       const url = await getPortalUrl(token);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err: any) {
-      toast.error(err?.message ?? 'Could not open billing portal.');
+      toast.error(err?.message ?? t('sommelierCredits.toast.portalError'));
     } finally {
       setPortalLoading(false);
     }
@@ -180,7 +182,7 @@ export function UpgradePage() {
         style={{ color: 'var(--text-tertiary)' }}
       >
         <ArrowLeft size={14} />
-        Back
+        {t('sommelierCredits.cta.back')}
       </button>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -196,25 +198,25 @@ export function UpgradePage() {
             className="text-xs font-semibold uppercase tracking-widest"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            Sommelier Credits
+            {t('sommelierCredits.title')}
           </span>
         </div>
         <h1
           className="text-xl font-bold leading-snug sm:text-3xl"
           style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display, inherit)', letterSpacing: '-0.01em' }}
         >
-          Choose the plan that fits how you
-          <br className="hidden sm:block" /> discover, collect, and enjoy wine.
+          {t('sommelierCredits.subtitle')}
         </h1>
         <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
-          Upgrade for deeper cellar insights and more Sommelier sessions.
+          {t('sommelierCredits.upgradeSubtitle')}
         </p>
 
         {isLowBalance && (
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm font-medium text-amber-600">
             <Sparkles size={12} className="text-amber-500" />
-            {effectiveBalance} credit{effectiveBalance === 1 ? '' : 's'} remaining
-            {monthlyLimit > 0 ? ` of ${monthlyLimit}` : ''}
+            {monthlyLimit > 0
+              ? t('sommelierCredits.plan.creditsRemainingOf', { count: effectiveBalance, limit: monthlyLimit })
+              : t('sommelierCredits.plan.creditsRemaining', { count: effectiveBalance })}
           </div>
         )}
       </motion.div>
@@ -236,7 +238,7 @@ export function UpgradePage() {
                 : { color: 'var(--text-tertiary)' }
             }
           >
-            {tab === 'plans' ? 'Monthly plans' : 'Top-up credits'}
+            {tab === 'plans' ? t('sommelierCredits.tabs.monthlyPlans') : t('sommelierCredits.tabs.topUp')}
           </button>
         ))}
       </div>
@@ -269,6 +271,8 @@ export function UpgradePage() {
                   const isCurrent = currentPlan === plan.key;
                   const accent = PLAN_ACCENT[plan.key as keyof typeof PLAN_ACCENT];
 
+                  const features = t(`sommelierCredits.planFeatures.${plan.key}`, { returnObjects: true }) as string[];
+
                   return (
                     <div
                       key={plan.key}
@@ -281,7 +285,7 @@ export function UpgradePage() {
                           className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white"
                           style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
                         >
-                          Most popular
+                          {t('sommelierCredits.badges.mostPopular')}
                         </span>
                       )}
 
@@ -303,7 +307,7 @@ export function UpgradePage() {
                             }
                           >
                             <Check size={9} strokeWidth={3} />
-                            Active
+                            {t('sommelierCredits.badges.active')}
                           </span>
                         )}
                       </div>
@@ -314,24 +318,24 @@ export function UpgradePage() {
                           <span className="text-4xl font-bold tabular-nums text-white">
                             {plan.monthlyCredits}
                           </span>
-                          <span className="text-xs leading-snug text-white/35">
-                            credits<br />/ month
+                          <span className="text-xs leading-snug text-white/35" style={{ whiteSpace: 'pre-line' }}>
+                            {t('sommelierCredits.plan.creditsPerMonth')}
                           </span>
                         </div>
                         <div className="mt-1.5 text-sm text-white/50">
                           {plan.priceMonthly !== null ? (
                             <>
-                              <span className="font-semibold text-white/80">${plan.priceMonthly}</span> / month
+                              <span className="font-semibold text-white/80">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
                             </>
                           ) : (
-                            'Always free'
+                            t('sommelierCredits.plan.alwaysFree')
                           )}
                         </div>
                       </div>
 
                       {/* Features */}
                       <ul className="mt-5 flex-1 space-y-2.5">
-                        {plan.features.map((f) => (
+                        {(Array.isArray(features) ? features : plan.features).map((f) => (
                           <li key={f} className="flex items-start gap-2.5">
                             <Check size={13} className="mt-0.5 shrink-0" style={{ color: accent.check }} />
                             <span className="text-sm leading-relaxed text-white/55">{f}</span>
@@ -355,10 +359,10 @@ export function UpgradePage() {
                           <Loader2 size={14} className="animate-spin" />
                         )}
                         {isCurrent
-                          ? 'Your current plan'
+                          ? t('sommelierCredits.cta.currentPlan')
                           : checkoutLoading === `plan:${plan.key}`
-                          ? 'Opening checkout…'
-                          : PLAN_CTA[plan.key]}
+                          ? t('sommelierCredits.cta.openingCheckout')
+                          : t(`sommelierCredits.cta.${plan.key}`)}
                       </button>
                     </div>
                   );
@@ -367,11 +371,11 @@ export function UpgradePage() {
 
               {/* Swipe hint — mobile only */}
               <p className="mt-4 text-center text-[11px] text-white/20 sm:hidden">
-                Swipe to compare plans
+                {t('sommelierCredits.cta.swipeHint')}
               </p>
 
               <p className="mt-5 text-center text-[11px] text-white/25">
-                Secured by Paddle · Cancel anytime
+                {t('sommelierCredits.footer')}
                 {currentPlan && currentPlan !== 'free' && (
                   <>
                     {' · '}
@@ -381,7 +385,7 @@ export function UpgradePage() {
                       disabled={portalLoading}
                       className="underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40"
                     >
-                      {portalLoading ? 'Loading…' : 'Manage billing'}
+                      {portalLoading ? t('sommelierCredits.cta.manageBillingLoading') : t('sommelierCredits.cta.manageBilling')}
                     </button>
                   </>
                 )}
@@ -401,8 +405,7 @@ export function UpgradePage() {
             className="max-w-2xl"
           >
             <p className="text-sm sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
-              Need more? Add extra Sommelier Credits anytime — they stack on top of your
-              monthly allowance and never expire.
+              {t('sommelierCredits.topUp.description')}
             </p>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">

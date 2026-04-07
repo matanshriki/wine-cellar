@@ -15,6 +15,7 @@
 
 import React, { useEffect, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { X, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, TOP_UP_OPTIONS, type PlanDefinition } from '../lib/creditPolicy';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
@@ -86,7 +87,9 @@ function PlanCard({
   onSelect: () => void;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   const isHighlighted = plan.highlight || isRecommended;
+  const features = t(`sommelierCredits.planFeatures.${plan.key}`, { returnObjects: true }) as string[];
 
   return (
     <div
@@ -116,7 +119,7 @@ function PlanCard({
             color: '#fff',
           }}
         >
-          {isRecommended ? 'Recommended' : 'Most popular'}
+          {isRecommended ? t('sommelierCredits.badges.recommended') : t('sommelierCredits.badges.mostPopular')}
         </span>
       )}
 
@@ -150,7 +153,7 @@ function PlanCard({
             }
           >
             <Check size={9} strokeWidth={3} />
-            Active
+            {t('sommelierCredits.badges.active')}
           </span>
         )}
       </div>
@@ -161,22 +164,22 @@ function PlanCard({
           <span className="text-3xl font-bold tabular-nums text-white">
             {plan.monthlyCredits}
           </span>
-          <span className="text-xs text-white/40 leading-none">credits<br/>/ month</span>
+          <span className="text-xs text-white/40 leading-none" style={{ whiteSpace: 'pre-line' }}>{t('sommelierCredits.plan.creditsPerMonth')}</span>
         </div>
         <div className="mt-1.5">
           {plan.priceMonthly !== null ? (
             <span className="text-sm text-white/50">
-              <span className="font-medium text-white/70">${plan.priceMonthly}</span> / month
+              <span className="font-medium text-white/70">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
             </span>
           ) : (
-            <span className="text-sm font-medium text-white/50">Always free</span>
+            <span className="text-sm font-medium text-white/50">{t('sommelierCredits.plan.alwaysFree')}</span>
           )}
         </div>
       </div>
 
       {/* Features */}
       <ul className="mt-5 flex-1 space-y-2.5">
-        {plan.features.map((f) => (
+        {(Array.isArray(features) ? features : plan.features).map((f) => (
           <li key={f} className="flex items-start gap-2.5">
             <Check
               size={13}
@@ -216,7 +219,11 @@ function PlanCard({
         }
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-        {isCurrent ? 'Your current plan' : loading ? 'Opening checkout…' : PLAN_CTA[plan.key]}
+        {isCurrent
+          ? t('sommelierCredits.cta.currentPlan')
+          : loading
+          ? t('sommelierCredits.cta.openingCheckout')
+          : t(`sommelierCredits.cta.${plan.key}`)}
       </button>
     </div>
   );
@@ -230,6 +237,7 @@ export function PricingModal({
   recommendedPlanKey,
   showLowCreditPrompt = false,
 }: PricingModalProps) {
+  const { t } = useTranslation();
   const { monetizationEnabled, planKey: currentPlan, effectiveBalance, monthlyLimit, refresh } = useMonetizationAccess();
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -245,14 +253,14 @@ export function PricingModal({
           refresh();
           trackEvent('pricing_plan_purchased', { plan_key: planKey });
           toast.success(
-            `${plan?.monthlyCredits} credits are now in your account — enjoy every sip.`,
-            `Welcome to ${plan?.label} ✦`,
+            t('sommelierCredits.toast.welcomeMessage', { credits: plan?.monthlyCredits }),
+            t('sommelierCredits.toast.welcomeTitle', { plan: plan?.label }),
           );
         },
       });
     } catch (err: any) {
       console.error('[PricingModal] Checkout error:', err);
-      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+      toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));
     } finally {
       setCheckoutLoading(null);
     }
@@ -265,7 +273,7 @@ export function PricingModal({
       await launchTopUpCheckout(credits);
     } catch (err: any) {
       console.error('[PricingModal] Top-up checkout error:', err);
-      toast.error(err?.message ?? 'Could not open checkout — please try again.');
+      toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));
     } finally {
       setCheckoutLoading(null);
     }
@@ -346,11 +354,11 @@ export function PricingModal({
                       id="pricing-modal-title"
                       className="text-lg font-semibold text-white sm:text-xl"
                     >
-                      Sommelier Credits
+                      {t('sommelierCredits.title')}
                     </h2>
                   </div>
                   <p className="mt-1.5 text-sm text-white/45 max-w-md">
-                    Choose the plan that fits how you discover, collect, and enjoy wine.
+                    {t('sommelierCredits.subtitle')}
                   </p>
                 </div>
                 <button
@@ -371,11 +379,12 @@ export function PricingModal({
                   <Sparkles size={14} className="mt-0.5 shrink-0 text-amber-400" />
                   <div>
                     <p className="text-sm font-medium text-amber-300">
-                      You have {effectiveBalance} Sommelier Credit{effectiveBalance === 1 ? '' : 's'} remaining
-                      {monthlyLimit > 0 ? ` of ${monthlyLimit}` : ''}.
+                      {monthlyLimit > 0
+                        ? t('sommelierCredits.plan.creditsRemainingOf', { count: effectiveBalance, limit: monthlyLimit })
+                        : t('sommelierCredits.plan.creditsRemaining', { count: effectiveBalance })}
                     </p>
                     <p className="mt-0.5 text-xs text-amber-400/60">
-                      Upgrade for deeper cellar insights and more Sommelier sessions.
+                      {t('sommelierCredits.upgradeSubtitle')}
                     </p>
                   </div>
                 </div>
@@ -393,7 +402,7 @@ export function PricingModal({
                       : { color: 'rgba(255,255,255,0.4)' }
                   }
                 >
-                  Monthly plans
+                  {t('sommelierCredits.tabs.monthlyPlans')}
                 </button>
                 <button
                   type="button"
@@ -405,7 +414,7 @@ export function PricingModal({
                       : { color: 'rgba(255,255,255,0.4)' }
                   }
                 >
-                  Top-up credits
+                  {t('sommelierCredits.tabs.topUp')}
                 </button>
               </div>
             </div>
@@ -442,8 +451,7 @@ export function PricingModal({
                     transition={{ duration: 0.18 }}
                   >
                     <p className="text-sm text-white/45">
-                      Need more? Add extra Sommelier Credits anytime — they stack on top of
-                      your monthly allowance and never expire.
+                      {t('sommelierCredits.topUp.description')}
                     </p>
 
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -503,7 +511,7 @@ export function PricingModal({
 
               {/* Fine print */}
               <p className="mt-6 text-center text-[11px] text-white/20">
-                Secured by Paddle · Cancel anytime from your account portal
+                {t('sommelierCredits.footer')}
               </p>
             </div>
           </motion.div>

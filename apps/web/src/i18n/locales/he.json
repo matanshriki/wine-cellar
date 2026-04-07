@@ -1338,6 +1338,71 @@
       "dismiss": "סגור"
     }
   },
+  "sommelierCredits": {
+    "title": "קרדיטים לסומליה",
+    "subtitle": "בחרו את התוכנית המתאימה לאופן שבו אתם מגלים, אוספים ונהנים מיין.",
+    "upgradeSubtitle": "שדרגו לתובנות מעמיקות יותר על המרתף וסשנים נוספים עם הסומליה.",
+    "tabs": {
+      "monthlyPlans": "תוכניות חודשיות",
+      "topUp": "קרדיטים נוספים"
+    },
+    "badges": {
+      "mostPopular": "הפופולרי ביותר",
+      "recommended": "מומלץ",
+      "active": "פעיל"
+    },
+    "plan": {
+      "creditsPerMonth": "קרדיטים\n/ חודש",
+      "perMonth": "/ חודש",
+      "alwaysFree": "תמיד בחינם",
+      "creditsRemaining": "נותר {{count}} קרדיט",
+      "creditsRemaining_plural": "נותרו {{count}} קרדיטים",
+      "creditsRemainingOf": "נותר {{count}} קרדיט מתוך {{limit}}",
+      "creditsRemainingOf_plural": "נותרו {{count}} קרדיטים מתוך {{limit}}"
+    },
+    "cta": {
+      "free": "המשך בחינם",
+      "premium": "שדרג ל-Premium",
+      "collector": "שדרג ל-Collector",
+      "currentPlan": "התוכנית הנוכחית שלך",
+      "openingCheckout": "פותח תשלום...",
+      "back": "חזרה",
+      "manageBilling": "נהל חיוב",
+      "manageBillingLoading": "טוען...",
+      "swipeHint": "החלק להשוואת תוכניות"
+    },
+    "topUp": {
+      "description": "צריכים יותר? הוסיפו קרדיטים נוספים בכל עת — הם נצברים על המכסה החודשית ולא פגים לעולם.",
+      "addCredits": "הוסף {{credits}} קרדיטים"
+    },
+    "footer": "מאובטח על ידי Paddle · ביטול בכל עת",
+    "manageSubscription": "נהל מנוי",
+    "lowCreditPrompt": {
+      "title": "קרדיטי הסומליה אוזלים",
+      "description": "שדרגו כדי להמשיך לקבל תובנות מעמיקות על המרתף וסשנים מותאמים אישית."
+    },
+    "toast": {
+      "welcomeTitle": "ברוכים הבאים ל-{{plan}} ✦",
+      "welcomeMessage": "{{credits}} קרדיטים נוספו לחשבונכם — תיהנו מכל לגימה.",
+      "topUpSuccess": "התשלום הצליח! הקרדיטים יעודכנו בקרוב.",
+      "checkoutError": "לא ניתן לפתוח תשלום — נסו שנית.",
+      "portalError": "לא ניתן לפתוח את פורטל החיוב."
+    },
+    "balance": {
+      "title": "קרדיטים לסומליה",
+      "depleted": "כל קרדיטי הסומליה נוצלו לתקופה זו",
+      "low": "הקרדיטים אוזלים — שקלו שדרוג לתובנות מעמיקות יותר",
+      "resetsMonthly": "הקרדיטים מתאפסים כל חודש",
+      "actionCost": "פעולה זו משתמשת ב-{{count}} קרדיט",
+      "actionCost_plural": "פעולה זו משתמשת ב-{{count}} קרדיטים",
+      "upgradeCta": "שדרגו לתובנות מרתף מעמיקות יותר וסשנים נוספים עם הסומליה"
+    },
+    "planFeatures": {
+      "free": ["15 קרדיטים לסומליה / חודש", "ניהול מרתף בסיסי", "גישה מוגבלת ל-AI"],
+      "premium": ["150 קרדיטים לסומליה / חודש", "גישה מלאה לסומליה", "המלצות מתקדמות", "תובנות מרתף Premium"],
+      "collector": ["500 קרדיטים לסומליה / חודש", "ניתוח מרתף מתקדם", "תכונות בינה קבוצתיות"]
+    }
+  },
   "about": {
     "pageTitle": "אודות",
     "title": "אודות",

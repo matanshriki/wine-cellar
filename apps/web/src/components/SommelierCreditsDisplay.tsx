@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { getCreditsRequired } from '../lib/creditPolicy';
@@ -28,6 +29,7 @@ export function SommelierCreditsDisplay({
   compact = false,
   pendingActionType,
 }: SommelierCreditsDisplayProps) {
+  const { t } = useTranslation();
   const {
     monetizationEnabled,
     creditEnforcementEnabled,
@@ -116,7 +118,7 @@ export function SommelierCreditsDisplay({
                 : 'text-white/50'
             }
           />
-          <span className="text-sm font-medium text-white/80">Sommelier Credits</span>
+          <span className="text-sm font-medium text-white/80">{t('sommelierCredits.balance.title')}</span>
         </div>
 
         {(isLowBalance || isBlocked) && (
@@ -146,17 +148,16 @@ export function SommelierCreditsDisplay({
       {/* Contextual sub-text */}
       <p className="mt-1 text-xs text-white/40">
         {isBlocked
-          ? 'All Sommelier Credits used for this period'
+          ? t('sommelierCredits.balance.depleted')
           : isLowBalance
-          ? 'Running low — consider upgrading for deeper insights'
-          : 'Credits reset monthly'}
+          ? t('sommelierCredits.balance.low')
+          : t('sommelierCredits.balance.resetsMonthly')}
       </p>
 
       {/* Pending action cost */}
       {pendingCost > 0 && !isBlocked && (
         <p className="mt-2 text-xs text-white/50">
-          This action uses{' '}
-          <span className="font-medium text-white/70">{pendingCost} credit{pendingCost !== 1 ? 's' : ''}</span>
+          <span className="font-medium text-white/70">{t('sommelierCredits.balance.actionCost', { count: pendingCost })}</span>
         </p>
       )}
 
@@ -167,7 +168,7 @@ export function SommelierCreditsDisplay({
           onClick={onUpgradeClick}
           className="mt-3 w-full rounded-lg bg-white/10 py-2 text-xs font-medium text-white/80 transition-colors hover:bg-white/15 active:scale-[0.98]"
         >
-          Upgrade for deeper cellar insights and more Sommelier sessions
+          {t('sommelierCredits.balance.upgradeCta')}
         </button>
       )}
     </div>
