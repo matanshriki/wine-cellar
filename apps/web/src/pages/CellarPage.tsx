@@ -768,6 +768,10 @@ export function CellarPage() {
   }
 
   function handleBulkAnalysis() {
+    if (creditBlockedRef.current) {
+      setNoCreditsOpen(true);
+      return;
+    }
     console.log('[CellarPage] Opening bulk analysis modal');
     setShowBulkAnalysis(true);
   }

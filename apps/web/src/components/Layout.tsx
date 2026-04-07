@@ -18,7 +18,9 @@ import { CompactThemeToggle } from './ThemeToggle';
 import { SommelierChatButton } from './SommelierChatButton';
 import { SommelierCreditsDisplay } from './SommelierCreditsDisplay';
 import { PricingModal } from './PricingModal';
+import { NoCreditsModal } from './NoCreditsModal';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
+import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
@@ -27,7 +29,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const location = useLocation();
+
+  // Credit enforcement — must come before any camera-open logic
+  const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
+  // Always-current ref so stale closures (e.g. useEffect with []) still read the right value
+  const creditBlockedRef = useRef(false);
+  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
   const { t, i18n } = useTranslation();
   const { 
     showAddSheet, 
@@ -175,6 +184,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Safety-net credit check: the primary block is in handleCameraFabClick, but
+    // on some Android browsers the OS picker can open before JS runs the check.
+    if (creditBlockedRef.current) {
+      e.target.value = '';
+      setNoCreditsOpen(true);
+      return;
+    }
+
     // File selected - proceed with smart scan
     console.log('[Camera] File selected, starting smart scan:', file.name, file.type);
     
@@ -197,6 +214,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Handle camera FAB click - different behavior based on platform
   const handleCameraFabClick = () => {
+    // Credit gate — show luxury interstitial before opening any camera UI
+    if (creditBlockedRef.current) {
+      setNoCreditsOpen(true);
+      return;
+    }
+
     if (isIosPwa || isAndroidPwa || (isIpad && isPWA)) {
       // iOS PWA, Android PWA, or iPad PWA:
       // Use getUserMedia in-app camera — avoids the OS file-chooser entirely,
@@ -517,6 +540,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         onClose={closeFallbackSheet}
         reason={fallbackReason}
         onTryCamera={() => {
+          // Credit gate applies even on retry
+          if (creditBlockedRef.current) {
+            closeFallbackSheet();
+            setNoCreditsOpen(true);
+            return;
+          }
           closeFallbackSheet();
           // Retry camera: PWA platforms use getUserMedia in-app camera
           if (isIosPwa || isAndroidPwa || (isIpad && isPWA)) {
@@ -526,6 +555,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }
         }}
         onChoosePhoto={async (file) => {
+          // Credit gate: user may have selected a photo from library
+          if (creditBlockedRef.current) {
+            closeFallbackSheet();
+            setNoCreditsOpen(true);
+            return;
+          }
           console.log('[CameraFallback] Photo selected from library, opening sheet and starting scan');
           closeFallbackSheet();
           
@@ -557,9 +592,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           window.dispatchEvent(event);
         }}
         onCapture={async (file) => {
-          // User captured photo
-          console.log('[PWA Camera] Photo captured, starting scan');
+          // User captured photo — final credit gate before scan
           closePwaCamera();
+          if (creditBlockedRef.current) {
+            setNoCreditsOpen(true);
+            return;
+          }
+          console.log('[PWA Camera] Photo captured, starting scan');
           
           // Open AddBottleSheet to show scanning loader
           openAddBottleFlowForScanning();
@@ -596,6 +635,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <PricingModal
         isOpen={pricingOpen}
         onClose={() => setPricingOpen(false)}
+      />
+
+      {/* No Credits modal — shown from the camera FAB when enforcement is on and balance is 0 */}
+      <NoCreditsModal
+        isOpen={noCreditsOpen}
+        onClose={() => setNoCreditsOpen(false)}
+        context="scan"
       />
 
       {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}
