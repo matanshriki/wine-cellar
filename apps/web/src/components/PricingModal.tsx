@@ -108,7 +108,7 @@ function PlanCard({
       {/* Badge */}
       {(plan.highlight || isRecommended) && (
         <span
-          className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+          className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wider"
           style={{
             background: plan.key === 'premium'
               ? 'linear-gradient(135deg, #F59E0B, #D97706)'
