@@ -218,6 +218,9 @@ export function AgentPageWorking() {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
+  // Always-current ref so handleSend never reads a stale closure value
+  const creditBlockedRef = useRef(false);
+  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
   const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -350,7 +353,7 @@ export function AgentPageWorking() {
     if (!text.trim() || isSubmitting || bottlesInCellar.length === 0) return;
 
     // Credit enforcement: show luxury interstitial instead of submitting
-    if (creditEnforcementEnabled && effectiveBalance === 0) {
+    if (creditBlockedRef.current) {
       setNoCreditsOpen(true);
       return;
     }

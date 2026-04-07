@@ -162,11 +162,16 @@ export function CellarPage() {
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
 
+  // Always-current ref — readable by stale event-listener closures.
+  // Set on every render so it reflects the latest loaded values.
+  const creditBlockedRef = useRef(false);
+  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
+
   // ── Credit-gated scan openers ─────────────────────────────────────────────
   // These replace every bare setShowAddSheet(true) / setShowLabelCapture(true)
   // so the user is blocked BEFORE they open the camera, not after picking a photo.
   function guardedOpenAddSheet() {
-    if (creditEnforcementEnabled && effectiveBalance === 0) {
+    if (creditBlockedRef.current) {
       setNoCreditsOpen(true);
       return;
     }
@@ -174,7 +179,7 @@ export function CellarPage() {
   }
 
   function guardedOpenLabelCapture(mode: 'camera' | 'upload' = 'camera') {
-    if (creditEnforcementEnabled && effectiveBalance === 0) {
+    if (creditBlockedRef.current) {
       setNoCreditsOpen(true);
       return;
     }
@@ -785,8 +790,8 @@ export function CellarPage() {
    * Automatically routes to appropriate confirmation flow
    */
   const handleSmartScan = async (file: File) => {
-    // Credit enforcement: block scan and show luxury interstitial
-    if (creditEnforcementEnabled && effectiveBalance === 0) {
+    // Credit enforcement safety net (primary block is in guardedOpen* functions above)
+    if (creditBlockedRef.current) {
       setShowAddSheet(false);
       setNoCreditsOpen(true);
       return;
