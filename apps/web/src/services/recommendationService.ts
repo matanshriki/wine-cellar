@@ -77,63 +77,39 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     throw new Error('Not authenticated');
   }
 
-  console.log('[RecommendationService] Getting recommendations for:', input);
 
-  // Fetch user's taste profile for personalization
-  let userTasteProfile: TasteProfile | null = null;
-  try {
-    userTasteProfile = await tasteProfileService.getMyTasteProfile();
-    if (userTasteProfile) {
-      console.log('[RecommendationService] Using taste profile with confidence:', userTasteProfile.confidence);
-    }
-  } catch (e) {
-    console.log('[RecommendationService] No taste profile available, using base scoring');
-  }
-
-  // Get all user's bottles with wine info and quantity > 0
-  const { data: bottles, error } = await supabase
-    .from('bottles')
-    .select(`
-      *,
-      wine:wines(*)
-    `)
-    .eq('user_id', user.id)
-    .gt('quantity', 0)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('[RecommendationService] Error fetching bottles:', error);
-    throw new Error('Failed to fetch bottles');
-  }
-
-  if (!bottles || bottles.length === 0) {
-    console.log('[RecommendationService] No bottles found');
-    return [];
-  }
-
-  console.log('[RecommendationService] Found', bottles.length, 'bottles');
-
-  // Separate reserved bottles before any other filtering
-  const reservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => (b as any).is_reserved);
-  const nonReservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => !(b as any).is_reserved);
-  console.log('[RecommendationService] Reserved (excluded by default):', reservedBottles.length);
-
-  // Get recently recommended bottles (last 7 days) to avoid repetition
+  // Fetch taste profile + bottles + recent history all in parallel
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
-  const { data: recentHistory } = await supabase
-    .from('consumption_history')
-    .select('bottle_id')
-    .eq('user_id', user.id)
-    .gte('opened_at', sevenDaysAgo.toISOString());
+
+  const [userTasteProfile, bottlesResult, historyResult] = await Promise.all([
+    tasteProfileService.getMyTasteProfile().catch(() => null),
+    supabase
+      .from('bottles')
+      .select(`*, wine:wines(*)`)
+      .eq('user_id', user.id)
+      .gt('quantity', 0)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('consumption_history')
+      .select('bottle_id')
+      .eq('user_id', user.id)
+      .gte('opened_at', sevenDaysAgo.toISOString()),
+  ]);
+
+  const { data: bottles, error } = bottlesResult;
+  const { data: recentHistory } = historyResult;
+
+  if (error) throw new Error('Failed to fetch bottles');
+  if (!bottles || bottles.length === 0) return [];
+
+  const reservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => (b as any).is_reserved);
+  const nonReservedBottles = (bottles as unknown as BottleWithWine[]).filter(b => !(b as any).is_reserved);
 
   const recentlyOpenedBottleIds = new Set(recentHistory?.map(h => h.bottle_id) || []);
-  console.log('[RecommendationService] Recently opened bottles:', recentlyOpenedBottleIds.size);
 
   // Get recently shown recommendations from localStorage (rotation tracking)
   const recentlyShownBottleIds = getRecentlyShownBottles();
-  console.log('[RecommendationService] Recently shown bottles:', recentlyShownBottleIds.size);
 
   // Start from non-reserved bottles by default
   // If user explicitly passes includeReserved=true the caller can set it on the input.
@@ -269,20 +245,17 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
       affinityReason = tasteProfileService.generateAffinityReason(wineProfile, userTasteProfile);
       
       if (affinityBonus > 5) {
-        console.log('[RecommendationService] Affinity bonus for', bottle.wine.wine_name, ':', Math.round(affinityBonus));
       }
     }
 
     // Penalty for recently opened bottles (prevents repetition)
     if (recentlyOpenedBottleIds.has(bottle.id)) {
       score -= 40; // Strong penalty to ensure variety
-      console.log('[RecommendationService] Penalizing recently opened:', bottle.wine.wine_name);
     }
 
     // Penalty for recently shown bottles (even if not opened)
     if (recentlyShownBottleIds.has(bottle.id)) {
       score -= 25; // Moderate penalty to encourage rotation
-      console.log('[RecommendationService] Penalizing recently shown:', bottle.wine.wine_name);
     }
 
     // INCREASED random factor for more variety (was 10, now 25)
@@ -296,7 +269,6 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   scoredBottles.sort((a, b) => b.score - a.score);
   
   // Debug: Log top 5 scores to understand selection
-  console.log('[RecommendationService] Top 5 scores:', 
     scoredBottles.slice(0, 5).map(b => ({
       name: b.bottle.wine.wine_name,
       score: Math.round(b.score),
@@ -345,7 +317,6 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   // Track these recommendations for rotation
   trackShownBottles(recommendations.map(r => r.bottleId));
 
-  console.log('[RecommendationService] Generated', recommendations.length, 'recommendations');
 
   // Attach metadata about excluded reserved bottles so callers can show a note
   (recommendations as any).__reservedExcludedCount = input.includeReserved ? 0 : reservedBottles.length;
@@ -401,7 +372,6 @@ function trackShownBottles(bottleIds: string[]) {
     const updated = [...filtered, ...newEntries];
     localStorage.setItem(RECENT_RECOMMENDATIONS_KEY, JSON.stringify(updated));
     
-    console.log('[RecommendationService] Tracked', bottleIds.length, 'shown bottles');
   } catch (error) {
     console.error('[RecommendationService] Error tracking shown bottles:', error);
   }

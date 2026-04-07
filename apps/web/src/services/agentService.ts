@@ -125,27 +125,15 @@ export async function sendAgentMessage(
   }
 
   const wineIds = [...new Set(bottles.map((b) => b.wine_id))];
-  let historyByWineId: Map<string, WineHistoryInsight> | undefined;
-  try {
-    historyByWineId = await fetchWineHistoryInsightsForWineIds(wineIds);
-  } catch {
-    historyByWineId = undefined;
-  }
 
-  // Build compact cellar context (includes History ratings/notes per wine when available)
+  // Fetch history insights and taste profile in parallel — they are independent
+  const [historyByWineId, tasteProfile] = await Promise.all([
+    fetchWineHistoryInsightsForWineIds(wineIds).catch(() => undefined),
+    tasteProfileService.getMyTasteProfile().catch(() => null),
+  ]);
+
   const cellarContext = buildCellarContext(bottles, historyByWineId);
-
-  // Fetch user taste profile for personalized recommendations
-  let tasteContext: string | undefined;
-  try {
-    const tasteProfile = await tasteProfileService.getMyTasteProfile();
-    if (tasteProfile) {
-      tasteContext = tasteProfileService.buildAgentContext(tasteProfile);
-      console.log('[AgentService] Including taste profile context');
-    }
-  } catch (e) {
-    console.log('[AgentService] No taste profile available');
-  }
+  const tasteContext = tasteProfile ? tasteProfileService.buildAgentContext(tasteProfile) : undefined;
 
   // Get API URL from environment variable, fallback to relative path for local dev
   const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -175,7 +163,6 @@ export async function sendAgentMessage(
 
   const data = (await response.json()) as AgentResponse;
   if (import.meta.env.DEV) {
-    console.log(
       '[AgentService] sommelier pipeline',
       data.agentMeta?.processingMode ?? '—',
       'route:',

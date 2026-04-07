@@ -120,6 +120,23 @@ export function CellarPage() {
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
+  // Separate state for the raw input value — updates instantly for responsive typing.
+  // setSearchQuery is debounced so filteredBottles useMemo only re-runs after the
+  // user pauses, not on every single keystroke.
+  const [searchDisplay, setSearchDisplay] = useState('');
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleSearchInput = (value: string) => {
+    setSearchDisplay(value);
+    setIsFilteringByEvent(false);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearchQuery(value), 250);
+  };
+  const clearSearch = () => {
+    setSearchDisplay('');
+    setSearchQuery('');
+    clearTimeout(searchDebounceRef.current);
+    setIsFilteringByEvent(false);
+  };
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   
@@ -209,15 +226,12 @@ export function CellarPage() {
   // Duplicate detection
   const { checkAndHandle: checkDuplicate, DuplicateModal } = useDuplicateDetection({
     onAddQuantity: async (bottleId, quantity) => {
-      console.log('[CellarPage] Added', quantity, 'bottles to existing entry');
       await loadBottles(true); // Refresh list
       toast.success(`Added ${quantity} ${quantity === 1 ? 'bottle' : 'bottles'}!`);
     },
     onCreateSeparate: async (candidate: any) => {
-      console.log('[CellarPage] User chose to create separate entry', candidate);
       // Continue with normal add flow (prefer path so we never store signed URL)
       if (candidate.extractedData) {
-        console.log('[CellarPage] Opening form with extracted data');
         setExtractedData({
           imagePath: candidate.imagePath,
           imageBucket: candidate.imageBucket ?? 'labels',
@@ -245,7 +259,6 @@ export function CellarPage() {
     // Clear any stale form drafts on mount (prevent crashes from old data)
     try {
       localStorage.removeItem('wine-form-draft');
-      console.log('[CellarPage] Cleared stale form draft on mount');
     } catch (e) {
       console.error('[CellarPage] Failed to clear form draft:', e);
     }
@@ -266,7 +279,6 @@ export function CellarPage() {
     // Listen for receipt scan completion
     const handleReceiptScanComplete = (e: CustomEvent) => {
       const { imageUrl, items, detectedCount } = e.detail;
-      console.log('[CellarPage] Receipt scan complete:', detectedCount, 'items');
       
       setReceiptScanResult({ imageUrl, items });
       setShowReceiptReview(true);
@@ -293,7 +305,6 @@ export function CellarPage() {
           
           if (isDuplicate) {
             // Duplicate found - modal will handle it
-            console.log('[CellarPage] Duplicate detected, showing stepper modal');
             return;
           }
           
@@ -407,7 +418,6 @@ export function CellarPage() {
       const threshold = 500; // px from bottom
 
       if (scrollPosition >= pageHeight - threshold && hasMore && !loadingMore && !loading) {
-        console.log('[CellarPage] Near bottom, loading more bottles...');
         loadMoreBottles();
       }
     };
@@ -434,16 +444,13 @@ export function CellarPage() {
     // Check if onboarding should be shown (first-time users OR re-engagement after 7 days)
     if (onboardingUtils.shouldShowOnboarding(activeCellarCount)) {
       if (activeCellarCount === 0) {
-        console.log('[CellarPage] Showing onboarding - new user or re-engagement (empty cellar after 7 days)');
       } else {
-        console.log('[CellarPage] First-time user detected - showing welcome modal');
       }
       setShowWelcomeModal(true);
     }
 
     // Check if demo mode is active
     if (onboardingUtils.isDemoModeActive()) {
-      console.log('[CellarPage] Demo mode active');
       setIsDemoMode(true);
     }
   }, [loading, bottles.length, isOnline, cellarUnreachableEmpty]);
@@ -456,7 +463,6 @@ export function CellarPage() {
         setActiveEvents(events);
       } catch (error) {
         // Silent fail - events are optional feature
-        console.log('[CellarPage] Events unavailable, continuing without them');
       }
     }
     
@@ -466,41 +472,33 @@ export function CellarPage() {
     }
   }, [isDemoMode, bottles.length]);
 
-  // Wine World Moments: Periodically check for new events
-  // This ensures new events appear without requiring page refresh
+  // Always-current ref so the interval callback never reads a stale activeEvents closure
+  const activeEventsRef = useRef(activeEvents);
+  useEffect(() => { activeEventsRef.current = activeEvents; }, [activeEvents]);
+
+  // Wine World Moments: Periodically check for new events (stable interval — no stale closures)
   useEffect(() => {
-    // Don't check if feature disabled, in demo mode, or no active events
     if (!ENABLE_WINE_EVENTS || isDemoMode) return;
 
-    // Check for new events every 5 minutes
     const intervalId = setInterval(async () => {
       try {
-        console.log('[CellarPage] 🔄 Checking for new wine events...');
         const events = await wineEventsService.getActiveEvents();
-        
-        // Only update if events changed (different count or IDs)
-        const currentIds = activeEvents.map(e => e.id).sort().join(',');
+        const currentIds = activeEventsRef.current.map(e => e.id).sort().join(',');
         const newIds = events.map(e => e.id).sort().join(',');
-        
-        if (newIds !== currentIds) {
-          console.log('[CellarPage] 🎉 Events changed:', events.length, 'events');
-          setActiveEvents(events);
-        }
-      } catch (error) {
-        // Silent fail - don't spam console
-        console.log('[CellarPage] Events check skipped (API unavailable)');
+        if (newIds !== currentIds) setActiveEvents(events);
+      } catch {
+        // Silent — events are non-critical
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [isDemoMode, activeEvents]);
+  }, [isDemoMode]); // stable — activeEvents read via ref
 
   // Onboarding v1 – production: Auto-exit demo mode when user has real bottles in cellar
   useEffect(() => {
     // Only exit demo if user has bottles with quantity > 0 (not just consumed history)
     const activeCellarCount = bottles.filter(b => b.quantity > 0).length;
     if (isDemoMode && activeCellarCount > 0) {
-      console.log('[CellarPage] User has real bottles in cellar, auto-exiting demo mode');
       onboardingUtils.deactivateDemoMode();
       setIsDemoMode(false);
     }
@@ -508,7 +506,6 @@ export function CellarPage() {
 
   // Onboarding v1 – production: Handle welcome modal actions
   function handleShowDemo() {
-    console.log('[CellarPage] User chose to see demo');
     onboardingUtils.markOnboardingSeen();
     onboardingUtils.activateDemoMode();
     setShowWelcomeModal(false);
@@ -516,14 +513,12 @@ export function CellarPage() {
   }
 
   function handleSkipOnboarding() {
-    console.log('[CellarPage] User skipped onboarding');
     onboardingUtils.markOnboardingSeen();
     setShowWelcomeModal(false);
   }
 
   // Onboarding v1 – production: Exit demo → show transition modal
   function handleExitDemo() {
-    console.log('[CellarPage] Exiting demo mode → showing post-demo transition');
     onboardingUtils.deactivateDemoMode();
     setIsDemoMode(false);
     setShowPostDemoModal(true);
@@ -599,7 +594,6 @@ export function CellarPage() {
   async function loadMoreBottles() {
     if (loadingMore || !hasMore) return;
     
-    console.log('[CellarPage] Loading more bottles...');
     setLoadingMore(true);
     await loadBottles(false);
   }
@@ -772,19 +766,16 @@ export function CellarPage() {
       setNoCreditsOpen(true);
       return;
     }
-    console.log('[CellarPage] Opening bulk analysis modal');
     setShowBulkAnalysis(true);
   }
 
   async function handleBulkAnalysisComplete() {
-    console.log('[CellarPage] Bulk analysis complete, reloading bottles');
     await loadBottles(true); // Reset pagination
     setShowBulkAnalysis(false);
     
     // Set cooldown (5 minutes)
     setBulkAnalysisCooldown(true);
     setTimeout(() => {
-      console.log('[CellarPage] Bulk analysis cooldown expired');
       setBulkAnalysisCooldown(false);
     }, 5 * 60 * 1000);
   }
@@ -860,7 +851,6 @@ export function CellarPage() {
   const bottlesInCellar = useMemo(() => {
     // Onboarding v1 – production: Return demo bottles when in demo mode
     if (isDemoMode) {
-      console.log('[CellarPage] Using demo bottles:', DEMO_BOTTLES.length);
       return DEMO_BOTTLES;
     }
     return bottles.filter(bottle => bottle.quantity > 0);
@@ -1067,7 +1057,6 @@ export function CellarPage() {
       return sortDir === 'asc' ? compareValue : -compareValue;
     });
     
-    console.log('[CellarPage] 🔍 Filtered result:', result.length, 'bottles');
     return result;
   }, [bottlesInCellar, searchQuery, activeFilters, ratingFilter, sortBy, sortDir]);
 
@@ -1080,89 +1069,28 @@ export function CellarPage() {
    * Toggle filter chip
    */
   function toggleFilter(filter: string) {
-    console.log('[CellarPage] 🔍 Filter clicked:', filter);
-    console.log('[CellarPage] Current activeFilters BEFORE:', activeFilters);
-    
     const willHaveFilters = !activeFilters.includes(filter) || activeFilters.length > 1;
-    console.log('[CellarPage] Will have active filters after toggle:', willHaveFilters);
-    
-    setIsFilteringByEvent(false); // Reset event filtering flag when user toggles filters
-    
-    setActiveFilters((prev) => {
-      const newFilters = prev.includes(filter)
-        ? prev.filter((f) => f !== filter)
-        : [...prev, filter];
-      console.log('[CellarPage] New activeFilters:', newFilters);
-      return newFilters;
-    });
 
-    console.log('[CellarPage] Filter state updated, preparing to scroll...');
-    console.log('[CellarPage] Tonight/DrinkWindow will hide:', willHaveFilters);
+    setIsFilteringByEvent(false);
+    setActiveFilters((prev) =>
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+    );
 
-    // Wait for React to re-render and DOM to update before scrolling
-    // Using requestAnimationFrame + setTimeout to ensure DOM is fully updated
+    // Scroll to bottles section after DOM updates (widgets may hide/show)
     requestAnimationFrame(() => {
       setTimeout(() => {
-        console.log('[CellarPage] 🎯 Scroll timeout triggered (after DOM update)');
-        console.log('[CellarPage] bottlesSectionRef.current exists:', !!bottlesSectionRef.current);
-        
         if (bottlesSectionRef.current) {
-          console.log('[CellarPage] 📍 Scrolling to bottles section...');
-          
-          // Get element position and viewport info
-          const element = bottlesSectionRef.current;
-          const rect = element.getBoundingClientRect();
-          console.log('[CellarPage] Element rect:', {
-            top: rect.top,
-            bottom: rect.bottom,
-            left: rect.left,
-            right: rect.right,
-            height: rect.height,
-            width: rect.width
-          });
-          console.log('[CellarPage] Current scroll position:', {
-            pageYOffset: window.pageYOffset,
-            scrollY: window.scrollY,
-            innerHeight: window.innerHeight
-          });
-          
-          // Check if bottles section is already visible
+          const rect = bottlesSectionRef.current.getBoundingClientRect();
           const isVisible = rect.top >= 0 && rect.top <= window.innerHeight / 2;
-          console.log('[CellarPage] Bottles section already visible:', isVisible, '(top:', rect.top, ')');
-          
-          // Calculate offset to account for fixed header + some breathing room
-          const headerOffset = 100; // Top nav bar + padding
-          const elementPosition = rect.top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-          
-          console.log('[CellarPage] Calculated scroll position:', {
-            headerOffset,
-            elementPosition,
-            offsetPosition,
-            willScrollBy: offsetPosition - window.pageYOffset
-          });
-
-          // Only scroll if not already in view or needs adjustment
+          const offsetPosition = rect.top + window.pageYOffset - 100;
           if (!isVisible || rect.top > 150) {
-            console.log('[CellarPage] 🚀 Initiating LUXURY scroll...');
             luxuryScrollTo(Math.max(0, offsetPosition), 1200);
-            console.log('[CellarPage] ✓ Luxury scroll animation started');
-          } else {
-            console.log('[CellarPage] ⏭️ Skipping scroll - bottles already visible at top');
           }
-          
-          // Verify scroll after animation completes
-          setTimeout(() => {
-            console.log('[CellarPage] 📊 Post-scroll position:', {
-              pageYOffset: window.pageYOffset,
-              scrollY: window.scrollY
-            });
-          }, 800);
-        } else {
-          console.warn('[CellarPage] ⚠️ bottlesSectionRef.current is null - cannot scroll');
         }
-      }, 300); // Wait for DOM to fully update (widgets to hide)
+      }, 300);
     });
+
+    void willHaveFilters; // used for future tooltip/animation if needed
   }
 
   /**
@@ -1170,60 +1098,22 @@ export function CellarPage() {
    * Slower, more elegant animation than browser default
    */
   function luxuryScrollTo(targetPosition: number, duration: number = 1200) {
-    // Get starting position from body (the actual scroll container)
     const startPosition = document.body.scrollTop || document.documentElement.scrollTop || window.pageYOffset || 0;
     const distance = targetPosition - startPosition;
     let startTime: number | null = null;
 
-    console.log('[CellarPage] 🎨 Starting LUXURY scroll animation:', {
-      from: startPosition,
-      to: targetPosition,
-      distance,
-      duration
-    });
-
-    // Debug: Check if page is scrollable
-    console.log('[CellarPage] 🔍 Scroll container debug:', {
-      'window.pageYOffset': window.pageYOffset,
-      'document.documentElement.scrollTop': document.documentElement.scrollTop,
-      'document.body.scrollTop': document.body.scrollTop,
-      'body.scrollHeight': document.body.scrollHeight,
-      'html.scrollHeight': document.documentElement.scrollHeight,
-      'window.innerHeight': window.innerHeight,
-      'isScrollable': document.body.scrollHeight > window.innerHeight,
-      'body.overflow': window.getComputedStyle(document.body).overflow,
-      'html.overflow': window.getComputedStyle(document.documentElement).overflow,
-      'body.overflowY': window.getComputedStyle(document.body).overflowY,
-      'html.overflowY': window.getComputedStyle(document.documentElement).overflowY
-    });
-
-    // Elegant easing function (ease-in-out-cubic)
     function easeInOutCubic(t: number): number {
-      return t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
     function animation(currentTime: number) {
       if (startTime === null) startTime = currentTime;
-      const timeElapsed = currentTime - startTime;
-      const progress = Math.min(timeElapsed / duration, 1);
-      
-      // Apply easing
-      const easedProgress = easeInOutCubic(progress);
-      const currentPosition = startPosition + (distance * easedProgress);
-      
-      // Scroll the body element (since html has overflow:hidden)
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const currentPosition = startPosition + distance * easeInOutCubic(progress);
       document.body.scrollTop = currentPosition;
       document.documentElement.scrollTop = currentPosition;
       window.scrollTo(0, currentPosition);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animation);
-      } else {
-        console.log('[CellarPage] ✨ Luxury scroll animation COMPLETE');
-        console.log('[CellarPage] 📍 Final position:', window.pageYOffset || document.body.scrollTop);
-      }
+      if (progress < 1) requestAnimationFrame(animation);
     }
 
     requestAnimationFrame(animation);
@@ -1233,9 +1123,10 @@ export function CellarPage() {
    * Clear all filters and search
    */
   function clearFilters() {
+    setSearchDisplay('');
     setSearchQuery('');
     setActiveFilters([]);
-    setIsFilteringByEvent(false); // Reset event filtering flag
+    setIsFilteringByEvent(false);
   }
 
   /**
@@ -1255,26 +1146,19 @@ export function CellarPage() {
    * Wine World Moments: View matching bottles
    */
   function handleViewEventMatches(filterTag: string) {
-    console.log('[CellarPage] 🍷 Event: Filtering by tag:', filterTag);
+    setSearchDisplay(filterTag);
     setSearchQuery(filterTag);
-    setIsFilteringByEvent(true); // Keep banner visible when filtering by event
-    
-    // Scroll to bottles section after a short delay to let state update
+    setIsFilteringByEvent(true);
     setTimeout(() => {
-      if (bottlesSectionRef.current) {
-        console.log('[CellarPage] 🍷 Event: Scrolling to bottles section');
-        bottlesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      bottlesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
 
   function handleSortChange(newSortBy: string, newSortDir: 'asc' | 'desc') {
-    console.log('[CellarPage] 📊 Sort changed:', { newSortBy, newSortDir });
     setSortBy(newSortBy);
     setSortDir(newSortDir);
     setShowSortMenu(false);
-    
-    // Persist to localStorage
+
     try {
       localStorage.setItem('cellar-sort-by', newSortBy);
       localStorage.setItem('cellar-sort-dir', newSortDir);
@@ -1282,98 +1166,19 @@ export function CellarPage() {
       console.error('[CellarPage] Failed to persist sort:', e);
     }
 
-    // Smooth scroll to bottles section (skip Tonight's Selection and Drink Window)
-    console.log('[CellarPage] 📊 Sort changed, preparing to scroll to bottles...');
-    console.log('[CellarPage] 📏 BEFORE scroll - Current position:', {
-      pageYOffset: window.pageYOffset,
-      scrollY: window.scrollY,
-      documentHeight: document.documentElement.scrollHeight,
-      viewportHeight: window.innerHeight
-    });
-    
     requestAnimationFrame(() => {
       setTimeout(() => {
-        console.log('[CellarPage] 🎯 Scroll timeout triggered (after sort)');
-        console.log('[CellarPage] 📏 Current scroll position in timeout:', window.pageYOffset);
-        
         if (bottlesSectionRef.current) {
-          console.log('[CellarPage] ✅ bottlesSectionRef.current exists');
-          
-          const element = bottlesSectionRef.current;
-          const rect = element.getBoundingClientRect();
-          console.log('[CellarPage] 📍 Bottles section position:', {
-            'rect.top': rect.top,
-            'rect.bottom': rect.bottom,
-            'rect.height': rect.height,
-            'window.pageYOffset': window.pageYOffset,
-            'window.scrollY': window.scrollY
-          });
-          
-          // Check if bottles section is already visible at top
+          const rect = bottlesSectionRef.current.getBoundingClientRect();
           const isVisible = rect.top >= 0 && rect.top <= 150;
-          console.log('[CellarPage] 👁️ Bottles already visible at top:', isVisible, '(rect.top:', rect.top, ')');
-          
-          // Calculate scroll position
-          const headerOffset = 100;
-          const elementPosition = rect.top;
-          const absolutePosition = elementPosition + window.pageYOffset;
-          const offsetPosition = absolutePosition - headerOffset;
-          const finalPosition = Math.max(0, offsetPosition);
-          
-          console.log('[CellarPage] 🧮 Scroll calculation:', {
-            headerOffset,
-            'elementPosition (rect.top)': elementPosition,
-            'absolutePosition (rect.top + pageYOffset)': absolutePosition,
-            'offsetPosition (absolute - headerOffset)': offsetPosition,
-            'finalPosition (Math.max(0, offset))': finalPosition,
-            'currentPosition': window.pageYOffset,
-            'scrollDistance': finalPosition - window.pageYOffset
-          });
-          
-          // Check if we need to scroll
-          const needsScroll = !isVisible || rect.top > 150;
-          console.log('[CellarPage] 🤔 Needs scroll:', needsScroll);
-          
-          // Scroll to bottles
-          if (needsScroll) {
-            console.log('[CellarPage] 🚀 CALLING window.scrollTo with:', {
-              top: finalPosition,
-              behavior: 'smooth'
-            });
-            
-            const startPosition = window.pageYOffset;
-            console.log('[CellarPage] 📍 Starting from position:', startPosition);
-            console.log('[CellarPage] 🎨 Using LUXURY scroll animation (1.2s duration)');
-            
-            // Use custom luxury scroll animation
+          const finalPosition = Math.max(0, rect.top + window.pageYOffset - 100);
+          if (!isVisible || rect.top > 150) {
             try {
               luxuryScrollTo(finalPosition, 1200);
-              console.log('[CellarPage] ✨ Luxury scroll animation started');
-              
-              // Verify scroll is working after a moment
-              setTimeout(() => {
-                const newPosition = window.pageYOffset;
-                console.log('[CellarPage] 📊 Position 300ms into animation:', newPosition);
-                console.log('[CellarPage] 📊 Scroll in progress:', Math.abs(newPosition - startPosition) > 5);
-              }, 300);
-              
-              // Check final position after animation completes
-              setTimeout(() => {
-                const finalPos = window.pageYOffset;
-                console.log('[CellarPage] 📊 FINAL position after animation (1200ms):', finalPos);
-                console.log('[CellarPage] 📊 Expected:', finalPosition, 'Actual:', finalPos);
-                console.log('[CellarPage] 📊 Total scroll distance:', finalPos - startPosition, 'px');
-                const wasSuccessful = Math.abs(finalPos - finalPosition) < 50;
-                console.log('[CellarPage] ✨ Luxury scroll successful:', wasSuccessful);
-              }, 1300);
             } catch (error) {
-              console.error('[CellarPage] ❌ Error in luxury scroll:', error);
+              console.error('[CellarPage] Scroll error:', error);
             }
-          } else {
-            console.log('[CellarPage] ⏭️ SKIPPING scroll - bottles already visible at top');
           }
-        } else {
-          console.error('[CellarPage] ❌ bottlesSectionRef.current is NULL - cannot scroll');
         }
       }, 200);
     });
@@ -1514,24 +1319,20 @@ export function CellarPage() {
             </div>
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setIsFilteringByEvent(false); // Reset event filtering flag on manual search
-              }}
+              value={searchDisplay}
+              onChange={(e) => handleSearchInput(e.target.value)}
               placeholder={t('cellar.search.placeholder')}
               className="input-luxury w-full pl-11 pr-11 py-3 text-sm sm:text-base"
               style={{
                 borderRadius: 'var(--radius-lg)',
               }}
             />
-            {searchQuery && (
+            {searchDisplay && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setSearchQuery('');
-                  setIsFilteringByEvent(false); // Reset event filtering flag
+                  clearSearch();
                 }}
                 className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors min-w-[44px] min-h-[44px]"
                 style={{
@@ -1799,13 +1600,6 @@ export function CellarPage() {
         </motion.div>
       )}
 
-      {(() => {
-        console.log('[CellarPage] Rendering bottles check:', {
-          bottlesInCellar: bottlesInCellar.length,
-          isEmpty: bottlesInCellar.length === 0
-        });
-        return null;
-      })()}
       {bottlesInCellar.length === 0 ? (
         <motion.div
           key="empty-cellar-state"
@@ -2309,7 +2103,6 @@ export function CellarPage() {
           setShowForm(true);
         }}
         onPhotoSelected={async (file: File) => {
-          console.log('[CellarPage] onPhotoSelected called with file:', file.name);
           // Call smart scan handler
           await handleSmartScan(file);
         }}
@@ -2361,7 +2154,6 @@ export function CellarPage() {
                 data: parseResult.data,
               });
               
-              console.log('[CellarPage] ✅ Wishlist: Extracted data ready');
               // Open wishlist form on success
               setShowWishlistForm(true);
             } else {
@@ -2454,7 +2246,6 @@ export function CellarPage() {
               }
             }}
             onCancel={() => {
-              console.log('[CellarPage] Label capture cancelled');
               setShowLabelCapture(false);
             }}
           />
@@ -2648,7 +2439,6 @@ export function CellarPage() {
           imageUrl={receiptScanResult.imageUrl}
           items={receiptScanResult.items}
           onConfirm={async (items) => {
-            console.log('[CellarPage] Adding', items.length, 'receipt items to cellar');
             
             // TODO: Implement receipt item adding with duplicate detection
             // For now, just show success

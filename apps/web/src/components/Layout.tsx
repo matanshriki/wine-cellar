@@ -133,7 +133,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // 400ms window, cameraSessionId will have been incremented and this
           // stale timer becomes a no-op — preventing a false-positive fallback.
           if (awaitingCameraResult.current && cameraSessionId.current === sessionId) {
-            console.log('[Camera] Returned from OS camera without file (iOS cancel?) — showing fallback');
             awaitingCameraResult.current = false;
             window.dispatchEvent(
               new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } })
@@ -174,8 +173,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const file = e.target.files?.[0];
     
     if (!file) {
-      // User cancelled camera or permission denied - show fallback sheet
-      console.log('[Camera] No file selected - user cancelled or permission denied, showing fallback sheet');
       const event = new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } });
       window.dispatchEvent(event);
       
@@ -192,12 +189,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // File selected - proceed with smart scan
-    console.log('[Camera] File selected, starting smart scan:', file.name, file.type);
-    
-    // CRITICAL FIX: Open AddBottleSheet so loader is visible
-    // On mobile, the sheet is not open yet, so we need to open it to show the scanning state
-    console.log('[Camera] Opening AddBottleSheet for scanning');
     openAddBottleFlowForScanning();
     
     // Minimal delay to ensure sheet is mounted, then begin scan
@@ -316,24 +307,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   
                   const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
                   
-                  // Log scroll positions to debug
-                  console.log('[Wine Glass Icon] CLICKED!');
-                  console.log('  window.scrollY:', window.scrollY);
-                  console.log('  document.documentElement.scrollTop:', document.documentElement.scrollTop);
-                  console.log('  document.body.scrollTop:', document.body.scrollTop);
-                  
-                  // Try multiple scroll methods (body might be the scroll container)
                   window.scrollTo({ top: 0, behavior });
                   document.documentElement.scrollTo?.({ top: 0, behavior });
                   document.body.scrollTo?.({ top: 0, behavior });
-                  
-                  // Force scroll with scrollTop as fallback
+
                   if (behavior === 'auto') {
                     document.documentElement.scrollTop = 0;
                     document.body.scrollTop = 0;
                   }
-                  
-                  console.log('[Wine Glass Icon] Scroll commands sent with behavior:', behavior);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -561,7 +542,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             setNoCreditsOpen(true);
             return;
           }
-          console.log('[CameraFallback] Photo selected from library, opening sheet and starting scan');
           closeFallbackSheet();
           
           // CRITICAL FIX: Open AddBottleSheet to show loader
@@ -583,8 +563,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <PwaCameraCaptureModal
         isOpen={showPwaCamera}
         onClose={() => {
-          // User closed camera without capturing
-          console.log('[PWA Camera] User closed camera, showing fallback options');
           closePwaCamera();
           
           // Show fallback options
@@ -592,13 +570,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           window.dispatchEvent(event);
         }}
         onCapture={async (file) => {
-          // User captured photo — final credit gate before scan
           closePwaCamera();
           if (creditBlockedRef.current) {
             setNoCreditsOpen(true);
             return;
           }
-          console.log('[PWA Camera] Photo captured, starting scan');
           
           // Open AddBottleSheet to show scanning loader
           openAddBottleFlowForScanning();
@@ -609,8 +585,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           });
         }}
         onError={(error) => {
-          // Camera error (permission denied, not found, etc)
-          console.error('[PWA Camera] Error:', error);
           closePwaCamera();
           
           // Show fallback sheet with error reason

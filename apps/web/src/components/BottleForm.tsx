@@ -48,11 +48,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         const parsed = JSON.parse(saved);
         // Check if data is recent (within 10 minutes)
         if (parsed.timestamp && Date.now() - parsed.timestamp < 600000) {
-          console.log('[BottleForm] 🔄 Restoring form data from sessionStorage (returning from Vivino)');
           // Don't clear yet - user might go back to Vivino again
           return parsed.data;
         } else {
-          console.log('[BottleForm] Clearing expired sessionStorage data');
           sessionStorage.removeItem('wine-form-vivino-flow');
         }
       }
@@ -167,13 +165,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     
     // Debounce: wait 2 seconds after user stops typing
     autoFetchTimeoutRef.current = setTimeout(async () => {
-      console.log('[BottleForm] 🔍 Auto-fetching from Vivino (background)...');
-      console.log('[BottleForm] Trigger: wine_name + producer both filled');
       
       // Generate Vivino search URL from current form data
       const vivinoUrl = generateVivinoSearchUrl();
       if (!vivinoUrl) {
-        console.log('[BottleForm] ⚠️ Could not generate Vivino search URL');
         return;
       }
       
@@ -187,7 +182,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       // Only auto-fetch if we already have a direct wine page URL (not a search URL)
       // The fetcher requires a wine page like /w/12345 or /wines/12345
       if (!isVivinoWineUrl(vivinoUrl)) {
-        console.log('[BottleForm] ⏩ Skipping auto-fetch: generated URL is a search page, not a wine page');
         return;
       }
       
@@ -201,7 +195,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         const vivinoData = await fetchVivinoWineData(vivinoUrl);
         
         if (vivinoData && (vivinoData.name || vivinoData.winery)) {
-          console.log('[BottleForm] ✅ Auto-fetched Vivino data:', vivinoData);
           
           // **SMART MERGE: Only fill EMPTY fields** (user's typing takes priority)
           setFormData(prev => {
@@ -223,14 +216,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             ].filter(Boolean).length;
             
             if (filledCount > 0) {
-              console.log('[BottleForm] 🎯 Auto-filled', filledCount, 'fields from Vivino');
               toast.success(`🍷 Auto-enriched with Vivino data (${filledCount} fields)`);
             }
             
             return merged;
           });
         } else {
-          console.log('[BottleForm] ⚠️ Vivino auto-fetch returned no data');
         }
       } catch (error) {
         console.error('[BottleForm] ❌ Vivino auto-fetch failed:', error);
@@ -270,8 +261,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   function handleSearchVivino() {
     const searchUrl = generateVivinoSearchUrl();
     
-    console.log('[BottleForm] 📝 Saving form data to sessionStorage before opening Vivino...');
-    console.log('[BottleForm] Current form data:', formData);
     
     // Save current form data to sessionStorage (survives page reload)
     try {
@@ -279,18 +268,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         data: formData,
         timestamp: Date.now(),
       }));
-      console.log('[BottleForm] ✅ Form data saved to sessionStorage');
     } catch (e) {
       console.error('[BottleForm] ⚠️ Failed to save to sessionStorage:', e);
     }
     
-    console.log('[BottleForm] 🚀 Opening Vivino in new tab:', searchUrl);
     
     // Open Vivino in new tab (user's preferred UX)
     // On iOS, this might cause app to pause/reload, but sessionStorage will restore data
     window.open(searchUrl, '_blank', 'noopener,noreferrer');
     
-    console.log('[BottleForm] ℹ️ Vivino opened. Form data is saved and will restore when you return.');
   }
   
   // Vivino data fetcher (dev only) - Auto-populate rating and details from Vivino URL
@@ -306,7 +292,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     }
     
     setFetchingVivino(true);
-    console.log('[BottleForm] 🍷 Fetching wine data from Vivino:', formData.vivino_url);
     
     try {
       const vivinoData = await fetchVivinoWineData(formData.vivino_url);
@@ -318,7 +303,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         return;
       }
       
-      console.log('[BottleForm] ✅ Fetched Vivino data:', vivinoData);
       
       // Auto-populate fields with Vivino data (UPDATE all fields with fetched data)
       setFormData(prev => ({
@@ -349,7 +333,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         );
       }
       
-      console.log('[BottleForm] 📝 Updated form with Vivino data');
       
     } catch (error: any) {
       console.error('[BottleForm] ❌ Vivino fetch error:', error);
@@ -396,11 +379,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   }, []);
 
   function handleClose() {
-    console.log('[BottleForm] User closed form without submitting');
     // Clear sessionStorage when user closes form (they're abandoning this wine)
     try {
       sessionStorage.removeItem('wine-form-vivino-flow');
-      console.log('[BottleForm] 🧹 Cleared sessionStorage (form closed)');
     } catch (e) {
       console.error('[BottleForm] Failed to clear sessionStorage:', e);
     }
@@ -411,26 +392,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('[BottleForm] ========== SUBMIT STARTED ==========');
-    console.log('[BottleForm] Form data:', formData);
-    console.log('[BottleForm] Loading state:', loading);
     
     // Prevent double submissions
     if (loading) {
-      console.log('[BottleForm] ⚠️ Already submitting, ignoring duplicate submit');
       return;
     }
     
     // Validate required fields
     if (!formData.wine_name || !formData.wine_name.trim()) {
-      console.log('[BottleForm] ❌ Validation failed: Wine name is required');
       toast.error(t('bottleForm.nameRequired', 'Wine name is required'));
       return;
     }
     
     const qty = parseInt(String(formData.quantity || '1').trim(), 10);
     if (Number.isNaN(qty) || qty < 1) {
-      console.log('[BottleForm] ❌ Validation failed: Invalid quantity');
       toast.error(t('bottleForm.quantityRequired', 'Quantity must be at least 1'));
       return;
     }
@@ -439,10 +414,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
 
     try {
       if (bottle) {
-        console.log('[BottleForm] ========== UPDATING EXISTING BOTTLE ==========');
-        console.log('[BottleForm] Bottle ID:', bottle.id);
-        console.log('[BottleForm] Wine ID:', bottle.wine_id);
-        console.log('[BottleForm] Form data:', formData);
         
         // Update bottle-level fields
         const bottleUpdates = {
@@ -457,9 +428,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           reserved_note: isReserved && reservedNote ? reservedNote : null,
         };
         
-        console.log('[BottleForm] Updating bottle fields:', bottleUpdates);
         await bottleService.updateBottle(bottle.id, bottleUpdates);
-        console.log('[BottleForm] ✅ Bottle fields updated');
         
         // Update wine-level fields (vintage, producer, etc.)
         const wineUpdates: bottleService.UpdateWineInput = {
@@ -473,26 +442,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           rating: formData.rating ? parseFloat(formData.rating) : null, // Save Vivino rating
         };
         
-        console.log('[BottleForm] Updating wine fields:', wineUpdates);
         await bottleService.updateWineInfo(bottle.wine_id, wineUpdates);
-        console.log('[BottleForm] ✅ Wine fields updated');
 
         // If a new photo was uploaded in edit mode, persist the storage path
         if (newImagePath) {
-          console.log('[BottleForm] Updating wine image path:', newImagePath);
           await bottleService.updateWineStorageImage(
             bottle.wine_id,
             newImagePath,
             formData.label_image_bucket || 'labels'
           );
-          console.log('[BottleForm] ✅ Wine image path updated');
         }
         
         trackBottle.edit(); // Track bottle edit
         toast.success(t('bottleForm.bottleUpdated'));
-        console.log('[BottleForm] ========== UPDATE COMPLETE ==========');
       } else {
-        console.log('[BottleForm] Creating new bottle...');
         // For creation, combine wine and bottle data into single object
         const createInput: bottleService.CreateBottleInput = {
           // Wine info
@@ -535,25 +498,20 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           reserved_note: isReserved && reservedNote ? reservedNote : null,
         };
         
-        console.log('[BottleForm] Create input:', JSON.stringify(createInput, null, 2));
         const result = await bottleService.createBottle(createInput);
-        console.log('[BottleForm] ✅ Bottle created successfully:', result);
         trackBottle.addManual(); // Track manual bottle addition
         toast.success(t('bottleForm.bottleAdded'));
       }
 
-      console.log('[BottleForm] Calling onSuccess callback...');
       
       // Clear sessionStorage on successful submit (no longer need saved data)
       try {
         sessionStorage.removeItem('wine-form-vivino-flow');
-        console.log('[BottleForm] 🧹 Cleared sessionStorage (form successfully submitted)');
       } catch (e) {
         console.error('[BottleForm] Failed to clear sessionStorage:', e);
       }
       
       onSuccess();
-      console.log('[BottleForm] ✅ onSuccess callback completed');
     } catch (error: any) {
       console.error('[BottleForm] ❌ Error saving bottle:', error);
       console.error('[BottleForm] Error details:', {
@@ -565,7 +523,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       toast.error(error.message || t('bottleForm.saveFailed'));
     } finally {
       setLoading(false);
-      console.log('[BottleForm] ========== SUBMIT FINISHED ==========');
     }
   }
 
@@ -596,7 +553,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       };
 
       wishlistService.addWishlistItem(wishlistItem);
-      console.log('[BottleForm] ✅ Saved to wishlist:', wishlistItem);
       toast.success('Added to wishlist! 🔖');
       
       // Clear sessionStorage
@@ -962,7 +918,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   {(() => {
                     const hasUrl = !!formData.vivino_url;
                     const isValidUrl = hasUrl && isVivinoWineUrl(formData.vivino_url);
-                    console.log('[BottleForm] Vivino URL check:', {
                       hasUrl,
                       url: formData.vivino_url,
                       isValidUrl,
@@ -975,7 +930,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('[BottleForm] 🔘 Fetch Data button clicked!');
                         handleFetchFromVivino();
                       }}
                       disabled={fetchingVivino}

@@ -6,7 +6,8 @@
  * The secret API key lives server-side only.
  */
 
-import { initializePaddle, type Paddle, type CheckoutOpenOptions } from '@paddle/paddle-js';
+// Types-only import keeps the module graph clean while the runtime SDK is lazy-loaded
+import type { Paddle, CheckoutOpenOptions } from '@paddle/paddle-js';
 
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
 const ENVIRONMENT  = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as 'sandbox' | 'production';
@@ -17,7 +18,8 @@ let initPromise: Promise<Paddle | null> | null = null;
 
 /**
  * Returns a ready Paddle instance (initialised once, memoised).
- * Returns null when the client token is not configured.
+ * The Paddle SDK is dynamically imported on first call so it is excluded from
+ * the initial app bundle — users who never open the upgrade flow pay zero cost.
  */
 export async function getPaddle(): Promise<Paddle | null> {
   if (paddleInstance) return paddleInstance;
@@ -28,14 +30,14 @@ export async function getPaddle(): Promise<Paddle | null> {
     return null;
   }
 
-  initPromise = initializePaddle({
-    token:       CLIENT_TOKEN,
-    environment: ENVIRONMENT,
-  }).then((paddle) => {
+  initPromise = import('@paddle/paddle-js').then(({ initializePaddle }) =>
+    initializePaddle({ token: CLIENT_TOKEN!, environment: ENVIRONMENT })
+  ).then((paddle) => {
     paddleInstance = paddle ?? null;
     return paddleInstance;
   }).catch((err) => {
     console.error('[Paddle] Init failed:', err);
+    initPromise = null; // allow retry
     return null;
   });
 

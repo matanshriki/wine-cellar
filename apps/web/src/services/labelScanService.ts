@@ -37,15 +37,11 @@ export interface ExtractedWineData {
  * @param quality - JPEG quality 0-1 (default 0.8 for labels, use 0.9 for receipts)
  */
 export async function compressImage(file: File, maxWidth = 1024, quality = 0.8): Promise<Blob> {
-  console.log('[compressImage] Starting compression:', file.name, file.size, 'bytes');
-  console.log('[compressImage] File type:', file.type);
-  console.log('[compressImage] Params:', { maxWidth, quality });
   
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
     reader.onload = (e) => {
-      console.log('[compressImage] FileReader loaded successfully');
       const img = new Image();
       
       img.onload = () => {
@@ -68,7 +64,6 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
           height = maxHeight;
         }
         
-        console.log('[compressImage] Resizing:', {
           original: `${originalWidth}x${originalHeight}`,
           new: `${Math.round(width)}x${Math.round(height)}`,
           reduction: `${Math.round((1 - (width * height) / (originalWidth * originalHeight)) * 100)}%`,
@@ -95,7 +90,6 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              console.log('[compressImage] Compression complete:', {
                 originalSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
                 compressedSize: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
                 reduction: `${Math.round((1 - blob.size / file.size) * 100)}%`,
@@ -124,7 +118,6 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
       reject(new Error(`Failed to read file: ${reader.error?.message || 'Unknown error'}`));
     };
     
-    console.log('[compressImage] Starting FileReader.readAsDataURL...');
     reader.readAsDataURL(file);
   });
 }
@@ -145,11 +138,9 @@ export async function uploadLabelImage(file: File): Promise<{
     throw new Error('Not authenticated. Please log in and try again.');
   }
 
-  console.log('[uploadLabelImage] Starting upload for user:', user.id);
 
   // Compress image before upload
   const compressedBlob = await compressImage(file);
-  console.log('[uploadLabelImage] Image compressed:', {
     original: file.size,
     compressed: compressedBlob.size,
   });
@@ -158,7 +149,6 @@ export async function uploadLabelImage(file: File): Promise<{
   const fileExt = 'jpg'; // Always JPEG after compression
   const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
 
-  console.log('[uploadLabelImage] Uploading to bucket: labels, path:', fileName);
 
   // Upload to Supabase Storage
   const { data, error } = await supabase.storage
@@ -187,7 +177,6 @@ export async function uploadLabelImage(file: File): Promise<{
     throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
   }
 
-  console.log('[uploadLabelImage] ✅ Upload successful, path:', fileName);
 
   // Return stable storage path (not URL!)
   // URLs will be generated at runtime to avoid expiration
@@ -208,8 +197,6 @@ export async function extractWineFromLabel(imageUrl: string): Promise<ExtractedW
     throw new Error('Not authenticated');
   }
 
-  console.log('[extractWineFromLabel] AI extraction temporarily disabled, returning placeholder');
-  console.log('[extractWineFromLabel] To enable AI: Deploy Edge Function (see DEPLOY_EDGE_FUNCTION_FIX.md)');
 
   // TEMPORARY: Return placeholder data until Edge Function is deployed
   // User can manually fill in the details
@@ -280,7 +267,6 @@ export async function scanLabelImage(file: File): Promise<{
   }
 
   const tempUrl = signedUrlData.signedUrl;
-  console.log('[scanLabelImage] Created temporary URL for AI processing');
   
   // 3. Extract wine data using the temporary URL
   const extractedData = await extractWineFromLabel(tempUrl);

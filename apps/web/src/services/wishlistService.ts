@@ -50,7 +50,6 @@ export type CreateWishlistItemInput = Omit<WishlistItem, 'id' | 'createdAt' | 'u
  */
 export async function loadWishlist(): Promise<WishlistItem[]> {
   try {
-    console.log('[Wishlist] Loading items from Supabase...');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -91,7 +90,6 @@ export async function loadWishlist(): Promise<WishlistItem[]> {
       extractionConfidence: dbItem.extraction_confidence,
     }));
     
-    console.log('[Wishlist] ✅ Loaded items:', items.length);
     return items;
   } catch (error) {
     console.error('[Wishlist] Failed to load items:', error);
@@ -104,7 +102,6 @@ export async function loadWishlist(): Promise<WishlistItem[]> {
  */
 export async function addWishlistItem(input: CreateWishlistItemInput): Promise<WishlistItem> {
   try {
-    console.log('[Wishlist] Adding new item to Supabase...');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -161,7 +158,6 @@ export async function addWishlistItem(input: CreateWishlistItemInput): Promise<W
       extractionConfidence: data.extraction_confidence,
     };
     
-    console.log('[Wishlist] ✅ Added item:', newItem.id);
     return newItem;
   } catch (error) {
     console.error('[Wishlist] Failed to add item:', error);
@@ -174,7 +170,6 @@ export async function addWishlistItem(input: CreateWishlistItemInput): Promise<W
  */
 export async function updateWishlistItem(id: string, updates: Partial<CreateWishlistItemInput>): Promise<WishlistItem> {
   try {
-    console.log('[Wishlist] Updating item:', id);
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -235,7 +230,6 @@ export async function updateWishlistItem(id: string, updates: Partial<CreateWish
       extractionConfidence: data.extraction_confidence,
     };
     
-    console.log('[Wishlist] ✅ Updated item:', id);
     return updatedItem;
   } catch (error) {
     console.error('[Wishlist] Failed to update item:', error);
@@ -248,7 +242,6 @@ export async function updateWishlistItem(id: string, updates: Partial<CreateWish
  */
 export async function removeWishlistItem(id: string): Promise<void> {
   try {
-    console.log('[Wishlist] Removing item:', id);
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -267,7 +260,6 @@ export async function removeWishlistItem(id: string): Promise<void> {
       throw new Error(`Failed to remove wishlist item: ${error.message}`);
     }
     
-    console.log('[Wishlist] ✅ Removed item:', id);
   } catch (error) {
     console.error('[Wishlist] Failed to remove item:', error);
     throw error;
@@ -279,7 +271,6 @@ export async function removeWishlistItem(id: string): Promise<void> {
  */
 export async function getWishlistItem(id: string): Promise<WishlistItem | null> {
   try {
-    console.log('[Wishlist] Getting item:', id);
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -357,7 +348,6 @@ export async function searchWishlist(query: string): Promise<WishlistItem[]> {
  */
 export async function clearWishlist(): Promise<void> {
   try {
-    console.log('[Wishlist] Clearing all items...');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -375,7 +365,6 @@ export async function clearWishlist(): Promise<void> {
       throw new Error(`Failed to clear wishlist: ${error.message}`);
     }
     
-    console.log('[Wishlist] ✅ Cleared all items');
   } catch (error) {
     console.error('[Wishlist] Failed to clear wishlist:', error);
     throw error;

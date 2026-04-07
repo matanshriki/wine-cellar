@@ -89,42 +89,22 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }
 
   const setTheme = async (newTheme: Theme) => {
-    // Skip theme changes when dark mode is disabled
-    if (!DARK_MODE_ENABLED) {
-      return;
-    }
+    if (!DARK_MODE_ENABLED) return;
 
     try {
-      console.log('[ThemeContext] ===== SETTING THEME =====');
-      console.log('[ThemeContext] Old theme:', theme);
-      console.log('[ThemeContext] New theme:', newTheme);
-      
-      // Update state
       setThemeState(newTheme);
-      console.log('[ThemeContext] State updated');
-      
-      // Apply to DOM
       applyTheme(newTheme);
-      console.log('[ThemeContext] DOM updated');
-      
-      // Save to localStorage
       localStorage.setItem('theme', newTheme);
-      console.log('[ThemeContext] localStorage updated');
-      
-      // Save to Supabase (background, non-blocking)
+
+      // Save to Supabase in the background (non-blocking)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log('[ThemeContext] Saving to Supabase profile...');
         supabase
           .from('profiles')
           .update({ theme_preference: newTheme })
           .eq('id', user.id)
           .then(({ error }) => {
-            if (error) {
-              console.error('[ThemeContext] Error saving theme to profile:', error);
-            } else {
-              console.log('[ThemeContext] ✅ Theme saved to profile successfully');
-            }
+            if (error) console.error('[ThemeContext] Error saving theme to profile:', error);
           });
       }
     } catch (error) {
@@ -143,29 +123,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
  * Apply theme to DOM
  */
 function applyTheme(theme: Theme) {
-  console.log('[applyTheme] ===== APPLYING THEME =====');
-  console.log('[applyTheme] Theme value:', theme);
-  console.log('[applyTheme] BEFORE - html data-theme:', document.documentElement.getAttribute('data-theme'));
-  
-  // Set data-theme attribute on html element
   document.documentElement.setAttribute('data-theme', theme);
-  
-  console.log('[applyTheme] AFTER - html data-theme:', document.documentElement.getAttribute('data-theme'));
-  
-  // Check computed CSS variable
-  const computedBg = getComputedStyle(document.documentElement).getPropertyValue('--bg');
-  console.log('[applyTheme] Computed --bg color:', computedBg);
-  
-  const computedText = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
-  console.log('[applyTheme] Computed --text-primary color:', computedText);
-  
+
   // Update meta theme-color for mobile browsers
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    const newColor = theme === 'red' ? '#0B0B0D' : '#FFFFFF';
-    metaTheme.setAttribute('content', newColor);
-    console.log('[applyTheme] Meta theme-color updated to:', newColor);
+    metaTheme.setAttribute('content', theme === 'red' ? '#0B0B0D' : '#FFFFFF');
   }
-  
-  console.log('[applyTheme] ✅ Theme applied successfully');
 }

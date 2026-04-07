@@ -51,7 +51,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const openAddBottleFlowForScanning = () => {
     // Open sheet in preparation for scanning
     // The scanning state will be set by handleSmartScan() immediately after
-    console.log('[AddBottleContext] Opening sheet for incoming scan');
     setShowAddSheet(true);
     setScanningState('idle'); // Keep idle temporarily, handleSmartScan will set to scanning
     setScanningMessage('');
@@ -67,7 +66,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   const openImmediateCamera = () => {
     // For mobile/PWA: trigger immediate camera capture
     // This will be handled by a hidden file input in Layout
-    console.log('[AddBottleContext] Opening immediate camera');
     setShowAddSheet(false);
     setShowFallbackSheet(false);
     setShowPwaCamera(false);
@@ -80,7 +78,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
   const openPwaCamera = () => {
     // For iOS PWA: open getUserMedia camera modal
-    console.log('[AddBottleContext] Opening PWA camera');
     setShowPwaCamera(true);
     setShowAddSheet(false);
     setShowFallbackSheet(false);
@@ -88,7 +85,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   };
 
   const closePwaCamera = () => {
-    console.log('[AddBottleContext] Closing PWA camera');
     setShowPwaCamera(false);
   };
 
@@ -99,7 +95,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
   // Show fallback sheet (called when camera fails or cancelled)
   const showFallback = (reason: FallbackReason) => {
-    console.log('[AddBottleContext] Showing camera fallback sheet, reason:', reason);
     setShowFallbackSheet(true);
     setFallbackReason(reason);
     setShowAddSheet(false);
@@ -108,7 +103,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
   // Expose showFallback through window events for easy access
   useEffect(() => {
     const handleShowFallback = (e: CustomEvent<{ reason: FallbackReason }>) => {
-      console.log('[AddBottleContext] Received showCameraFallback event:', e.detail);
       showFallback(e.detail.reason);
     };
 
@@ -129,7 +123,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       return; // Prevent double-scans
     }
     
-    console.log('[AddBottleContext] Starting smart scan for file:', file.name, file.type);
 
     // ── Analytics: scan started ──────────────────────────────────────────────
     trackLabelParse.start();
@@ -162,7 +155,6 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       // Handle receipt vs label results
       if (result.mode === 'receipt') {
         // Receipt detected - dispatch receipt event
-        console.log('[AddBottleContext] Receipt detected, dispatching receiptScanComplete');
         const event = new CustomEvent('receiptScanComplete', {
           detail: {
             imageUrl: result.imageUrl,

@@ -69,51 +69,28 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
   }
 
   async function refetch() {
-    console.log('[FeatureFlagsContext] Manual refetch triggered');
     await loadFlags();
   }
 
   // Detect flag changes and show toasts + handle redirects
   function detectFlagChanges(oldFlags: FeatureFlags, newFlags: FeatureFlags) {
-    // Check wishlist flag
     if (oldFlags.wishlistEnabled !== newFlags.wishlistEnabled) {
       if (newFlags.wishlistEnabled) {
-        // Flag enabled
-        console.log('[FeatureFlagsContext] ✅ Wishlist feature enabled');
         toast.success('New feature enabled: Wishlist ✅');
       } else {
-        // Flag disabled
-        console.log('[FeatureFlagsContext] ❌ Wishlist feature disabled');
         toast.warning('Wishlist feature disabled for your account');
-        
-        // If user is on wishlist page, redirect to cellar
-        if (location.pathname === '/wishlist') {
-          console.log('[FeatureFlagsContext] Redirecting from /wishlist to /cellar');
-          navigate('/cellar', { replace: true });
-        }
+        if (location.pathname === '/wishlist') navigate('/cellar', { replace: true });
       }
     }
-    
-    // Check cellar agent flag
+
     if (oldFlags.cellarAgentEnabled !== newFlags.cellarAgentEnabled) {
       if (newFlags.cellarAgentEnabled) {
-        // Flag enabled
-        console.log('[FeatureFlagsContext] ✅ Cellar Sommelier feature enabled');
         toast.success('New feature enabled: Cellar Sommelier ✅');
       } else {
-        // Flag disabled
-        console.log('[FeatureFlagsContext] ❌ Cellar Sommelier feature disabled');
         toast.warning('Cellar Sommelier feature disabled for your account');
-        
-        // If user is on agent page, redirect to cellar
-        if (location.pathname === '/agent') {
-          console.log('[FeatureFlagsContext] Redirecting from /agent to /cellar');
-          navigate('/cellar', { replace: true });
-        }
+        if (location.pathname === '/agent') navigate('/cellar', { replace: true });
       }
     }
-    
-    // Add more flag change detections here as new features are added
   }
 
   // Load flags on mount
@@ -123,14 +100,10 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
 
   // Reload flags when auth state changes
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[FeatureFlagsContext] Auth state changed:', event);
-      
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // User logged in or token refreshed -> reload flags
         loadFlags();
       } else if (event === 'SIGNED_OUT') {
-        // User logged out -> reset to default flags
         setFlags(featureFlagsService.DEFAULT_FLAGS);
         setLoading(false);
       }
@@ -148,15 +121,8 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
     async function setupRealtimeSubscription() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          console.log('[FeatureFlagsContext] No session, skipping Realtime subscription');
-          return;
-        }
+        if (!session?.user) return;
 
-        console.log('[FeatureFlagsContext] Setting up Realtime subscription for user:', session.user.id);
-
-        // Subscribe to changes on the profiles table for current user
         channel = supabase
           .channel(`profile-changes-${session.user.id}`)
           .on(
@@ -169,36 +135,24 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
             },
             (payload) => {
               try {
-              if (!payload?.new) return; // guard against system events with no data
-              console.log('[FeatureFlagsContext] 🔄 Profile updated via Realtime:', payload);
-              
-              // Extract feature flags from the updated profile
-              const newRecord = payload.new as any;
-              if (newRecord && 'wishlist_enabled' in newRecord) {
-                const updatedFlags: FeatureFlags = {
-                  wishlistEnabled: newRecord.wishlist_enabled ?? false,
-                  cellarAgentEnabled: newRecord.cellar_agent_enabled ?? false,
-                  csvImportEnabled: newRecord.csv_import_enabled ?? false,
-                };
-                
-                // Detect changes and show toasts
-                if (previousFlagsRef.current) {
-                  detectFlagChanges(previousFlagsRef.current, updatedFlags);
+                if (!payload?.new) return;
+                const newRecord = payload.new as any;
+                if (newRecord && 'wishlist_enabled' in newRecord) {
+                  const updatedFlags: FeatureFlags = {
+                    wishlistEnabled: newRecord.wishlist_enabled ?? false,
+                    cellarAgentEnabled: newRecord.cellar_agent_enabled ?? false,
+                    csvImportEnabled: newRecord.csv_import_enabled ?? false,
+                  };
+                  if (previousFlagsRef.current) detectFlagChanges(previousFlagsRef.current, updatedFlags);
+                  previousFlagsRef.current = updatedFlags;
+                  setFlags(updatedFlags);
                 }
-                
-                previousFlagsRef.current = updatedFlags;
-                setFlags(updatedFlags);
-                
-                console.log('[FeatureFlagsContext] ✅ Flags updated from Realtime:', updatedFlags);
-              }
               } catch (err) {
                 console.warn('[FeatureFlagsContext] Realtime callback error (ignored):', err);
               }
             }
           )
-          .subscribe((status) => {
-            console.log('[FeatureFlagsContext] Realtime subscription status:', status);
-          });
+          .subscribe();
 
         channelRef.current = channel;
       } catch (error) {
@@ -208,23 +162,18 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
 
     setupRealtimeSubscription();
 
-    // Cleanup
     return () => {
       if (channel) {
-        console.log('[FeatureFlagsContext] Cleaning up Realtime subscription');
         supabase.removeChannel(channel);
         channelRef.current = null;
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally stable; auth listener handles re-setup after login
 
-  // Refetch flags on window focus (fallback for missed updates)
+  // Refetch flags on window focus (fallback for missed Realtime updates)
   useEffect(() => {
     function handleVisibilityChange() {
-      if (!document.hidden) {
-        console.log('[FeatureFlagsContext] Window focus - refreshing flags (silent)');
-        loadFlags(true); // Silent refresh
-      }
+      if (!document.hidden) loadFlags(true);
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

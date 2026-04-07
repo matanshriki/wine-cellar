@@ -143,8 +143,6 @@ export async function generateAIAnalysis(
     throw new Error('Not authenticated');
   }
 
-  console.log('[AI Analysis] Generating analysis in language:', language);
-
   // Try AI analysis first
   try {
     const wineData = {
@@ -229,15 +227,10 @@ export async function generateAIAnalysis(
  * @param language - Language code ('en' or 'he')
  */
 function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: string = 'en'): AIAnalysis {
-  console.log('[AI Analysis] Using deterministic analysis for', bottle.wine.wine_name, bottle.wine.vintage);
-  
-  // Use the new drink window service for consistent logic
   const drinkWindow = drinkWindowService.computeDrinkWindow(bottle, {
     language,
     includeDebug: true,
   });
-  
-  console.log('[AI Analysis] Drink window result:', drinkWindow);
   
   // Determine serving temperature based on wine type
   const wineType = (bottle.wine.color || 'red').toLowerCase();
@@ -409,8 +402,6 @@ export async function analyzeCellarBulk(
     throw new Error('Not authenticated');
   }
 
-  console.log('[Bulk Analysis] Starting cellar analysis...', { mode, limit });
-
   try {
     const { data, error } = await supabase.functions.invoke('analyze-cellar', {
       body: {
@@ -431,12 +422,6 @@ export async function analyzeCellarBulk(
       console.error('[Bulk Analysis] Invalid response:', data);
       throw new Error(data?.error || 'Invalid response from server');
     }
-
-    console.log('[Bulk Analysis] ✅ Complete:', {
-      processed: data.processedCount,
-      skipped: data.skippedCount,
-      failed: data.failedCount,
-    });
 
     return data as BulkAnalysisResult;
 
@@ -570,7 +555,6 @@ export async function analyzeCellarInBatches(
   const abortSignal = options.abortSignal;
   const language = options.language?.startsWith('he') ? 'he' : 'en';
 
-  console.log('[Batch Analysis] 🚀 Starting batch analysis', { mode, pageSize, maxBottles });
   const startTime = Date.now();
 
   // Aggregated results
@@ -607,10 +591,9 @@ export async function analyzeCellarInBatches(
 
     if (!countError && count !== null) {
       totalEligible = Math.min(count, maxBottles);
-      console.log('[Batch Analysis] 📊 Total eligible bottles:', totalEligible);
     }
-  } catch (error) {
-    console.warn('[Batch Analysis] ⚠️ Could not get total count, proceeding without it');
+  } catch {
+    // Proceed without total count — progress bar will show indeterminate
   }
 
   // Process in batches
@@ -619,14 +602,9 @@ export async function analyzeCellarInBatches(
   let batchNumber = 0;
 
   while (hasMore && totalProcessed < maxBottles) {
-    // Check for cancellation
-    if (abortSignal?.aborted) {
-      console.log('[Batch Analysis] ❌ Cancelled by user');
-      throw new Error('Analysis cancelled');
-    }
+    if (abortSignal?.aborted) throw new Error('Analysis cancelled');
 
     batchNumber++;
-    console.log('[Batch Analysis] 📦 Processing batch', batchNumber, 'offset:', offset);
     const batchStart = Date.now();
 
     try {
@@ -660,13 +638,7 @@ export async function analyzeCellarInBatches(
       allResults.push(...(data.results || []));
 
       const batchTime = Date.now() - batchStart;
-      console.log('[Batch Analysis] ✅ Batch complete:', {
-        batch: batchNumber,
-        processed: data.processedCount,
-        skipped: data.skippedCount,
-        failed: data.failedCount,
-        timeMs: batchTime,
-      });
+      void batchTime; // used only in dev logs
 
       // Update progress
       if (onProgress) {
@@ -685,10 +657,6 @@ export async function analyzeCellarInBatches(
       const fetchedCount = data.fetchedCount ?? (data.results || []).length;
       hasMore = fetchedCount >= pageSize && totalProcessed < maxBottles;
 
-      if (!hasMore) {
-        console.log('[Batch Analysis] 🏁 No more bottles to process');
-      }
-
       // Move to next page
       offset += pageSize;
 
@@ -703,15 +671,7 @@ export async function analyzeCellarInBatches(
     }
   }
 
-  const totalTime = Date.now() - startTime;
-  console.log('[Batch Analysis] 🎉 Complete!', {
-    batches: batchNumber,
-    totalProcessed,
-    totalSkipped,
-    totalFailed,
-    totalTimeMs: totalTime,
-    avgBatchTimeMs: Math.round(totalTime / batchNumber),
-  });
+  void (Date.now() - startTime); // elapsed available for diagnostics if needed
 
   return {
     success: true,

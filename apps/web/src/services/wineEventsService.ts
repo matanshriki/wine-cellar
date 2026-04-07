@@ -42,26 +42,25 @@ export async function getActiveEvents(): Promise<WineEvent[]> {
     const windowEnd = new Date(today);
     windowEnd.setDate(today.getDate() + DAYS_WINDOW);
 
-    // Fetch events inside the active window
-    const { data: events, error: eventsError } = await supabase
-      .from('wine_events')
-      .select('id, name, date, tags, type, description_short, source_name, source_url')
-      .gte('date', toISODate(windowStart))
-      .lte('date', toISODate(windowEnd))
-      .order('date', { ascending: true });
+    // Fetch events and dismissed states in parallel — they are independent queries
+    const [eventsResult, statesResult] = await Promise.all([
+      supabase
+        .from('wine_events')
+        .select('id, name, date, tags, type, description_short, source_name, source_url')
+        .gte('date', toISODate(windowStart))
+        .lte('date', toISODate(windowEnd))
+        .order('date', { ascending: true }),
+      supabase
+        .from('user_event_states')
+        .select('event_id')
+        .eq('user_id', session.user.id)
+        .not('dismissed_at', 'is', null),
+    ]);
 
-    if (eventsError) {
-      console.log('[WineEvents] Error fetching events:', eventsError.message);
-      return [];
-    }
-    if (!events?.length) return [];
+    const { data: events, error: eventsError } = eventsResult;
+    const { data: userStates } = statesResult;
 
-    // Fetch events the user has dismissed so we can exclude them
-    const { data: userStates } = await supabase
-      .from('user_event_states')
-      .select('event_id')
-      .eq('user_id', session.user.id)
-      .not('dismissed_at', 'is', null);
+    if (eventsError || !events?.length) return [];
 
     const dismissedIds = new Set((userStates ?? []).map(s => s.event_id));
 
@@ -80,10 +79,8 @@ export async function getActiveEvents(): Promise<WineEvent[]> {
         filterTag: Array.isArray(e.tags) && e.tags.length > 0 ? String(e.tags[0]) : null,
       }));
 
-    console.log('[WineEvents] 🍷', active.length, 'active event(s) this week');
     return active;
-  } catch (error) {
-    console.log('[WineEvents] Events unavailable:', error);
+  } catch {
     return [];
   }
 }

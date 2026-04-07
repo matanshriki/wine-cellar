@@ -86,7 +86,6 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
       return null;
     }
 
-    console.log('[EveningPlanService] ✅ Active plan found:', {
       id: data.id,
       queueLength: (data.queue as any[])?.length,
       firstWineImage: (data.queue as any[])?.[0]?.image_url,
@@ -101,7 +100,6 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
     const needsEnrichment = queue.some(w => !w.image_url);
     
     if (needsEnrichment) {
-      console.log('[EveningPlanService] Enriching queue with wine images...');
       
       // Fetch fresh wine data (include paths for runtime URL generation)
       const wineIds = queue.map(w => w.wine_id);
@@ -123,7 +121,6 @@ export async function getActivePlan(): Promise<EveningPlan | null> {
         });
         
         plan.queue = enrichedQueue as any;
-        console.log('[EveningPlanService] ✅ Queue enriched with images');
       }
     }
     
@@ -143,7 +140,6 @@ export async function createPlan(params: {
   settings: Record<string, any>;
   queue: QueuedWine[];
 }): Promise<EveningPlan> {
-  console.log('[EveningPlanService] Creating new plan...');
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -180,7 +176,6 @@ export async function createPlan(params: {
     throw error;
   }
 
-  console.log('[EveningPlanService] ✅ Plan created:', data.id);
   return data as EveningPlan;
 }
 
@@ -188,7 +183,6 @@ export async function createPlan(params: {
  * Update plan progress (now playing index)
  */
 export async function updateProgress(planId: string, nowPlayingIndex: number): Promise<void> {
-  console.log('[EveningPlanService] Updating progress:', nowPlayingIndex);
   
   const { error } = await supabase
     .from('evening_plans')
@@ -200,14 +194,12 @@ export async function updateProgress(planId: string, nowPlayingIndex: number): P
     throw error;
   }
 
-  console.log('[EveningPlanService] ✅ Progress updated');
 }
 
 /**
  * Update queue (for swaps, completions, etc)
  */
 export async function updateQueue(planId: string, queue: QueuedWine[]): Promise<void> {
-  console.log('[EveningPlanService] Updating queue...');
   
   const { error } = await supabase
     .from('evening_plans')
@@ -219,7 +211,6 @@ export async function updateQueue(planId: string, queue: QueuedWine[]): Promise<
     throw error;
   }
 
-  console.log('[EveningPlanService] ✅ Queue updated');
 }
 
 /**
@@ -230,7 +221,6 @@ export async function completePlan(planId: string, completionData: {
   total_bottles_opened: number;
   average_rating: number | null;
 }): Promise<void> {
-  console.log('[EveningPlanService] Completing plan...');
   
   const { error } = await supabase
     .from('evening_plans')
@@ -248,14 +238,12 @@ export async function completePlan(planId: string, completionData: {
     throw error;
   }
 
-  console.log('[EveningPlanService] ✅ Plan completed');
 }
 
 /**
  * Cancel the plan
  */
 export async function cancelPlan(planId: string): Promise<void> {
-  console.log('[EveningPlanService] Cancelling plan...');
   
   const { error } = await supabase
     .from('evening_plans')
@@ -267,14 +255,12 @@ export async function cancelPlan(planId: string): Promise<void> {
     throw error;
   }
 
-  console.log('[EveningPlanService] ✅ Plan cancelled');
 }
 
 /**
  * Get completed plans for history
  */
 export async function getCompletedPlans(): Promise<EveningPlan[]> {
-  console.log('[EveningPlanService] Fetching completed plans...');
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -293,7 +279,6 @@ export async function getCompletedPlans(): Promise<EveningPlan[]> {
     return [];
   }
 
-  console.log('[EveningPlanService] ✅ Found', data.length, 'completed plans');
   return data as EveningPlan[];
 }
 
@@ -305,7 +290,6 @@ export function lineupToQueue(lineup: Array<{
   position: number;
   label: string;
 }>): QueuedWine[] {
-  console.log('[EveningPlanService] Converting lineup to queue. Sample wine data:', {
     wineName: lineup[0]?.bottle.wine.wine_name,
     imageUrl: lineup[0]?.bottle.wine.image_url,
     fullWineObject: lineup[0]?.bottle.wine,

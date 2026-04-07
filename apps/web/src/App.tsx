@@ -1,38 +1,49 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { Component, lazy, Suspense, type ReactNode, type ErrorInfo } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAnalyticsUser } from './hooks/useAnalyticsUser';
 import { SupabaseAuthProvider, useAuth } from './contexts/SupabaseAuthContext';
-import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext'; // Feature flags
-import { AddBottleProvider } from './contexts/AddBottleContext'; // Global Add Bottle flow
-import { ThemeProvider } from './contexts/ThemeContext'; // Dark mode V2
+import { FeatureFlagsProvider, useFeatureFlag, useFeatureFlags } from './contexts/FeatureFlagsContext';
+import { AddBottleProvider } from './contexts/AddBottleContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { WinePourProvider } from './components/WinePourTransition';
 import { ToastProvider } from './components/ui/Toast';
-import { toast } from './lib/toast'; // Correct import location
+import { toast } from './lib/toast';
 import { WineLoader } from './components/WineLoader';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookieConsent } from './components/CookieConsent';
-import { LoginPage } from './pages/LoginPage';
-import { CellarPage } from './pages/CellarPage';
-import { RecommendationPage } from './pages/RecommendationPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { AdminEnrichPage } from './pages/AdminEnrichPage';
-import { SharedCellarPage } from './pages/SharedCellarPage'; // Feedback iteration (dev only)
-import { CommunityPage } from './pages/CommunityPage'; // Feedback iteration (dev only)
-import { WishlistPage } from './pages/WishlistPage'; // Wishlist feature (feature-flagged)
-import { AgentPage } from './pages/AgentPage'; // Cellar Agent (localhost only)
-import { AgentPageSimple } from './pages/AgentPageSimple'; // Test version
-import { AgentPageWorking } from './pages/AgentPageWorking'; // Working version
-import PrivacyPage from './pages/PrivacyPage'; // Privacy Policy (required for Google OAuth)
-import TermsPage from './pages/TermsPage'; // Terms & Conditions (required for subscription model)
-import { AboutPage } from './pages/AboutPage';
-import { GuestEveningPage } from './pages/GuestEveningPage'; // Public guest evening view
-import { UpgradePage } from './pages/UpgradePage'; // Sommelier Credits — flagged users only
-import { OpenRitualProvider } from './contexts/OpenRitualContext'; // Global open ritual + timers
+import { OpenRitualProvider } from './contexts/OpenRitualContext';
 import { useMonetizationAccess } from './hooks/useMonetizationAccess';
+
+// ── Lazy-loaded page chunks ────────────────────────────────────────────────────
+// Each page is code-split into its own chunk. The browser downloads only what the
+// user actually navigates to, cutting first-paint JS parse time significantly.
+const LoginPage        = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const CellarPage       = lazy(() => import('./pages/CellarPage').then(m => ({ default: m.CellarPage })));
+const RecommendationPage = lazy(() => import('./pages/RecommendationPage').then(m => ({ default: m.RecommendationPage })));
+const HistoryPage      = lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })));
+const ProfilePage      = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AdminEnrichPage  = lazy(() => import('./pages/AdminEnrichPage').then(m => ({ default: m.AdminEnrichPage })));
+const SharedCellarPage = lazy(() => import('./pages/SharedCellarPage').then(m => ({ default: m.SharedCellarPage })));
+const CommunityPage    = lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })));
+const WishlistPage     = lazy(() => import('./pages/WishlistPage').then(m => ({ default: m.WishlistPage })));
+const AgentPageWorking = lazy(() => import('./pages/AgentPageWorking').then(m => ({ default: m.AgentPageWorking })));
+const PrivacyPage      = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage        = lazy(() => import('./pages/TermsPage'));
+const AboutPage        = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const GuestEveningPage = lazy(() => import('./pages/GuestEveningPage').then(m => ({ default: m.GuestEveningPage })));
+const UpgradePage      = lazy(() => import('./pages/UpgradePage').then(m => ({ default: m.UpgradePage })));
+
+/** Full-screen page loading fallback — matches the app's luxury background */
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen luxury-background">
+      <WineLoader variant="default" size="lg" message="Loading..." />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -222,7 +233,7 @@ function AppRoutes() {
   }
 
   return (
-    <>
+    <Suspense fallback={<PageLoader />}>
       <ScrollToTop />
       <CookieConsent />
       <Routes>
@@ -359,7 +370,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/cellar" replace />} />
       <Route path="*" element={<Navigate to="/cellar" replace />} />
       </Routes>
-    </>
+    </Suspense>
   );
 }
 
