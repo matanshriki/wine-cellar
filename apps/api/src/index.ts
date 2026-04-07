@@ -59,10 +59,10 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-// NOTE: /api/billing/webhook needs raw body for Paddle HMAC verification.
-// It is mounted BEFORE express.json() so it can read the raw stream itself.
-// All other /api/billing routes use json() normally (mounted again below).
-app.use('/api/billing/webhook', billingRouter);
+// Capture raw body for Paddle HMAC verification BEFORE express.json() consumes the stream.
+// express.raw() stores the body as a Buffer in req.body and sets req._body = true,
+// which causes express.json() to skip re-parsing for this path.
+app.use('/api/billing/webhook', express.raw({ type: '*/*' }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());

@@ -194,23 +194,11 @@ billingRouter.get(
  */
 billingRouter.post(
   '/webhook',
-  // Raw body so we can verify HMAC; parsed manually below
-  (req, res, next) => {
-    // Collect raw body into a buffer
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => {
-      (req as any).rawBody = Buffer.concat(chunks);
-      next();
-    });
-    req.on('error', (err) => {
-      console.error('[Paddle Webhook] Body read error:', err.message);
-      res.status(500).end();
-    });
-  },
+  // express.raw() in index.ts captures the body as a Buffer in req.body before
+  // express.json() can consume the stream — req.body is the raw Buffer here.
   async (req: Request, res: Response) => {
     try {
-      const rawBody: Buffer = (req as any).rawBody ?? Buffer.alloc(0);
+      const rawBody: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
       const signature = req.headers['paddle-signature'] as string | undefined;
 
       // 1. Verify signature
