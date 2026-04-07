@@ -31,6 +31,7 @@ import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
 import { openCheckout, getPortalUrl } from '../lib/paddle';
 import { supabase } from '../lib/supabase';
+import { PurchaseSuccessModal } from '../components/PurchaseSuccessModal';
 
 // ── Per-plan accent config (always on dark bg) ─────────────────────────────
 
@@ -98,6 +99,7 @@ export function UpgradePage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17
+  const [successModal, setSuccessModal] = useState<{ credits: number } | null>(null);
 
   // Show success toast when returning from Paddle checkout
   useEffect(() => {
@@ -145,13 +147,10 @@ export function UpgradePage() {
       await openCheckout({ topup: String(credits) }, {
         authToken: token,
         onSuccess: () => {
-          toast.success(
-            t('sommelierCredits.toast.topUpSuccess'),
-            t('sommelierCredits.toast.topUpTitle', { credits }),
-          );
+          setSuccessModal({ credits });
+          setCheckoutLoading(null);
           // Webhook takes a moment to be processed server-side; refresh after a short delay
           setTimeout(() => { refresh(); }, 4000);
-          setCheckoutLoading(null);
         },
       });
     } catch (err: any) {
@@ -187,6 +186,7 @@ export function UpgradePage() {
   }
 
   return (
+    <>
     <div className="mx-auto max-w-4xl py-4 sm:py-6">
 
       {/* Back */}
@@ -524,5 +524,13 @@ export function UpgradePage() {
         )}
       </AnimatePresence>
     </div>
+
+    <PurchaseSuccessModal
+      open={successModal !== null}
+      credits={successModal?.credits ?? 0}
+      newBalance={successModal !== null ? effectiveBalance : null}
+      onClose={() => setSuccessModal(null)}
+    />
+    </>
   );
 }

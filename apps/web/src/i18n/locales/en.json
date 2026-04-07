@@ -1272,6 +1272,14 @@
       "dismiss": "Close"
     }
   },
+  "purchaseSuccess": {
+    "title": "Credits Added",
+    "subtitle": "Your payment was confirmed by Paddle.",
+    "creditsLabel": "Sommelier Credits",
+    "newBalance": "Your new balance: {{balance}} credits",
+    "balanceUpdating": "Balance updating…",
+    "cta": "Continue Tasting ✦"
+  },
   "sommelierCredits": {
     "title": "Sommelier Credits",
     "subtitle": "Choose the plan that fits how you discover, collect, and enjoy wine.",

@@ -1338,6 +1338,14 @@
       "dismiss": "סגור"
     }
   },
+  "purchaseSuccess": {
+    "title": "קרדיטים נוספו",
+    "subtitle": "התשלום אושר על ידי Paddle.",
+    "creditsLabel": "קרדיטי סומלייה",
+    "newBalance": "היתרה החדשה שלך: {{balance}} קרדיטים",
+    "balanceUpdating": "היתרה מתעדכנת…",
+    "cta": "המשך לטעום ✦"
+  },
   "sommelierCredits": {
     "title": "קרדיטים לסומליה",
     "subtitle": "בחרו את התוכנית המתאימה לאופן שבו אתם מגלים, אוספים ונהנים מיין.",

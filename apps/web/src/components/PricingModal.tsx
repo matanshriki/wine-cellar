@@ -23,6 +23,7 @@ import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
 import { openCheckout } from '../lib/paddle';
 import { supabase } from '../lib/supabase';
+import { PurchaseSuccessModal } from './PurchaseSuccessModal';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -267,6 +268,7 @@ export function PricingModal({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17 — same for both plans
+  const [successModal, setSuccessModal] = useState<{ credits: number } | null>(null);
 
   async function handleSelectPlan(planKey: string) {
     if (planKey === currentPlan || planKey === 'free') return;
@@ -299,13 +301,10 @@ export function PricingModal({
     try {
       await launchTopUpCheckout(credits, {
         onSuccess: () => {
-          toast.success(
-            t('sommelierCredits.toast.topUpSuccess'),
-            t('sommelierCredits.toast.topUpTitle', { credits }),
-          );
+          setSuccessModal({ credits });
+          setCheckoutLoading(null);
           // Webhook takes a moment to be processed server-side; refresh after a short delay
           setTimeout(() => { refresh(); }, 4000);
-          setCheckoutLoading(null);
         },
       });
     } catch (err: any) {
@@ -344,6 +343,7 @@ export function PricingModal({
   }, [visible, handleKeyDown, currentPlan, showLowCreditPrompt, recommendedPlanKey]);
 
   return (
+    <>
     <AnimatePresence>
       {visible && (
         <>
@@ -586,5 +586,13 @@ export function PricingModal({
         </>
       )}
     </AnimatePresence>
+
+    <PurchaseSuccessModal
+      open={successModal !== null}
+      credits={successModal?.credits ?? 0}
+      newBalance={successModal !== null ? effectiveBalance : null}
+      onClose={() => setSuccessModal(null)}
+    />
+    </>
   );
 }

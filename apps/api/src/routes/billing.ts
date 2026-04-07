@@ -226,11 +226,16 @@ billingRouter.post(
       }
 
       // 2. Idempotency check — skip if already processed
-      const { data: existing } = await supabase
+      const { data: existing, error: idempotencyErr } = await supabase
         .from('paddle_events')
         .select('id')
         .eq('event_id', eventId)
         .maybeSingle();
+
+      if (idempotencyErr) {
+        // Table may not exist yet — log and continue (don't abort; still grant credits)
+        console.error('[Paddle Webhook] paddle_events table error (migration may be missing):', idempotencyErr.message);
+      }
 
       if (existing) {
         console.log(`[Paddle Webhook] Already processed ${eventId} — skipping`);
@@ -240,22 +245,27 @@ billingRouter.post(
       // 3. Resolve user_id from custom_data
       const customData: Record<string, string> = event.data?.custom_data ?? {};
       const userId: string | null = customData['userId'] ?? null;
+      console.log(`[Paddle Webhook] userId from custom_data: ${userId ?? 'NULL — credits cannot be granted!'}`);
 
       // 4. Process event
       try {
         await handlePaddleEvent(supabase, eventType, event.data, userId);
+        console.log(`[Paddle Webhook] handlePaddleEvent completed for ${eventType}`);
       } catch (err: any) {
         console.error(`[Paddle Webhook] Handler error for ${eventType}:`, err.message);
         // Still store the event for debugging; return 200 so Paddle doesn't retry
       }
 
       // 5. Persist event for audit + idempotency
-      await supabase.from('paddle_events').insert({
+      const { error: insertErr } = await supabase.from('paddle_events').insert({
         event_id:  eventId,
         event_type: eventType,
         user_id:   userId ?? null,
         payload:   event,
       });
+      if (insertErr) {
+        console.error('[Paddle Webhook] Failed to persist event (paddle_events table may be missing):', insertErr.message);
+      }
 
       return res.json({ ok: true });
     } catch (err: any) {
@@ -409,7 +419,7 @@ async function handlePaddleEvent(
       }
 
       console.log(`[Paddle] Adding ${topUp.bonusCredits} bonus credits for user ${userId}`);
-      await supabase.rpc('paddle_grant_credits', {
+      const { error: rpcErr } = await supabase.rpc('paddle_grant_credits', {
         p_user_id:               userId,
         p_plan_key:              'topup',
         p_credits_to_set:        0,
@@ -418,6 +428,11 @@ async function handlePaddleEvent(
         p_paddle_customer_id:    customerId,
         p_paddle_subscription_id: null,
       });
+      if (rpcErr) {
+        console.error('[Paddle] paddle_grant_credits RPC failed (function may be missing):', rpcErr.message);
+        throw rpcErr; // surface to outer catch for logging
+      }
+      console.log(`[Paddle] Successfully granted ${topUp.bonusCredits} credits to user ${userId}`);
       break;
     }
 
