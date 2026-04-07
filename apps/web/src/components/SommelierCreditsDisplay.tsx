@@ -38,9 +38,29 @@ export function SommelierCreditsDisplay({
     creditsLoading,
   } = useMonetizationAccess();
 
+  // ── First-load skeleton: only shown when there is no cached data at all ──
+  // After the first visit, localStorage seeds the values instantly so this
+  // branch is never reached for returning users — no blink, no layout shift.
+  if (creditsLoading) {
+    if (compact) {
+      return (
+        <div
+          className="inline-flex items-center rounded-xl px-2.5 animate-pulse"
+          style={{
+            height: '36px',
+            width: '56px',
+            background: 'var(--bg-muted)',
+            border: '1px solid var(--border-subtle)',
+          }}
+          aria-hidden="true"
+        />
+      );
+    }
+    return null;
+  }
+
   // ── Dark launch guard: only render for flagged users ─────────────────────
   if (!monetizationEnabled) return null;
-  if (creditsLoading) return null;
 
   const pendingCost = pendingActionType ? getCreditsRequired(pendingActionType) : 0;
   const isBlocked   = creditEnforcementEnabled && effectiveBalance === 0;

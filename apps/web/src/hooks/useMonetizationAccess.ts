@@ -15,22 +15,62 @@
  *
  *   if (!monetizationEnabled) return null; // hide all monetization UI
  *
- * The hook is intentionally lightweight and does NOT subscribe to Realtime
- * (that can be added in Stage 3). It re-fetches on auth change via a key
- * derived from the user id.
+ * CACHING:
+ *   Derived values are persisted in localStorage (keyed by user id) so the
+ *   badge renders instantly on subsequent page loads — no async wait, no blink.
+ *   The cache is invalidated on sign-out and silently refreshed in the background.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import {
   getEffectiveCreditBalance,
   isLowCreditBalance,
   creditBalanceLabel,
 } from '../lib/creditPolicy';
-import type { Database } from '../types/supabase';
 
-type UserEntitlement = Database['public']['Tables']['user_entitlements']['Row'];
-type UserAiCredits   = Database['public']['Tables']['user_ai_credits']['Row'];
+// ── localStorage cache (stale-while-revalidate) ──────────────────────────────
+
+const CACHE_PREFIX = 'wine_mon_v1_';
+
+interface MonetizationCache {
+  monetizationEnabled: boolean;
+  creditEnforcementEnabled: boolean;
+  effectiveBalance: number;
+  isLowBalance: boolean;
+  balanceLabel: string;
+  monthlyLimit: number;
+  planKey: string | null;
+}
+
+function cacheKey(userId: string) {
+  return CACHE_PREFIX + userId;
+}
+
+function readCache(userId: string): MonetizationCache | null {
+  try {
+    const raw = localStorage.getItem(cacheKey(userId));
+    return raw ? (JSON.parse(raw) as MonetizationCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(userId: string, data: MonetizationCache): void {
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(data));
+  } catch {
+    // localStorage may be unavailable (private mode, quota exceeded, etc.)
+  }
+}
+
+function clearCache(userId: string): void {
+  try {
+    localStorage.removeItem(cacheKey(userId));
+  } catch {}
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export interface MonetizationAccess {
   /** Whether monetization UI should be shown to this user */
@@ -47,49 +87,63 @@ export interface MonetizationAccess {
   monthlyLimit: number;
   /** Plan key (e.g. 'free', 'premium', 'collector') */
   planKey: string | null;
-  /** True while initial data is loading */
+  /** True only during the very first load when there is no cached data */
   creditsLoading: boolean;
   /** Trigger a manual refresh (e.g. after a payment) */
   refresh: () => void;
 }
 
-const DEFAULT_ACCESS: MonetizationAccess = {
-  monetizationEnabled:       false,
-  creditEnforcementEnabled:  false,
-  effectiveBalance:          0,
-  isLowBalance:              false,
-  balanceLabel:              'You have 0 Sommelier Credits left this month',
-  monthlyLimit:              0,
-  planKey:                   null,
-  creditsLoading:            true,
-  refresh:                   () => {},
+const EMPTY: MonetizationCache = {
+  monetizationEnabled: false,
+  creditEnforcementEnabled: false,
+  effectiveBalance: 0,
+  isLowBalance: false,
+  balanceLabel: 'You have 0 Sommelier Credits left this month',
+  monthlyLimit: 0,
+  planKey: null,
 };
 
 export function useMonetizationAccess(): MonetizationAccess {
-  const [entitlement, setEntitlement] = useState<UserEntitlement | null>(null);
-  const [credits, setCredits]         = useState<UserAiCredits | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [tick, setTick]               = useState(0);
+  // Resolved user id — set once on first successful auth fetch
+  const resolvedUserId = useRef<string | null>(null);
 
+  // Seed state directly from localStorage so the badge renders in the same
+  // frame as the component mounts (stale-while-revalidate pattern).
+  const [values, setValues] = useState<MonetizationCache>(EMPTY);
+
+  // creditsLoading is only true when there is NO cached data to show —
+  // background refreshes happen silently without flipping this flag.
+  const [creditsLoading, setCreditsLoading] = useState(true);
+
+  const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         if (!session?.user || cancelled) {
-          setEntitlement(null);
-          setCredits(null);
-          setLoading(false);
+          if (!cancelled) setCreditsLoading(false);
           return;
         }
 
         const userId = session.user.id;
+        resolvedUserId.current = userId;
 
-        // Fetch both rows in parallel — missing rows are safe (default to null)
+        // If we have a cached entry for this user, show it immediately and
+        // skip the loading indicator — the fresh fetch runs in the background.
+        const cached = readCache(userId);
+        if (cached) {
+          setValues(cached);
+          setCreditsLoading(false);
+        }
+
+        // Fetch fresh data from Supabase (always runs, even when cache hit)
         const [{ data: ent }, { data: cred }] = await Promise.all([
           supabase
             .from('user_entitlements')
@@ -103,22 +157,48 @@ export function useMonetizationAccess(): MonetizationAccess {
             .maybeSingle(),
         ]);
 
-        if (!cancelled) {
-          setEntitlement(ent);
-          setCredits(cred);
-        }
+        if (cancelled) return;
+
+        const monEnabled = ent?.monetization_enabled ?? false;
+        const enfEnabled = ent?.credit_enforcement_enabled ?? false;
+        const creditRow = cred ?? {
+          credit_balance: 0,
+          bonus_credits: 0,
+          monthly_credit_limit: 0,
+          plan_key: null,
+        };
+
+        const fresh: MonetizationCache = {
+          monetizationEnabled: monEnabled,
+          creditEnforcementEnabled: enfEnabled,
+          effectiveBalance: getEffectiveCreditBalance(creditRow),
+          isLowBalance: monEnabled ? isLowCreditBalance(creditRow) : false,
+          balanceLabel: creditBalanceLabel(creditRow),
+          monthlyLimit: creditRow.monthly_credit_limit ?? 0,
+          planKey: creditRow.plan_key ?? null,
+        };
+
+        setValues(fresh);
+        setCreditsLoading(false);
+        writeCache(userId, fresh);
       } catch (err) {
         console.warn('[useMonetizationAccess] fetch error (non-fatal):', err);
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setCreditsLoading(false);
       }
     }
 
     load();
 
-    // Re-fetch on auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
+        // Clear stale cache so the next user on the same device starts fresh
+        if (resolvedUserId.current) clearCache(resolvedUserId.current);
+        resolvedUserId.current = null;
+        setValues(EMPTY);
+        setCreditsLoading(false);
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         load();
       }
     });
@@ -127,35 +207,12 @@ export function useMonetizationAccess(): MonetizationAccess {
       cancelled = true;
       listener.subscription.unsubscribe();
     };
-  // tick is intentionally included so `refresh()` re-triggers the fetch
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick]);
 
-  // ── Derive values ────────────────────────────────────────────────────────
-
-  const monetizationEnabled      = entitlement?.monetization_enabled       ?? false;
-  const creditEnforcementEnabled = entitlement?.credit_enforcement_enabled ?? false;
-
-  const creditRow = credits ?? {
-    credit_balance: 0,
-    bonus_credits:  0,
-    monthly_credit_limit: 0,
-    plan_key: null,
-  };
-
-  const effectiveBalance = getEffectiveCreditBalance(creditRow);
-  const isLowBalance     = monetizationEnabled ? isLowCreditBalance(creditRow) : false;
-  const balanceLabel     = creditBalanceLabel(creditRow);
-
   return {
-    monetizationEnabled,
-    creditEnforcementEnabled,
-    effectiveBalance,
-    isLowBalance,
-    balanceLabel,
-    monthlyLimit: creditRow.monthly_credit_limit ?? 0,
-    planKey:      creditRow.plan_key ?? null,
-    creditsLoading: loading,
+    ...values,
+    creditsLoading,
     refresh,
   };
 }
