@@ -102,7 +102,7 @@ export function CameraFallbackSheet({
               mass: 0.8,
             }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed left-0 right-0 z-[70] bottom-above-nav md:bottom-0"
+            className="fixed left-0 right-0 z-[70] bottom-0"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
