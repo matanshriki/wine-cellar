@@ -34,6 +34,8 @@ import { DemoBanner } from '../components/DemoBanner';
 import { DemoRecommendationCard } from '../components/DemoRecommendationCard';
 import { FirstBottleSuccessModal } from '../components/FirstBottleSuccessModal';
 import { PostDemoTransitionModal } from '../components/PostDemoTransitionModal';
+import { NoCreditsModal } from '../components/NoCreditsModal';
+import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import * as bottleService from '../services/bottleService';
 import * as historyService from '../services/historyService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
@@ -157,6 +159,8 @@ export function CellarPage() {
   } | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [parsedFields, setParsedFields] = useState<string[]>([]);
+  const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
 
   // Onboarding v1 – production: Onboarding state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -762,6 +766,13 @@ export function CellarPage() {
    * Automatically routes to appropriate confirmation flow
    */
   const handleSmartScan = async (file: File) => {
+    // Credit enforcement: block scan and show luxury interstitial
+    if (creditEnforcementEnabled && effectiveBalance === 0) {
+      setShowAddSheet(false);
+      setNoCreditsOpen(true);
+      return;
+    }
+
     try {
       // Start loading state
       setIsParsing(true);
@@ -2636,6 +2647,13 @@ export function CellarPage() {
       
       {/* DEV ONLY: Drink Window Debug Panel */}
       {isDevEnvironment() && <DrinkWindowDebugPanel />}
+
+      {/* No-credits interstitial — shown when enforcement is on and balance hits 0 */}
+      <NoCreditsModal
+        isOpen={noCreditsOpen}
+        onClose={() => setNoCreditsOpen(false)}
+        context="scan"
+      />
 
       {/* Keep / Reserve — date reminder modal */}
       {keepReminders.length > 0 && (

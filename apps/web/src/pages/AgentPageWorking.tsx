@@ -36,6 +36,8 @@ import { trackSommelier } from '../services/analytics';
 import { addWishlistItem } from '../services/wishlistService';
 import { SommelierCreditsDisplay } from '../components/SommelierCreditsDisplay';
 import { PricingModal } from '../components/PricingModal';
+import { NoCreditsModal } from '../components/NoCreditsModal';
+import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -214,6 +216,8 @@ export function AgentPageWorking() {
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
   const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -344,6 +348,12 @@ export function AgentPageWorking() {
     const bottlesInCellar = bottles.filter(bottle => bottle.quantity > 0);
     
     if (!text.trim() || isSubmitting || bottlesInCellar.length === 0) return;
+
+    // Credit enforcement: show luxury interstitial instead of submitting
+    if (creditEnforcementEnabled && effectiveBalance === 0) {
+      setNoCreditsOpen(true);
+      return;
+    }
 
     const userMsg: AgentMessage = {
       role: 'user',
@@ -1367,6 +1377,13 @@ export function AgentPageWorking() {
       <PricingModal
         isOpen={pricingOpen}
         onClose={() => setPricingOpen(false)}
+      />
+
+      {/* No-credits interstitial — shown when enforcement is on and balance hits 0 */}
+      <NoCreditsModal
+        isOpen={noCreditsOpen}
+        onClose={() => setNoCreditsOpen(false)}
+        context="chat"
       />
     </>
   );
