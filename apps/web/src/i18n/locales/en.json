@@ -1326,7 +1326,8 @@
     "toast": {
       "welcomeTitle": "Welcome to {{plan}} ✦",
       "welcomeMessage": "{{credits}} credits are now in your account — enjoy every sip.",
-      "topUpSuccess": "Payment successful! Your credits will update shortly.",
+      "topUpTitle": "+{{credits}} Credits ✦",
+      "topUpSuccess": "Payment confirmed — your balance will update in a moment.",
       "checkoutError": "Could not open checkout — please try again.",
       "portalError": "Could not open billing portal."
     },

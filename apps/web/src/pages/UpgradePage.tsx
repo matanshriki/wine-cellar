@@ -142,7 +142,18 @@ export function UpgradePage() {
     setCheckoutLoading(`topup:${credits}`);
     try {
       const token = await getAuthToken();
-      await openCheckout({ topup: String(credits) }, { authToken: token });
+      await openCheckout({ topup: String(credits) }, {
+        authToken: token,
+        onSuccess: () => {
+          toast.success(
+            t('sommelierCredits.toast.topUpSuccess'),
+            t('sommelierCredits.toast.topUpTitle', { credits }),
+          );
+          // Webhook takes a moment to be processed server-side; refresh after a short delay
+          setTimeout(() => { refresh(); }, 4000);
+          setCheckoutLoading(null);
+        },
+      });
     } catch (err: any) {
       console.error('[UpgradePage] Top-up error:', err);
       toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));

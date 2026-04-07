@@ -71,9 +71,9 @@ async function launchPlanCheckout(
   await openCheckout({ plan: planKey, period }, { authToken: token, onSuccess: opts?.onSuccess });
 }
 
-async function launchTopUpCheckout(credits: number) {
+async function launchTopUpCheckout(credits: number, opts?: { onSuccess?: () => void }) {
   const token = await getAuthToken();
-  await openCheckout({ topup: String(credits) }, { authToken: token });
+  await openCheckout({ topup: String(credits) }, { authToken: token, onSuccess: opts?.onSuccess });
 }
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
@@ -297,7 +297,17 @@ export function PricingModal({
     trackEvent('pricing_topup_selected', { credits, price, source: 'pricing_modal' });
     setCheckoutLoading(`topup:${credits}`);
     try {
-      await launchTopUpCheckout(credits);
+      await launchTopUpCheckout(credits, {
+        onSuccess: () => {
+          toast.success(
+            t('sommelierCredits.toast.topUpSuccess'),
+            t('sommelierCredits.toast.topUpTitle', { credits }),
+          );
+          // Webhook takes a moment to be processed server-side; refresh after a short delay
+          setTimeout(() => { refresh(); }, 4000);
+          setCheckoutLoading(null);
+        },
+      });
     } catch (err: any) {
       console.error('[PricingModal] Top-up checkout error:', err);
       toast.error(err?.message ?? t('sommelierCredits.toast.checkoutError'));
