@@ -64,10 +64,6 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
           height = maxHeight;
         }
         
-          original: `${originalWidth}x${originalHeight}`,
-          new: `${Math.round(width)}x${Math.round(height)}`,
-          reduction: `${Math.round((1 - (width * height) / (originalWidth * originalHeight)) * 100)}%`,
-        });
         
         // Create canvas and draw resized image
         const canvas = document.createElement('canvas');
@@ -90,11 +86,6 @@ export async function compressImage(file: File, maxWidth = 1024, quality = 0.8):
         canvas.toBlob(
           (blob) => {
             if (blob) {
-                originalSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-                compressedSize: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
-                reduction: `${Math.round((1 - blob.size / file.size) * 100)}%`,
-                quality: `${(quality * 100).toFixed(0)}%`,
-              });
               resolve(blob);
             } else {
               reject(new Error('Failed to create blob'));
@@ -141,9 +132,6 @@ export async function uploadLabelImage(file: File): Promise<{
 
   // Compress image before upload
   const compressedBlob = await compressImage(file);
-    original: file.size,
-    compressed: compressedBlob.size,
-  });
   
   // Generate unique filename
   const fileExt = 'jpg'; // Always JPEG after compression

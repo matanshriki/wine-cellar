@@ -918,11 +918,6 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   {(() => {
                     const hasUrl = !!formData.vivino_url;
                     const isValidUrl = hasUrl && isVivinoWineUrl(formData.vivino_url);
-                      hasUrl,
-                      url: formData.vivino_url,
-                      isValidUrl,
-                      hostname: window.location.hostname,
-                    });
                     return isValidUrl;
                   })() && (
                     <button

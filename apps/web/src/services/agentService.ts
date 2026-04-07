@@ -163,12 +163,6 @@ export async function sendAgentMessage(
 
   const data = (await response.json()) as AgentResponse;
   if (import.meta.env.DEV) {
-      '[AgentService] sommelier pipeline',
-      data.agentMeta?.processingMode ?? '—',
-      'route:',
-      data.agentMeta?.routedAction ?? '—',
-      data.agentMeta?.actionResult ? `(${data.agentMeta.actionResult})` : ''
-    );
   }
   return data;
 }

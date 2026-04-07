@@ -78,7 +78,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   }
 
 
-  // Fetch taste profile + bottles + recent history all in parallel
+  // Fetch taste profile + bottles + recent history in parallel — all independent
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -269,12 +269,6 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   scoredBottles.sort((a, b) => b.score - a.score);
   
   // Debug: Log top 5 scores to understand selection
-    scoredBottles.slice(0, 5).map(b => ({
-      name: b.bottle.wine.wine_name,
-      score: Math.round(b.score),
-      readiness: b.bottle.readiness_status
-    }))
-  );
   
   const topBottles = scoredBottles.slice(0, 3);
 
