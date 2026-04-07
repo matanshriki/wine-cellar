@@ -162,6 +162,26 @@ export function CellarPage() {
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
 
+  // ── Credit-gated scan openers ─────────────────────────────────────────────
+  // These replace every bare setShowAddSheet(true) / setShowLabelCapture(true)
+  // so the user is blocked BEFORE they open the camera, not after picking a photo.
+  function guardedOpenAddSheet() {
+    if (creditEnforcementEnabled && effectiveBalance === 0) {
+      setNoCreditsOpen(true);
+      return;
+    }
+    setShowAddSheet(true);
+  }
+
+  function guardedOpenLabelCapture(mode: 'camera' | 'upload' = 'camera') {
+    if (creditEnforcementEnabled && effectiveBalance === 0) {
+      setNoCreditsOpen(true);
+      return;
+    }
+    setShowLabelCapture(true);
+    setLabelCaptureMode(mode);
+  }
+
   // Onboarding v1 – production: Onboarding state
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -229,7 +249,7 @@ export function CellarPage() {
   // Listen for Camera FAB actions from global Layout
   useEffect(() => {
     const handleOpenLabelCapture = () => {
-      setShowLabelCapture(true);
+      guardedOpenLabelCapture('camera');
     };
     const handleOpenManualForm = () => {
       setShowForm(true);
@@ -506,13 +526,12 @@ export function CellarPage() {
 
   function handlePostDemoScan() {
     setShowPostDemoModal(false);
-    setShowLabelCapture(true);
-    setLabelCaptureMode('camera');
+    guardedOpenLabelCapture('camera');
   }
 
   function handlePostDemoAddManually() {
     setShowPostDemoModal(false);
-    setShowAddSheet(true);
+    guardedOpenAddSheet();
   }
 
   function handlePostDemoSkip() {
@@ -1445,7 +1464,7 @@ export function CellarPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setShowAddSheet(true);
+                  guardedOpenAddSheet();
                 }}
                 className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
                 style={{ pointerEvents: 'auto' }}
@@ -1722,7 +1741,7 @@ export function CellarPage() {
           recommendedBottle={bottlesInCellar[1]} // Use Cloudy Bay (ready to drink)
           onAddBottle={() => {
             setIsDemoMode(false);
-            setShowAddSheet(true);
+            guardedOpenAddSheet();
           }}
         />
       )}
@@ -1849,8 +1868,7 @@ export function CellarPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setShowLabelCapture(true);
-                  setLabelCaptureMode('camera');
+                  guardedOpenLabelCapture('camera');
                 }}
                 className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-all min-h-[52px] flex items-center justify-center gap-2.5"
                 style={{
@@ -1882,7 +1900,7 @@ export function CellarPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setShowAddSheet(true);
+                  guardedOpenAddSheet();
                 }}
                 className="w-full py-3 px-6 rounded-xl font-medium text-sm transition-all min-h-[44px]"
                 style={{
