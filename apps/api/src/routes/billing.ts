@@ -32,8 +32,10 @@ interface PlanMeta {
 
 function getPlanMeta(priceId: string): PlanMeta | null {
   const map: Record<string, PlanMeta> = {
-    [config.paddlePricePremiumMonthly]:  { planKey: 'premium',   monthlyCredits: 150 },
+    [config.paddlePricePremiumMonthly]:   { planKey: 'premium',   monthlyCredits: 150 },
+    [config.paddlePricePremiumYearly]:    { planKey: 'premium',   monthlyCredits: 150 },
     [config.paddlePriceCollectorMonthly]: { planKey: 'collector', monthlyCredits: 500 },
+    [config.paddlePriceCollectorYearly]:  { planKey: 'collector', monthlyCredits: 500 },
   };
   return map[priceId] ?? null;
 }
@@ -129,12 +131,13 @@ billingRouter.get(
   '/checkout-config',
   authenticateSupabase,
   async (req: AuthRequest, res: Response) => {
-    const { plan, topup } = req.query as { plan?: string; topup?: string };
+    const { plan, topup, period } = req.query as { plan?: string; topup?: string; period?: string };
+    const isYearly = period === 'yearly';
 
-    // Resolve price ID
+    // Resolve price ID — server controls which price ID is used; browser never decides
     let priceId: string | null = null;
-    if (plan === 'premium')   priceId = config.paddlePricePremiumMonthly;
-    if (plan === 'collector') priceId = config.paddlePriceCollectorMonthly;
+    if (plan === 'premium')   priceId = isYearly ? config.paddlePricePremiumYearly   : config.paddlePricePremiumMonthly;
+    if (plan === 'collector') priceId = isYearly ? config.paddlePriceCollectorYearly : config.paddlePriceCollectorMonthly;
     if (topup === '50')       priceId = config.paddlePriceTopup50;
     if (topup === '150')      priceId = config.paddlePriceTopup150;
 

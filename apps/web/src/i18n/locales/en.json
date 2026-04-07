@@ -1288,11 +1288,19 @@
     "plan": {
       "creditsPerMonth": "credits\n/ month",
       "perMonth": "/ month",
+      "perYear": "/ year",
       "alwaysFree": "Always free",
       "creditsRemaining": "{{count}} credit remaining",
       "creditsRemaining_plural": "{{count}} credits remaining",
       "creditsRemainingOf": "{{count}} credit remaining of {{limit}}",
-      "creditsRemainingOf_plural": "{{count}} credits remaining of {{limit}}"
+      "creditsRemainingOf_plural": "{{count}} credits remaining of {{limit}}",
+      "perMonthBilled": "${{price}}/mo"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "savePercent": "Save {{percent}}%",
+      "billedYearly": "billed yearly"
     },
     "cta": {
       "free": "Continue with Free",

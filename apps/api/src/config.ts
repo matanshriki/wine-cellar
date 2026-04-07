@@ -39,10 +39,12 @@ export const config = {
   paddleEnvironment:  (process.env.PADDLE_ENVIRONMENT || 'production') as 'sandbox' | 'production',
 
   // Paddle Price IDs (set on the billing server only — never sent to the browser)
-  paddlePricePremiumMonthly:  process.env.PADDLE_PRICE_PREMIUM_MONTHLY  || '',
-  paddlePriceCollectorMonthly: process.env.PADDLE_PRICE_COLLECTOR_MONTHLY || '',
-  paddlePriceTopup50:         process.env.PADDLE_PRICE_TOPUP_50          || '',
-  paddlePriceTopup150:        process.env.PADDLE_PRICE_TOPUP_150         || '',
+  paddlePricePremiumMonthly:   process.env.PADDLE_PRICE_PREMIUM_MONTHLY    || '',
+  paddlePricePremiumYearly:    process.env.PADDLE_PRICE_PREMIUM_YEARLY     || '',
+  paddlePriceCollectorMonthly: process.env.PADDLE_PRICE_COLLECTOR_MONTHLY  || '',
+  paddlePriceCollectorYearly:  process.env.PADDLE_PRICE_COLLECTOR_YEARLY   || '',
+  paddlePriceTopup50:          process.env.PADDLE_PRICE_TOPUP_50           || '',
+  paddlePriceTopup150:         process.env.PADDLE_PRICE_TOPUP_150          || '',
 };
 
 // Log configuration on startup (without sensitive data)
@@ -58,7 +60,9 @@ console.log('[Config] Paddle Webhook Secret:', config.paddleWebhookSecret ? 'SET
 console.log('[Config] Paddle Environment:', config.paddleEnvironment);
 console.log('[Config] Paddle Price IDs:', [
   config.paddlePricePremiumMonthly,
+  config.paddlePricePremiumYearly,
   config.paddlePriceCollectorMonthly,
+  config.paddlePriceCollectorYearly,
   config.paddlePriceTopup50,
   config.paddlePriceTopup150,
 ].every(Boolean) ? 'ALL SET ✓' : 'SOME MISSING ✗');

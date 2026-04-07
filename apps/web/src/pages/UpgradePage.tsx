@@ -93,8 +93,10 @@ export function UpgradePage() {
   } = useMonetizationAccess();
 
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17
 
   // Show success toast when returning from Paddle checkout
   useEffect(() => {
@@ -113,8 +115,9 @@ export function UpgradePage() {
     setCheckoutLoading(`plan:${planKey}`);
     try {
       const plan = PLANS.find((p) => p.key === planKey);
+      const period = (billingPeriod === 'yearly' && plan?.priceYearly !== null) ? 'yearly' : 'monthly';
       const token = await getAuthToken();
-      await openCheckout({ plan: planKey }, {
+      await openCheckout({ plan: planKey, period }, {
         authToken: token,
         onSuccess: () => {
           refresh();
@@ -265,6 +268,35 @@ export function UpgradePage() {
               className="-mx-4 rounded-none px-4 py-6 sm:mx-0 sm:rounded-3xl sm:px-8 sm:py-8"
               style={{ background: 'linear-gradient(160deg, #11101e 0%, #0e0c1b 100%)' }}
             >
+              {/* Billing period toggle */}
+              <div className="mb-5 flex justify-center">
+                <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
+                  {(['monthly', 'yearly'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setBillingPeriod(p)}
+                      className="relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
+                      style={
+                        billingPeriod === p
+                          ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
+                          : { color: 'rgba(255,255,255,0.4)' }
+                      }
+                    >
+                      {p === 'monthly' ? t('sommelierCredits.billing.monthly') : t('sommelierCredits.billing.yearly')}
+                      {p === 'yearly' && (
+                        <span
+                          className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                          style={{ background: 'rgba(52,211,153,0.18)', color: '#34d399' }}
+                        >
+                          {t('sommelierCredits.billing.savePercent', { percent: savePercent })}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Plan grid: snap-scroll carousel on mobile, 3-col grid on sm+ */}
               <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-5">
                 {PLANS.map((plan) => {
@@ -324,9 +356,18 @@ export function UpgradePage() {
                         </div>
                         <div className="mt-1.5 text-sm text-white/50">
                           {plan.priceMonthly !== null ? (
-                            <>
-                              <span className="font-semibold text-white/80">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
-                            </>
+                            billingPeriod === 'yearly' && plan.priceYearly !== null ? (
+                              <>
+                                <span className="font-semibold text-white/80">${plan.priceYearly}</span> {t('sommelierCredits.plan.perYear')}
+                                <p className="mt-0.5 text-xs text-white/35">
+                                  {t('sommelierCredits.plan.perMonthBilled', { price: (plan.priceYearly / 12).toFixed(2).replace(/\.00$/, '') })} · {t('sommelierCredits.billing.billedYearly')}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-semibold text-white/80">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
+                              </>
+                            )
                           ) : (
                             t('sommelierCredits.plan.alwaysFree')
                           )}

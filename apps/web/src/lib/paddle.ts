@@ -59,7 +59,7 @@ export interface CheckoutConfig {
  * which price ID to charge) then opens the Paddle overlay.
  */
 export async function openCheckout(
-  params: { plan?: string; topup?: string },
+  params: { plan?: string; topup?: string; period?: 'monthly' | 'yearly' },
   options?: {
     authToken: string;
     onSuccess?: () => void;

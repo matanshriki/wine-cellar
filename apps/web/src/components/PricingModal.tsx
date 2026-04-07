@@ -62,9 +62,13 @@ async function getAuthToken(): Promise<string> {
   return data.session?.access_token ?? '';
 }
 
-async function launchPlanCheckout(planKey: string, opts?: { onSuccess?: () => void }) {
+async function launchPlanCheckout(
+  planKey: string,
+  period: 'monthly' | 'yearly',
+  opts?: { onSuccess?: () => void },
+) {
   const token = await getAuthToken();
-  await openCheckout({ plan: planKey }, { authToken: token, onSuccess: opts?.onSuccess });
+  await openCheckout({ plan: planKey, period }, { authToken: token, onSuccess: opts?.onSuccess });
 }
 
 async function launchTopUpCheckout(credits: number) {
@@ -78,18 +82,24 @@ function PlanCard({
   plan,
   isCurrent,
   isRecommended,
+  billingPeriod,
   onSelect,
   loading,
 }: {
   plan: PlanDefinition;
   isCurrent: boolean;
   isRecommended: boolean;
+  billingPeriod: 'monthly' | 'yearly';
   onSelect: () => void;
   loading?: boolean;
 }) {
   const { t } = useTranslation();
   const isHighlighted = plan.highlight || isRecommended;
   const features = t(`sommelierCredits.planFeatures.${plan.key}`, { returnObjects: true }) as string[];
+  const showYearly = billingPeriod === 'yearly' && plan.priceYearly !== null;
+  const effectiveMonthlyPrice = showYearly && plan.priceYearly
+    ? (plan.priceYearly / 12).toFixed(2).replace(/\.00$/, '')
+    : null;
 
   return (
     <div
@@ -168,9 +178,22 @@ function PlanCard({
         </div>
         <div className="mt-1.5">
           {plan.priceMonthly !== null ? (
-            <span className="text-sm text-white/50">
-              <span className="font-medium text-white/70">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
-            </span>
+            <div>
+              {showYearly ? (
+                <>
+                  <span className="text-sm text-white/50">
+                    <span className="font-medium text-white/70">${plan.priceYearly}</span> {t('sommelierCredits.plan.perYear')}
+                  </span>
+                  <p className="mt-0.5 text-xs text-white/35">
+                    {t('sommelierCredits.plan.perMonthBilled', { price: effectiveMonthlyPrice })} · {t('sommelierCredits.billing.billedYearly')}
+                  </p>
+                </>
+              ) : (
+                <span className="text-sm text-white/50">
+                  <span className="font-medium text-white/70">${plan.priceMonthly}</span> {t('sommelierCredits.plan.perMonth')}
+                </span>
+              )}
+            </div>
           ) : (
             <span className="text-sm font-medium text-white/50">{t('sommelierCredits.plan.alwaysFree')}</span>
           )}
@@ -240,7 +263,9 @@ export function PricingModal({
   const { t } = useTranslation();
   const { monetizationEnabled, planKey: currentPlan, effectiveBalance, monthlyLimit, refresh } = useMonetizationAccess();
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17 — same for both plans
 
   async function handleSelectPlan(planKey: string) {
     if (planKey === currentPlan || planKey === 'free') return;
@@ -248,7 +273,8 @@ export function PricingModal({
     setCheckoutLoading(`plan:${planKey}`);
     try {
       const plan = PLANS.find((p) => p.key === planKey);
-      await launchPlanCheckout(planKey, {
+      const period = (billingPeriod === 'yearly' && plan?.priceYearly !== null) ? 'yearly' : 'monthly';
+      await launchPlanCheckout(planKey, period, {
         onSuccess: () => {
           refresh();
           trackEvent('pricing_plan_purchased', { plan_key: planKey });
@@ -429,18 +455,49 @@ export function PricingModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -8 }}
                     transition={{ duration: 0.18 }}
-                    className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-4"
                   >
+                    {/* Billing period toggle */}
+                    <div className="mb-4 flex justify-center">
+                      <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
+                        {(['monthly', 'yearly'] as const).map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setBillingPeriod(p)}
+                            className="relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
+                            style={
+                              billingPeriod === p
+                                ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
+                                : { color: 'rgba(255,255,255,0.4)' }
+                            }
+                          >
+                            {p === 'monthly' ? t('sommelierCredits.billing.monthly') : t('sommelierCredits.billing.yearly')}
+                            {p === 'yearly' && (
+                              <span
+                                className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                                style={{ background: 'rgba(52,211,153,0.18)', color: '#34d399' }}
+                              >
+                                {t('sommelierCredits.billing.savePercent', { percent: savePercent })}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-4">
                     {PLANS.map((plan) => (
                       <PlanCard
                         key={plan.key}
                         plan={plan}
                         isCurrent={currentPlan === plan.key}
                         isRecommended={recommendedPlanKey === plan.key && currentPlan !== plan.key}
+                        billingPeriod={billingPeriod}
                         onSelect={() => handleSelectPlan(plan.key)}
                         loading={checkoutLoading === `plan:${plan.key}`}
                       />
                     ))}
+                    </div>
                   </motion.div>
                 ) : (
                   <motion.div

@@ -54,6 +54,8 @@ export interface PlanDefinition {
   label: string;
   monthlyCredits: number;
   priceMonthly: number | null;
+  /** Annual price in USD. null = no annual option (e.g. free tier). */
+  priceYearly: number | null;
   features: string[];
   highlight?: boolean;
 }
@@ -64,6 +66,7 @@ export const PLANS: PlanDefinition[] = [
     label: 'Free',
     monthlyCredits: 15,
     priceMonthly: null,
+    priceYearly: null,
     features: [
       '15 Sommelier Credits / month',
       'Basic cellar management',
@@ -75,6 +78,7 @@ export const PLANS: PlanDefinition[] = [
     label: 'Premium',
     monthlyCredits: 150,
     priceMonthly: 9,
+    priceYearly: 90,   // $7.50/mo effective — save $18/yr (17% off)
     features: [
       '150 Sommelier Credits / month',
       'Full Sommelier access',
@@ -88,6 +92,7 @@ export const PLANS: PlanDefinition[] = [
     label: 'Collector',
     monthlyCredits: 500,
     priceMonthly: 24,
+    priceYearly: 240,  // $20/mo effective — save $48/yr (17% off)
     features: [
       '500 Sommelier Credits / month',
       'Advanced cellar analysis',

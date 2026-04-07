@@ -1354,11 +1354,19 @@
     "plan": {
       "creditsPerMonth": "קרדיטים\n/ חודש",
       "perMonth": "/ חודש",
+      "perYear": "/ שנה",
       "alwaysFree": "תמיד בחינם",
       "creditsRemaining": "נותר {{count}} קרדיט",
       "creditsRemaining_plural": "נותרו {{count}} קרדיטים",
       "creditsRemainingOf": "נותר {{count}} קרדיט מתוך {{limit}}",
-      "creditsRemainingOf_plural": "נותרו {{count}} קרדיטים מתוך {{limit}}"
+      "creditsRemainingOf_plural": "נותרו {{count}} קרדיטים מתוך {{limit}}",
+      "perMonthBilled": "{{price}}$ / חודש"
+    },
+    "billing": {
+      "monthly": "חודשי",
+      "yearly": "שנתי",
+      "savePercent": "חסכו {{percent}}%",
+      "billedYearly": "חיוב שנתי"
     },
     "cta": {
       "free": "המשך בחינם",
