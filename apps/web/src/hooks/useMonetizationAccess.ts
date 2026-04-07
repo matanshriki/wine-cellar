@@ -89,6 +89,12 @@ export interface MonetizationAccess {
   planKey: string | null;
   /** True only during the very first load when there is no cached data */
   creditsLoading: boolean;
+  /**
+   * True once the first successful Supabase fetch has completed.
+   * Use this to gate UI that must reflect the live DB value (e.g. plan badges)
+   * rather than a potentially stale localStorage cache.
+   */
+  isFreshFromDB: boolean;
   /** Trigger a manual refresh (e.g. after a payment) */
   refresh: () => void;
 }
@@ -117,6 +123,7 @@ export function useMonetizationAccess(): MonetizationAccess {
 
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const [isFreshFromDB, setIsFreshFromDB] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -180,6 +187,7 @@ export function useMonetizationAccess(): MonetizationAccess {
 
         setValues(fresh);
         setCreditsLoading(false);
+        setIsFreshFromDB(true);
         writeCache(userId, fresh);
       } catch (err) {
         console.warn('[useMonetizationAccess] fetch error (non-fatal):', err);
@@ -213,6 +221,7 @@ export function useMonetizationAccess(): MonetizationAccess {
   return {
     ...values,
     creditsLoading,
+    isFreshFromDB,
     refresh,
   };
 }

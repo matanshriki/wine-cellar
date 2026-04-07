@@ -22,7 +22,7 @@ export function UserMenu() {
   const { user, profile, signOut } = useAuth();
   const { flags } = useContextFeatureFlags(); // For wishlist, cellar agent, csv import
   const betaFlags = useBetaFeatureFlags(); // For share cellar, multi-bottle import
-  const { monetizationEnabled, planKey } = useMonetizationAccess();
+  const { monetizationEnabled, planKey, isFreshFromDB } = useMonetizationAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
@@ -175,8 +175,8 @@ export function UserMenu() {
               >
                 {displayName}
               </p>
-              {/* Plan badge — only for paid plans */}
-              {monetizationEnabled && planKey && planKey !== 'free' && (
+              {/* Plan badge — only for paid plans, and only once we have a confirmed live DB value */}
+              {isFreshFromDB && monetizationEnabled && planKey && planKey !== 'free' && (
                 <span
                   className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
                   style={
