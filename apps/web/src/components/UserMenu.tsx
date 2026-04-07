@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlags as useContextFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags';
+import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { ShareCellarModal } from './ShareCellarModal';
 import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
@@ -21,6 +22,7 @@ export function UserMenu() {
   const { user, profile, signOut } = useAuth();
   const { flags } = useContextFeatureFlags(); // For wishlist, cellar agent, csv import
   const betaFlags = useBetaFeatureFlags(); // For share cellar, multi-bottle import
+  const { monetizationEnabled, planKey } = useMonetizationAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
@@ -166,12 +168,35 @@ export function UserMenu() {
             className="px-4 py-3"
             style={{ borderBottom: '1px solid var(--border-subtle)' }}
           >
-            <p 
-              className="text-sm font-semibold truncate"
-              style={{ color: 'var(--text-heading)' }}
-            >
-              {displayName}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p 
+                className="text-sm font-semibold truncate"
+                style={{ color: 'var(--text-heading)' }}
+              >
+                {displayName}
+              </p>
+              {/* Plan badge — only for paid plans */}
+              {monetizationEnabled && planKey && planKey !== 'free' && (
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                  style={
+                    planKey === 'premium'
+                      ? {
+                          background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(217,119,6,0.08))',
+                          color: '#F59E0B',
+                          border: '1px solid rgba(251,191,36,0.25)',
+                        }
+                      : {
+                          background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(109,40,217,0.08))',
+                          color: '#A78BFA',
+                          border: '1px solid rgba(167,139,250,0.25)',
+                        }
+                  }
+                >
+                  ✦ {planKey === 'premium' ? 'Premium' : 'Collector'}
+                </span>
+              )}
+            </div>
             {profile?.email && (
               <p 
                 className="text-xs truncate mt-0.5"

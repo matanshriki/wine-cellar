@@ -87,6 +87,7 @@ export function UpgradePage() {
     monthlyLimit,
     isLowBalance,
     creditsLoading,
+    refresh,
   } = useMonetizationAccess();
 
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
@@ -109,8 +110,19 @@ export function UpgradePage() {
     trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'upgrade_page' });
     setCheckoutLoading(`plan:${planKey}`);
     try {
+      const plan = PLANS.find((p) => p.key === planKey);
       const token = await getAuthToken();
-      await openCheckout({ plan: planKey }, { authToken: token });
+      await openCheckout({ plan: planKey }, {
+        authToken: token,
+        onSuccess: () => {
+          refresh();
+          trackEvent('pricing_plan_purchased', { plan_key: planKey });
+          toast.success(
+            `${plan?.monthlyCredits} credits are now in your account — enjoy every sip.`,
+            `Welcome to ${plan?.label} ✦`,
+          );
+        },
+      });
     } catch (err: any) {
       console.error('[UpgradePage] Checkout error:', err);
       toast.error(err?.message ?? 'Could not open checkout — please try again.');
@@ -280,8 +292,18 @@ export function UpgradePage() {
                           <span className="font-semibold text-white">{plan.label}</span>
                         </div>
                         {isCurrent && (
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/50">
-                            Your plan
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+                            style={
+                              plan.highlight
+                                ? plan.key === 'premium'
+                                  ? { background: 'rgba(251,191,36,0.15)', color: '#F59E0B', border: '1px solid rgba(251,191,36,0.3)' }
+                                  : { background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }
+                                : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.1)' }
+                            }
+                          >
+                            <Check size={9} strokeWidth={3} />
+                            Active
                           </span>
                         )}
                       </div>

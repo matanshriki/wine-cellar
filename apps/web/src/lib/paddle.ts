@@ -93,6 +93,23 @@ export async function openCheckout(
     ...(cfg.email ? { customer: { email: cfg.email } } : {}),
   };
 
+  // Wire success / close callbacks via the global event system before opening.
+  // We clear the callback immediately after it fires to avoid stale listeners
+  // across multiple checkout sessions.
+  if (options?.onSuccess || options?.onClose) {
+    paddle.Update({
+      eventCallback: (event: any) => {
+        if (event.name === 'checkout.completed') {
+          options?.onSuccess?.();
+          paddle.Update({ eventCallback: undefined });
+        } else if (event.name === 'checkout.closed') {
+          options?.onClose?.();
+          paddle.Update({ eventCallback: undefined });
+        }
+      },
+    });
+  }
+
   paddle.Checkout.open({
     ...checkoutOpts,
     settings: {

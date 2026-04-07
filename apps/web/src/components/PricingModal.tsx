@@ -61,9 +61,9 @@ async function getAuthToken(): Promise<string> {
   return data.session?.access_token ?? '';
 }
 
-async function launchPlanCheckout(planKey: string) {
+async function launchPlanCheckout(planKey: string, opts?: { onSuccess?: () => void }) {
   const token = await getAuthToken();
-  await openCheckout({ plan: planKey }, { authToken: token });
+  await openCheckout({ plan: planKey }, { authToken: token, onSuccess: opts?.onSuccess });
 }
 
 async function launchTopUpCheckout(credits: number) {
@@ -127,8 +127,30 @@ function PlanCard({
           <span className="text-sm font-semibold text-white">{plan.label}</span>
         </div>
         {isCurrent && (
-          <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
-            Your plan
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+            style={
+              isHighlighted
+                ? plan.key === 'premium'
+                  ? {
+                      background: 'rgba(251,191,36,0.15)',
+                      color: '#F59E0B',
+                      border: '1px solid rgba(251,191,36,0.3)',
+                    }
+                  : {
+                      background: 'rgba(167,139,250,0.15)',
+                      color: '#A78BFA',
+                      border: '1px solid rgba(167,139,250,0.3)',
+                    }
+                : {
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.45)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }
+            }
+          >
+            <Check size={9} strokeWidth={3} />
+            Active
           </span>
         )}
       </div>
@@ -208,7 +230,7 @@ export function PricingModal({
   recommendedPlanKey,
   showLowCreditPrompt = false,
 }: PricingModalProps) {
-  const { monetizationEnabled, planKey: currentPlan, effectiveBalance, monthlyLimit } = useMonetizationAccess();
+  const { monetizationEnabled, planKey: currentPlan, effectiveBalance, monthlyLimit, refresh } = useMonetizationAccess();
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
@@ -217,7 +239,17 @@ export function PricingModal({
     trackEvent('pricing_plan_selected', { plan_key: planKey, source: 'pricing_modal' });
     setCheckoutLoading(`plan:${planKey}`);
     try {
-      await launchPlanCheckout(planKey);
+      const plan = PLANS.find((p) => p.key === planKey);
+      await launchPlanCheckout(planKey, {
+        onSuccess: () => {
+          refresh();
+          trackEvent('pricing_plan_purchased', { plan_key: planKey });
+          toast.success(
+            `${plan?.monthlyCredits} credits are now in your account — enjoy every sip.`,
+            `Welcome to ${plan?.label} ✦`,
+          );
+        },
+      });
     } catch (err: any) {
       console.error('[PricingModal] Checkout error:', err);
       toast.error(err?.message ?? 'Could not open checkout — please try again.');
