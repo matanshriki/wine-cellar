@@ -535,11 +535,11 @@ export function PricingModal({
                             <div className="flex items-center gap-2">
                               <Zap size={14} className="text-white/40 group-hover:text-amber-400 transition-colors" />
                               <span className="text-base font-semibold text-white">
-                                {opt.label}
+                                {t('sommelierCredits.topUp.credits', { credits: opt.credits })}
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-white/40">
-                              One-time purchase — no subscription
+                              {t('sommelierCredits.topUp.oneTimePurchase')}
                             </p>
                           </div>
                           <div className="shrink-0 text-right">
@@ -556,19 +556,17 @@ export function PricingModal({
                     {/* Visual separator */}
                     <div className="mt-6 flex items-center gap-3">
                       <div className="h-px flex-1 bg-white/8" />
-                      <span className="text-[11px] text-white/25">How Sommelier Credits work</span>
+                      <span className="text-[11px] text-white/25">{t('sommelierCredits.topUp.howItWorks')}</span>
                       <div className="h-px flex-1 bg-white/8" />
                     </div>
 
                     {/* How-it-works micro guide */}
                     <ul className="mt-4 space-y-3">
-                      {[
-                        { icon: <Sparkles size={12} />, text: 'Each Sommelier conversation, wine analysis, or label scan uses a small number of credits.' },
-                        { icon: <Check size={12} />, text: 'Monthly plan credits reset on the 1st of each month.' },
-                        { icon: <Zap size={12} />, text: 'Top-up credits never expire and are used after your monthly allowance.' },
-                      ].map(({ icon, text }) => (
-                        <li key={text} className="flex items-start gap-2.5 text-xs text-white/40">
-                          <span className="mt-0.5 shrink-0 text-white/30">{icon}</span>
+                      {(t('sommelierCredits.topUp.bullets', { returnObjects: true }) as string[]).map((text, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-xs text-white/40">
+                          <span className="mt-0.5 shrink-0 text-white/30">
+                            {i === 0 ? <Sparkles size={12} /> : i === 1 ? <Check size={12} /> : <Zap size={12} />}
+                          </span>
                           {text}
                         </li>
                       ))}

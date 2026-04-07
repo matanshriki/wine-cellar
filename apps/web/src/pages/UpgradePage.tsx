@@ -478,11 +478,11 @@ export function UpgradePage() {
                     <div className="flex items-center gap-2">
                       <Zap size={15} style={{ color: 'var(--text-tertiary)' }} />
                       <span className="text-base font-bold" style={{ color: 'var(--text-heading)' }}>
-                        {opt.label}
+                        {t('sommelierCredits.topUp.credits', { credits: opt.credits })}
                       </span>
                     </div>
                     <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                      One-time purchase — no subscription
+                      {t('sommelierCredits.topUp.oneTimePurchase')}
                     </p>
                   </div>
                   <div className="shrink-0 pl-4">
@@ -501,16 +501,14 @@ export function UpgradePage() {
               style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-muted)' }}
             >
               <h3 className="mb-3 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                How Sommelier Credits work
+                {t('sommelierCredits.topUp.howItWorks')}
               </h3>
               <ul className="space-y-3">
-                {[
-                  { icon: <Sparkles size={12} />, text: 'Each Sommelier conversation, wine analysis, or label scan uses a small number of credits.' },
-                  { icon: <Check size={12} />,    text: 'Monthly plan credits reset on the 1st of each month.' },
-                  { icon: <Zap size={12} />,      text: 'Top-up credits never expire and are used after your monthly allowance runs out.' },
-                ].map(({ icon, text }) => (
-                  <li key={text} className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                    <span className="mt-0.5 shrink-0 opacity-50">{icon}</span>
+                {(t('sommelierCredits.topUp.bullets', { returnObjects: true }) as string[]).map((text, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                    <span className="mt-0.5 shrink-0 opacity-50">
+                      {i === 0 ? <Sparkles size={12} /> : i === 1 ? <Check size={12} /> : <Zap size={12} />}
+                    </span>
                     {text}
                   </li>
                 ))}
@@ -518,7 +516,7 @@ export function UpgradePage() {
             </div>
 
             <p className="mt-5 text-center text-xs" style={{ color: 'var(--text-tertiary)', opacity: 0.5 }}>
-              Secured by Paddle · No subscription required for top-ups
+              {t('sommelierCredits.footer')}
             </p>
           </motion.div>
         )}

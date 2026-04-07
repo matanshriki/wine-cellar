@@ -1323,7 +1323,15 @@
     },
     "topUp": {
       "description": "Need more? Add extra Sommelier Credits anytime — they stack on top of your monthly allowance and never expire.",
-      "addCredits": "Add {{credits}} Credits"
+      "addCredits": "Add {{credits}} Credits",
+      "credits": "{{credits}} Sommelier Credits",
+      "oneTimePurchase": "One-time purchase — no subscription",
+      "howItWorks": "How Sommelier Credits work",
+      "bullets": [
+        "Each Sommelier conversation, wine analysis, or label scan uses a small number of credits.",
+        "Monthly plan credits reset on the 1st of each month.",
+        "Top-up credits never expire and are used after your monthly allowance."
+      ]
     },
     "footer": "Secured by Paddle · Cancel anytime",
     "manageSubscription": "Manage subscription",
