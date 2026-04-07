@@ -99,7 +99,7 @@ export function UpgradePage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17
-  const [successModal, setSuccessModal] = useState<{ credits: number } | null>(null);
+  const [successModal, setSuccessModal] = useState<{ credits: number; price: number } | null>(null);
 
   // Show success toast when returning from Paddle checkout
   useEffect(() => {
@@ -147,7 +147,7 @@ export function UpgradePage() {
       await openCheckout({ topup: String(credits) }, {
         authToken: token,
         onSuccess: () => {
-          setSuccessModal({ credits });
+          setSuccessModal({ credits, price });
           setCheckoutLoading(null);
           // Webhook takes a moment to be processed server-side; refresh after a short delay
           setTimeout(() => { refresh(); }, 4000);
@@ -528,6 +528,7 @@ export function UpgradePage() {
     <PurchaseSuccessModal
       open={successModal !== null}
       credits={successModal?.credits ?? 0}
+      price={successModal?.price ?? 0}
       newBalance={successModal !== null ? effectiveBalance : null}
       onClose={() => setSuccessModal(null)}
     />

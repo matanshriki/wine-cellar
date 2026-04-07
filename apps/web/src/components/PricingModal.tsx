@@ -268,7 +268,7 @@ export function PricingModal({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17 — same for both plans
-  const [successModal, setSuccessModal] = useState<{ credits: number } | null>(null);
+  const [successModal, setSuccessModal] = useState<{ credits: number; price: number } | null>(null);
 
   async function handleSelectPlan(planKey: string) {
     if (planKey === currentPlan || planKey === 'free') return;
@@ -301,7 +301,7 @@ export function PricingModal({
     try {
       await launchTopUpCheckout(credits, {
         onSuccess: () => {
-          setSuccessModal({ credits });
+          setSuccessModal({ credits, price });
           setCheckoutLoading(null);
           // Webhook takes a moment to be processed server-side; refresh after a short delay
           setTimeout(() => { refresh(); }, 4000);
@@ -590,6 +590,7 @@ export function PricingModal({
     <PurchaseSuccessModal
       open={successModal !== null}
       credits={successModal?.credits ?? 0}
+      price={successModal?.price ?? 0}
       newBalance={successModal !== null ? effectiveBalance : null}
       onClose={() => setSuccessModal(null)}
     />

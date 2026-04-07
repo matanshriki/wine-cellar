@@ -1273,12 +1273,12 @@
     }
   },
   "purchaseSuccess": {
-    "title": "Credits Added",
-    "subtitle": "Your payment was confirmed by Paddle.",
-    "creditsLabel": "Sommelier Credits",
+    "title": "Purchase Confirmed ✦",
+    "subtitle": "You bought {{credits}} Sommelier Credits for ${{price}}.",
+    "creditsLabel": "Sommelier Credits added",
     "newBalance": "Your new balance: {{balance}} credits",
-    "balanceUpdating": "Balance updating…",
-    "cta": "Continue Tasting ✦"
+    "balanceUpdating": "Balance updating… (may take a moment)",
+    "cta": "Continue Tasting"
   },
   "sommelierCredits": {
     "title": "Sommelier Credits",

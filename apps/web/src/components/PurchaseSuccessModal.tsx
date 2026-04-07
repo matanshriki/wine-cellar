@@ -13,13 +13,15 @@ interface Props {
   open: boolean;
   /** Credits purchased in this transaction */
   credits: number;
+  /** Price paid in USD */
+  price: number;
   /** Current effective balance after the purchase (null while the webhook is still processing) */
   newBalance: number | null;
   /** Called when the user dismisses the modal */
   onClose: () => void;
 }
 
-export function PurchaseSuccessModal({ open, credits, newBalance, onClose }: Props) {
+export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose }: Props) {
   const { t } = useTranslation();
 
   return (
@@ -83,7 +85,7 @@ export function PurchaseSuccessModal({ open, credits, newBalance, onClose }: Pro
                 {t('purchaseSuccess.title')}
               </h2>
               <p className="mb-6 text-sm text-white/45">
-                {t('purchaseSuccess.subtitle')}
+                {t('purchaseSuccess.subtitle', { credits, price })}
               </p>
 
               {/* Credits badge */}

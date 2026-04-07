@@ -1339,12 +1339,12 @@
     }
   },
   "purchaseSuccess": {
-    "title": "קרדיטים נוספו",
-    "subtitle": "התשלום אושר על ידי Paddle.",
-    "creditsLabel": "קרדיטי סומלייה",
+    "title": "רכישה אושרה ✦",
+    "subtitle": "רכשת {{credits}} קרדיטי סומלייה תמורת ${{price}}.",
+    "creditsLabel": "קרדיטי סומלייה נוספו",
     "newBalance": "היתרה החדשה שלך: {{balance}} קרדיטים",
-    "balanceUpdating": "היתרה מתעדכנת…",
-    "cta": "המשך לטעום ✦"
+    "balanceUpdating": "היתרה מתעדכנת… (עשוי לקחת רגע)",
+    "cta": "המשך לטעום"
   },
   "sommelierCredits": {
     "title": "קרדיטים לסומליה",
