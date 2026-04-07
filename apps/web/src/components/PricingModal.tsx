@@ -484,7 +484,7 @@ export function PricingModal({
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </div>}
 
                     <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-4">
                     {PLANS.map((plan) => (

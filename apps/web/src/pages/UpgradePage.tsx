@@ -296,7 +296,7 @@ export function UpgradePage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               {/* Plan grid: snap-scroll carousel on mobile, 3-col grid on sm+ */}
               <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0 sm:gap-5">
