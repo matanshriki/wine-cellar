@@ -265,6 +265,7 @@ export function PricingModal({
   const [activeTab, setActiveTab] = useState<'plans' | 'topup'>('plans');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17 — same for both plans
 
   async function handleSelectPlan(planKey: string) {
@@ -456,8 +457,8 @@ export function PricingModal({
                     exit={{ opacity: 0, x: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    {/* Billing period toggle */}
-                    <div className="mb-4 flex justify-center">
+                    {/* Billing period toggle — only shown when yearly prices are configured */}
+                    {yearlyEnabled && <div className="mb-4 flex justify-center">
                       <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
                         {(['monthly', 'yearly'] as const).map((p) => (
                           <button

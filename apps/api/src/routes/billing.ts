@@ -134,12 +134,22 @@ billingRouter.get(
     const { plan, topup, period } = req.query as { plan?: string; topup?: string; period?: string };
     const isYearly = period === 'yearly';
 
-    // Resolve price ID — server controls which price ID is used; browser never decides
+    // Resolve price ID — server controls which price ID is used; browser never decides.
+    // If a yearly price ID is not yet configured, fall back to monthly so checkout
+    // still works while the operator adds the env var.
     let priceId: string | null = null;
-    if (plan === 'premium')   priceId = isYearly ? config.paddlePricePremiumYearly   : config.paddlePricePremiumMonthly;
-    if (plan === 'collector') priceId = isYearly ? config.paddlePriceCollectorYearly : config.paddlePriceCollectorMonthly;
-    if (topup === '50')       priceId = config.paddlePriceTopup50;
-    if (topup === '150')      priceId = config.paddlePriceTopup150;
+    if (plan === 'premium') {
+      priceId = (isYearly && config.paddlePricePremiumYearly)
+        ? config.paddlePricePremiumYearly
+        : config.paddlePricePremiumMonthly;
+    }
+    if (plan === 'collector') {
+      priceId = (isYearly && config.paddlePriceCollectorYearly)
+        ? config.paddlePriceCollectorYearly
+        : config.paddlePriceCollectorMonthly;
+    }
+    if (topup === '50')  priceId = config.paddlePriceTopup50;
+    if (topup === '150') priceId = config.paddlePriceTopup150;
 
     if (!priceId) {
       return res.status(400).json({ error: 'Invalid plan or topup parameter' });

@@ -96,6 +96,7 @@ export function UpgradePage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const yearlyEnabled = import.meta.env.VITE_PADDLE_YEARLY_ENABLED === 'true';
   const savePercent = Math.round((1 - 90 / (9 * 12)) * 100); // 17
 
   // Show success toast when returning from Paddle checkout
@@ -268,8 +269,8 @@ export function UpgradePage() {
               className="-mx-4 rounded-none px-4 py-6 sm:mx-0 sm:rounded-3xl sm:px-8 sm:py-8"
               style={{ background: 'linear-gradient(160deg, #11101e 0%, #0e0c1b 100%)' }}
             >
-              {/* Billing period toggle */}
-              <div className="mb-5 flex justify-center">
+              {/* Billing period toggle — only shown when yearly prices are configured */}
+              {yearlyEnabled && <div className="mb-5 flex justify-center">
                 <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
                   {(['monthly', 'yearly'] as const).map((p) => (
                     <button
