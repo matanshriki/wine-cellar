@@ -31,13 +31,15 @@ interface PlanMeta {
 }
 
 function getPlanMeta(priceId: string): PlanMeta | null {
-  const map: Record<string, PlanMeta> = {
-    [config.paddlePricePremiumMonthly]:   { planKey: 'premium',   monthlyCredits: 150 },
-    [config.paddlePricePremiumYearly]:    { planKey: 'premium',   monthlyCredits: 150 },
-    [config.paddlePriceCollectorMonthly]: { planKey: 'collector', monthlyCredits: 500 },
-    [config.paddlePriceCollectorYearly]:  { planKey: 'collector', monthlyCredits: 500 },
-  };
-  return map[priceId] ?? null;
+  if (!priceId) return null;
+  const entries: Array<[string, PlanMeta]> = [
+    [config.paddlePricePremiumMonthly,   { planKey: 'premium',   monthlyCredits: 150 }],
+    [config.paddlePriceCollectorMonthly, { planKey: 'collector', monthlyCredits: 500 }],
+    // Yearly price IDs are only added when the env var is configured
+    ...(config.paddlePricePremiumYearly   ? [[config.paddlePricePremiumYearly,   { planKey: 'premium',   monthlyCredits: 150 }]] as Array<[string, PlanMeta]> : []),
+    ...(config.paddlePriceCollectorYearly ? [[config.paddlePriceCollectorYearly, { planKey: 'collector', monthlyCredits: 500 }]] as Array<[string, PlanMeta]> : []),
+  ];
+  return Object.fromEntries(entries)[priceId] ?? null;
 }
 
 interface TopUpMeta {
@@ -207,66 +209,71 @@ billingRouter.post(
     });
   },
   async (req: Request, res: Response) => {
-    const rawBody: Buffer = (req as any).rawBody ?? Buffer.alloc(0);
-    const signature = req.headers['paddle-signature'] as string | undefined;
-
-    // 1. Verify signature
-    if (!verifyPaddleSignature(rawBody, signature)) {
-      console.warn('[Paddle Webhook] Invalid signature — rejecting');
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-
-    let event: any;
     try {
-      event = JSON.parse(rawBody.toString('utf8'));
-    } catch {
-      return res.status(400).json({ error: 'Invalid JSON body' });
-    }
+      const rawBody: Buffer = (req as any).rawBody ?? Buffer.alloc(0);
+      const signature = req.headers['paddle-signature'] as string | undefined;
 
-    const eventId: string = event.event_id;
-    const eventType: string = event.event_type;
+      // 1. Verify signature
+      if (!verifyPaddleSignature(rawBody, signature)) {
+        console.warn('[Paddle Webhook] Invalid signature — rejecting');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
 
-    console.log(`[Paddle Webhook] ${eventType} (${eventId})`);
+      let event: any;
+      try {
+        event = JSON.parse(rawBody.toString('utf8'));
+      } catch {
+        return res.status(400).json({ error: 'Invalid JSON body' });
+      }
 
-    const supabase = getServiceClient();
-    if (!supabase) {
-      console.error('[Paddle Webhook] Service client unavailable — missing service role key');
-      return res.status(500).json({ error: 'Service unavailable' });
-    }
+      const eventId: string = event.event_id;
+      const eventType: string = event.event_type;
 
-    // 2. Idempotency check — skip if already processed
-    const { data: existing } = await supabase
-      .from('paddle_events')
-      .select('id')
-      .eq('event_id', eventId)
-      .maybeSingle();
+      console.log(`[Paddle Webhook] ${eventType} (${eventId})`);
 
-    if (existing) {
-      console.log(`[Paddle Webhook] Already processed ${eventId} — skipping`);
-      return res.json({ ok: true, duplicate: true });
-    }
+      const supabase = getServiceClient();
+      if (!supabase) {
+        console.error('[Paddle Webhook] Service client unavailable — missing service role key');
+        return res.status(500).json({ error: 'Service unavailable' });
+      }
 
-    // 3. Resolve user_id from custom_data
-    const customData: Record<string, string> = event.data?.custom_data ?? {};
-    const userId: string | null = customData['userId'] ?? null;
+      // 2. Idempotency check — skip if already processed
+      const { data: existing } = await supabase
+        .from('paddle_events')
+        .select('id')
+        .eq('event_id', eventId)
+        .maybeSingle();
 
-    // 4. Process event
-    try {
-      await handlePaddleEvent(supabase, eventType, event.data, userId);
+      if (existing) {
+        console.log(`[Paddle Webhook] Already processed ${eventId} — skipping`);
+        return res.json({ ok: true, duplicate: true });
+      }
+
+      // 3. Resolve user_id from custom_data
+      const customData: Record<string, string> = event.data?.custom_data ?? {};
+      const userId: string | null = customData['userId'] ?? null;
+
+      // 4. Process event
+      try {
+        await handlePaddleEvent(supabase, eventType, event.data, userId);
+      } catch (err: any) {
+        console.error(`[Paddle Webhook] Handler error for ${eventType}:`, err.message);
+        // Still store the event for debugging; return 200 so Paddle doesn't retry
+      }
+
+      // 5. Persist event for audit + idempotency
+      await supabase.from('paddle_events').insert({
+        event_id:  eventId,
+        event_type: eventType,
+        user_id:   userId ?? null,
+        payload:   event,
+      });
+
+      return res.json({ ok: true });
     } catch (err: any) {
-      console.error(`[Paddle Webhook] Handler error for ${eventType}:`, err.message);
-      // Still store the event for debugging; return 200 so Paddle doesn't retry
+      console.error('[Paddle Webhook] Unhandled error:', err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-
-    // 5. Persist event for audit + idempotency
-    await supabase.from('paddle_events').insert({
-      event_id:  eventId,
-      event_type: eventType,
-      user_id:   userId ?? null,
-      payload:   event,
-    });
-
-    return res.json({ ok: true });
   },
 );
 

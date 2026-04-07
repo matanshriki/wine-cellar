@@ -90,6 +90,16 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Global safety net — surfaces the actual error in Railway logs before crashing
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('[FATAL] Unhandled promise rejection:', reason);
+  process.exit(1);
+});
+process.on('uncaughtException', (err: Error) => {
+  console.error('[FATAL] Uncaught exception:', err);
+  process.exit(1);
+});
+
 // Start server
 app.listen(config.port, () => {
   console.log(`🍷 Wine Cellar Brain API running on http://localhost:${config.port}`);
