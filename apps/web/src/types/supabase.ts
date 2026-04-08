@@ -429,13 +429,16 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          monthly_credit_limit: number
+          monthly_limit: number
           credit_balance: number
           bonus_credits: number
           plan_key: string | null
           billing_status: string | null
           current_period_start: string | null
           current_period_end: string | null
+          billing_period_end: string | null
+          paddle_customer_id: string | null
+          paddle_subscription_id: string | null
           lifetime_credits_used: number
           created_at: string
           updated_at: string
@@ -443,13 +446,16 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          monthly_credit_limit?: number
+          monthly_limit?: number
           credit_balance?: number
           bonus_credits?: number
           plan_key?: string | null
           billing_status?: string | null
           current_period_start?: string | null
           current_period_end?: string | null
+          billing_period_end?: string | null
+          paddle_customer_id?: string | null
+          paddle_subscription_id?: string | null
           lifetime_credits_used?: number
           created_at?: string
           updated_at?: string
@@ -457,13 +463,16 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
-          monthly_credit_limit?: number
+          monthly_limit?: number
           credit_balance?: number
           bonus_credits?: number
           plan_key?: string | null
           billing_status?: string | null
           current_period_start?: string | null
           current_period_end?: string | null
+          billing_period_end?: string | null
+          paddle_customer_id?: string | null
+          paddle_subscription_id?: string | null
           lifetime_credits_used?: number
           created_at?: string
           updated_at?: string

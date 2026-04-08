@@ -106,7 +106,7 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
         const creditRow = cred ?? {
           credit_balance: 0,
           bonus_credits: 0,
-          monthly_credit_limit: 0,
+          monthly_limit: 0,
           plan_key: null,
         };
 
@@ -116,7 +116,7 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
           effectiveBalance: getEffectiveCreditBalance(creditRow),
           isLowBalance: monEnabled ? isLowCreditBalance(creditRow) : false,
           balanceLabel: creditBalanceLabel(creditRow),
-          monthlyLimit: creditRow.monthly_credit_limit ?? 0,
+          monthlyLimit: creditRow.monthly_limit ?? 0,
           planKey: creditRow.plan_key ?? null,
         };
 
