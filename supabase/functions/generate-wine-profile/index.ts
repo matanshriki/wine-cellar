@@ -127,7 +127,7 @@ serve(async (req) => {
     // ── Credit pre-flight check ──────────────────────────────────────────────
     const profileCreditCheck = await checkCreditAccess(supabase, user.id, 'wine_profile_generation', 1)
     if (!profileCreditCheck.allowed) {
-      void logCreditUsage(supabase, {
+      await logCreditUsage(supabase, {
         userId: user.id,
         actionType: 'wine_profile_generation',
         creditsRequired: 1,
@@ -250,7 +250,7 @@ Base your analysis on:
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text()
       console.error('[generate-wine-profile] OpenAI error:', errorText)
-      void logCreditUsage(supabase, {
+      await logCreditUsage(supabase, {
         userId: user.id,
         actionType: 'wine_profile_generation',
         creditsRequired: 1,
@@ -300,7 +300,7 @@ Base your analysis on:
     }
 
     // ── Log successful credit usage (best-effort) ────────────────────────────
-    void logCreditUsage(supabase, {
+    await logCreditUsage(supabase, {
       userId: user.id,
       actionType: 'wine_profile_generation',
       creditsRequired: 1,

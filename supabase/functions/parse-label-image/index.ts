@@ -141,7 +141,8 @@ serve(async (req) => {
       supabaseClient, user.id, labelActionType, labelCreditCost
     );
     if (!labelCreditCheck.allowed) {
-      void logCreditUsage(supabaseClient, {
+      // Await so the log write completes before the runtime terminates the request context
+      await logCreditUsage(supabaseClient, {
         userId: user.id,
         actionType: labelActionType,
         creditsRequired: labelCreditCost,
@@ -472,8 +473,8 @@ Return JSON in this exact format:
 
       console.log('[Parse Label] ✅ Receipt detected with', validatedItems.length, 'items');
 
-      // Log as receipt_scan (detected at response time — image was actually a receipt)
-      void logCreditUsage(supabaseClient, {
+      // Await so the DB write completes before the runtime terminates the request context
+      await logCreditUsage(supabaseClient, {
         userId: user.id,
         actionType: 'receipt_scan',
         creditsRequired: 8,
@@ -517,8 +518,8 @@ Return JSON in this exact format:
 
       console.log('[Parse Label] ✅ Success! Detected', validatedBottles.length, 'bottles');
 
-      // Multi-bottle label scan (charged as receipt_scan since multi-bottle mode was requested)
-      void logCreditUsage(supabaseClient, {
+      // Await so the DB write completes before the runtime terminates the request context
+      await logCreditUsage(supabaseClient, {
         userId: user.id,
         actionType: 'receipt_scan',
         creditsRequired: 8,
@@ -573,8 +574,8 @@ Return JSON in this exact format:
 
     console.log('[Parse Label] ✅ Success! Overall confidence:', overallConfidence);
 
-    // Single label scan
-    void logCreditUsage(supabaseClient, {
+    // Await so the DB write completes before the runtime terminates the request context
+    await logCreditUsage(supabaseClient, {
       userId: user.id,
       actionType: 'label_scan',
       creditsRequired: 2,

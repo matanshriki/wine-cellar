@@ -111,7 +111,7 @@ serve(async (req) => {
     // cost to 0 for system-triggered paths, or add a bypass flag here.
     const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'wine_bottle_analysis', 1)
     if (!creditCheck.allowed) {
-      void logCreditUsage(supabaseAdmin, {
+      await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: 'wine_bottle_analysis',
         creditsRequired: 1,
@@ -163,7 +163,7 @@ serve(async (req) => {
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text()
       console.error('OpenAI API error:', errorData)
-      void logCreditUsage(supabaseAdmin, {
+      await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: 'wine_bottle_analysis',
         creditsRequired: 1,
@@ -219,7 +219,7 @@ serve(async (req) => {
     }
 
     // ── Log successful credit usage (best-effort, non-blocking) ────────────
-    void logCreditUsage(supabaseAdmin, {
+    await logCreditUsage(supabaseAdmin, {
       userId: user.id,
       actionType: 'wine_bottle_analysis',
       creditsRequired: 1,

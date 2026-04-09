@@ -180,7 +180,7 @@ serve(async (req) => {
     if (!willUseCache) {
       const artCreditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'label_art_generation', 5)
       if (!artCreditCheck.allowed) {
-        void logCreditUsage(supabaseAdmin, {
+        await logCreditUsage(supabaseAdmin, {
           userId: user.id,
           actionType: 'label_art_generation',
           creditsRequired: 5,
@@ -247,7 +247,7 @@ serve(async (req) => {
       const errorText = await openaiResponse.text();
       console.error('[AI Label] ❌ OpenAI error:', openaiResponse.status, errorText);
 
-      void logCreditUsage(supabaseAdmin, {
+      await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: 'label_art_generation',
         creditsRequired: 5,
@@ -347,7 +347,7 @@ serve(async (req) => {
     console.log('[AI Label] ✅ SUCCESS! Image available at:', publicUrlData.publicUrl);
 
     // ── Log successful credit usage (best-effort) ────────────────────────────
-    void logCreditUsage(supabaseAdmin, {
+    await logCreditUsage(supabaseAdmin, {
       userId: user.id,
       actionType: 'label_art_generation',
       creditsRequired: 5,

@@ -101,7 +101,7 @@ serve(async (req) => {
     // During dark launch enforcement is OFF → always passes.
     const cellarCreditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'cellar_analysis', 10)
     if (!cellarCreditCheck.allowed) {
-      void logCreditUsage(supabaseAdmin, {
+      await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: 'cellar_analysis',
         creditsRequired: 10,
@@ -226,7 +226,7 @@ serve(async (req) => {
     // ── Log credit usage for the batch (best-effort, non-blocking) ──────────
     // Charge once per batch call (not per bottle).
     // requestStatus = 'success' if at least one bottle succeeded; 'failed' otherwise.
-    void logCreditUsage(supabaseAdmin, {
+    await logCreditUsage(supabaseAdmin, {
       userId: user.id,
       actionType: 'cellar_analysis',
       creditsRequired: 10,
