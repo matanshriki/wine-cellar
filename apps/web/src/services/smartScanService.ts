@@ -61,7 +61,17 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
       },
     });
 
-    if (error) throw new Error(`AI extraction failed: ${error.message}`);
+    if (error) {
+      // FunctionsHttpError carries the response body — extract the human-readable message
+      // from our structured error JSON if possible, otherwise fall back to the raw message.
+      let detail = (error as any)?.message ?? 'Unknown error';
+      try {
+        const parsed = JSON.parse(detail);
+        if (parsed?.message) detail = parsed.message;
+        else if (parsed?.error) detail = parsed.error;
+      } catch { /* not JSON — use as-is */ }
+      throw new Error(detail);
+    }
 
     if (!data) {
       return {

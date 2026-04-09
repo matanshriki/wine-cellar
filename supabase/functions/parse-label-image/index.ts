@@ -179,43 +179,13 @@ serve(async (req) => {
       finalImageUrl = data.publicUrl;
     }
 
-    console.log('[Parse Label] Final image URL:', finalImageUrl);
-
-    // Test image URL accessibility
-    try {
-      console.log('[Parse Label] Testing image URL accessibility...');
-      const testResponse = await fetch(finalImageUrl, { method: 'HEAD' });
-      if (!testResponse.ok) {
-        console.error('[Parse Label] Image URL not accessible:', testResponse.status, testResponse.statusText);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'IMAGE_NOT_ACCESSIBLE',
-            message: `Cannot access image (HTTP ${testResponse.status}). Please ensure the storage bucket is configured correctly.`,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      console.log('[Parse Label] ✅ Image URL is accessible');
-    } catch (e) {
-      console.error('[Parse Label] Failed to test image URL:', e);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'IMAGE_FETCH_FAILED',
-          message: 'Cannot reach image URL. Check network and storage configuration.',
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+    console.log('[Parse Label] Final image URL (first 80 chars):', finalImageUrl.substring(0, 80));
 
     // Step 1: OCR + AI Parsing using OpenAI Vision
+    // NOTE: We skip the HEAD pre-flight test — Supabase Storage signed URLs can
+    // return 403/405 for HEAD requests depending on bucket configuration, which
+    // would cause false IMAGE_NOT_ACCESSIBLE failures. OpenAI Vision will surface
+    // a clear error if the URL is genuinely unreachable.
     console.log('[Parse Label] Calling OpenAI Vision API...');
     console.log('[Parse Label] Model: gpt-4o-mini');
     console.log('[Parse Label] Mode:', isMultiBottle ? 'multi-bottle (with receipt detection)' : 'single');
