@@ -18,6 +18,7 @@ import {
   creditBalanceLabel,
 } from '../lib/creditPolicy';
 import type { MonetizationAccess } from '../hooks/useMonetizationAccess';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // ── localStorage cache (stale-while-revalidate) ──────────────────────────────
 
@@ -66,6 +67,7 @@ const MonetizationContext = createContext<MonetizationAccess | null>(null);
 
 export function MonetizationProvider({ children }: { children: ReactNode }) {
   const resolvedUserId = useRef<string | null>(null);
+  const realtimeChannel = useRef<RealtimeChannel | null>(null);
   const [values, setValues] = useState<MonetizationCache>(EMPTY);
   const [creditsLoading, setCreditsLoading] = useState(true);
   const [tick, setTick] = useState(0);
@@ -104,26 +106,69 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
         const monEnabled = ent?.monetization_enabled ?? false;
         const enfEnabled = ent?.credit_enforcement_enabled ?? false;
         const creditRow = cred ?? {
-          credit_balance: 0,
-          bonus_credits: 0,
-          monthly_limit: 0,
-          plan_key: null,
+          credit_balance:       0,
+          bonus_credits:        0,
+          monthly_credit_limit: 0,
+          plan_key:             null,
         };
 
         const fresh: MonetizationCache = {
-          monetizationEnabled: monEnabled,
+          monetizationEnabled:      monEnabled,
           creditEnforcementEnabled: enfEnabled,
           effectiveBalance: getEffectiveCreditBalance(creditRow),
-          isLowBalance: monEnabled ? isLowCreditBalance(creditRow) : false,
-          balanceLabel: creditBalanceLabel(creditRow),
-          monthlyLimit: creditRow.monthly_limit ?? 0,
-          planKey: creditRow.plan_key ?? null,
+          isLowBalance:     monEnabled ? isLowCreditBalance(creditRow) : false,
+          balanceLabel:     creditBalanceLabel(creditRow),
+          monthlyLimit:     creditRow.monthly_credit_limit ?? 0,
+          planKey:          creditRow.plan_key ?? null,
         };
 
         setValues(fresh);
         setCreditsLoading(false);
         setIsFreshFromDB(true);
         writeCache(userId, fresh);
+
+        // ── Realtime: subscribe to user_ai_credits changes ──────────────────
+        // Set up once per user session. When the DB row is updated (credit
+        // deducted after a scan/chat/analysis), update the badge instantly
+        // from the Realtime payload — no extra DB round-trip needed.
+        if (!realtimeChannel.current) {
+          realtimeChannel.current = supabase
+            .channel(`credits_rt_${userId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'user_ai_credits',
+                filter: `user_id=eq.${userId}`,
+              },
+              (payload) => {
+                const row = payload.new as Record<string, unknown>;
+                // Safely extract typed credit values from the Realtime payload
+                const creditRow = {
+                  credit_balance:       Number(row.credit_balance ?? 0),
+                  bonus_credits:        Number(row.bonus_credits ?? 0),
+                  monthly_credit_limit: Number(row.monthly_credit_limit ?? 0),
+                  plan_key:             (row.plan_key as string | null) ?? null,
+                };
+                setValues((prev) => {
+                  const updated: MonetizationCache = {
+                    ...prev,
+                    effectiveBalance: getEffectiveCreditBalance(creditRow),
+                    isLowBalance: prev.monetizationEnabled
+                      ? isLowCreditBalance(creditRow)
+                      : false,
+                    balanceLabel: creditBalanceLabel(creditRow),
+                    monthlyLimit: creditRow.monthly_credit_limit,
+                    planKey:      creditRow.plan_key,
+                  };
+                  writeCache(userId, updated);
+                  return updated;
+                });
+              },
+            )
+            .subscribe();
+        }
       } catch (err) {
         console.warn('[MonetizationContext] fetch error (non-fatal):', err);
         if (!cancelled) setCreditsLoading(false);
@@ -136,6 +181,11 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         if (resolvedUserId.current) clearCache(resolvedUserId.current);
         resolvedUserId.current = null;
+        // Tear down Realtime channel on sign-out
+        if (realtimeChannel.current) {
+          supabase.removeChannel(realtimeChannel.current);
+          realtimeChannel.current = null;
+        }
         setValues(EMPTY);
         setCreditsLoading(false);
         setIsFreshFromDB(false);
