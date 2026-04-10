@@ -2,8 +2,8 @@
  * backfill-he-translations
  *
  * Admin-only Edge Function that adds Hebrew translations to wines that don't
- * have them yet. Calls GPT-4o-mini with a translation-only prompt (much cheaper
- * than a full re-analysis) and saves the result to wines.translations.he.
+ * have them yet, or re-translates wines created within a recent date window
+ * (useful when Vivino enrichment runs after the initial scan).
  *
  * Auth: Pass the admin JWT in the Authorization header.
  *       Caller must be admin (is_admin = true in profiles).
@@ -13,6 +13,8 @@
  *   batchSize?: number   // wines per call, default 10, max 20
  *   offset?:   number   // starting row, default 0
  *   dryRun?:   boolean  // if true, count & preview without calling OpenAI
+ *   daysSince?: number  // if set (7 or 30), re-translate ALL wines created in
+ *                       // the last N days, even if they already have translations
  * }
  *
  * Response:
@@ -56,6 +58,7 @@ interface WineRow {
   grapes: string | string[] | null
   color: string | null
   translations: Record<string, unknown> | null
+  created_at: string | null
 }
 
 interface HeTranslations {
@@ -144,33 +147,48 @@ serve(async (req) => {
   if (!profile?.is_admin) return json({ error: 'Admin access required' }, 403)
 
   // ── Parse body ────────────────────────────────────────────────────────────
-  let body: { batchSize?: number; offset?: number; dryRun?: boolean } = {}
+  let body: { batchSize?: number; offset?: number; dryRun?: boolean; daysSince?: number } = {}
   try { body = await req.json() } catch { /* use defaults */ }
 
-  const batchSize = Math.min(MAX_BATCH, Math.max(1, body.batchSize ?? DEFAULT_BATCH))
-  const offset    = Math.max(0, body.offset ?? 0)
-  const dryRun    = body.dryRun === true
+  const batchSize  = Math.min(MAX_BATCH, Math.max(1, body.batchSize ?? DEFAULT_BATCH))
+  const offset     = Math.max(0, body.offset ?? 0)
+  const dryRun     = body.dryRun === true
+  const daysSince  = body.daysSince && body.daysSince > 0 ? body.daysSince : null
 
-  // ── Find wines missing he translations ───────────────────────────────────
-  // Two queries: wines with NULL translations, and wines with translations but no 'he' key
-  const selectFields = 'id, wine_name, producer, region, country, appellation, grapes, color, translations'
+  // ── Find target wines ─────────────────────────────────────────────────────
+  const selectFields = 'id, wine_name, producer, region, country, appellation, grapes, color, translations, created_at'
 
-  const [{ data: nullRows, error: e1 }, { data: partialRows, error: e2 }] = await Promise.all([
-    // Wines with no translations column at all
-    admin.from('wines').select(selectFields).is('translations', null).order('id'),
-    // Wines with translations but missing the 'he' key
-    admin.from('wines').select(selectFields).not('translations', 'is', null).order('id'),
-  ])
+  let allMissing: WineRow[] = []
 
-  if (e1 || e2) return json({ error: e1?.message ?? e2?.message }, 500)
+  if (daysSince !== null) {
+    // Mode: re-translate all wines created in the last N days (even if they already
+    // have translations.he — Vivino enrichment may have filled data since the first scan)
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - daysSince)
 
-  const partialMissingHe = (partialRows ?? []).filter(
-    (w: WineRow) => !w.translations?.he
-  )
+    const { data: recentRows, error: recentErr } = await admin
+      .from('wines')
+      .select(selectFields)
+      .gte('created_at', cutoff.toISOString())
+      .order('created_at', { ascending: false })
 
-  const allMissing: WineRow[] = [...(nullRows ?? []), ...partialMissingHe]
-  // Sort by id for deterministic pagination
-  allMissing.sort((a, b) => a.id.localeCompare(b.id))
+    if (recentErr) return json({ error: recentErr.message }, 500)
+    allMissing = (recentRows ?? []) as WineRow[]
+  } else {
+    // Mode: only wines with no translations.he at all
+    const [{ data: nullRows, error: e1 }, { data: partialRows, error: e2 }] = await Promise.all([
+      admin.from('wines').select(selectFields).is('translations', null).order('id'),
+      admin.from('wines').select(selectFields).not('translations', 'is', null).order('id'),
+    ])
+
+    if (e1 || e2) return json({ error: e1?.message ?? e2?.message }, 500)
+
+    const partialMissingHe = (partialRows ?? []).filter(
+      (w: WineRow) => !w.translations?.he
+    )
+    allMissing = [...(nullRows ?? []), ...partialMissingHe]
+    allMissing.sort((a, b) => a.id.localeCompare(b.id))
+  }
 
   const totalMissing = allMissing.length
   const batch = allMissing.slice(offset, offset + batchSize)

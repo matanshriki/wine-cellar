@@ -1,13 +1,20 @@
 /**
  * Admin: Hebrew Translations Backfill
  *
- * Finds all wines that don't have translations.he in the DB and adds them
- * using the backfill-he-translations Edge Function. Admin-only.
+ * Three modes:
+ *  - "missing"  — wines with no translations.he (original behaviour)
+ *  - "7days"    — all wines added in the last 7 days (re-translate even if already translated)
+ *  - "30days"   — all wines added in the last 30 days
+ *
+ * The "recent days" modes are useful when a wine was scanned before Vivino enrichment
+ * ran, leaving the translation with incomplete / missing data.
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
+
+type Mode = 'missing' | '7days' | '30days';
 
 interface BatchResult {
   wine_id: string;
@@ -28,10 +35,28 @@ interface BatchResponse {
 
 const BATCH_SIZE = 10;
 
+const MODE_CONFIG: Record<Mode, { label: string; description: string; daysSince?: number }> = {
+  missing: {
+    label: 'No translation',
+    description: 'Wines that have no Hebrew translation yet.',
+  },
+  '7days': {
+    label: 'Last 7 days',
+    description: 'All wines scanned in the past 7 days — re-translates even if already translated, so recently-enriched Vivino data is picked up.',
+    daysSince: 7,
+  },
+  '30days': {
+    label: 'Last 30 days',
+    description: 'All wines scanned in the past 30 days — useful for a broader refresh after Vivino enrichment.',
+    daysSince: 30,
+  },
+};
+
 export function AdminHeTranslationsBackfill() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [totalMissing, setTotalMissing] = useState<number | null>(null);
+  const [mode, setMode] = useState<Mode>('missing');
+  const [totalTarget, setTotalTarget] = useState<number | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [processed, setProcessed] = useState(0);
   const [failed, setFailed] = useState(0);
@@ -50,10 +75,20 @@ export function AdminHeTranslationsBackfill() {
     })();
   }, []);
 
+  // Reset count whenever the mode changes
+  useEffect(() => {
+    setTotalTarget(null);
+    setProcessed(0);
+    setFailed(0);
+    setLog([]);
+    setDone(false);
+  }, [mode]);
+
   async function callEdgeFunction(offset: number, dryRun = false): Promise<BatchResponse> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
+    const cfg = MODE_CONFIG[mode];
     const apiUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
     const res = await fetch(`${apiUrl}/functions/v1/backfill-he-translations`, {
       method: 'POST',
@@ -61,7 +96,12 @@ export function AdminHeTranslationsBackfill() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ batchSize: BATCH_SIZE, offset, dryRun }),
+      body: JSON.stringify({
+        batchSize: BATCH_SIZE,
+        offset,
+        dryRun,
+        ...(cfg.daysSince !== undefined ? { daysSince: cfg.daysSince } : {}),
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Request failed' }));
@@ -70,12 +110,16 @@ export function AdminHeTranslationsBackfill() {
     return res.json();
   }
 
-  async function checkMissing() {
+  async function checkCount() {
     try {
       const data = await callEdgeFunction(0, true);
-      setTotalMissing(data.totalMissing);
+      setTotalTarget(data.totalMissing);
       if (data.totalMissing === 0) {
-        toast.success('All wines already have Hebrew translations!');
+        toast.success(
+          mode === 'missing'
+            ? 'All wines already have Hebrew translations!'
+            : 'No wines found in that date range.'
+        );
       }
     } catch (e: any) {
       toast.error(e.message);
@@ -91,12 +135,12 @@ export function AdminHeTranslationsBackfill() {
     abortRef.current = false;
 
     let offset = 0;
-    let total = totalMissing ?? 0;
+    let total = totalTarget ?? 0;
 
     try {
       while (!abortRef.current) {
         const data = await callEdgeFunction(offset);
-        if (total === 0) { total = data.totalMissing; setTotalMissing(data.totalMissing); }
+        if (total === 0) { total = data.totalMissing; setTotalTarget(data.totalMissing); }
 
         setProcessed(p => p + data.processed);
         setFailed(f => f + data.failed);
@@ -105,11 +149,10 @@ export function AdminHeTranslationsBackfill() {
         if (!data.hasMore || data.results.length === 0) break;
         offset = data.nextOffset;
 
-        // Small delay between batches to avoid rate limiting
         await new Promise(r => setTimeout(r, 600));
       }
       setDone(true);
-      if (!abortRef.current) toast.success('Hebrew translations backfill complete!');
+      if (!abortRef.current) toast.success('Hebrew translations complete!');
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -126,9 +169,11 @@ export function AdminHeTranslationsBackfill() {
   if (checking) return null;
   if (!isAdmin) return null;
 
-  const progressPct = totalMissing && totalMissing > 0
-    ? Math.round(((processed + failed) / totalMissing) * 100)
+  const progressPct = totalTarget && totalTarget > 0
+    ? Math.round(((processed + failed) / totalTarget) * 100)
     : 0;
+
+  const cfg = MODE_CONFIG[mode];
 
   return (
     <div style={{
@@ -142,15 +187,46 @@ export function AdminHeTranslationsBackfill() {
         Hebrew Translations Backfill
       </h3>
       <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px' }}>
-        Finds all wines missing <code>translations.he</code> in the database and generates
-        Hebrew translations using GPT-4o-mini. Only runs on wines that don't already have
-        translations — safe to re-run.
+        Generates Hebrew translations via GPT-4o-mini and saves them to{' '}
+        <code>wines.translations.he</code>.
+      </p>
+
+      {/* Mode selector */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        {(Object.keys(MODE_CONFIG) as Mode[]).map(m => (
+          <button
+            key={m}
+            onClick={() => { if (!isRunning) setMode(m); }}
+            disabled={isRunning}
+            style={{
+              padding: '7px 14px',
+              fontSize: '13px',
+              borderRadius: '20px',
+              border: `1.5px solid ${mode === m ? '#7c3030' : '#ddd'}`,
+              backgroundColor: mode === m ? '#7c3030' : '#f8f9fa',
+              color: mode === m ? 'white' : '#555',
+              cursor: isRunning ? 'not-allowed' : 'pointer',
+              fontWeight: mode === m ? 600 : 400,
+              transition: 'all 0.15s',
+            }}
+          >
+            {MODE_CONFIG[m].label}
+          </button>
+        ))}
+      </div>
+
+      <p style={{
+        fontSize: '12px', color: '#888', marginBottom: '16px',
+        padding: '8px 12px', backgroundColor: '#f8f9fa',
+        borderRadius: '6px', lineHeight: '1.5',
+      }}>
+        {cfg.description}
       </p>
 
       {/* Status row */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
         <button
-          onClick={checkMissing}
+          onClick={checkCount}
           disabled={isRunning}
           style={{
             padding: '8px 16px', fontSize: '13px', borderRadius: '8px',
@@ -158,25 +234,25 @@ export function AdminHeTranslationsBackfill() {
             cursor: isRunning ? 'not-allowed' : 'pointer', color: '#333',
           }}
         >
-          Check missing
+          Check count
         </button>
 
-        {totalMissing !== null && (
+        {totalTarget !== null && (
           <span style={{
             padding: '8px 14px', fontSize: '13px', borderRadius: '8px',
-            backgroundColor: totalMissing === 0 ? '#d4edda' : '#fff3cd',
-            color: totalMissing === 0 ? '#155724' : '#856404',
-            border: `1px solid ${totalMissing === 0 ? '#c3e6cb' : '#ffc107'}`,
+            backgroundColor: totalTarget === 0 ? '#d4edda' : '#fff3cd',
+            color: totalTarget === 0 ? '#155724' : '#856404',
+            border: `1px solid ${totalTarget === 0 ? '#c3e6cb' : '#ffc107'}`,
           }}>
-            {totalMissing === 0
-              ? '✓ All wines have Hebrew translations'
-              : `${totalMissing} wine${totalMissing !== 1 ? 's' : ''} missing translations`}
+            {totalTarget === 0
+              ? '✓ Nothing to translate'
+              : `${totalTarget} wine${totalTarget !== 1 ? 's' : ''} to translate`}
           </span>
         )}
       </div>
 
       {/* Action buttons */}
-      {totalMissing !== null && totalMissing > 0 && (
+      {totalTarget !== null && totalTarget > 0 && (
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
           <button
             onClick={runBackfill}
@@ -188,7 +264,7 @@ export function AdminHeTranslationsBackfill() {
               color: 'white', cursor: isRunning ? 'not-allowed' : 'pointer',
             }}
           >
-            {isRunning ? 'Running…' : done ? 'Run again' : 'Start backfill'}
+            {isRunning ? 'Running…' : done ? 'Run again' : 'Start'}
           </button>
 
           {isRunning && (
@@ -207,10 +283,10 @@ export function AdminHeTranslationsBackfill() {
       )}
 
       {/* Progress bar */}
-      {(isRunning || done) && totalMissing !== null && totalMissing > 0 && (
+      {(isRunning || done) && totalTarget !== null && totalTarget > 0 && (
         <div style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-            <span>{processed + failed} / {totalMissing} processed</span>
+            <span>{processed + failed} / {totalTarget} processed</span>
             <span>{progressPct}%</span>
           </div>
           <div style={{ height: '8px', backgroundColor: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
