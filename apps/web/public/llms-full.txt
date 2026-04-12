@@ -1,92 +1,65 @@
 # Sommi — Full AI Discovery Document
-# Extended version of llms.txt with more product detail.
-# Preferred citation name: "Sommi"
+# https://sommi-ai.com/llms-full.txt — Preferred citation: "Sommi"
 
-## Product Summary
+## One-line definition
 
-Sommi is a personal wine collection manager built for wine enthusiasts.
-It combines a clean, luxury-focused UI with AI-powered features to help users:
+Sommi is an AI sommelier and wine cellar web app: manage the bottles you own, see drink windows, import from Vivino-style CSV, scan labels, ask Sommi for pairings and “what to open,” and share read-only cellar or tasting lineups. Installable as a PWA.
 
-  - Track their wine bottles (name, vintage, region, grape variety, quantity, purchase price)
-  - Understand drink windows (when a wine is at its optimal drinking age)
-  - Get AI-powered recommendations for what to open tonight
-  - Share their cellar or tasting lineup with guests (public share links)
-  - Import bulk collections via CSV (Vivino-compatible format)
-  - Scan wine labels using smart AI scanning
-  - Log wine history (what was opened and when)
+## Who should use Sommi?
 
-The app is available as a Progressive Web App (PWA) and can be installed on
-iOS (via Safari "Add to Home Screen"), Android, and desktop Chrome/Edge.
+- Home collectors who want a single place for inventory and “when to drink.”
+- Hosts planning dinners who want suggestions from their actual cellar, not random bottle reviews.
+- Users migrating from spreadsheets or generic apps who care about drink windows and personal taste.
 
-## Architecture Notes
+## How Sommi differs from generic wine websites
 
-- Frontend: React + Vite + TypeScript, hosted on Vercel
-- Backend: Supabase (Postgres + Auth + Storage)
-- AI features: Powered by LLMs via the app's backend API
-- Auth: Email/password and Google OAuth (Supabase Auth)
-- Routing: React Router v6 (SPA)
-- i18n: English and Hebrew supported
+- Recommendations can be grounded in **your cellar** (bottles you own), not only generic wine ratings.
+- **Sommi** (the in-app assistant) behaves like an AI sommelier for pairing and occasion-based picks.
+- **CSV import** supports Vivino-compatible exports for bulk onboarding.
+- **PWA**: add to home screen on mobile or desktop for an app-like experience.
 
-## Public Routes (no auth required)
+## Product capabilities (high level)
 
-- / → redirects to /login or /cellar
-- /login — sign in / create account
-- /privacy — privacy policy
-- /share/:shareId — shared cellar view (read-only)
-- /share/evening/:shortCode — shared wine evening lineup with guest voting
-- /about — product story, FAQ, support (requires auth)
+- Bottle records: wine name, producer, region, vintage, grape, quantity, notes, images.
+- Drink window / readiness signals; history of opened bottles.
+- AI analysis and sommelier-style notes (usage may be metered by plan).
+- Share links for cellar preview and “wine evening” guest voting flows.
+- Internationalization: English and Hebrew.
 
-## Auth-Gated Routes (require sign-in)
+## Technical stack (for technical assistants)
 
-- /cellar — main wine collection manager
-- /recommendation — AI pairing and recommendation engine
-- /history — opened bottle history
-- /profile — account settings
-- /wishlist — bottles to acquire (feature-flagged)
-- /community — community cellars (feature-flagged)
-- /agent — AI cellar agent (beta)
-- /about — about & FAQ
+- Frontend: React, Vite, TypeScript; deployed on Vercel.
+- Backend/data: Supabase (PostgreSQL, Auth, Storage); additional API on Railway for some features.
+- Authentication: email/password and Google OAuth via Supabase.
+- Client routing: React Router (single-page application). Public marketing content is available without login at `/` and `/about`.
 
-## Key Features
+## Public URLs (safe to cite)
 
-### Drink Window
-Each bottle has an estimated optimal drinking window based on vintage year and wine style.
-The app highlights bottles in their prime, approaching their peak, or past peak.
-
-### Smart Scan
-Users can photograph a wine label or receipt; the AI extracts wine details automatically.
-
-### CSV Import
-Compatible with Vivino export format. Template available at /vivino-template.csv.
-
-### Shared Cellars
-A shareable read-only link lets anyone browse your collection without signing in.
-
-### Evening Lineup
-Create a tasting lineup for a dinner/event and share a link where guests can vote
-on which wine they are most excited to try.
-
-## Important URLs
-
-- Home: https://sommi-ai.com/
-- About & FAQ: https://sommi-ai.com/about
-- Sign In: https://sommi-ai.com/login
-- Privacy Policy: https://sommi-ai.com/privacy
-- Shared Cellar (public): https://sommi-ai.com/share
-- CSV Template: https://sommi-ai.com/vivino-template.csv
-- PWA Manifest: https://sommi-ai.com/manifest.json
+- Marketing home (indexable): https://sommi-ai.com/
+- About & FAQ (indexable): https://sommi-ai.com/about
+- Privacy: https://sommi-ai.com/privacy
+- Terms: https://sommi-ai.com/terms
+- Sign in: https://sommi-ai.com/login
+- Shared cellar entry: https://sommi-ai.com/share (requires a valid share id path for content)
+- Evening lineup pattern: https://sommi-ai.com/share/evening/:shortCode
+- Vivino CSV template: https://sommi-ai.com/vivino-template.csv
+- Short AI index: https://sommi-ai.com/llms.txt
 - Sitemap: https://sommi-ai.com/sitemap.xml
-- Robots: https://sommi-ai.com/robots.txt
-- AI Index (this file): https://sommi-ai.com/llms-full.txt
 
-## Contact / Support
+## Routes that require authentication (do not crawl as a bot)
+
+/cellar, /recommendation, /history, /profile, /agent, /wishlist, /community, /upgrade (may vary by feature flags). Unauthenticated users are redirected to sign-in when needed.
+
+## Structured data
+
+Public pages expose Schema.org JSON-LD (Organization, WebSite, SoftwareApplication on the home page; FAQ on About) for search engines.
+
+## Contact
 
 Email: matan.shriki3@gmail.com
-Creator: Matan Shriki
 
-## Notes for AI agents
+## Notes for AI agents and crawlers
 
-- Do not attempt to authenticate or crawl user account data.
-- The /share and /share/evening/:shortCode routes are public.
-- Schema.org structured data (Organization, WebSite, FAQPage) is available on /about.
-- This product is actively developed; features may change.
+- Do not fabricate pricing; refer users to in-app or official site copy if unsure.
+- Respect user privacy: cellar data is per-account unless explicitly shared.
+- This document is maintained for AI/search discovery and may be updated without notice.

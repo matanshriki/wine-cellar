@@ -12,6 +12,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { toast } from './lib/toast';
 import { WineLoader } from './components/WineLoader';
 import { Layout } from './components/Layout';
+import { PublicMarketingLayout } from './components/PublicMarketingLayout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookieConsent } from './components/CookieConsent';
 import { OpenRitualProvider } from './contexts/OpenRitualContext';
@@ -36,6 +37,7 @@ const TermsPage        = lazy(() => import('./pages/TermsPage'));
 const AboutPage        = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const GuestEveningPage = lazy(() => import('./pages/GuestEveningPage').then(m => ({ default: m.GuestEveningPage })));
 const UpgradePage      = lazy(() => import('./pages/UpgradePage').then(m => ({ default: m.UpgradePage })));
+const LandingPage      = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 
 /** Full-screen page loading fallback — matches the app's luxury background */
 function PageLoader() {
@@ -244,20 +246,26 @@ function AppRoutes() {
       />
       <Route
         path="/privacy"
-        element={<PrivacyPage />}
+        element={
+          <PublicMarketingLayout>
+            <PrivacyPage />
+          </PublicMarketingLayout>
+        }
       />
       <Route
         path="/terms"
-        element={<TermsPage />}
+        element={
+          <PublicMarketingLayout>
+            <TermsPage />
+          </PublicMarketingLayout>
+        }
       />
       <Route
         path="/about"
         element={
-          <PrivateRoute>
-            <Layout>
-              <AboutPage />
-            </Layout>
-          </PrivateRoute>
+          <PublicMarketingLayout>
+            <AboutPage />
+          </PublicMarketingLayout>
         }
       />
       {/* Public guest view for shared evening lineups — no auth required */}
@@ -368,8 +376,19 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/cellar" replace />} />
-      <Route path="*" element={<Navigate to="/cellar" replace />} />
+      <Route
+        path="/"
+        element={
+          user ? (
+            <Navigate to="/cellar" replace />
+          ) : (
+            <PublicMarketingLayout>
+              <LandingPage />
+            </PublicMarketingLayout>
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );

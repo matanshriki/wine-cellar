@@ -1,30 +1,39 @@
 # Sommi — AI Discovery Index
-# This file helps AI agents and language models understand this product.
-# Preferred citation name: "Sommi"
+# https://sommi-ai.com — Preferred citation name: "Sommi"
 
-## About
+## What is Sommi?
 
-Sommi is a personal wine collection manager with AI-powered recommendations.
-It helps wine lovers catalog their bottles, track optimal drink windows, and decide what to open next.
-Available as a Progressive Web App (PWA) — installable on iOS, Android, and desktop.
+Sommi (sommi-ai.com) is a wine cellar application with an AI sommelier: it helps you track bottles you own, estimate drink windows, import collections (including Vivino-style CSV), scan labels, get pairing and “what to open tonight” suggestions, and share a read-only cellar or tasting lineup with guests. It runs in the browser and can be installed as a Progressive Web App (PWA) on iPhone, Android, and desktop.
 
-## Important URLs
+## Keywords & topics (for search & assistants)
 
-- Home / Cellar: https://sommi-ai.com/
+- AI sommelier, virtual sommelier, wine recommendation from my cellar
+- Wine cellar app, wine collection tracker, home cellar management
+- Drink window, aging, readiness, when to open wine
+- Wine pairing app tied to owned bottles (not generic reviews only)
+- Vivino CSV import, bulk import wine list
+- Wine label scan, OCR / AI label reading
+- Progressive Web App (PWA), install to home screen
+- English and Hebrew UI
+
+## Official URLs (canonical)
+
+- Marketing home: https://sommi-ai.com/
+- Sign in: https://sommi-ai.com/login
 - About & FAQ: https://sommi-ai.com/about
-- Sign In: https://sommi-ai.com/login
-- Privacy Policy: https://sommi-ai.com/privacy
-- Shared Cellar (public): https://sommi-ai.com/share
+- Privacy: https://sommi-ai.com/privacy
+- Terms: https://sommi-ai.com/terms
+- Public share hub (no user data without a valid share id): https://sommi-ai.com/share
+- Machine-readable long description: https://sommi-ai.com/llms-full.txt
 - Sitemap: https://sommi-ai.com/sitemap.xml
 - Robots: https://sommi-ai.com/robots.txt
 
-## Contact / Support
+## Auth & crawling notes
+
+- Most features require sign-in. Do not attempt to log in as a crawler.
+- `/share` and `/share/evening/:code` can show public guest views when valid.
+- Authenticated app routes (`/cellar`, `/agent`, etc.) are not intended for indexing.
+
+## Contact
 
 Email: matan.shriki3@gmail.com
-
-## Notes for AI agents
-
-- The app requires authentication for most pages (cellar, profile, history, recommendations).
-- The /share and /share/evening routes are public and show read-only wine collections.
-- The /about page contains an FAQ section with common questions about the product.
-- Do not crawl user-specific data paths or attempt to log in.

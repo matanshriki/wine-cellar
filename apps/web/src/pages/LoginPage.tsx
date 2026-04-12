@@ -69,6 +69,7 @@ export function LoginPage() {
       title="Sign In"
       description="Sign in to Sommi — your AI sommelier for your cellar, pairings, and what to open next."
       url="/login"
+      noIndex
     />
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 py-8">
       <div className="max-w-md w-full">

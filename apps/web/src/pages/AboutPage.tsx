@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MetaHead } from '../components/MetaHead';
+import { organizationSchema, webSiteSchema } from '../lib/seoSchemas';
 
 // ── Environment helpers ───────────────────────────────────────────────────────
 
@@ -124,34 +125,6 @@ const FAQ_KEYS = [
   'aiRecs',
 ] as const;
 
-// ── Schema.org structured data ────────────────────────────────────────────────
-
-const SITE_URL = 'https://sommi-ai.com';
-
-const organizationSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Sommi',
-  url: SITE_URL,
-  logo: `${SITE_URL}/icon-512.png`,
-  description:
-    'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
-  contactPoint: {
-    '@type': 'ContactPoint',
-    email: SUPPORT_EMAIL,
-    contactType: 'customer support',
-  },
-};
-
-const webSiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Sommi',
-  url: SITE_URL,
-  description:
-    'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
-};
-
 // faqSchema is built inside the component using translated strings
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -193,8 +166,7 @@ export function AboutPage() {
         title="About"
         description="Learn about Sommi — a personal wine collection manager built with passion. Track bottles, discover drink windows, and get AI-powered recommendations."
         url="/about"
-        noIndex={true}
-        jsonLd={[organizationSchema, webSiteSchema, faqSchema]}
+        jsonLd={[organizationSchema(), webSiteSchema(), faqSchema]}
       />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}

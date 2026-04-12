@@ -4,12 +4,16 @@
  * Required by Google OAuth for app verification
  */
 
-import { useTranslation } from 'react-i18next';
+import { MetaHead } from '../components/MetaHead';
 
 export default function PrivacyPage() {
-  const { t } = useTranslation();
-
   return (
+    <>
+    <MetaHead
+      title="Privacy Policy"
+      description="How Sommi collects, uses, and protects your data when you use the wine cellar app."
+      url="/privacy"
+    />
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-surface)' }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -285,5 +289,6 @@ export default function PrivacyPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

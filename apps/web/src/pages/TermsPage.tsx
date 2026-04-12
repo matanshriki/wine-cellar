@@ -5,8 +5,16 @@
  * Public route — no authentication required.
  */
 
+import { MetaHead } from '../components/MetaHead';
+
 export default function TermsPage() {
   return (
+    <>
+    <MetaHead
+      title="Terms & Conditions"
+      description="Terms of use for Sommi — the AI sommelier and wine cellar application."
+      url="/terms"
+    />
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-surface)' }}>
       <div className="max-w-4xl mx-auto">
 
@@ -336,5 +344,6 @@ export default function TermsPage() {
 
       </div>
     </div>
+    </>
   );
 }

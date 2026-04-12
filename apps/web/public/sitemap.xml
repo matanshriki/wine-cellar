@@ -26,6 +26,12 @@
   </url>
 
   <url>
+    <loc>https://sommi-ai.com/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
     <loc>https://sommi-ai.com/share</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
