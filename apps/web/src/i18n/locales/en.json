@@ -3,6 +3,33 @@
     "title": "Sommi",
     "tagline": "Your AI sommelier"
   },
+  "landing": {
+    "metaDescription": "Sommi is your AI sommelier for your home wine cellar: track bottles, drink windows, label scan, Vivino CSV import, and smart pairings from what you actually own. Free to start. Web app & PWA for iPhone and Android.",
+    "metaKeywords": "Sommi, AI sommelier, wine cellar app, wine collection tracker, drink window, wine pairing app, PWA wine, Vivino import, home cellar",
+    "jsonLdPageTitle": "Sommi — AI sommelier & wine cellar app",
+    "eyebrow": "Wine cellar app · AI sommelier",
+    "heroTitle": "Sommi — your AI sommelier for the wines you own",
+    "heroSubtitle": "Stop guessing what to open tonight. Sommi knows your cellar: regions, vintages, drink windows, and mood — so recommendations stay personal, not generic wine-blog noise.",
+    "ctaOpen": "Open Sommi — sign in free",
+    "ctaAbout": "About & FAQ",
+    "whyTitle": "Built for collectors, not another Vivino clone",
+    "why1Lead": "Your cellar, your rules.",
+    "why1Body": "Recommendations use bottles you actually own — so \"what should I drink tonight?\" finally has a real answer.",
+    "why2Lead": "Drink windows & readiness.",
+    "why2Body": "See what is in its prime, what to hold, and what to open before it fades.",
+    "why3Lead": "Sommi, the AI sommelier.",
+    "why3Body": "Ask for pairings, occasions, or \"something impressive\" — scoped to your collection.",
+    "why4Lead": "Import & capture.",
+    "why4Body": "Vivino-friendly CSV import and label scan help you onboard fast.",
+    "why5Lead": "Install like an app.",
+    "why5Body": "Add Sommi to your home screen (PWA) on iPhone, Android, or desktop.",
+    "whoTitle": "Who Sommi is for",
+    "whoBody": "Home collectors, dinner hosts, and anyone who wants a calmer way to choose wine — without spreadsheets or forgetting what is in the rack. If you search for <em1>wine cellar app</em1>, <em2>AI sommelier</em2>, or <em3>track my wine collection</em3>, Sommi is designed for exactly that job.",
+    "privacyTitle": "Privacy-first",
+    "privacyBody": "Your cellar stays private unless you choose to share. Read our <privacyLink>Privacy Policy</privacyLink> and <termsLink>Terms</termsLink>.",
+    "faqTeaser": "Looking for the full FAQ?",
+    "faqLinkLabel": "Visit About"
+  },
   "offline": {
     "bottleText": "NO CONNECTION"
   },
