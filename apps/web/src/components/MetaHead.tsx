@@ -11,14 +11,14 @@
 
 import { Helmet } from 'react-helmet-async';
 
-const SITE_URL = 'https://wine-cellar-brain.vercel.app';
-const SITE_NAME = 'Wine Cellar Brain';
+const SITE_URL = 'https://sommi-ai.com';
+const SITE_NAME = 'Sommi';
 const DEFAULT_DESCRIPTION =
-  'Your personal wine collection manager with AI-powered recommendations. Track bottles, discover drink windows, and get smart pairing suggestions.';
+  'Sommi — your AI sommelier. Track your cellar, discover drink windows, and get pairing suggestions tailored to your collection.';
 const DEFAULT_IMAGE = `${SITE_URL}/icon-512.png`;
 
 interface MetaHeadProps {
-  /** Page-specific title (will be appended with " — Wine Cellar Brain") */
+  /** Page-specific title (will be appended with " — Sommi") */
   title?: string;
   description?: string;
   image?: string;

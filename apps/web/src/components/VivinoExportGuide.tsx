@@ -357,7 +357,7 @@ Sassicaia,Tenuta San Guido,2018,Red,Bolgheri,Italy,4.6,0.75,180,3,Great Tuscan S
             </div>
           )}
 
-          {/* Step 4: Import to Wine Cellar Brain */}
+          {/* Step 4: Import to Sommi */}
           {currentStep === 5 && (
             <div className="space-y-4 animate-fadeIn">
               <div className="flex items-start gap-4">

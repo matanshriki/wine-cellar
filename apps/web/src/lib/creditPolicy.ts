@@ -1,5 +1,5 @@
 /**
- * Sommelier Credits — Credit Policy (Frontend)
+ * Sommi credits — Credit Policy (Frontend)
  *
  * Single source of truth for action credit costs — frontend copy.
  * Keep in sync with apps/api/src/config/creditPolicy.ts.
@@ -68,7 +68,7 @@ export const PLANS: PlanDefinition[] = [
     priceMonthly: null,
     priceYearly: null,
     features: [
-      '15 Sommelier Credits / month',
+      '15 Sommi credits / month',
       'Basic cellar management',
       'Limited AI access',
     ],
@@ -80,8 +80,8 @@ export const PLANS: PlanDefinition[] = [
     priceMonthly: 9,
     priceYearly: 90,   // $7.50/mo effective — save $18/yr (17% off)
     features: [
-      '150 Sommelier Credits / month',
-      'Full Sommelier access',
+      '150 Sommi credits / month',
+      'Full Sommi access',
       'Advanced recommendations',
       'Premium cellar insights',
     ],
@@ -94,7 +94,7 @@ export const PLANS: PlanDefinition[] = [
     priceMonthly: 24,
     priceYearly: 240,  // $20/mo effective — save $48/yr (17% off)
     features: [
-      '500 Sommelier Credits / month',
+      '500 Sommi credits / month',
       'Advanced cellar analysis',
       'Bulk intelligence features',
     ],
@@ -108,8 +108,8 @@ export interface TopUpOption {
 }
 
 export const TOP_UP_OPTIONS: TopUpOption[] = [
-  { credits: 50,  price: 4,  label: '50 Sommelier Credits' },
-  { credits: 150, price: 10, label: '150 Sommelier Credits' },
+  { credits: 50,  price: 4,  label: '50 Sommi credits' },
+  { credits: 150, price: 10, label: '150 Sommi credits' },
 ];
 
 // ── Helper functions ─────────────────────────────────────────────────────────
@@ -147,12 +147,12 @@ export function isLowCreditBalance(row: {
 
 /**
  * Human-readable label for credits remaining.
- * e.g. "You have 12 Sommelier Credits left this month"
+ * e.g. "You have 12 Sommi credits left this month"
  */
 export function creditBalanceLabel(row: {
   credit_balance: number;
   bonus_credits: number;
 }): string {
   const balance = getEffectiveCreditBalance(row);
-  return `You have ${balance} Sommelier Credit${balance === 1 ? '' : 's'} left this month`;
+  return `You have ${balance} Sommi credit${balance === 1 ? '' : 's'} left this month`;
 }

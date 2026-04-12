@@ -17,7 +17,7 @@ export function Footer() {
     >
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-center gap-4 flex-wrap">
-          <span>© {new Date().getFullYear()} Wine Cellar Brain</span>
+          <span>© {new Date().getFullYear()} Sommi</span>
           <span>•</span>
           <Link 
             to="/privacy"

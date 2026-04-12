@@ -67,7 +67,7 @@ export function LoginPage() {
     <>
     <MetaHead
       title="Sign In"
-      description="Sign in to Wine Cellar Brain — your personal wine collection manager with AI-powered recommendations."
+      description="Sign in to Sommi — your AI sommelier for your cellar, pairings, and what to open next."
       url="/login"
     />
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 py-8">
@@ -219,7 +219,7 @@ export function LoginPage() {
         {/* Footer with legal links - Under login box */}
         <div className="mt-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span>© {new Date().getFullYear()} Wine Cellar Brain</span>
+            <span>© {new Date().getFullYear()} Sommi</span>
             <span>•</span>
             <a
               href="/privacy"

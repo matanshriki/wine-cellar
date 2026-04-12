@@ -1,4 +1,4 @@
-# Sommelier Credits — Admin & Developer Runbook
+# Sommi credits — Admin & Developer Runbook
 
 Internal reference for manually controlling the monetization rollout.
 Run these snippets in the Supabase SQL editor (service-role context).

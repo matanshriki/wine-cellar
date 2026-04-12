@@ -1,7 +1,7 @@
 /**
  * UpgradePage
  *
- * Full-page Sommelier Credits / plan selection experience.
+ * Full-page Sommi credits / plan selection experience.
  * Protected by MonetizationRoute — only accessible to users with
  * monetization_enabled = true.
  *

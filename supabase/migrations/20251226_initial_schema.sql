@@ -1,4 +1,4 @@
--- Wine Cellar Brain - Initial Schema
+-- Sommi - Initial Schema
 -- Separates wine catalog (wines) from inventory (bottles)
 -- Implements proper multi-tenant security with RLS
 

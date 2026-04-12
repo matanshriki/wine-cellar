@@ -297,7 +297,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center min-h-[3.5rem] sm:min-h-16 py-1.5 sm:py-0">
             {/* Logo/Brand - Scroll to Top Button */}
             <div className="flex items-center gap-4 sm:gap-8">
               <button
@@ -368,10 +368,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <path d="M9 20h6" />
                 </svg>
 
-                {/* Title + tagline */}
-                <div className="hidden xs:flex flex-col leading-none pointer-events-none gap-0.5">
+                {/* Title + tagline — visible from smallest phones; compact type for PWA */}
+                <div className="flex flex-col leading-tight pointer-events-none gap-0.5 min-w-0 text-start">
                   <span
-                    className="text-lg sm:text-xl font-bold tracking-wide"
+                    className="text-base sm:text-lg md:text-xl font-bold tracking-wide truncate"
                     style={{
                       fontFamily: 'var(--font-display)',
                       color: 'var(--wine-700)',
@@ -380,10 +380,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   >
                     {t('app.title')}
                   </span>
-                  {/* Tagline — visible on iPad and desktop only */}
                   <span
-                    className="hidden md:block text-[9px] font-medium uppercase tracking-widest"
-                    style={{ color: 'var(--wine-400)', letterSpacing: '0.18em' }}
+                    className="text-[8px] sm:text-[9px] font-medium uppercase tracking-[0.12em] sm:tracking-[0.16em] max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
+                    style={{ color: 'var(--wine-400)' }}
                   >
                     {t('app.tagline')}
                   </span>
@@ -439,7 +438,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <CompactThemeToggle />
               <LanguageSwitcher />
-              {/* Sommelier Credits badge — only renders for monetization-enabled users */}
+              {/* Sommi credits badge — only renders for monetization-enabled users */}
               <SommelierCreditsDisplay
                 compact
                 onUpgradeClick={() => setPricingOpen(true)}
@@ -605,7 +604,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         currentName={profile?.display_name || ''}
       />
 
-      {/* Sommelier Credits pricing modal — dark launch, only for monetization-enabled users */}
+      {/* Sommi credits pricing modal — dark launch, only for monetization-enabled users */}
       <PricingModal
         isOpen={pricingOpen}
         onClose={() => setPricingOpen(false)}

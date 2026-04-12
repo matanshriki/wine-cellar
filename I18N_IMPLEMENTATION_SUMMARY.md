@@ -2,7 +2,7 @@
 
 ## 🎉 What Was Accomplished
 
-Your Wine Cellar Brain application now has **complete multilingual support**!
+Your Sommi application now has **complete multilingual support**!
 
 - **Every page** fully translates between English and Hebrew
 - **Every component** uses the translation system
@@ -427,7 +427,7 @@ Optional enhancements for the future:
 
 ## 🎉 Final Result
 
-**Your Wine Cellar Brain app now speaks both English and Hebrew!**
+**Your Sommi app now speaks both English and Hebrew!**
 
 - Switch languages anytime with one click
 - Perfect RTL support for Hebrew

@@ -345,7 +345,7 @@ Check:
 
 This fix ensures that **no content or buttons are ever hidden** behind the fixed bottom navigation bar, across **all screen sizes, devices, and languages**. It's a robust, maintainable solution that follows modern CSS best practices.
 
-Enjoy your Wine Cellar Brain app with perfect mobile UX! 🍷✨
+Enjoy your Sommi app with perfect mobile UX! 🍷✨
 
 
 

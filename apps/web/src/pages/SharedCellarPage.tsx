@@ -161,8 +161,8 @@ export function SharedCellarPage() {
       <MetaHead
         title={shareData?.userName ? `${shareData.userName}'s Wine Cellar` : 'Shared Wine Cellar'}
         description={shareData?.userName
-          ? `Browse ${shareData.userName}'s wine collection on Wine Cellar Brain.`
-          : 'Browse a shared wine collection on Wine Cellar Brain.'}
+          ? `Browse ${shareData.userName}'s wine collection on Sommi.`
+          : 'Browse a shared wine collection on Sommi.'}
         url="/share"
       />
       <div className="max-w-6xl mx-auto p-4 sm:p-6">

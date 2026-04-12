@@ -13,7 +13,7 @@
 
 **Steps:**
 1. [ ] Open app in incognito/private window
-2. [ ] Verify welcome modal appears with title "🍷 Welcome to Wine Cellar Brain"
+2. [ ] Verify welcome modal appears with title "🍷 Welcome to Sommi"
 3. [ ] Verify subtitle shows value proposition
 4. [ ] Verify two buttons: "Show me what this app can do" and "Skip for now"
 5. [ ] Click "Show me what this app can do"

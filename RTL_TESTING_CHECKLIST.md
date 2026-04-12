@@ -1,7 +1,7 @@
 # 🔄 RTL/LTR Testing Checklist
 
 ## Overview
-This checklist ensures the Wine Cellar Brain application works correctly in both **LTR (English)** and **RTL (Hebrew)** layouts.
+This checklist ensures the Sommi application works correctly in both **LTR (English)** and **RTL (Hebrew)** layouts.
 
 ---
 

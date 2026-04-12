@@ -21,7 +21,7 @@ INSERT INTO public.wine_events (
   ARRAY['syrah', 'shiraz', 'red'], -- Tags to match your Syrah bottles
   'grape',
   'Celebrate the bold and spicy Syrah grape from around the world!',
-  'Wine Cellar Brain (Test)',
+  'Sommi (Test)',
   'https://www.wsetglobal.com/knowledge-centre/blog/2025/wine-and-grape-days-2026/'
 )
 ON CONFLICT DO NOTHING;
@@ -41,7 +41,7 @@ INSERT INTO public.wine_events (
   ARRAY['chardonnay', 'white'], -- Tags to match your Chardonnay bottles
   'grape',
   'Celebrate the world''s most popular white wine grape!',
-  'Wine Cellar Brain (Test)',
+  'Sommi (Test)',
   'https://www.wsetglobal.com/knowledge-centre/blog/2025/wine-and-grape-days-2026/'
 )
 ON CONFLICT DO NOTHING;
@@ -63,7 +63,7 @@ INSERT INTO public.wine_events (
   ARRAY['malbec', 'red'],
   'grape',
   'Celebrate Argentina''s signature grape variety!',
-  'Wine Cellar Brain (Test)',
+  'Sommi (Test)',
   'https://www.wsetglobal.com/knowledge-centre/blog/2025/wine-and-grape-days-2026/'
 )
 ON CONFLICT DO NOTHING;

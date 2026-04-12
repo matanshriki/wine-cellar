@@ -2,31 +2,31 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://wine-cellar-brain.vercel.app/</loc>
+    <loc>https://sommi-ai.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://wine-cellar-brain.vercel.app/login</loc>
+    <loc>https://sommi-ai.com/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://wine-cellar-brain.vercel.app/about</loc>
+    <loc>https://sommi-ai.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://wine-cellar-brain.vercel.app/privacy</loc>
+    <loc>https://sommi-ai.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <url>
-    <loc>https://wine-cellar-brain.vercel.app/share</loc>
+    <loc>https://sommi-ai.com/share</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

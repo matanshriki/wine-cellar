@@ -348,7 +348,7 @@ function AppRoutes() {
           </FeatureFlagRoute>
         }
       />
-      {/* Sommelier Credits / upgrade page — dark launch, monetization-flagged users only */}
+      {/* Sommi credits / upgrade page — dark launch, monetization-flagged users only */}
       <Route
         path="/upgrade"
         element={

@@ -251,7 +251,7 @@ If the toggle is still misaligned:
 
 The toggle is now **production-ready** with proper RTL support. The luxury UI experience is maintained in both English and Hebrew.
 
-Enjoy your Wine Cellar Brain app! 🍷✨
+Enjoy your Sommi app! 🍷✨
 
 
 

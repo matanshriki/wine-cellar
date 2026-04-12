@@ -168,7 +168,7 @@ export function initializeAnalytics(): void {
   window.gtag('config', measurementId, {
     send_page_view: false,
     debug_mode: debugMode,
-    app_name: 'Wine Cellar Brain',
+    app_name: 'Sommi',
   });
 
   // Platform user property (persistent across this session)

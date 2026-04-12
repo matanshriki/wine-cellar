@@ -1,4 +1,4 @@
-# Wine Cellar Brain - UX/UI Fixes Deployed
+# Sommi - UX/UI Fixes Deployed
 **Date:** December 30, 2025  
 **Status:** ✅ READY FOR DEPLOYMENT
 

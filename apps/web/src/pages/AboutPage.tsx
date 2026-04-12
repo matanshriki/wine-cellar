@@ -126,12 +126,12 @@ const FAQ_KEYS = [
 
 // ── Schema.org structured data ────────────────────────────────────────────────
 
-const SITE_URL = 'https://wine-cellar-brain.vercel.app';
+const SITE_URL = 'https://sommi-ai.com';
 
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Wine Cellar Brain',
+  name: 'Sommi',
   url: SITE_URL,
   logo: `${SITE_URL}/icon-512.png`,
   description:
@@ -146,7 +146,7 @@ const organizationSchema = {
 const webSiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'Wine Cellar Brain',
+  name: 'Sommi',
   url: SITE_URL,
   description:
     'Personal wine collection manager with AI-powered recommendations, drink-window tracking, and smart pairing suggestions.',
@@ -191,7 +191,7 @@ export function AboutPage() {
 
       <MetaHead
         title="About"
-        description="Learn about Wine Cellar Brain — a personal wine collection manager built with passion. Track bottles, discover drink windows, and get AI-powered recommendations."
+        description="Learn about Sommi — a personal wine collection manager built with passion. Track bottles, discover drink windows, and get AI-powered recommendations."
         url="/about"
         noIndex={true}
         jsonLd={[organizationSchema, webSiteSchema, faqSchema]}
@@ -204,7 +204,7 @@ export function AboutPage() {
           className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-5"
           style={{ color: 'var(--wine-500)' }}
         >
-          Wine Cellar Brain
+          Sommi
         </p>
 
         {/* Title */}
@@ -246,7 +246,7 @@ export function AboutPage() {
               fontSize: i === 0 ? '1.15rem' : '1rem',
               fontWeight: i === 0 ? 600 : 400,
               lineHeight: i === 0 ? 1.5 : 1.85,
-              // p5 ("That's how Wine Cellar Brain was born.") gets a subtle emphasis
+              // p5 ("That's how Sommi was born.") gets a subtle emphasis
               ...(i === 4 && {
                 color: 'var(--text-primary)',
                 fontWeight: 500,

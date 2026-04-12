@@ -354,7 +354,7 @@ This prevents blank badges!
 
 ## 🎯 Final Result
 
-**Your Wine Cellar Brain now displays wine types and readiness statuses in the user's selected language!**
+**Your Sommi now displays wine types and readiness statuses in the user's selected language!**
 
 - Switch to Hebrew → See אדום, לבן, בחלון השתייה
 - Switch to English → See Red, White, In Window

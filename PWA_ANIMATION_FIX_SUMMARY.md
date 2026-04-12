@@ -1,7 +1,7 @@
 # PWA Animation Fix - Production Deployment
 
 ## Summary
-Fixed all animation issues in Wine Cellar Brain PWA (standalone mode) on iOS Safari and Android Chrome.
+Fixed all animation issues in Sommi PWA (standalone mode) on iOS Safari and Android Chrome.
 
 **Status:** ✅ Production-ready, committed, and pushed to main branch
 

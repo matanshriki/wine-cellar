@@ -1,7 +1,7 @@
 # 📱 iPhone Mobile Bug Bash - Results Summary
 
 **Date:** December 29, 2024  
-**App:** Wine Cellar Brain PWA  
+**App:** Sommi PWA  
 **Focus:** iPhone usability, tap reliability, scrolling, button visibility
 
 ---

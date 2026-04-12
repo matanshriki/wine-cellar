@@ -43,7 +43,7 @@
 ### 3. **Version Tracking** (`main.tsx`)
 ```typescript
 const APP_VERSION = '2.1.0-smart-scan-unified';
-console.log(`🍷 Wine Cellar Brain v${APP_VERSION}`);
+console.log(`🍷 Sommi v${APP_VERSION}`);
 ```
 
 **What this does**:
@@ -60,7 +60,7 @@ console.log(`🍷 Wine Cellar Brain v${APP_VERSION}`);
 
 When users load the app, they should see:
 ```
-🍷 Wine Cellar Brain v2.1.0-smart-scan-unified
+🍷 Sommi v2.1.0-smart-scan-unified
 ```
 
 If they see this message, they're on the correct version.
@@ -75,7 +75,7 @@ If they see this message, they're on the correct version.
 3. **Go to**: https://wine-cellar-brain.vercel.app/cellar
 4. **Open Console**
 5. **Check for**:
-   - `🍷 Wine Cellar Brain v2.1.0-smart-scan-unified`
+   - `🍷 Sommi v2.1.0-smart-scan-unified`
    - Bundle name: `index-GShoXeuy.js` (in Sources tab)
 
 ### For Users:

@@ -31,7 +31,7 @@ export default function PrivacyPage() {
               Introduction
             </h2>
             <p>
-              Welcome to Wine Cellar Brain. This Privacy Policy explains how we collect, use, and protect 
+              Welcome to Sommi. This Privacy Policy explains how we collect, use, and protect 
               your information when you use our wine collection management application.
             </p>
           </section>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
               How We Use Your Information
             </h2>
             <ul className="list-disc list-inside space-y-2">
-              <li>To provide and maintain the Wine Cellar Brain service</li>
+              <li>To provide and maintain the Sommi service</li>
               <li>To authenticate your account and ensure security</li>
               <li>To store and manage your wine collection</li>
               <li>To provide personalized wine recommendations</li>
@@ -241,7 +241,7 @@ export default function PrivacyPage() {
               Children's Privacy
             </h2>
             <p>
-              Wine Cellar Brain is not intended for use by children under 18 years of age. 
+              Sommi is not intended for use by children under 18 years of age. 
               We do not knowingly collect personal information from children.
             </p>
           </section>
@@ -280,7 +280,7 @@ export default function PrivacyPage() {
             className="text-sm font-medium underline"
             style={{ color: 'var(--wine-600)' }}
           >
-            ← Back to Wine Cellar Brain
+            ← Back to Sommi
           </a>
         </div>
       </div>

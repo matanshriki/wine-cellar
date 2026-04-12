@@ -1,5 +1,5 @@
 /**
- * Sommelier Credits — Server-side Credit Service
+ * Sommi credits — Server-side Credit Service
  *
  * Centralised path for:
  *   - Usage logging (always, best-effort)

@@ -16,7 +16,7 @@ INSERT INTO public.wine_events (
   ARRAY['cabernet sauvignon', 'cabernet', 'merlot', 'syrah', 'shiraz', 'malbec', 'red', 'chardonnay', 'white', 'sauvignon blanc', 'pinot noir', 'pinot', 'tempranillo', 'grenache', 'sangiovese'], -- Very broad tags to match most wines
   'occasion',
   'A special test event to showcase Wine World Moments! This will match most wines in your cellar.',
-  'Wine Cellar Brain (Test)',
+  'Sommi (Test)',
   'https://wine-cellar-brain.vercel.app' -- Valid URL for testing
 )
 ON CONFLICT DO NOTHING;

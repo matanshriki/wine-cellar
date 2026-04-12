@@ -1,6 +1,6 @@
 # 🍷 Vivino Integration Guide
 
-Wine Cellar Brain now supports **seamless import from Vivino**! Since Vivino doesn't provide a public API, we've built smart CSV detection and parsing to import your entire Vivino cellar with just a few clicks.
+Sommi now supports **seamless import from Vivino**! Since Vivino doesn't provide a public API, we've built smart CSV detection and parsing to import your entire Vivino cellar with just a few clicks.
 
 ## 📥 How to Export from Vivino
 
@@ -36,11 +36,11 @@ Château Margaux,Château Margaux,2015,Red,Bordeaux,France,4.5,2,Premier Grand C
 Dom Pérignon,Moët & Chandon,2012,Sparkling,Champagne,France,4.8,1,Vintage champagne
 ```
 
-## 📤 Import into Wine Cellar Brain
+## 📤 Import into Sommi
 
 ### Step 1: Navigate to Import
 
-1. Open Wine Cellar Brain: http://localhost:5173
+1. Open Sommi: http://localhost:5173
 2. Go to the **Cellar** page
 3. Click **"Import CSV"** button
 
@@ -67,7 +67,7 @@ You'll see a **purple banner** confirming Vivino detection!
 2. Check the preview (first 5 rows)
 3. Adjust mapping if needed
 4. Click **"Import Bottles"**
-5. 🎉 Done! Your Vivino cellar is now in Wine Cellar Brain
+5. 🎉 Done! Your Vivino cellar is now in Sommi
 
 ## 📊 What Gets Imported
 
@@ -119,13 +119,13 @@ Vivino doesn't provide real-time sync. To update your cellar:
 
 1. Export fresh CSV from Vivino
 2. Import again
-3. Duplicate detection: Wine Cellar Brain will add as new bottles (we recommend cleaning old ones first or adjusting quantities manually)
+3. Duplicate detection: Sommi will add as new bottles (we recommend cleaning old ones first or adjusting quantities manually)
 
 **Pro Tip**: Before re-importing, you can delete all bottles and start fresh, or manually update changed bottles.
 
-## 🆚 Vivino vs Wine Cellar Brain
+## 🆚 Vivino vs Sommi
 
-| Feature | Vivino | Wine Cellar Brain |
+| Feature | Vivino | Sommi |
 |---------|--------|-------------------|
 | Social features | ✅ Yes | ❌ No |
 | Wine discovery | ✅ Yes | ❌ No |
@@ -209,5 +209,5 @@ After importing from Vivino, try:
 
 **Happy importing! 🍷**
 
-Your Vivino collection is now in Wine Cellar Brain with enhanced AI features!
+Your Vivino collection is now in Sommi with enhanced AI features!
 

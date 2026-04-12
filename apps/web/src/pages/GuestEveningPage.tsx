@@ -311,7 +311,7 @@ export function GuestEveningPage() {
         >
           {/* Wordmark */}
           <p className="text-xs uppercase tracking-widest mb-4 font-medium" style={{ color: 'var(--wine-500)' }}>
-            Wine Cellar Brain
+            Sommi
           </p>
 
           <h1

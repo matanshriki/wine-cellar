@@ -2,7 +2,7 @@
 
 ## ✅ Status: Production-Ready for Mobile
 
-Your Wine Cellar Brain app is now **fully optimized for mobile devices** with responsive design, touch-friendly interactions, and perfect RTL support!
+Your Sommi app is now **fully optimized for mobile devices** with responsive design, touch-friendly interactions, and perfect RTL support!
 
 ## 🎯 What's Been Optimized
 
@@ -476,7 +476,7 @@ className="min-h-[44px] min-w-[44px]"
 
 ## 🎊 Conclusion
 
-**Your Wine Cellar Brain is now:**
+**Your Sommi is now:**
 
 - ✅ **Mobile-First** - Designed for phones from the ground up
 - ✅ **Touch-Optimized** - 44px targets, perfect for fingers

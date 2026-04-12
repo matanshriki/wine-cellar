@@ -56,7 +56,7 @@ const EMPTY: MonetizationCache = {
   creditEnforcementEnabled: false,
   effectiveBalance: 0,
   isLowBalance: false,
-  balanceLabel: 'You have 0 Sommelier Credits left this month',
+  balanceLabel: 'You have 0 Sommi credits left this month',
   monthlyLimit: 0,
   planKey: null,
 };

@@ -85,9 +85,9 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
 
     if (oldFlags.cellarAgentEnabled !== newFlags.cellarAgentEnabled) {
       if (newFlags.cellarAgentEnabled) {
-        toast.success('New feature enabled: Cellar Sommelier ✅');
+        toast.success('New feature enabled: Sommi ✅');
       } else {
-        toast.warning('Cellar Sommelier feature disabled for your account');
+        toast.warning('Sommi feature disabled for your account');
         if (location.pathname === '/agent') navigate('/cellar', { replace: true });
       }
     }

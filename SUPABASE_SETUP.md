@@ -2,7 +2,7 @@
 
 ## Overview
 
-Wine Cellar Brain now uses Supabase for:
+Sommi now uses Supabase for:
 - **Authentication**: Email/password login with secure session management
 - **Database**: PostgreSQL with Row Level Security (RLS)
 - **Real-time**: Automatic data sync across clients

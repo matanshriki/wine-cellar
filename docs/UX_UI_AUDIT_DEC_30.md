@@ -1,4 +1,4 @@
-# Wine Cellar Brain - Comprehensive UX/UI Audit & Fixes
+# Sommi - Comprehensive UX/UI Audit & Fixes
 **Date:** December 30, 2025  
 **Scope:** Full app review across Phone, Mac, PC, PWA  
 **Status:** In Progress → Completed

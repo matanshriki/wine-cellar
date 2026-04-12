@@ -20,7 +20,7 @@ New users were getting confused when:
 **After:**
 - 🍷 Elegant animated wine glass visual
 - **Sophisticated heading:** "Your Cellar Awaits Its First Treasure"
-- **Clear explanation:** "To unlock the full potential of Wine Cellar Brain, begin curating your collection."
+- **Clear explanation:** "To unlock the full potential of Sommi, begin curating your collection."
 - **Helpful hint:** "Start by adding bottles you own, or import your existing collection for instant insights."
 - Smooth fade-in animations for all elements
 - Professional, luxury design aligned with brand
@@ -54,7 +54,7 @@ New users were getting confused when:
   "cellar": {
     "empty": {
       "title": "Your Cellar Awaits Its First Treasure",
-      "subtitle": "To unlock the full potential of Wine Cellar Brain, begin curating your collection.",
+      "subtitle": "To unlock the full potential of Sommi, begin curating your collection.",
       "hint": "Start by adding bottles you own, or import your existing collection for instant insights."
     }
   },
@@ -76,7 +76,7 @@ New users were getting confused when:
   "cellar": {
     "empty": {
       "title": "המרתף שלך ממתין לאוצר הראשון",
-      "subtitle": "כדי לפתוח את מלוא הפוטנציאל של Wine Cellar Brain, התחל לבנות את האוסף שלך.",
+      "subtitle": "כדי לפתוח את מלוא הפוטנציאל של Sommi, התחל לבנות את האוסף שלך.",
       "hint": "התחל בהוספת בקבוקים שיש לך, או ייבא את האוסף הקיים שלך לתובנות מיידיות."
     }
   },

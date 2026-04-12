@@ -431,7 +431,7 @@ dist/assets/index-C6dlIIxh.js   549.12 kB │ gzip: 159.17 kB
 
 ### ✅ Production Ready
 
-The Wine Cellar Brain app is **ready for production deployment** to Vercel. All critical flows work, security baseline is met, and documentation is comprehensive.
+The Sommi app is **ready for production deployment** to Vercel. All critical flows work, security baseline is met, and documentation is comprehensive.
 
 ### Next Steps
 

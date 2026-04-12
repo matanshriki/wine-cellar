@@ -320,7 +320,7 @@ supabase db push
 
 ## 🏆 **Conclusion**
 
-The Wine Cellar Brain app now has **truly intelligent, per-bottle sommelier notes** powered by ChatGPT!
+The Sommi app now has **truly intelligent, per-bottle sommelier notes** powered by ChatGPT!
 
 **What users get**:
 - Unique insights for each wine

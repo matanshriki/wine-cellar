@@ -6,7 +6,7 @@
  * with 0 credits remaining.
  *
  * Design: permanently dark glass panel (premium aesthetic regardless of theme).
- * Entry points: Sommelier chat send, bottle label scan.
+ * Entry points: Sommi chat send, bottle label scan.
  */
 
 import React, { useEffect, useCallback } from 'react';
@@ -79,7 +79,7 @@ export interface NoCreditsModalProps {
 }
 
 const CONTEXT_COPY: Record<string, { action: string; description: string }> = {
-  chat:     { action: 'chat with the Sommelier',   description: 'AI-powered wine recommendations and cellar insights' },
+  chat:     { action: 'chat with Sommi',   description: 'AI-powered wine recommendations and cellar insights' },
   scan:     { action: 'scan wine labels',           description: 'instant AI label recognition and wine data extraction' },
   analysis: { action: 'run a wine analysis',        description: 'deep AI-powered cellar and wine analysis' },
 };
@@ -209,12 +209,12 @@ export function NoCreditsModal({ isOpen, onClose, context = 'chat' }: NoCreditsM
                 className="text-xl font-bold leading-snug text-white sm:text-2xl"
                 style={{ letterSpacing: '-0.01em' }}
               >
-                You've used all your<br />Sommelier Credits
+                You've used all your<br />Sommi credits
               </h2>
 
               {/* Subtext */}
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/45">
-                To {action} you need Sommelier Credits —
+                To {action} you need Sommi credits —
                 your AI allowance for {description}.
               </p>
 
@@ -245,7 +245,7 @@ export function NoCreditsModal({ isOpen, onClose, context = 'chat' }: NoCreditsM
                 }}
               >
                 <Zap size={16} />
-                Get more Sommelier Credits
+                Get more Sommi credits
                 <ArrowRight size={15} className="opacity-70" />
               </motion.button>
 

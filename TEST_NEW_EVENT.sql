@@ -17,7 +17,7 @@ INSERT INTO public.wine_events (
   ARRAY['chardonnay', 'white'], -- Different tags than Syrah event
   'grape',
   'Celebrate the world''s most popular white wine! Time to enjoy your Chardonnay bottles.',
-  'Wine Cellar Brain Test',
+  'Sommi Test',
   'https://www.wsetglobal.com/knowledge-centre/blog/2025/wine-and-grape-days-2026/'
 );
 

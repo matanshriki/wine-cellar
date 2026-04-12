@@ -2,7 +2,7 @@
 
 ## Overview
 
-Wine Cellar Brain now supports multiple languages with full RTL (Right-to-Left) support for Hebrew. The implementation uses **react-i18next**, the industry-standard i18n solution for React applications.
+Sommi now supports multiple languages with full RTL (Right-to-Left) support for Hebrew. The implementation uses **react-i18next**, the industry-standard i18n solution for React applications.
 
 ## Supported Languages
 
@@ -184,7 +184,7 @@ Translation files use nested JSON objects for organization:
 ```json
 {
   "app": {
-    "title": "Wine Cellar Brain"
+    "title": "Sommi"
   },
   "nav": {
     "cellar": "Cellar",
@@ -203,7 +203,7 @@ Translation files use nested JSON objects for organization:
 ### Accessing Nested Keys
 
 ```typescript
-t('app.title')           // "Wine Cellar Brain"
+t('app.title')           // "Sommi"
 t('nav.cellar')          // "Cellar"
 t('cellar.bottle.vintage') // "Vintage"
 ```

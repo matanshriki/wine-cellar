@@ -59,5 +59,5 @@ Use the demo credentials:
 
 ## Done! 🎉
 
-Your Wine Cellar Brain is now running!
+Your Sommi is now running!
 

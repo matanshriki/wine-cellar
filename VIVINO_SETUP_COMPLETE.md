@@ -2,7 +2,7 @@
 
 ## ✅ What's Been Added
 
-Your Wine Cellar Brain now has **full Vivino CSV import support**!
+Your Sommi now has **full Vivino CSV import support**!
 
 ### New Features
 
@@ -18,7 +18,7 @@ Your Wine Cellar Brain now has **full Vivino CSV import support**!
 
 3. **📊 Rating Conversion**
    - Vivino: 1-5 stars
-   - Wine Cellar Brain: 0-100 points
+   - Sommi: 0-100 points
    - Example: 4.5 stars = 90/100
 
 4. **🌍 Multi-language Support**
@@ -42,7 +42,7 @@ Your Wine Cellar Brain now has **full Vivino CSV import support**!
 4. Click the **"Export"** button
 5. Download `vivino_wines.csv`
 
-### Step 2: Import to Wine Cellar Brain
+### Step 2: Import to Sommi
 
 1. Open http://localhost:5173
 2. Login (demo@winecellarbrain.com / demo123)
@@ -85,7 +85,7 @@ Sancerre Blanc,Domaine Vacheron,2021,White,Loire Valley,France,4.2,3,Classic Sau
 ### Option 2: Use Your Real Vivino Export
 
 1. Export from vivino.com
-2. Import to Wine Cellar Brain
+2. Import to Sommi
 3. Watch the magic happen! ✨
 
 ## 🎯 Expected Behavior
@@ -172,7 +172,7 @@ When you upload a Vivino CSV:
 
 ```typescript
 // Input: 1-5 scale (Vivino)
-// Output: 0-100 scale (Wine Cellar Brain)
+// Output: 0-100 scale (Sommi)
 convertedRating = vivinoRating * 20
 ```
 
@@ -195,12 +195,12 @@ For complete details, see:
 
 ## 🎉 You're Ready!
 
-Your Wine Cellar Brain now seamlessly imports from Vivino!
+Your Sommi now seamlessly imports from Vivino!
 
 ### Next Steps
 
 1. Export your Vivino cellar
-2. Import into Wine Cellar Brain
+2. Import into Sommi
 3. Click "Analyze" on each bottle
 4. Use "What Should I Open Tonight?"
 5. Enjoy enhanced wine management! 🍷

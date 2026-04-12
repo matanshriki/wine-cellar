@@ -323,7 +323,7 @@ git push origin main
 
 ## 🏁 Conclusion
 
-The Wine Cellar Brain app now provides a **consistent, polished, luxury experience** across all platforms:
+The Sommi app now provides a **consistent, polished, luxury experience** across all platforms:
 
 - **Desktop:** Professional hover states and keyboard navigation
 - **Mobile:** Touch-optimized with proper safe areas

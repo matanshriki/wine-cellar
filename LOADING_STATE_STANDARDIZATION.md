@@ -1,7 +1,7 @@
 # Loading State Standardization
 
 ## Overview
-Standardized all full-page loading states across the Wine Cellar Brain app to use the shared `WineLoader` component, providing a consistent, premium, wine-themed loading experience.
+Standardized all full-page loading states across the Sommi app to use the shared `WineLoader` component, providing a consistent, premium, wine-themed loading experience.
 
 ---
 

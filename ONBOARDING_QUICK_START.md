@@ -15,7 +15,7 @@
 
 1. **Welcome Modal Appears**
    - 🍷 Wine emoji
-   - "Welcome to Wine Cellar Brain"
+   - "Welcome to Sommi"
    - Two buttons: "Show me what this app can do" or "Skip"
 
 2. **Click "Show me what this app can do"**

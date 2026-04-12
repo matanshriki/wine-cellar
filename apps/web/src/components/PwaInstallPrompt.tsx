@@ -156,7 +156,7 @@ function IosSheet({ onDismiss }: { onDismiss: () => void }) {
           <div className="flex items-center gap-3">
             <img
               src="/icon-192.png"
-              alt="Wine Cellar Brain"
+              alt="Sommi"
               className="w-12 h-12 rounded-2xl shadow-sm flex-shrink-0"
             />
             <div>
@@ -164,7 +164,7 @@ function IosSheet({ onDismiss }: { onDismiss: () => void }) {
                 {t('pwaPrompt.ios.title')}
               </h2>
               <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--text-tertiary)' }}>
-                Wine Cellar Brain
+                Sommi
               </p>
             </div>
           </div>
@@ -243,7 +243,7 @@ function AndroidSheet({ onInstall, onDismiss }: { onInstall: () => void; onDismi
           <div className="flex items-center gap-3">
             <img
               src="/icon-192.png"
-              alt="Wine Cellar Brain"
+              alt="Sommi"
               className="w-12 h-12 rounded-2xl shadow-sm flex-shrink-0"
             />
             <div>
@@ -251,7 +251,7 @@ function AndroidSheet({ onInstall, onDismiss }: { onInstall: () => void; onDismi
                 {t('pwaPrompt.android.title')}
               </h2>
               <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--text-tertiary)' }}>
-                Wine Cellar Brain
+                Sommi
               </p>
             </div>
           </div>
@@ -328,7 +328,7 @@ function DesktopModal({ onDismiss }: { onDismiss: () => void }) {
         {/* App icon */}
         <img
           src="/icon-192.png"
-          alt="Wine Cellar Brain"
+          alt="Sommi"
           className="w-16 h-16 rounded-2xl shadow-md mx-auto mb-4"
         />
 

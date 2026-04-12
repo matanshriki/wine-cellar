@@ -1,7 +1,7 @@
 # PWA Session Persistence Implementation
 
 ## Problem
-When the Wine Cellar Brain app is added to the iPhone home screen and opened, users had to log in every time because iOS can clear session storage between app launches.
+When the Sommi app is added to the iPhone home screen and opened, users had to log in every time because iOS can clear session storage between app launches.
 
 ## Solution
 Implemented comprehensive PWA support with enhanced session persistence:

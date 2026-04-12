@@ -1,7 +1,7 @@
 /**
  * PricingModal
  *
- * Premium plan selector for Sommelier Credits.
+ * Premium plan selector for Sommi credits.
  * ONLY rendered for users with monetization_enabled = true.
  * Never accessible to non-flagged users — the guard is enforced here
  * AND at every callsite.

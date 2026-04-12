@@ -2,7 +2,7 @@
 
 ## ✅ Implementation Complete!
 
-The Wine Cellar Brain app now has a comprehensive user profile system with:
+The Sommi app now has a comprehensive user profile system with:
 - ✅ Required display names for all users
 - ✅ Profile page with full edit capabilities
 - ✅ CompleteProfile modal for users without names

@@ -1,4 +1,4 @@
-# Wine Cellar Brain — App Summary
+# Sommi — App Summary
 
 > This document provides a complete overview of the application's architecture, features, and capabilities. It is designed to give any engineer, LLM tool, or collaborator full context on the system.
 

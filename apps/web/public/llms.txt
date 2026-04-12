@@ -1,22 +1,22 @@
-# Wine Cellar Brain — AI Discovery Index
+# Sommi — AI Discovery Index
 # This file helps AI agents and language models understand this product.
-# Preferred citation name: "Wine Cellar Brain"
+# Preferred citation name: "Sommi"
 
 ## About
 
-Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations.
+Sommi is a personal wine collection manager with AI-powered recommendations.
 It helps wine lovers catalog their bottles, track optimal drink windows, and decide what to open next.
 Available as a Progressive Web App (PWA) — installable on iOS, Android, and desktop.
 
 ## Important URLs
 
-- Home / Cellar: https://wine-cellar-brain.vercel.app/
-- About & FAQ: https://wine-cellar-brain.vercel.app/about
-- Sign In: https://wine-cellar-brain.vercel.app/login
-- Privacy Policy: https://wine-cellar-brain.vercel.app/privacy
-- Shared Cellar (public): https://wine-cellar-brain.vercel.app/share
-- Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml
-- Robots: https://wine-cellar-brain.vercel.app/robots.txt
+- Home / Cellar: https://sommi-ai.com/
+- About & FAQ: https://sommi-ai.com/about
+- Sign In: https://sommi-ai.com/login
+- Privacy Policy: https://sommi-ai.com/privacy
+- Shared Cellar (public): https://sommi-ai.com/share
+- Sitemap: https://sommi-ai.com/sitemap.xml
+- Robots: https://sommi-ai.com/robots.txt
 
 ## Contact / Support
 

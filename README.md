@@ -1,4 +1,4 @@
-# 🍷 Wine Cellar Brain
+# 🍷 Sommi
 
 A production-grade web application for smart wine cellar management with intelligent recommendations and multi-language support.
 

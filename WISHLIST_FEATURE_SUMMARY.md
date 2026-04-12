@@ -9,7 +9,7 @@
 
 ## 📋 Executive Summary
 
-A fully functional **Wishlist** feature has been implemented for Wine Cellar Brain. This allows users to save wines they want to buy later by taking a photo of the bottle label (typically at a restaurant), with AI extracting the wine details automatically.
+A fully functional **Wishlist** feature has been implemented for Sommi. This allows users to save wines they want to buy later by taking a photo of the bottle label (typically at a restaurant), with AI extracting the wine details automatically.
 
 **Key Points**:
 - ✅ **100% DEV-ONLY** - Only works on localhost, completely hidden in production
@@ -23,7 +23,7 @@ A fully functional **Wishlist** feature has been implemented for Wine Cellar Bra
 ## 🎯 User Story (As Implemented)
 
 1. **User is at a restaurant**, tries a wine, loves it
-2. **Opens Wine Cellar Brain** on their phone
+2. **Opens Sommi** on their phone
 3. **Clicks "Add Bottle"** → Sees "Add to Wishlist (dev)" option (amber button)
 4. **Takes a photo** of the bottle label
 5. **AI extracts** wine details (producer, name, vintage, region, grapes)

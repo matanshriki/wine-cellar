@@ -1,7 +1,7 @@
 # Fix Google OAuth App Name
 
 ## Issue
-The Google sign-in screen shows "pktelrzyllbwrmcfgocx.supabase.co" instead of a friendly app name like "Wine Cellar Brain".
+The Google sign-in screen shows "pktelrzyllbwrmcfgocx.supabase.co" instead of a friendly app name like "Sommi".
 
 ## Root Cause
 The OAuth consent screen in Google Cloud Console doesn't have a proper application name configured.
@@ -10,7 +10,7 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 
 ### Step 1: Go to Google Cloud Console
 1. Visit: https://console.cloud.google.com/
-2. **Select your project** (the one you created for Wine Cellar Brain OAuth)
+2. **Select your project** (the one you created for Sommi OAuth)
 
 ### Step 2: Navigate to OAuth Consent Screen
 1. In the left sidebar, click **"APIs & Services"**
@@ -21,7 +21,7 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 1. Click **"Edit App"** button (top right)
 2. Update the following fields:
 
-   **App name:** `Wine Cellar Brain`  
+   **App name:** `Sommi`  
    *(This is what users will see on the Google sign-in screen)*
 
    **User support email:** Your email (probably already set)
@@ -62,9 +62,9 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 
 ### Step 7: Test the Changes
 1. **Clear your browser cookies** for Supabase (important!)
-2. Go to your Wine Cellar Brain app
+2. Go to your Sommi app
 3. Click **"Sign in with Google"**
-4. ✅ You should now see **"Wine Cellar Brain"** on the consent screen instead of the Supabase URL
+4. ✅ You should now see **"Sommi"** on the consent screen instead of the Supabase URL
 
 ---
 
@@ -90,7 +90,7 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 │                                     │
 │  Choose an account                  │
 │  to continue to                     │
-│  Wine Cellar Brain                  │  ✅ Shows app name!
+│  Sommi                  │  ✅ Shows app name!
 │                                     │
 │  [Your Gmail Account]               │
 └─────────────────────────────────────┘
@@ -110,7 +110,7 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 - Check the project list at the top of Google Cloud Console
 
 ### "App name already taken"?
-- Choose a different name like "Wine Cellar Brain App" or "My Wine Cellar"
+- Choose a different name like "Sommi App" or "My Wine Cellar"
 
 ### Want to add a logo?
 - Create a 512x512px PNG with a wine glass icon
@@ -122,7 +122,7 @@ The OAuth consent screen in Google Cloud Console doesn't have a proper applicati
 ## Result
 
 After these changes, users will see:
-- ✅ **"Wine Cellar Brain"** instead of the Supabase URL
+- ✅ **"Sommi"** instead of the Supabase URL
 - ✅ Professional-looking OAuth consent screen
 - ✅ Optional app logo (if you upload one)
 - ✅ Matches your app branding

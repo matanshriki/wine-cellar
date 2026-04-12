@@ -834,17 +834,41 @@ export function AgentPageWorking() {
             <span>{t('cellarSommelier.back')}</span>
           </button>
 
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', margin: 0 }}>
+          <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+            <h1
+              style={{
+                fontSize: '17px',
+                fontWeight: 700,
+                color: '#2d1810',
+                margin: 0,
+                fontFamily: 'var(--font-display, Georgia, serif)',
+                letterSpacing: '0.02em',
+              }}
+            >
               {t('cellarSommelier.title')}
             </h1>
-            <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-              {t('cellarSommelier.bottleCount', { count: bottles.filter(b => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0) })}
+            <p
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#8b6914',
+                margin: '2px 0 0',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                lineHeight: 1.25,
+              }}
+            >
+              {t('app.tagline')}
+            </p>
+            <p style={{ fontSize: '11px', color: '#888', margin: '4px 0 0' }}>
+              {t('cellarSommelier.bottleCount', {
+                count: bottles.filter((b) => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0),
+              })}
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {/* Sommelier Credits badge — only renders for monetization-enabled users */}
+            {/* Sommi credits badge — only renders for monetization-enabled users */}
             <SommelierCreditsDisplay
               compact
               onUpgradeClick={() => setPricingOpen(true)}
@@ -1075,7 +1099,7 @@ export function AgentPageWorking() {
                   ) : (
                     <img
                       src="/assets/sommelier-icon.png"
-                      alt="Sommelier"
+                      alt="Sommi"
                       style={{
                         width: '28px',
                         height: '28px',
@@ -1376,7 +1400,7 @@ export function AgentPageWorking() {
         onRefresh={loadBottles}
       />
 
-      {/* Sommelier Credits pricing modal — dark launch, only for monetization-enabled users */}
+      {/* Sommi credits pricing modal — dark launch, only for monetization-enabled users */}
       <PricingModal
         isOpen={pricingOpen}
         onClose={() => setPricingOpen(false)}

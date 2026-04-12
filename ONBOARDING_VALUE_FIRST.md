@@ -118,7 +118,7 @@ Implemented a value-first onboarding flow that delivers instant value to new use
    └─ localStorage check: no 'wcb_onboarding_seen'
 
 2. WelcomeModal appears
-   ├─ Title: "🍷 Welcome to Wine Cellar Brain"
+   ├─ Title: "🍷 Welcome to Sommi"
    ├─ Subtitle: "Your personal AI sommelier..."
    ├─ Primary CTA: "Show me what this app can do"
    └─ Secondary CTA: "Skip for now"

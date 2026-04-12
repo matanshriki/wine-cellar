@@ -475,7 +475,7 @@ console.log('Overflow:', getComputedStyle(element).overflowY);
 
 ## 🎉 Result
 
-The Wine Cellar Brain app now works **flawlessly on all iOS browsers** (Safari, Chrome, Edge, etc.) because they all use WebKit.
+The Sommi app now works **flawlessly on all iOS browsers** (Safari, Chrome, Edge, etc.) because they all use WebKit.
 
 Users can:
 - ✅ Scroll through all content

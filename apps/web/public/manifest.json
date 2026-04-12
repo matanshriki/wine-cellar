@@ -1,7 +1,7 @@
 {
-  "name": "Wine Cellar Brain",
-  "short_name": "Wine Cellar",
-  "description": "Your personal wine collection manager with AI-powered recommendations",
+  "name": "Sommi",
+  "short_name": "Sommi",
+  "description": "Sommi — your AI sommelier. Track your cellar and get pairing ideas tailored to your collection.",
   "start_url": "/cellar",
   "display": "standalone",
   "background_color": "#faf8f5",

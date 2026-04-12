@@ -298,7 +298,7 @@ A: The app will gracefully fall back to a placeholder. Check your network connec
 
 ## 🏆 Conclusion
 
-**AI-generated label images are now a first-class feature of the Wine Cellar Brain app.**
+**AI-generated label images are now a first-class feature of the Sommi app.**
 
 Users can:
 - ✅ Generate AI labels for their bottles

@@ -20,7 +20,7 @@ INSERT INTO public.wine_events (
   ARRAY['cabernet sauvignon', 'cabernet', 'cab sauv', 'red'],
   'grape',
   'Celebrate the king of red grapes with bold structure, dark fruit, and legendary aging potential.',
-  'Wine Cellar Brain Test',
+  'Sommi Test',
   'https://www.wsetglobal.com/knowledge-centre/calendar/wine-and-grape-days-2026/'
 )
 ON CONFLICT DO NOTHING;

@@ -387,7 +387,7 @@ supabase secrets set OPENAI_API_KEY=sk-...
 
 ## 🎉 Summary
 
-The **Wine Cellar Brain** app is **PRODUCTION-READY**:
+The **Sommi** app is **PRODUCTION-READY**:
 
 ✅ **All core features working**  
 ✅ **Mobile-optimized** (iOS + Android)  

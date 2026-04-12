@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Wine Cellar Brain now has a production-ready **feature flag system** that allows you to control which users can access beta features like:
+The Sommi now has a production-ready **feature flag system** that allows you to control which users can access beta features like:
 - 🔗 **Share Cellar** - Share a read-only link to your wine cellar
 - 📸 **Multi-Bottle Import** - Import multiple bottles from a single photo
 

@@ -2,7 +2,7 @@
 
 ## ✅ Status: FULLY IMPLEMENTED
 
-All pages and components in the Wine Cellar Brain application now support **complete language switching** between English (EN) and Hebrew (HE) with full RTL support.
+All pages and components in the Sommi application now support **complete language switching** between English (EN) and Hebrew (HE) with full RTL support.
 
 ---
 
@@ -493,7 +493,7 @@ Before deploying to production:
 
 ---
 
-**The Wine Cellar Brain app now has world-class internationalization! 🌍🍷**
+**The Sommi app now has world-class internationalization! 🌍🍷**
 
 Switching between English and Hebrew updates all UI text immediately while keeping wine data in its original language. RTL support is seamless on all devices.
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- Sommelier Credits — Phase 1: Metering & Monetization Foundation
+-- Sommi credits — Phase 1: Metering & Monetization Foundation
 -- ============================================================
 --
 -- Tables created:

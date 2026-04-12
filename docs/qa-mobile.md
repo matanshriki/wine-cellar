@@ -1,7 +1,7 @@
 # 📱 iPhone Mobile Bug Bash Checklist
 
 ## Overview
-Comprehensive mobile QA checklist for Wine Cellar Brain app, focusing on iPhone PWA experience.
+Comprehensive mobile QA checklist for Sommi app, focusing on iPhone PWA experience.
 
 **Testing Viewports:**
 - iPhone SE (375×667)

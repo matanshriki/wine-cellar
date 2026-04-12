@@ -26,7 +26,7 @@ export default function TermsPage() {
           {/* Introduction */}
           <section>
             <p className="leading-relaxed">
-              Welcome to Wine Cellar Brain. By accessing or using our application, you agree to be bound
+              Welcome to Sommi. By accessing or using our application, you agree to be bound
               by these Terms &amp; Conditions. Please read them carefully before using the service. If
               you do not agree to these terms, please do not use the app.
             </p>
@@ -38,7 +38,7 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p className="leading-relaxed">
-              By creating an account or otherwise using Wine Cellar Brain ("the Service"), you acknowledge
+              By creating an account or otherwise using Sommi ("the Service"), you acknowledge
               that you have read, understood, and agree to be legally bound by these Terms &amp; Conditions
               and our{' '}
               <a href="/privacy" className="underline" style={{ color: 'var(--wine-600)' }}>
@@ -54,7 +54,7 @@ export default function TermsPage() {
               2. Description of Service
             </h2>
             <p className="leading-relaxed mb-3">
-              Wine Cellar Brain is a personal wine collection management application that provides:
+              Sommi is a personal wine collection management application that provides:
             </p>
             <ul className="list-disc list-inside ml-4 space-y-2">
               <li>Wine cellar cataloguing and bottle tracking</li>
@@ -75,7 +75,7 @@ export default function TermsPage() {
               3. User Accounts
             </h2>
             <p className="leading-relaxed mb-3">
-              To use Wine Cellar Brain you must create an account. You are responsible for:
+              To use Sommi you must create an account. You are responsible for:
             </p>
             <ul className="list-disc list-inside ml-4 space-y-2">
               <li>Providing accurate and up-to-date registration information</li>
@@ -102,7 +102,7 @@ export default function TermsPage() {
                   Free Tier
                 </h3>
                 <p className="leading-relaxed">
-                  Wine Cellar Brain offers a free tier with access to core features including bottle cataloguing,
+                  Sommi offers a free tier with access to core features including bottle cataloguing,
                   drink window tracking, and basic recommendations. Free tier users may be subject to
                   usage limits (e.g., number of bottles, AI recommendation credits).
                 </p>
@@ -110,11 +110,11 @@ export default function TermsPage() {
 
               <div>
                 <h3 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Paid Subscription (Sommelier Plan)
+                  Paid Subscription (Premium / Collector)
                 </h3>
                 <p className="leading-relaxed">
                   Premium features — including advanced AI recommendations, unlimited cellar size, priority
-                  enrichment, and additional Sommelier credits — are available through a paid subscription.
+                  enrichment, and additional Sommi credits — are available through a paid subscription.
                   Pricing, billing cycles, and included features are displayed in the app at the time of
                   purchase and may be updated with prior notice.
                 </p>
@@ -122,10 +122,10 @@ export default function TermsPage() {
 
               <div>
                 <h3 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Sommelier Credits
+                  Sommi credits
                 </h3>
                 <p className="leading-relaxed">
-                  AI-powered features consume Sommelier credits. Credits are allocated on a monthly basis
+                  AI-powered features consume Sommi credits. Credits are allocated on a monthly basis
                   depending on your plan. Unused credits do not roll over between billing periods unless
                   explicitly stated. Additional credit packs may be available for purchase.
                 </p>
@@ -201,7 +201,7 @@ export default function TermsPage() {
               8. Intellectual Property
             </h2>
             <p className="leading-relaxed mb-3">
-              All content, design, software, and trademarks associated with Wine Cellar Brain are the
+              All content, design, software, and trademarks associated with Sommi are the
               intellectual property of the developer and are protected by applicable copyright and
               intellectual property laws. You may not copy, modify, distribute, or create derivative
               works without explicit written permission.
@@ -240,7 +240,7 @@ export default function TermsPage() {
               10. Limitation of Liability
             </h2>
             <p className="leading-relaxed">
-              To the maximum extent permitted by law, Wine Cellar Brain and its developer shall not be
+              To the maximum extent permitted by law, Sommi and its developer shall not be
               liable for any indirect, incidental, special, consequential, or punitive damages arising
               from your use of the Service — including but not limited to loss of data, lost profits, or
               business interruption — even if we have been advised of the possibility of such damages.
@@ -322,7 +322,7 @@ export default function TermsPage() {
             className="text-sm font-medium underline"
             style={{ color: 'var(--wine-600)' }}
           >
-            ← Back to Wine Cellar Brain
+            ← Back to Sommi
           </a>
           <span style={{ color: 'var(--border-medium)' }}>|</span>
           <a

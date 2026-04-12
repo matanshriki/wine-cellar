@@ -1,7 +1,7 @@
 /**
  * SommelierCreditsDisplay
  *
- * Shows the user's Sommelier Credit balance. Only renders when
+ * Shows the user's Sommi credit balance. Only renders when
  * monetization_enabled = true for the current user. Returns null for
  * all other users — completely invisible.
  *

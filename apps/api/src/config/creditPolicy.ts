@@ -1,5 +1,5 @@
 /**
- * Sommelier Credits — Credit Policy (Backend)
+ * Sommi credits — Credit Policy (Backend)
  *
  * Single source of truth for action credit costs.
  * Change costs here only — do not scatter magic numbers across routes.

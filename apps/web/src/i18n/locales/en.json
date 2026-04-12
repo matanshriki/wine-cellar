@@ -1,7 +1,7 @@
 {
   "app": {
-    "title": "Wine Cellar Brain",
-    "tagline": "Smart wine management & recommendations"
+    "title": "Sommi",
+    "tagline": "Your AI sommelier"
   },
   "offline": {
     "bottleText": "NO CONNECTION"
@@ -125,14 +125,14 @@
     "importCsv": "Import CSV",
     "empty": {
       "title": "Your Cellar Awaits Its First Treasure",
-      "subtitle": "To unlock the full potential of Wine Cellar Brain, begin curating your collection.",
+      "subtitle": "To unlock the full potential of Sommi, begin curating your collection.",
       "hint": "Start by adding bottles you own, or import your existing collection for instant insights.",
       "addButton": "Add Bottle",
       "importButton": "Import CSV"
     },
     "loading": "Loading your cellar...",
     "offline": {
-      "title": "The sommelier is taking a break 🍷",
+      "title": "Sommi is taking a break 🍷",
       "description": "You’re offline, so we can’t reach your cellar right now. Reconnect to Wi-Fi or mobile data and try again.",
       "tryAgain": "Try again",
       "metaDescription": "You’re offline. Reconnect to Wi-Fi or mobile data to load your wine cellar."
@@ -427,7 +427,7 @@
     "vivinoFetchSuccess": "✅ Fetched from Vivino! Rating: {{rating}}/5 ⭐ ({{count}} ratings)",
     "vivinoFetchError": "Error fetching from Vivino: {{error}}",
     "vivinoUrlCopied": "✅ Vivino search link copied! Open Safari, paste in address bar, find your wine, then copy its URL and return here to paste.",
-    "vivinoUrlCopiedPWA": "✅ Link copied! Press Home → Open Safari → Paste in address bar → Find wine → Copy wine URL → Return to Wine Cellar Brain app → Paste URL here.",
+    "vivinoUrlCopiedPWA": "✅ Link copied! Press Home → Open Safari → Paste in address bar → Find wine → Copy wine URL → Return to Sommi app → Paste URL here.",
     "vivinoCopyManually": "Vivino search URL (copy this):",
     "optional": "optional",
     "required": "Required",
@@ -748,7 +748,7 @@
       }
     },
     "step4": {
-      "title": "Import to Wine Cellar Brain",
+      "title": "Import to Sommi",
       "description": "Once you have your CSV file ready (from the template or another method), import it here:",
       "substep1": "Close this guide and click \"Choose CSV File\"",
       "substep2": "Select your CSV file",
@@ -888,8 +888,8 @@
   },
   "onboarding": {
     "welcome": {
-      "title": "Welcome to Wine Cellar Brain",
-      "subtitle": "Your personal AI sommelier – built to help you decide what to drink, when to drink it, and why.",
+      "title": "Welcome to Sommi",
+      "subtitle": "Sommi is your AI sommelier — here to help you decide what to drink, when to drink it, and why.",
       "showDemo": "Show me what this app can do",
       "skip": "Skip for now",
       "devOnly": "DEV MODE ONLY - Not visible in production"
@@ -918,7 +918,7 @@
     },
     "postDemo": {
       "title": "Your cellar awaits",
-      "subtitle": "You've seen what a personal AI sommelier can do. Now let's build your collection.",
+      "subtitle": "You've seen what Sommi can do. Now let's build your collection.",
       "scanCta": "Scan Your First Bottle",
       "addManuallyCta": "Or add manually",
       "skipLink": "I'll do this later",
@@ -938,7 +938,7 @@
       }
     },
     "emptyState": {
-      "title": "Your sommelier is ready — are you?",
+      "title": "Sommi is ready — are you?",
       "subtitle": "Add your first bottle and I'll start learning what you love.",
       "scanCta": "Scan a Label",
       "addManuallyCta": "Or add manually",
@@ -976,17 +976,17 @@
     }
   },
   "sommelierFab": {
-    "introTitle": "Meet your AI Sommelier",
-    "introSubtitle": "Ask about pairings, when to open a bottle, or what to serve tonight.",
+    "introTitle": "Meet Sommi",
+    "introSubtitle": "Your AI sommelier — pairings, when to open a bottle, or what to serve tonight.",
     "introCta": "Tap to try it"
   },
   "cellarSommelier": {
-    "title": "Cellar Sommelier",
-    "menuButton": "Ask Cellar Sommelier",
-    "askSommelier": "Ask Sommelier",
-    "loading": "Loading Sommelier...",
-    "notEnabled": "Sommelier is not enabled.",
-    "emptyTitle": "Ask Your Cellar Sommelier",
+    "title": "Sommi",
+    "menuButton": "Ask Sommi",
+    "askSommelier": "Ask Sommi",
+    "loading": "Loading Sommi...",
+    "notEnabled": "Sommi isn't available right now.",
+    "emptyTitle": "Ask Sommi",
     "emptySubtitle": "I'll recommend wines from your cellar based on your preferences",
     "emptyCellarTitle": "Your Cellar is Empty",
     "emptyCellarMessage": "Add at least one bottle to get personalized recommendations",
@@ -1011,7 +1011,7 @@
     "addToWishlist": "Add to Wishlist",
     "addedToWishlist": "Added!",
     "wishlistAdded": "Added to your wishlist!",
-    "sommelierPick": "Sommelier Pick",
+    "sommelierPick": "Sommi's pick",
     "whyThisWine": "Why this wine",
     "viewInCellar": "View in Cellar",
     "viewDetails": "View Details",
@@ -1253,7 +1253,7 @@
   "pwaPrompt": {
     "ios": {
       "title": "Add to Home Screen",
-      "subtitle": "Get the full Wine Cellar Brain experience — instant access, no browser bar, and a faster feel.",
+      "subtitle": "Get the full Sommi experience — instant access, no browser bar, and a faster feel.",
       "step1Label": "Tap the Share button",
       "step1Hint": "The ↑ icon in Safari's toolbar at the bottom of the screen",
       "step2Label": "Tap \"Add to Home Screen\"",
@@ -1262,28 +1262,28 @@
     },
     "android": {
       "title": "Install the App",
-      "subtitle": "Get the full Wine Cellar Brain experience — instant access, faster load, and always at your fingertips.",
+      "subtitle": "Get the full Sommi experience — instant access, faster load, and always at your fingertips.",
       "install": "Add to Home Screen",
       "dismiss": "Maybe later"
     },
     "desktop": {
       "title": "Open on your phone",
-      "subtitle": "Scan with your phone's camera to open Wine Cellar Brain and add it to your home screen.",
+      "subtitle": "Scan with your phone's camera to open Sommi and add it to your home screen.",
       "dismiss": "Close"
     }
   },
   "purchaseSuccess": {
     "title": "Purchase Confirmed ✦",
-    "subtitle": "You bought {{credits}} Sommelier Credits for ${{price}}.",
-    "creditsLabel": "Sommelier Credits added",
+    "subtitle": "You bought {{credits}} Sommi credits for ${{price}}.",
+    "creditsLabel": "Sommi credits added",
     "newBalance": "Your new balance: {{balance}} credits",
     "balanceUpdating": "Balance updating… (may take a moment)",
     "cta": "Continue Tasting"
   },
   "sommelierCredits": {
-    "title": "Sommelier Credits",
+    "title": "Sommi credits",
     "subtitle": "Choose the plan that fits how you discover, collect, and enjoy wine.",
-    "upgradeSubtitle": "Upgrade for deeper cellar insights and more Sommelier sessions.",
+    "upgradeSubtitle": "Upgrade for deeper cellar insights and more time with Sommi.",
     "tabs": {
       "monthlyPlans": "Monthly plans",
       "topUp": "Top-up credits"
@@ -1322,13 +1322,13 @@
       "swipeHint": "Swipe to compare plans"
     },
     "topUp": {
-      "description": "Need more? Add extra Sommelier Credits anytime — they stack on top of your monthly allowance and never expire.",
+      "description": "Need more? Add extra Sommi credits anytime — they stack on top of your monthly allowance and never expire.",
       "addCredits": "Add {{credits}} Credits",
-      "credits": "{{credits}} Sommelier Credits",
+      "credits": "{{credits}} Sommi credits",
       "oneTimePurchase": "One-time purchase — no subscription",
-      "howItWorks": "How Sommelier Credits work",
+      "howItWorks": "How Sommi credits work",
       "bullets": [
-        "Each Sommelier conversation, wine analysis, or label scan uses a small number of credits.",
+        "Each Sommi conversation, wine analysis, or label scan uses a small number of credits.",
         "Monthly plan credits reset on the 1st of each month.",
         "Top-up credits never expire and are used after your monthly allowance."
       ]
@@ -1336,8 +1336,8 @@
     "footer": "Secured by Paddle · Cancel anytime",
     "manageSubscription": "Manage subscription",
     "lowCreditPrompt": {
-      "title": "Running low on Sommelier Credits",
-      "description": "Upgrade to keep getting deep cellar insights and personalized sommelier sessions."
+      "title": "Running low on Sommi credits",
+      "description": "Upgrade to keep getting deep cellar insights and personalized help from Sommi."
     },
     "toast": {
       "welcomeTitle": "Welcome to {{plan}} ✦",
@@ -1348,18 +1348,18 @@
       "portalError": "Could not open billing portal."
     },
     "balance": {
-      "title": "Sommelier Credits",
-      "depleted": "All Sommelier Credits used for this period",
+      "title": "Sommi credits",
+      "depleted": "All Sommi credits used for this period",
       "low": "Running low — consider upgrading for deeper insights",
       "resetsMonthly": "Credits reset monthly",
       "actionCost": "This action uses {{count}} credit",
       "actionCost_plural": "This action uses {{count}} credits",
-      "upgradeCta": "Upgrade for deeper cellar insights and more Sommelier sessions"
+      "upgradeCta": "Upgrade for deeper cellar insights and more time with Sommi"
     },
     "planFeatures": {
-      "free": ["15 Sommelier Credits / month", "Basic cellar management", "Limited AI access"],
-      "premium": ["150 Sommelier Credits / month", "Full Sommelier access", "Advanced recommendations", "Premium cellar insights"],
-      "collector": ["500 Sommelier Credits / month", "Advanced cellar analysis", "Bulk intelligence features"]
+      "free": ["15 Sommi credits / month", "Basic cellar management", "Limited AI access"],
+      "premium": ["150 Sommi credits / month", "Full Sommi access", "Advanced recommendations", "Premium cellar insights"],
+      "collector": ["500 Sommi credits / month", "Advanced cellar analysis", "Bulk intelligence features"]
     }
   },
   "about": {
@@ -1370,7 +1370,7 @@
     "p2": "My love for wine began the moment I realized it's never just a drink. A bottle of wine carries a story — a grape, a place, a vintage shaped by nature, and a winemaker who made countless decisions before it reached your glass.",
     "p3": "For me, wine is also about people and moments. Opening the right bottle for a dinner with friends, pairing it with food, and discovering how a wine evolves over time.",
     "p4": "As my own cellar started growing, I wanted a smarter way to manage it. Something more refined than a spreadsheet, and more thoughtful than the typical cellar apps.",
-    "p5": "That's how Wine Cellar Brain was born.",
+    "p5": "That's how Sommi was born.",
     "p6": "I built it to help wine lovers keep track of their bottles, understand drink windows, and feel confident choosing what to open next.",
     "p7": "This project is constantly evolving, and I'm always improving it.",
     "p8": "If you have feedback, ideas, or simply want to share a great bottle you discovered — I'd genuinely love to hear from you.",
@@ -1380,15 +1380,15 @@
     "reportBug": "Report a bug",
     "reportBugDesc": "Something not working? Let me know",
     "footerNote": "Made with passion for wine.",
-    "emailSupportSubject": "Wine Cellar Brain - Support",
+    "emailSupportSubject": "Sommi - Support",
     "emailSupportBody": "Hi Matan,\n\nI have a question or need help with:\n\n[Your message here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}",
-    "bugSubject": "Wine Cellar Brain - Bug report",
+    "bugSubject": "Sommi - Bug report",
     "bugBody": "Hi Matan,\n\nWhat happened?\n[Describe what went wrong]\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected result:\n[What should have happened]\n\nScreenshot link (optional):\n[Paste a link here]\n\n---\nApp version: {{version}}\nPlatform: {{platform}}",
     "faqTitle": "Frequently Asked Questions",
     "faq": {
       "whatIs": {
-        "question": "What is Wine Cellar Brain?",
-        "answer": "Wine Cellar Brain is a personal wine collection manager with AI-powered recommendations. It helps you catalog your bottles, track drink windows, and decide what to open next — all in a beautifully simple interface."
+        "question": "What is Sommi?",
+        "answer": "Sommi is a personal wine collection manager with AI-powered recommendations. It helps you catalog your bottles, track drink windows, and decide what to open next — all in a beautifully simple interface."
       },
       "addBottles": {
         "question": "How do I add bottles to my cellar?",
@@ -1396,7 +1396,7 @@
       },
       "pwa": {
         "question": "Does it work as an app (PWA)?",
-        "answer": "Yes. Wine Cellar Brain is a Progressive Web App (PWA). You can install it on your iPhone, Android device, or desktop by using \"Add to Home Screen\" from your browser menu. Once installed, it works smoothly offline."
+        "answer": "Yes. Sommi is a Progressive Web App (PWA). You can install it on your iPhone, Android device, or desktop by using \"Add to Home Screen\" from your browser menu. Once installed, it works smoothly offline."
       },
       "drinkWindow": {
         "question": "How does the 'Drink Window' feature work?",
@@ -1412,7 +1412,7 @@
       },
       "import": {
         "question": "Can I import my existing wine list?",
-        "answer": "Yes. Wine Cellar Brain supports CSV import (Vivino-compatible format). Download the template from the import screen, fill in your wines, and upload it to bulk-add your collection in seconds."
+        "answer": "Yes. Sommi supports CSV import (Vivino-compatible format). Download the template from the import screen, fill in your wines, and upload it to bulk-add your collection in seconds."
       },
       "aiRecs": {
         "question": "How are AI recommendations generated?",

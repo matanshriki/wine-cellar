@@ -7,7 +7,7 @@
 
 ## 🎯 Transformation Goals
 
-Transform the Wine Cellar Brain app from a basic form application into a **luxury, premium experience** that reflects the elegance of wine collecting with:
+Transform the Sommi app from a basic form application into a **luxury, premium experience** that reflects the elegance of wine collecting with:
 
 - 🎨 Refined wine cellar aesthetic (deep bordeaux, warm stone tones, elegant gold accents)
 - ✨ Tasteful animations and micro-interactions (Framer Motion)

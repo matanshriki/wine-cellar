@@ -239,8 +239,11 @@ export function AgentPage() {
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Cellar Agent
+              Sommi
             </h1>
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--wine-400)' }}>
+              {t('app.tagline')}
+            </p>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               (dev only)
             </p>

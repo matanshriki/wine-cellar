@@ -1,8 +1,8 @@
-# 🍷 Wine Cellar Brain - Quick Start
+# 🍷 Sommi - Quick Start
 
 ## ✅ Application is Running!
 
-Your Wine Cellar Brain MVP is now fully operational:
+Your Sommi MVP is now fully operational:
 
 - **🔧 API Server**: http://localhost:3001
 - **🌐 Web App**: http://localhost:5173
@@ -61,7 +61,7 @@ Each bottle has AI-generated analysis with readiness status!
 **New!** Import your entire Vivino collection:
 
 1. Export CSV from vivino.com (go to your cellar → Export)
-2. Click "Import CSV" in Wine Cellar Brain
+2. Click "Import CSV" in Sommi
 3. Upload your Vivino CSV
 4. Auto-detection handles everything!
 5. Ratings converted from 1-5 to 0-100 scale
@@ -132,5 +132,5 @@ See `README.md` for complete documentation including:
 
 ## 🎉 Happy Wine Tracking!
 
-Your production-grade Wine Cellar Brain is ready to use. Enjoy managing your collection!
+Your production-grade Sommi is ready to use. Enjoy managing your collection!
 

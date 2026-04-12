@@ -19,7 +19,7 @@
 ```json
 "onboarding": {
   "welcome": {
-    "title": "Welcome to Wine Cellar Brain",
+    "title": "Welcome to Sommi",
     "subtitle": "Your personal AI sommelier...",
     "showDemo": "Show me what this app can do",
     "skip": "Skip for now",

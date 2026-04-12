@@ -1,4 +1,4 @@
--- Wine Cellar Brain - Seed Data
+-- Sommi - Seed Data
 -- Seeds curated wine events from WSET 2026 calendar
 
 -- ============================================

@@ -2,7 +2,7 @@
 
 ## 🎉 Overview
 
-The Wine Cellar Brain application now has **production-grade RTL (Right-to-Left) support** for Hebrew, with seamless switching between LTR (English) and RTL (Hebrew) layouts.
+The Sommi application now has **production-grade RTL (Right-to-Left) support** for Hebrew, with seamless switching between LTR (English) and RTL (Hebrew) layouts.
 
 ---
 
@@ -333,7 +333,7 @@ const isRTL = i18n.language === 'he';
 
 **LTR (English):**
 ```
-[🍷 Wine Cellar Brain] [Cellar] [Tonight?] [History]    [🇺🇸 EN ▼] [user@email.com] [Logout]
+[🍷 Sommi] [Cellar] [Tonight?] [History]    [🇺🇸 EN ▼] [user@email.com] [Logout]
 ```
 
 **RTL (Hebrew):**
@@ -500,7 +500,7 @@ const isRTL = i18n.language === 'he';
 
 ## 🎊 Final Result
 
-**Your Wine Cellar Brain application now has world-class RTL support!**
+**Your Sommi application now has world-class RTL support!**
 
 - Switch between English and Hebrew instantly
 - Perfect layout mirroring

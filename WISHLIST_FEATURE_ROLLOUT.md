@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This document describes the production-ready rollout of the **Wishlist** feature for Wine Cellar Brain. The feature is **feature-flagged** at the database level, allowing per-user enablement without code changes.
+This document describes the production-ready rollout of the **Wishlist** feature for Sommi. The feature is **feature-flagged** at the database level, allowing per-user enablement without code changes.
 
 **Status:** ✅ Ready for production deployment  
 **Feature Flag:** `profiles.wishlist_enabled` (boolean, default: `false`)  

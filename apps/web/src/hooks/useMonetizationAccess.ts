@@ -1,7 +1,7 @@
 /**
  * useMonetizationAccess
  *
- * Feature-flag-aware hook for Sommelier Credits and monetization UI.
+ * Feature-flag-aware hook for Sommi credits and monetization UI.
  *
  * ROLLOUT RULES:
  *   - monetization_enabled = false (default)  → caller gets all-false flags;

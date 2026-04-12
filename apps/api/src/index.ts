@@ -24,7 +24,9 @@ setupGoogleAuth();
 const allowedOrigins = [
   'http://localhost:5173',  // Local dev
   'http://localhost:5174',  // Alternative local port
-  'https://wine-cellar-brain.vercel.app', // Production
+  'https://sommi-ai.com',
+  'https://www.sommi-ai.com',
+  'https://wine-cellar-brain.vercel.app', // Legacy Vercel URL (redirects to sommi-ai.com)
 ];
 
 // Add WEB_URL from environment if set
@@ -102,7 +104,7 @@ process.on('uncaughtException', (err: Error) => {
 
 // Start server
 app.listen(config.port, () => {
-  console.log(`🍷 Wine Cellar Brain API running on http://localhost:${config.port}`);
+  console.log(`🍷 Sommi API running on http://localhost:${config.port}`);
   console.log(`Environment: ${config.nodeEnv}`);
   console.log(`OpenAI enabled: ${config.openaiApiKey ? 'Yes' : 'No (using fallback heuristics)'}`);
 });

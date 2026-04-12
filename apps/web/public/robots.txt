@@ -19,4 +19,4 @@ Disallow: /wishlist
 Disallow: /community
 Disallow: /agent
 
-Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml
+Sitemap: https://sommi-ai.com/sitemap.xml

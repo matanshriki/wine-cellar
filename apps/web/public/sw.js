@@ -1,5 +1,5 @@
 /**
- * Service Worker — Wine Cellar Brain PWA
+ * Service Worker — Sommi PWA
  * Production build replaces CACHE_NAME + PRECACHE_ASSETS with hashed /assets/* URLs.
  * Offline: app shell (index.html + JS/CSS) must be precached or cache-first served.
  */

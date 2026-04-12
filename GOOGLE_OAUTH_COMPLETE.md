@@ -2,7 +2,7 @@
 
 ## Summary
 
-Google OAuth login has been successfully integrated into Wine Cellar Brain! Users can now sign in with their Google account alongside the traditional email/password authentication.
+Google OAuth login has been successfully integrated into Sommi! Users can now sign in with their Google account alongside the traditional email/password authentication.
 
 ## What Was Implemented
 

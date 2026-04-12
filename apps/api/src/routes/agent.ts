@@ -131,7 +131,7 @@ async function checkFeatureFlag(req: AuthRequest, res: any, next: any) {
 
     if (!profile || !profile.cellar_agent_enabled) {
       console.log(`[Sommelier] Feature disabled for user: ${req.userId?.substring(0, 8)}...`);
-      return res.status(403).json({ error: 'Sommelier not enabled for your account' });
+      return res.status(403).json({ error: 'Sommi is not enabled for your account' });
     }
 
     next();
@@ -200,7 +200,7 @@ agentRouter.post(
       if (!openai) {
         console.error('[Sommelier]', JSON.stringify({ phase: 'config', error: 'openai_missing' }));
         return res.status(503).json({ 
-          error: 'OpenAI API key not configured. Sommelier is unavailable.' 
+          error: 'OpenAI API key not configured. Sommi is unavailable.' 
         });
       }
 
@@ -217,7 +217,7 @@ agentRouter.post(
       // ── Credit pre-flight check (fast-fail when enforcement is enabled) ──
       // During dark launch enforcement is OFF for all users → always passes.
       // When Stage 3 begins (credit_enforcement_enabled = true), this gate
-      // will block users with insufficient Sommelier Credits before we waste
+      // will block users with insufficient Sommi credits before we waste
       // an OpenAI request.
       const creditCheck = await checkCreditBalance(req.userId!, 'sommelier_chat_message');
       if (!creditCheck.allowed) {
@@ -233,7 +233,7 @@ agentRouter.post(
         );
         return res.status(402).json({
           error: 'insufficient_credits',
-          message: 'You have used all your Sommelier Credits for this period.',
+          message: 'You have used all your Sommi credits for this period.',
           effectiveBalance: creditCheck.effectiveBalance,
           required: creditCheck.required,
         });

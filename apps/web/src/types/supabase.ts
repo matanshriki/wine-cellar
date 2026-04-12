@@ -401,7 +401,7 @@ export interface Database {
           last_message_at?: string
         }
       }
-      // ── Sommelier Credits (Phase 1) ─────────────────────────────────
+      // ── Sommi credits (Phase 1) ─────────────────────────────────
       user_entitlements: {
         Row: {
           user_id: string

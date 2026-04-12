@@ -420,7 +420,7 @@ All code is written, tested, and building successfully. The feature is productio
 
 ## 🎉 Summary
 
-This feature brings a **luxury, camera-first bottle entry experience** to the Wine Cellar Brain app. It's:
+This feature brings a **luxury, camera-first bottle entry experience** to the Sommi app. It's:
 - ✅ **Mobile-first** (works great on phones)
 - ✅ **AI-powered** (OpenAI Vision)
 - ✅ **Secure** (RLS, no keys in frontend)

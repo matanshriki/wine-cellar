@@ -2,7 +2,7 @@
 
 ## Summary
 
-Updated the Vivino export flow in Wine Cellar Brain to remove incorrect information and provide accurate, user-friendly guidance for exporting wine cellar data from Vivino.
+Updated the Vivino export flow in Sommi to remove incorrect information and provide accurate, user-friendly guidance for exporting wine cellar data from Vivino.
 
 **Implementation Date**: December 2024  
 **Status**: ✅ Complete  
@@ -50,7 +50,7 @@ Updated the Vivino export flow in Wine Cellar Brain to remove incorrect informat
      - Vivino team manually processes requests (24-48 hours)
      - User receives email when ready
      - Download CSV from same page
-  4. Import to Wine Cellar Brain
+  4. Import to Sommi
 - **Downloadable CSV Template**: Alternative for users who prefer manual entry
 - **Troubleshooting Section**: Common issues including export timing
 
@@ -228,13 +228,13 @@ Updated the Vivino export flow in Wine Cellar Brain to remove incorrect informat
 3. Vivino team manually processes request (24-48 hours)
 4. User receives email notification when ready
 5. User downloads CSV from same page
-6. Upload CSV to Wine Cellar Brain
+6. Upload CSV to Sommi
 7. Auto-detect Vivino format and import
 
 **Alternative for immediate use**:
 - Download our CSV template
 - Manually enter wines from Vivino
-- Upload to Wine Cellar Brain
+- Upload to Sommi
 
 ---
 

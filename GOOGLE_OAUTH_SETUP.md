@@ -1,7 +1,7 @@
 # Google OAuth Setup Guide
 
 ## Overview
-Wine Cellar Brain now supports Google OAuth login alongside traditional email/password authentication. This provides users with a convenient, secure way to sign in using their Google account.
+Sommi now supports Google OAuth login alongside traditional email/password authentication. This provides users with a convenient, secure way to sign in using their Google account.
 
 ## Features
 - ✅ One-click Google Sign-In
@@ -38,7 +38,7 @@ Wine Cellar Brain now supports Google OAuth login alongside traditional email/pa
 2. **Create or Select a Project**
    - Click "Select a project" at the top
    - Click "New Project"
-   - Name it (e.g., "Wine Cellar Brain")
+   - Name it (e.g., "Sommi")
    - Click "Create"
 
 3. **Enable Google+ API** (or People API)
@@ -51,7 +51,7 @@ Wine Cellar Brain now supports Google OAuth login alongside traditional email/pa
    - Choose "External" (unless you have Google Workspace)
    - Click "Create"
    - Fill in required fields:
-     - App name: "Wine Cellar Brain"
+     - App name: "Sommi"
      - User support email: your email
      - Developer contact: your email
    - Click "Save and Continue"
@@ -63,7 +63,7 @@ Wine Cellar Brain now supports Google OAuth login alongside traditional email/pa
    - Go to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "OAuth client ID"
    - Application type: "Web application"
-   - Name: "Wine Cellar Brain Web"
+   - Name: "Sommi Web"
    - Authorized JavaScript origins:
      - `http://localhost:5173` (development)
      - Add your production domain when deploying
@@ -272,7 +272,7 @@ All UI text is fully translated and RTL-aware.
 
 ## Summary
 
-Google OAuth is now fully integrated into Wine Cellar Brain! Users can:
+Google OAuth is now fully integrated into Sommi! Users can:
 - Sign in with Google (one-click)
 - Create accounts automatically
 - Link Google to existing accounts

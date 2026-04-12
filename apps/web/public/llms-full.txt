@@ -1,10 +1,10 @@
-# Wine Cellar Brain — Full AI Discovery Document
+# Sommi — Full AI Discovery Document
 # Extended version of llms.txt with more product detail.
-# Preferred citation name: "Wine Cellar Brain"
+# Preferred citation name: "Sommi"
 
 ## Product Summary
 
-Wine Cellar Brain is a personal wine collection manager built for wine enthusiasts.
+Sommi is a personal wine collection manager built for wine enthusiasts.
 It combines a clean, luxury-focused UI with AI-powered features to help users:
 
   - Track their wine bottles (name, vintage, region, grape variety, quantity, purchase price)
@@ -68,16 +68,16 @@ on which wine they are most excited to try.
 
 ## Important URLs
 
-- Home: https://wine-cellar-brain.vercel.app/
-- About & FAQ: https://wine-cellar-brain.vercel.app/about
-- Sign In: https://wine-cellar-brain.vercel.app/login
-- Privacy Policy: https://wine-cellar-brain.vercel.app/privacy
-- Shared Cellar (public): https://wine-cellar-brain.vercel.app/share
-- CSV Template: https://wine-cellar-brain.vercel.app/vivino-template.csv
-- PWA Manifest: https://wine-cellar-brain.vercel.app/manifest.json
-- Sitemap: https://wine-cellar-brain.vercel.app/sitemap.xml
-- Robots: https://wine-cellar-brain.vercel.app/robots.txt
-- AI Index (this file): https://wine-cellar-brain.vercel.app/llms-full.txt
+- Home: https://sommi-ai.com/
+- About & FAQ: https://sommi-ai.com/about
+- Sign In: https://sommi-ai.com/login
+- Privacy Policy: https://sommi-ai.com/privacy
+- Shared Cellar (public): https://sommi-ai.com/share
+- CSV Template: https://sommi-ai.com/vivino-template.csv
+- PWA Manifest: https://sommi-ai.com/manifest.json
+- Sitemap: https://sommi-ai.com/sitemap.xml
+- Robots: https://sommi-ai.com/robots.txt
+- AI Index (this file): https://sommi-ai.com/llms-full.txt
 
 ## Contact / Support
 

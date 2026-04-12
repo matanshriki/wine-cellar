@@ -2,7 +2,7 @@
 
 ## ✅ What's Been Implemented
 
-Your Wine Cellar Brain app now has **production-grade internationalization** with full RTL support!
+Your Sommi app now has **production-grade internationalization** with full RTL support!
 
 ### Supported Languages
 
@@ -161,7 +161,7 @@ await changeLanguage('en'); // Switch to English
 ### Before (Hardcoded)
 
 ```typescript
-<h1>Wine Cellar Brain</h1>
+<h1>Sommi</h1>
 <button>Sign In</button>
 <p>Your cellar is empty</p>
 ```
@@ -177,7 +177,7 @@ await changeLanguage('en'); // Switch to English
 ### Result
 
 **English:**
-- Wine Cellar Brain
+- Sommi
 - Sign In
 - Your cellar is empty
 
@@ -191,7 +191,7 @@ await changeLanguage('en'); // Switch to English
 ### English (LTR)
 ```
 ┌────────────────────────────────────┐
-│ 🍷 Wine Cellar Brain      🇺🇸 EN ▼ │
+│ 🍷 Sommi      🇺🇸 EN ▼ │
 │ Cellar | Tonight? | History        │
 └────────────────────────────────────┘
 ```
@@ -366,7 +366,7 @@ if (format === 'date') {
 
 **Congratulations!** 🎉
 
-Your Wine Cellar Brain is now internationally ready with best-in-class i18n implementation!
+Your Sommi is now internationally ready with best-in-class i18n implementation!
 
 Switch between English and Hebrew to see it in action. 🇺🇸 🇮🇱 🍷
 

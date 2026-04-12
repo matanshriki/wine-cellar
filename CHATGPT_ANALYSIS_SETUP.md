@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-The Wine Cellar Brain app now features **AI-powered sommelier notes** using ChatGPT. Each bottle gets a unique, personalized analysis that references specific details (producer, region, vintage) and provides explainable insights.
+The Sommi app now features **AI-powered sommelier notes** using ChatGPT. Each bottle gets a unique, personalized analysis that references specific details (producer, region, vintage) and provides explainable insights.
 
 ### **Key Features**:
 - ✅ **Per-bottle analysis** (not generic templates)

@@ -1,4 +1,4 @@
-# ✅ Wine Cellar Brain - Production Deployment Ready
+# ✅ Sommi - Production Deployment Ready
 
 ## Status: **READY TO DEPLOY** 🚀
 

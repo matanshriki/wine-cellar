@@ -1,6 +1,6 @@
-# 🚀 Vercel Deployment Guide - Wine Cellar Brain
+# 🚀 Vercel Deployment Guide - Sommi
 
-This guide will walk you through deploying the Wine Cellar Brain app to Vercel.
+This guide will walk you through deploying the Sommi app to Vercel.
 
 ---
 
@@ -353,7 +353,7 @@ Or in Vercel Dashboard:
 
 ## 🎉 Success!
 
-Your Wine Cellar Brain app is now live! 🍷
+Your Sommi app is now live! 🍷
 
 **Next Steps**:
 1. Share the URL with users

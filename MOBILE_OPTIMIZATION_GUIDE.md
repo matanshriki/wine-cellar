@@ -2,7 +2,7 @@
 
 ## Overview
 
-Wine Cellar Brain is now **fully optimized for mobile devices** with a mobile-first approach. The app works seamlessly on phones, tablets, and desktops with responsive design, touch-friendly interactions, and proper RTL support on mobile.
+Sommi is now **fully optimized for mobile devices** with a mobile-first approach. The app works seamlessly on phones, tablets, and desktops with responsive design, touch-friendly interactions, and proper RTL support on mobile.
 
 ## Mobile-First Philosophy
 
@@ -548,7 +548,7 @@ console.log(window.devicePixelRatio);
 
 ---
 
-**Your Wine Cellar Brain app is now fully optimized for mobile! 📱🍷**
+**Your Sommi app is now fully optimized for mobile! 📱🍷**
 
 Test it on your phone to see the responsive design, touch-friendly interactions, and perfect RTL support in action.
 

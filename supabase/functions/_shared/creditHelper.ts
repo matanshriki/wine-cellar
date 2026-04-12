@@ -1,5 +1,5 @@
 /**
- * Sommelier Credits — Edge Function Credit Helper (Deno)
+ * Sommi credits — Edge Function Credit Helper (Deno)
  *
  * Shared module for all Supabase Edge Functions that make AI calls.
  * Provides:
@@ -215,7 +215,7 @@ export function insufficientCreditsResponse(
     JSON.stringify({
       success: false,
       error: 'insufficient_credits',
-      message: 'You have used all your Sommelier Credits for this period.',
+      message: 'You have used all your Sommi credits for this period.',
       effectiveBalance,
       required,
     }),
