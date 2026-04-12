@@ -263,9 +263,15 @@ function AppRoutes() {
       <Route
         path="/about"
         element={
-          <PublicMarketingLayout>
-            <AboutPage />
-          </PublicMarketingLayout>
+          user ? (
+            <Layout>
+              <AboutPage appShell />
+            </Layout>
+          ) : (
+            <PublicMarketingLayout>
+              <AboutPage />
+            </PublicMarketingLayout>
+          )
         }
       />
       {/* Public guest view for shared evening lineups — no auth required */}

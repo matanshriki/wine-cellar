@@ -131,7 +131,12 @@ const FAQ_KEYS = [
 
 const PARAGRAPHS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
 
-export function AboutPage() {
+type AboutPageProps = {
+  /** True when rendered inside app Layout (main provides horizontal padding). */
+  appShell?: boolean;
+};
+
+export function AboutPage({ appShell = false }: AboutPageProps = {}) {
   const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -160,7 +165,14 @@ export function AboutPage() {
   );
 
   return (
-    <motion.div className="max-w-2xl mx-auto pb-4" {...container}>
+    <motion.div
+      className={
+        appShell
+          ? 'max-w-2xl mx-auto pb-8 sm:pb-10'
+          : 'max-w-2xl mx-auto pb-8 sm:pb-10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]'
+      }
+      {...container}
+    >
 
       <MetaHead
         title="About"
