@@ -86,13 +86,11 @@ export function PublicMarketingLayout({ children }: { children: React.ReactNode 
             <Link to="/terms" className="hover:underline">
               Terms
             </Link>
-            <a href="/llms.txt" className="hover:underline">
-              AI index
-            </a>
-            <a href="/sitemap.xml" className="hover:underline">
-              Sitemap
-            </a>
           </div>
+        </div>
+        <div className="sr-only">
+          <a href="/llms.txt">AI index</a>
+          <a href="/sitemap.xml">Sitemap</a>
         </div>
       </footer>
     </div>
