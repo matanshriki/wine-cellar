@@ -15,11 +15,16 @@ import {
   softwareApplicationSchema,
   webPageSchema,
 } from '../lib/seoSchemas';
+import { resolveLandingDemoVideo } from '../lib/landingDemoVideo';
 
 const WHY_KEYS = [1, 2, 3, 4, 5] as const;
 
 export function LandingPage() {
   const { t, i18n } = useTranslation();
+
+  const demoUrl = import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim();
+  const demoPoster = import.meta.env.VITE_LANDING_DEMO_VIDEO_POSTER?.trim();
+  const demo = useMemo(() => (demoUrl ? resolveLandingDemoVideo(demoUrl) : null), [demoUrl]);
 
   const jsonLd = useMemo(
     () => [
@@ -85,6 +90,50 @@ export function LandingPage() {
               </Link>
             </div>
           </header>
+
+          {demo && (
+            <section className="mb-14" aria-labelledby="landing-demo-heading">
+              <h2
+                id="landing-demo-heading"
+                className="text-2xl font-bold mb-2 text-center sm:text-start"
+                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
+              >
+                {t('landing.demoTitle')}
+              </h2>
+              <p
+                className="text-sm sm:text-base mb-4 text-center sm:text-start leading-relaxed"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {t('landing.demoCaption')}
+              </p>
+              <div
+                className="relative w-full aspect-video overflow-hidden rounded-2xl border shadow-lg"
+                style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}
+              >
+                {demo.kind === 'iframe' ? (
+                  <iframe
+                    src={demo.src}
+                    title={t('landing.demoTitle')}
+                    className="absolute inset-0 h-full w-full border-0"
+                    allow={demo.allow}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                ) : (
+                  <video
+                    className="absolute inset-0 h-full w-full object-contain bg-black/5"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster={demoPoster || undefined}
+                  >
+                    <source src={demo.src} />
+                  </video>
+                )}
+              </div>
+            </section>
+          )}
 
           <section className="mb-14" aria-labelledby="why-sommi">
             <h2 id="why-sommi" className="text-2xl font-bold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
