@@ -19,6 +19,14 @@ import { resolveLandingDemoVideo } from '../lib/landingDemoVideo';
 
 const WHY_KEYS = [1, 2, 3, 4, 5] as const;
 
+function videoSourceType(src: string): string | undefined {
+  const path = src.split('?')[0].split('#')[0].toLowerCase();
+  if (path.endsWith('.webm')) return 'video/webm';
+  if (path.endsWith('.mp4')) return 'video/mp4';
+  if (path.endsWith('.ogg') || path.endsWith('.ogv')) return 'video/ogg';
+  return undefined;
+}
+
 export function LandingPage() {
   const { t, i18n } = useTranslation();
 
@@ -117,7 +125,6 @@ export function LandingPage() {
                     className="absolute inset-0 h-full w-full border-0"
                     allow={demo.allow}
                     allowFullScreen
-                    loading="lazy"
                     referrerPolicy="strict-origin-when-cross-origin"
                   />
                 ) : (
@@ -125,10 +132,17 @@ export function LandingPage() {
                     className="absolute inset-0 h-full w-full object-contain bg-black/5"
                     controls
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     poster={demoPoster || undefined}
+                    onError={() => {
+                      console.error(
+                        '[Landing demo] Video failed to load:',
+                        demo.src,
+                        '— If this is /videos/…, the file must exist under apps/web/public/videos and be deployed. A missing file returns the SPA HTML and playback never starts.',
+                      );
+                    }}
                   >
-                    <source src={demo.src} />
+                    <source src={demo.src} type={videoSourceType(demo.src)} />
                   </video>
                 )}
               </div>
