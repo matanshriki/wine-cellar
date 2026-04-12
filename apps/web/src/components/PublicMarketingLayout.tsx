@@ -11,7 +11,8 @@ export function PublicMarketingLayout({ children }: { children: React.ReactNode 
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen luxury-background">
+    <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
+      <div className="luxury-background" aria-hidden="true" />
       <nav
         className="sticky top-0 z-40 safe-area-top border-b"
         style={{
