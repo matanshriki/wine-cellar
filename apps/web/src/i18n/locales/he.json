@@ -936,7 +936,8 @@
     "greetingAfternoon": "צהריים טובים",
     "greetingEvening": "ערב טוב",
     "greetingContent": "{{greeting}}! 🍷 סרקתי את המרתף שלך — {{count}} בקבוקים מוכנים לחוויה. ספר לי על הערב ואמצא לך התאמה מושלמת.",
-    "quickStartHeader": "התחלה מהירה — או הקלד בעצמך למטה",
+    "tonightLabel": "הערב",
+    "quickStartHeader": "אפשר להתחיל כאן — או לתאר את הערב למטה",
     "inputPlaceholderFirst": "מה המיוחד הלילה?",
     "scenarios": {
       "steak":     { "label": "ארוחת סטייק הלילה",    "prompt": "אני אוכל סטייק לארוחת ערב הלילה, מה אתה ממליץ מהמרתף שלי?" },

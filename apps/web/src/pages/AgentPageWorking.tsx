@@ -38,6 +38,7 @@ import { SommelierCreditsDisplay } from '../components/SommelierCreditsDisplay';
 import { PricingModal } from '../components/PricingModal';
 import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { useTheme } from '../contexts/ThemeContext';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -83,11 +84,11 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #fefefe 0%, #faf5f5 100%)',
-      border: '1px solid #e8e0e0',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border-subtle)',
       borderRadius: '14px',
       padding: '16px',
-      boxShadow: '0 2px 8px rgba(124,48,48,0.06)',
+      boxShadow: 'var(--shadow-card)',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
         {/* Color dot */}
@@ -97,21 +98,21 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
             height: '12px',
             borderRadius: '50%',
             backgroundColor: COLOR_DOTS[suggestion.color] || '#999',
-            border: suggestion.color === 'white' ? '1px solid #ccc' : 'none',
+            border: suggestion.color === 'white' ? '1px solid var(--border-medium)' : 'none',
             flexShrink: 0,
             marginTop: '4px',
           }} />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '15px', fontWeight: 600, color: '#333' }}>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
               {suggestion.title}
             </span>
             {suggestion.priceTier && (
               <span style={{
                 fontSize: '12px',
-                color: '#7c3030',
-                backgroundColor: '#fdf0f0',
+                color: 'var(--wine-600)',
+                backgroundColor: 'var(--wine-50)',
                 padding: '2px 8px',
                 borderRadius: '10px',
                 fontWeight: 500,
@@ -121,11 +122,11 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
             )}
           </div>
           {suggestion.region && (
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
               {suggestion.region}
             </div>
           )}
-          <p style={{ fontSize: '13px', color: '#555', margin: '8px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '8px 0 0', lineHeight: 1.5 }}>
             {suggestion.reason}
           </p>
         </div>
@@ -139,11 +140,11 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
           rel="noopener noreferrer"
           style={{
             fontSize: '13px',
-            color: '#7c3030',
+            color: 'var(--wine-600)',
             textDecoration: 'none',
             padding: '6px 14px',
             borderRadius: '8px',
-            border: '1px solid #e8e0e0',
+            border: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
@@ -161,8 +162,8 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
           disabled={adding || added}
           style={{
             fontSize: '13px',
-            color: added ? '#16a34a' : 'white',
-            backgroundColor: added ? '#f0fdf4' : '#7c3030',
+            color: added ? '#16a34a' : '#FFFFFF',
+            backgroundColor: added ? '#f0fdf4' : 'var(--wine-600)',
             border: added ? '1px solid #86efac' : 'none',
             padding: '6px 14px',
             borderRadius: '8px',
@@ -218,6 +219,10 @@ export function AgentPageWorking() {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
+  const { theme } = useTheme();
+  const isDark = theme === 'red';
+  /** Tagline / editorial accent: champagne gold on dark, classic gold on light */
+  const taglineAccent = isDark ? '#C9A962' : '#8b6914';
   // Always-current ref so handleSend never reads a stale closure value
   const creditBlockedRef = useRef(false);
   creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
@@ -589,7 +594,7 @@ export function AgentPageWorking() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'var(--bg)',
       }}>
         <WineLoader variant="default" size="lg" message={t('cellarSommelier.loading')} />
       </div>
@@ -597,6 +602,10 @@ export function AgentPageWorking() {
   }
 
   const isRtl = i18n.language === 'he';
+  const showStickyGreeting =
+    messages[0]?.role === 'assistant' && Boolean(messages[0]?.isGreeting);
+  const threadMessages = showStickyGreeting ? messages.slice(1) : messages;
+  const greetingMessage = showStickyGreeting ? messages[0] : null;
 
   return (
     <>
@@ -604,6 +613,10 @@ export function AgentPageWorking() {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @keyframes sommiDotBounce {
+          0%, 100% { transform: translateY(0); opacity: 0.85; }
+          50% { transform: translateY(-4px); opacity: 1; }
         }
         
         /* Mobile viewport fix: Use dynamic viewport height */
@@ -632,11 +645,11 @@ export function AgentPageWorking() {
           top: 0;
           bottom: 0;
           width: min(320px, 85vw);
-          background: white;
+          background: var(--bg-elevated);
           z-index: 50;
           display: flex;
           flex-direction: column;
-          box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+          box-shadow: var(--shadow-modal);
           transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-panel.ltr {
@@ -651,31 +664,34 @@ export function AgentPageWorking() {
           transform: translateX(0);
         }
 
-        .conv-item {
+        .sommi-conv-item {
           padding: 14px 16px;
           cursor: pointer;
-          border-bottom: 1px solid #f0f0f0;
+          border-bottom: 1px solid var(--border-subtle);
           transition: background 0.15s;
           display: flex;
           align-items: center;
           gap: 12px;
         }
-        .conv-item:hover { background: #f8f5f5; }
-        .conv-item.active { background: #fdf0f0; border-inline-start: 3px solid #7c3030; }
+        .sommi-conv-item:hover { background: var(--interactive-hover); }
+        .sommi-conv-item.active {
+          background: var(--wine-50);
+          border-inline-start: 3px solid var(--wine-600);
+        }
 
-        .conv-delete-btn {
+        .sommi-conv-delete-btn {
           opacity: 0;
           transition: opacity 0.15s;
           background: none;
           border: none;
-          color: #999;
+          color: var(--text-tertiary);
           cursor: pointer;
           padding: 4px;
           border-radius: 4px;
           flex-shrink: 0;
         }
-        .conv-delete-btn:hover { color: #dc3545; background: #fee; }
-        .conv-item:hover .conv-delete-btn { opacity: 1; }
+        .sommi-conv-delete-btn:hover { color: #dc3545; background: rgba(220, 53, 69, 0.12); }
+        .sommi-conv-item:hover .sommi-conv-delete-btn { opacity: 1; }
       `}</style>
 
       {/* Sidebar overlay */}
@@ -689,20 +705,20 @@ export function AgentPageWorking() {
         {/* Sidebar header */}
         <div style={{
           padding: '20px 16px 12px',
-          borderBottom: '1px solid #e8e0e0',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
         }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#333', margin: 0 }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-heading)', margin: 0 }}>
             {t('cellarSommelier.conversationHistory', 'Conversations')}
           </h2>
           <button
             onClick={() => setSidebarOpen(false)}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#999', padding: '4px', borderRadius: '6px',
+              color: 'var(--text-tertiary)', padding: '4px', borderRadius: '6px',
             }}
           >
             <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -719,9 +735,9 @@ export function AgentPageWorking() {
               width: '100%',
               padding: '12px',
               borderRadius: '10px',
-              border: '1.5px dashed #d4c4c4',
-              background: 'none',
-              color: '#7c3030',
+              border: '1.5px dashed var(--border-medium)',
+              background: 'transparent',
+              color: 'var(--wine-600)',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -742,11 +758,11 @@ export function AgentPageWorking() {
         {/* Conversation list */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {loadingConversations && conversationList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#999', fontSize: '14px' }}>
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
               {t('cellarSommelier.loading', 'Loading...')}
             </div>
           ) : conversationList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#999', fontSize: '14px' }}>
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
               {t('cellarSommelier.noConversations', 'No past conversations yet')}
             </div>
           ) : (
@@ -756,28 +772,28 @@ export function AgentPageWorking() {
               return (
                 <div
                   key={conv.id}
-                  className={`conv-item ${isActive ? 'active' : ''}`}
+                  className={`sommi-conv-item ${isActive ? 'active' : ''}`}
                   onClick={() => resumeConversation(conv)}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontSize: '14px',
                       fontWeight: isActive ? 600 : 500,
-                      color: '#333',
+                      color: 'var(--text-primary)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
                       {conv.title || t('cellarSommelier.newConversation', 'New conversation')}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px', display: 'flex', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
                       <span>{formatConversationDate(conv.last_message_at || conv.updated_at)}</span>
                       <span>·</span>
                       <span>{msgCount} {msgCount === 1 ? t('cellarSommelier.message', 'message') : t('cellarSommelier.messages', 'messages')}</span>
                     </div>
                   </div>
                   <button
-                    className="conv-delete-btn"
+                    className="sommi-conv-delete-btn"
                     title={t('cellarSommelier.deleteConversation', 'Delete')}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -802,17 +818,18 @@ export function AgentPageWorking() {
           flexDirection: 'column',
           height: '100vh',
           maxHeight: '-webkit-fill-available',
-          backgroundColor: '#f8f9fa',
+          backgroundColor: 'var(--bg)',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
         {/* Header */}
       <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e0e0e0',
-        padding: '16px',
+        backgroundColor: 'var(--bg-elevated)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '14px 16px',
         flexShrink: 0,
+        boxShadow: 'var(--shadow-nav)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
@@ -820,10 +837,10 @@ export function AgentPageWorking() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               background: 'none',
               border: 'none',
-              color: '#666',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
               fontSize: '14px',
             }}
@@ -837,12 +854,12 @@ export function AgentPageWorking() {
           <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
             <h1
               style={{
-                fontSize: '17px',
-                fontWeight: 700,
-                color: '#2d1810',
+                fontSize: '18px',
+                fontWeight: 600,
+                color: 'var(--text-heading)',
                 margin: 0,
-                fontFamily: 'var(--font-display, Georgia, serif)',
-                letterSpacing: '0.02em',
+                fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
+                letterSpacing: '0.03em',
               }}
             >
               {t('cellarSommelier.title')}
@@ -851,23 +868,23 @@ export function AgentPageWorking() {
               style={{
                 fontSize: '10px',
                 fontWeight: 600,
-                color: '#8b6914',
-                margin: '2px 0 0',
-                letterSpacing: '0.14em',
+                color: taglineAccent,
+                margin: '3px 0 0',
+                letterSpacing: '0.16em',
                 textTransform: 'uppercase',
                 lineHeight: 1.25,
               }}
             >
               {t('app.tagline')}
             </p>
-            <p style={{ fontSize: '11px', color: '#888', margin: '4px 0 0' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '5px 0 0' }}>
               {t('cellarSommelier.bottleCount', {
                 count: bottles.filter((b) => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0),
               })}
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {/* Sommi credits badge — only renders for monetization-enabled users */}
             <SommelierCreditsDisplay
               compact
@@ -880,10 +897,10 @@ export function AgentPageWorking() {
               title={t('cellarSommelier.conversationHistory', 'Conversations')}
               style={{
                 padding: '8px',
-                borderRadius: '8px',
-                border: '1px solid #e0e0e0',
-                backgroundColor: 'white',
-                color: '#666',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -903,10 +920,10 @@ export function AgentPageWorking() {
               title={t('cellarSommelier.newConversation', 'New conversation')}
               style={{
                 padding: '8px',
-                borderRadius: '8px',
-                border: '1px solid #e0e0e0',
-                backgroundColor: 'white',
-                color: '#666',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
                 cursor: (messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)) ? 'not-allowed' : 'pointer',
                 opacity: (messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)) ? 0.5 : 1,
                 display: 'flex',
@@ -927,78 +944,9 @@ export function AgentPageWorking() {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '16px',
+        padding: '12px 16px 20px',
         position: 'relative',
       }}>
-        {/* Scenario chips — shown right after the greeting bubble when there's only 1 assistant message */}
-        {messages.length === 1 && messages[0].role === 'assistant' && messages[0].isGreeting && bottles.filter(b => b.quantity > 0).length > 0 && (() => {
-          const scenarioChips = [
-            { emoji: '🥩', label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
-            { emoji: '💕', label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
-            { emoji: '🎉', label: t('cellarSommelier.scenarios.celebrate.label'),prompt: t('cellarSommelier.scenarios.celebrate.prompt') },
-            { emoji: '🍕', label: t('cellarSommelier.scenarios.pizza.label'),    prompt: t('cellarSommelier.scenarios.pizza.prompt') },
-            { emoji: '🧀', label: t('cellarSommelier.scenarios.cheese.label'),   prompt: t('cellarSommelier.scenarios.cheese.prompt') },
-            { emoji: '🎲', label: t('cellarSommelier.scenarios.surprise.label'), prompt: t('cellarSommelier.scenarios.surprise.prompt') },
-          ];
-
-          return (
-            <div style={{ paddingTop: '8px', paddingBottom: '8px' }}>
-              <p style={{ fontSize: '12px', color: '#999', textAlign: 'center', marginBottom: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                {t('cellarSommelier.quickStartHeader')}
-              </p>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '10px',
-                maxWidth: '480px',
-                margin: '0 auto',
-              }}>
-                {scenarioChips.map((chip) => (
-                  <button
-                    key={chip.prompt}
-                    type="button"
-                    onClick={() => handleSend(chip.prompt)}
-                    style={{
-                      padding: '14px 12px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      backgroundColor: 'white',
-                      border: '1.5px solid #e8e0e0',
-                      borderRadius: '14px',
-                      color: '#333',
-                      boxShadow: '0 2px 8px rgba(124,48,48,0.07)',
-                      transition: 'all 0.18s ease',
-                      fontWeight: 500,
-                      textAlign: 'left',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                      lineHeight: 1.3,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#7c3030';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(124,48,48,0.15)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e8e0e0';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(124,48,48,0.07)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                    onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
-                    onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onTouchStart={(e) => { e.currentTarget.style.borderColor = '#7c3030'; e.currentTarget.style.transform = 'scale(0.97)'; }}
-                    onTouchEnd={(e) => { e.currentTarget.style.borderColor = '#e8e0e0'; e.currentTarget.style.transform = 'scale(1)'; }}
-                  >
-                    <span style={{ fontSize: '20px', lineHeight: 1 }}>{chip.emoji}</span>
-                    <span>{chip.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Empty cellar warning */}
         {bottles.filter(b => b.quantity > 0).length === 0 && (
           <div style={{
@@ -1046,8 +994,179 @@ export function AgentPageWorking() {
           </div>
         )}
 
-        {/* Messages */}
-        {messages.map((msg, idx) => {
+        {bottles.filter((b) => b.quantity > 0).length > 0 && (
+          <>
+            {/* Sticky “Tonight” framing — first assistant greeting stays visible while scrolling */}
+            {showStickyGreeting && greetingMessage && (
+              <div
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 4,
+                  marginBottom: '14px',
+                  paddingBottom: '14px',
+                  background: 'var(--bg)',
+                  borderBottom: '1px solid var(--border-subtle)',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    color: taglineAccent,
+                    margin: '0 0 10px 2px',
+                    fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
+                  }}
+                >
+                  {t('cellarSommelier.tonightLabel', 'Tonight')}
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: '12px',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--bg-muted)',
+                      border: '2px solid var(--wine-600)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <img
+                      src="/assets/sommelier-icon.png"
+                      alt="Sommi"
+                      style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      padding: '14px 16px',
+                      borderRadius: '4px 16px 16px 16px',
+                      backgroundColor: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      borderInlineStart: `3px solid ${taglineAccent}`,
+                      boxShadow: 'var(--shadow-card)',
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: '15px',
+                        lineHeight: 1.55,
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: isDark
+                          ? 'inherit'
+                          : 'ui-serif, Georgia, "Times New Roman", serif',
+                      }}
+                    >
+                      {greetingMessage.content}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick start — text only, same layout in white & red themes */}
+            {messages.length === 1 && messages[0].role === 'assistant' && messages[0].isGreeting && (
+              (() => {
+                const scenarioChips = [
+                  { label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
+                  { label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
+                  { label: t('cellarSommelier.scenarios.celebrate.label'),prompt: t('cellarSommelier.scenarios.celebrate.prompt') },
+                  { label: t('cellarSommelier.scenarios.pizza.label'),    prompt: t('cellarSommelier.scenarios.pizza.prompt') },
+                  { label: t('cellarSommelier.scenarios.cheese.label'),   prompt: t('cellarSommelier.scenarios.cheese.prompt') },
+                  { label: t('cellarSommelier.scenarios.surprise.label'), prompt: t('cellarSommelier.scenarios.surprise.prompt') },
+                ];
+                return (
+                  <div style={{ paddingBottom: '16px' }}>
+                    <p
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-tertiary)',
+                        textAlign: 'center',
+                        marginBottom: '12px',
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t('cellarSommelier.quickStartHeader')}
+                    </p>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '10px',
+                        maxWidth: '520px',
+                        margin: '0 auto',
+                      }}
+                    >
+                      {scenarioChips.map((chip) => (
+                        <button
+                          key={chip.prompt}
+                          type="button"
+                          onClick={() => handleSend(chip.prompt)}
+                          style={{
+                            padding: '14px 14px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            backgroundColor: 'var(--bg-surface)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '12px',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'var(--shadow-card)',
+                            transition: 'border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease',
+                            fontWeight: 500,
+                            textAlign: 'center',
+                            lineHeight: 1.35,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--wine-600)';
+                            e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
+                          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
+                          onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                          onTouchStart={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--wine-600)';
+                            e.currentTarget.style.transform = 'scale(0.98)';
+                          }}
+                          onTouchEnd={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Thread (greeting omitted when shown sticky) */}
+            {threadMessages.map((msg, idx) => {
           const isUser = msg.role === 'user';
           const avatarUrl = isUser ? profile?.avatar_url : null;
           const showAvatar = true;
@@ -1071,8 +1190,8 @@ export function AgentPageWorking() {
                     width: '36px',
                     height: '36px',
                     borderRadius: '50%',
-                    backgroundColor: isUser ? '#7c3030' : '#f8f9fa',
-                    border: isUser ? 'none' : '2px solid #7c3030',
+                    backgroundColor: isUser ? 'var(--wine-600)' : 'var(--bg-muted)',
+                    border: isUser ? 'none' : '2px solid var(--wine-600)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1129,10 +1248,10 @@ export function AgentPageWorking() {
                         style={{
                           padding: '12px 16px',
                           borderRadius: '16px',
-                          backgroundColor: 'white',
-                          color: '#333',
-                          border: '1px solid #e0e0e0',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-subtle)',
+                          boxShadow: 'var(--shadow-card)',
                           maxWidth: '75%',
                         }}
                       >
@@ -1161,10 +1280,10 @@ export function AgentPageWorking() {
                     style={{
                       padding: '12px 16px',
                       borderRadius: '16px',
-                      backgroundColor: isUser ? '#7c3030' : 'white',
-                      color: isUser ? 'white' : '#333',
-                      border: !isUser ? '1px solid #e0e0e0' : 'none',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isUser ? 'var(--wine-600)' : 'var(--bg-surface)',
+                      color: isUser ? '#FFFFFF' : 'var(--text-primary)',
+                      border: !isUser ? '1px solid var(--border-subtle)' : 'none',
+                      boxShadow: 'var(--shadow-card)',
                     }}
                   >
                     <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
@@ -1220,6 +1339,8 @@ export function AgentPageWorking() {
             </div>
           );
         })}
+          </>
+        )}
 
         {/* Loading indicator */}
         {isSubmitting && (
@@ -1227,9 +1348,9 @@ export function AgentPageWorking() {
             <div style={{
               padding: '12px 16px',
               borderRadius: '16px',
-              backgroundColor: 'white',
-              border: '1px solid #e0e0e0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-card)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -1237,25 +1358,25 @@ export function AgentPageWorking() {
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: '#7c3030',
-                    animation: 'bounce 1s infinite',
+                    backgroundColor: 'var(--wine-600)',
+                    animation: 'sommiDotBounce 1s infinite',
                   }} />
                   <div style={{
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: '#7c3030',
-                    animation: 'bounce 1s infinite 0.15s',
+                    backgroundColor: 'var(--wine-600)',
+                    animation: 'sommiDotBounce 1s infinite 0.15s',
                   }} />
                   <div style={{
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: '#7c3030',
-                    animation: 'bounce 1s infinite 0.3s',
+                    backgroundColor: 'var(--wine-600)',
+                    animation: 'sommiDotBounce 1s infinite 0.3s',
                   }} />
                 </div>
-                <span style={{ fontSize: '14px', color: '#999' }}>{t('cellarSommelier.thinking')}</span>
+                <span style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>{t('cellarSommelier.thinking')}</span>
               </div>
             </div>
           </div>
@@ -1268,8 +1389,8 @@ export function AgentPageWorking() {
       <div style={{
         padding: '16px',
         paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-        backgroundColor: 'white',
-        borderTop: '1px solid #e0e0e0',
+        backgroundColor: 'var(--bg-elevated)',
+        borderTop: '1px solid var(--border-subtle)',
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
@@ -1297,12 +1418,12 @@ export function AgentPageWorking() {
             rows={1}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '12px 14px',
               fontSize: '16px',
-              border: '1px solid #ddd',
-              borderRadius: '12px',
-              backgroundColor: '#f8f9fa',
-              color: '#333',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-muted)',
+              color: 'var(--text-primary)',
               outline: 'none',
               resize: 'none',
               overflow: 'hidden',
@@ -1331,10 +1452,10 @@ export function AgentPageWorking() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: isRecording ? '2px solid #dc3545' : '1px solid #ddd',
+                border: isRecording ? '2px solid #dc3545' : '1px solid var(--border-medium)',
                 cursor: isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isTranscribing ? 'not-allowed' : 'pointer',
-                backgroundColor: isRecording ? '#ffe5e5' : 'white',
-                color: isRecording ? '#dc3545' : '#666',
+                backgroundColor: isRecording ? '#ffe5e5' : 'var(--bg-surface)',
+                color: isRecording ? '#dc3545' : 'var(--text-secondary)',
                 transition: 'all 0.2s',
                 flexShrink: 0,
                 animation: isRecording ? 'pulse 1.5s infinite' : 'none',
@@ -1368,8 +1489,8 @@ export function AgentPageWorking() {
               justifyContent: 'center',
               border: 'none',
               cursor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'pointer' : 'not-allowed',
-              backgroundColor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? '#7c3030' : '#ccc',
-              color: 'white',
+              backgroundColor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'var(--wine-600)' : 'var(--border-strong)',
+              color: '#FFFFFF',
               transition: 'all 0.2s',
               flexShrink: 0,
             }}
