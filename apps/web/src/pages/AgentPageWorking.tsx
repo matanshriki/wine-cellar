@@ -40,6 +40,9 @@ import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { useTheme } from '../contexts/ThemeContext';
 
+/** Served from `public/assets/` (not `public/` root). Bump ?v= when replacing the file so PWAs pick up the new image. */
+const SOMMELIER_AVATAR_URL = '/assets/sommelier-icon.png?v=3';
+
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
@@ -1045,7 +1048,7 @@ export function AgentPageWorking() {
                     }}
                   >
                     <img
-                      src="/assets/sommelier-icon.png"
+                      src={SOMMELIER_AVATAR_URL}
                       alt="Sommi"
                       style={{ width: '30px', height: '30px', objectFit: 'contain' }}
                     />
@@ -1217,7 +1220,7 @@ export function AgentPageWorking() {
                     )
                   ) : (
                     <img
-                      src="/assets/sommelier-icon.png"
+                      src={SOMMELIER_AVATAR_URL}
                       alt="Sommi"
                       style={{
                         width: '28px',
