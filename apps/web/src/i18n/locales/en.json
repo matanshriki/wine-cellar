@@ -12,6 +12,9 @@
     "heroSubtitle": "Stop guessing what to open tonight. Sommi knows your cellar: regions, vintages, drink windows, and mood — so recommendations stay personal, not generic wine-blog noise.",
     "ctaOpen": "Open Sommi — sign in free",
     "ctaAbout": "About & FAQ",
+    "ctaMidPrompt": "Ready to try Sommi with your bottles?",
+    "ctaBottomPrompt": "Start free — your cellar syncs across web and phone.",
+    "stickyCtaAriaLabel": "Open Sommi — sign in free",
     "demoTitle": "Quick demo",
     "demoCaption": "See how Sommi fits your cellar — browse, windows, and Sommi in action.",
     "whyTitle": "Built for collectors, not another Vivino clone",
@@ -1048,7 +1051,6 @@
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
     "greetingContent": "{{greeting}}! 🍷 I've scanned your cellar — {{count}} bottles ready to explore. Tell me about tonight and I'll find your perfect match.",
-    "tonightLabel": "Tonight",
     "quickStartHeader": "Start here — or describe tonight below",
     "inputPlaceholderFirst": "What's the occasion tonight?",
     "scenarios": {

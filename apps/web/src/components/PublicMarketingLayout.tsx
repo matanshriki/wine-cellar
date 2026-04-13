@@ -3,12 +3,14 @@
  * No cellar FAB, camera, or logged-in-only UI — keeps crawlers and guests focused.
  */
 
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function PublicMarketingLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const landingStickyClearance = pathname === '/';
 
   return (
     <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
@@ -73,7 +75,10 @@ export function PublicMarketingLayout({ children }: { children: React.ReactNode 
 
       {children}
 
-      <footer className="border-t mt-auto py-8 px-4" style={{ borderColor: 'var(--border-subtle)' }}>
+      <footer
+        className={`border-t mt-auto px-4 pt-8 ${landingStickyClearance ? 'pb-28 md:pb-8' : 'pb-8'}`}
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-4 justify-between items-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <p>© {new Date().getFullYear()} Sommi</p>
           <div className="flex flex-wrap gap-4 justify-center">

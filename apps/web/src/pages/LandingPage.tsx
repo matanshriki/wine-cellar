@@ -3,7 +3,7 @@
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
  */
 
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation, Trans } from 'react-i18next';
@@ -25,6 +25,37 @@ function videoSourceType(src: string): string | undefined {
   if (path.endsWith('.mp4')) return 'video/mp4';
   if (path.endsWith('.ogg') || path.endsWith('.ogv')) return 'video/ogg';
   return undefined;
+}
+
+const ctaPrimaryClass =
+  'inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold text-white shadow-lg';
+const ctaPrimaryStyle: CSSProperties = {
+  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+};
+const ctaSecondaryClass =
+  'inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold border';
+const ctaSecondaryStyle: CSSProperties = {
+  borderColor: 'var(--border-default)',
+  color: 'var(--text-primary)',
+  background: 'var(--bg-surface)',
+};
+
+function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' }) {
+  const { t } = useTranslation();
+  const row =
+    variant === 'hero'
+      ? 'flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sm:justify-start items-stretch sm:items-center w-full'
+      : 'flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center w-full max-w-xl mx-auto';
+  return (
+    <div className={row}>
+      <Link to="/login" className={ctaPrimaryClass} style={ctaPrimaryStyle}>
+        {t('landing.ctaOpen')}
+      </Link>
+      <Link to="/about" className={ctaSecondaryClass} style={ctaSecondaryStyle}>
+        {t('landing.ctaAbout')}
+      </Link>
+    </div>
+  );
 }
 
 export function LandingPage() {
@@ -59,7 +90,7 @@ export function LandingPage() {
         <meta name="keywords" content={t('landing.metaKeywords')} />
       </Helmet>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-28 md:py-16">
         <article>
           <header className="mb-12 text-center sm:text-start">
             <p
@@ -77,26 +108,7 @@ export function LandingPage() {
             <p className="text-lg sm:text-xl leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>
               {t('landing.heroSubtitle')}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Link
-                to="/login"
-                className="inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold text-white shadow-lg"
-                style={{ background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' }}
-              >
-                {t('landing.ctaOpen')}
-              </Link>
-              <Link
-                to="/about"
-                className="inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold border"
-                style={{
-                  borderColor: 'var(--border-default)',
-                  color: 'var(--text-primary)',
-                  background: 'var(--bg-surface)',
-                }}
-              >
-                {t('landing.ctaAbout')}
-              </Link>
-            </div>
+            <LandingCtaPair variant="hero" />
           </header>
 
           {demo && (
@@ -175,6 +187,17 @@ export function LandingPage() {
             </p>
           </section>
 
+          <section className="mb-14 pt-4 border-t text-center" style={{ borderColor: 'var(--border-subtle)' }} aria-labelledby="landing-cta-mid">
+            <p
+              id="landing-cta-mid"
+              className="text-base sm:text-lg font-medium mb-5 leading-snug"
+              style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
+            >
+              {t('landing.ctaMidPrompt')}
+            </p>
+            <LandingCtaPair />
+          </section>
+
           <section className="mb-10 rounded-2xl p-6 sm:p-8 border" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface-2)' }}>
             <h2 className="text-xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
               {t('landing.privacyTitle')}
@@ -194,6 +217,25 @@ export function LandingPage() {
             </p>
           </section>
 
+          <section
+            className="mb-10 rounded-2xl border p-6 sm:p-8 text-center"
+            style={{
+              borderColor: 'var(--border-subtle)',
+              background: 'linear-gradient(180deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%)',
+              boxShadow: 'var(--shadow-card, 0 4px 24px rgba(0,0,0,0.06))',
+            }}
+            aria-labelledby="landing-cta-bottom"
+          >
+            <p
+              id="landing-cta-bottom"
+              className="text-base sm:text-lg font-medium mb-5 leading-snug"
+              style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
+            >
+              {t('landing.ctaBottomPrompt')}
+            </p>
+            <LandingCtaPair />
+          </section>
+
           <p className="text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
             {t('landing.faqTeaser')}{' '}
             <Link to="/about" className="underline font-medium" style={{ color: 'var(--wine-600)' }}>
@@ -203,6 +245,28 @@ export function LandingPage() {
           </p>
         </article>
       </main>
+
+      {/* Mobile-only sticky CTA — desktop uses repeated in-page CTAs */}
+      <aside
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t px-4 pt-3"
+        style={{
+          background: 'var(--bg-nav, rgba(255, 255, 255, 0.96))',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderColor: 'var(--border-subtle)',
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.06)',
+        }}
+        aria-label={t('landing.stickyCtaAriaLabel')}
+      >
+        <Link
+          to="/login"
+          className="flex w-full items-center justify-center rounded-full py-3.5 text-base font-semibold text-white shadow-lg active:opacity-95"
+          style={ctaPrimaryStyle}
+        >
+          {t('landing.ctaOpen')}
+        </Link>
+      </aside>
     </>
   );
 }
