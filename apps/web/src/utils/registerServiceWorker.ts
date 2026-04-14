@@ -10,6 +10,11 @@ export async function registerServiceWorker(): Promise<void> {
     (import.meta.env.PROD || import.meta.env.VITE_ENABLE_SW === 'true')
   ) {
     try {
+      // If no controller yet, the next controllerchange is almost certainly this page's
+      // first `clients.claim()` after install — reloading would remount the whole app and
+      // feels like the site "loads twice". Only reload when replacing an existing worker.
+      const hadControllerAtStartup = !!navigator.serviceWorker.controller;
+
       console.log('[PWA] Registering service worker...');
       
       const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -31,8 +36,13 @@ export async function registerServiceWorker(): Promise<void> {
         }
       });
 
-      // Handle controller change (new SW activated)
+      // New SW took control: refresh so assets match the activated worker.
+      // Skip on first activation (see hadControllerAtStartup).
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadControllerAtStartup) {
+          console.log('[PWA] Service worker claimed this page (first visit); skip reload');
+          return;
+        }
         console.log('[PWA] Service worker controller changed, reloading page');
         window.location.reload();
       });
