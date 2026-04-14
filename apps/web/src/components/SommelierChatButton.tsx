@@ -9,7 +9,8 @@
  *   - sm+: luxury gold tooltip above the button + golden FAB (unchanged).
  *   - Mobile / narrow: compact “Meet Sommi” chip above the circular FAB; fades
  *     out after ~5 s so the icon isn’t mistaken for decoration.
- *   - Auto-dismiss or tap FAB marks intro seen in localStorage (once).
+ *   - Desktop vs mobile hints use separate localStorage keys so a “Meet Sommi”
+ *     chip can show on phones even if the gold desktop intro was dismissed earlier.
  *   - Local dev: set VITE_SOMMELIER_FAB_INTRO_DEBUG=true in apps/web/.env to replay
  *     the intro on every refresh (ignored in production builds).
  *
@@ -27,7 +28,10 @@ import { useTranslation } from 'react-i18next';
 import { trackSommelier } from '../services/analytics';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
-const INTRO_SEEN_KEY = 'sommelier-fab-intro-seen';
+/** Gold card + desktop scheduling (legacy key — unchanged for backward compat). */
+const DESKTOP_INTRO_KEY = 'sommelier-fab-intro-seen';
+/** Narrow-viewport “Meet Sommi” chip — separate so mobile isn’t blocked by desktop intro. */
+const MOBILE_HINT_KEY = 'sommelier-fab-mobile-hint-seen';
 
 /** Dev server only: replay first-visit FAB UI every load; never persist intro-seen. */
 const SOMMELIER_FAB_INTRO_DEBUG =
@@ -35,9 +39,14 @@ const SOMMELIER_FAB_INTRO_DEBUG =
   (import.meta.env.VITE_SOMMELIER_FAB_INTRO_DEBUG === 'true' ||
     import.meta.env.VITE_SOMMELIER_FAB_INTRO_DEBUG === '1');
 
-function hasIntroBeenSeen(): boolean {
+function hasDesktopIntroBeenSeen(): boolean {
   if (SOMMELIER_FAB_INTRO_DEBUG) return false;
-  return !!localStorage.getItem(INTRO_SEEN_KEY);
+  return !!localStorage.getItem(DESKTOP_INTRO_KEY);
+}
+
+function hasMobileHintBeenSeen(): boolean {
+  if (SOMMELIER_FAB_INTRO_DEBUG) return false;
+  return !!localStorage.getItem(MOBILE_HINT_KEY);
 }
 
 interface SommelierChatButtonProps {
@@ -59,20 +68,45 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
   const [isModalOpen, setIsModalOpen] = useState(false);
   const introTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const persistIntroSeen = useCallback(() => {
+  const persistDesktopIntroSeen = useCallback(() => {
     if (SOMMELIER_FAB_INTRO_DEBUG) return;
-    localStorage.setItem(INTRO_SEEN_KEY, '1');
+    localStorage.setItem(DESKTOP_INTRO_KEY, '1');
   }, []);
+
+  const persistMobileHintSeen = useCallback(() => {
+    if (SOMMELIER_FAB_INTRO_DEBUG) return;
+    localStorage.setItem(MOBILE_HINT_KEY, '1');
+  }, []);
+
+  const markAllFabIntrosSeen = useCallback(() => {
+    persistDesktopIntroSeen();
+    persistMobileHintSeen();
+  }, [persistDesktopIntroSeen, persistMobileHintSeen]);
+
+  /** Desktop gold card: close UI + mark desktop intro only (mobile chip may still run later). */
+  const dismissGoldIntro = useCallback(() => {
+    setShowIntro(false);
+    persistDesktopIntroSeen();
+    if (introTimerRef.current) clearTimeout(introTimerRef.current);
+  }, [persistDesktopIntroSeen]);
+
+  /** User tapped FAB or we want to clear all hints permanently. */
+  const dismissAllFabIntros = useCallback(() => {
+    setShowIntro(false);
+    setShowMobileHint(false);
+    markAllFabIntrosSeen();
+    if (introTimerRef.current) clearTimeout(introTimerRef.current);
+  }, [markAllFabIntrosSeen]);
 
   // ── First-visit intro (desktop: gold card; mobile: compact chip) ───────────
   useEffect(() => {
-    if (hasIntroBeenSeen()) return;
-
     const smUp = window.matchMedia('(min-width: 640px)').matches;
     if (smUp) {
+      if (hasDesktopIntroBeenSeen()) return;
       const t = setTimeout(() => setShowIntro(true), 1600);
       return () => clearTimeout(t);
     }
+    if (hasMobileHintBeenSeen()) return;
     const t = setTimeout(() => setShowMobileHint(true), 600);
     return () => clearTimeout(t);
   }, []);
@@ -84,15 +118,14 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     return () => clearTimeout(t);
   }, [showMobileHint]);
 
-  // Auto-dismiss after 7 s
+  // Auto-dismiss gold card after 7 s (desktop only in practice)
   useEffect(() => {
     if (!showIntro) return;
-    introTimerRef.current = setTimeout(() => dismissIntro(), 7000);
+    introTimerRef.current = setTimeout(() => dismissGoldIntro(), 7000);
     return () => {
       if (introTimerRef.current) clearTimeout(introTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showIntro]);
+  }, [showIntro, dismissGoldIntro]);
 
   // ── Modal detection (global mode only) ─────────────────────────────────────
   useEffect(() => {
@@ -116,20 +149,13 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     return () => observer.disconnect();
   }, [isGlobal]);
 
-  const dismissIntro = useCallback(() => {
-    setShowIntro(false);
-    setShowMobileHint(false);
-    persistIntroSeen();
-    if (introTimerRef.current) clearTimeout(introTimerRef.current);
-  }, [persistIntroSeen]);
-
   const handleClick = useCallback(() => {
-    dismissIntro();
+    dismissAllFabIntros();
     // Track which page the user clicked from (strip leading slash → 'cellar', 'history', …)
     const source = location.pathname.replace(/^\//, '') || 'unknown';
     trackSommelier.agentButtonClick(source);
     navigate('/agent');
-  }, [dismissIntro, navigate, location.pathname]);
+  }, [dismissAllFabIntros, navigate, location.pathname]);
 
   // ── Rendering ───────────────────────────────────────────────────────────────
   if (isGlobal && isModalOpen) return null;
@@ -166,7 +192,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  dismissIntro();
+                  dismissGoldIntro();
                 }}
                 className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full transition-opacity opacity-60 hover:opacity-100"
                 style={{ color: 'rgba(255,255,255,0.9)' }}
@@ -262,7 +288,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
       {/* ── FAB button ──────────────────────────────────────────────────────── */}
       <div className="relative">
         {/* Mobile/PWA: short-lived label so the face-only FAB reads as Sommi */}
-        <AnimatePresence onExitComplete={persistIntroSeen}>
+        <AnimatePresence onExitComplete={persistMobileHintSeen}>
           {showMobileHint && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
