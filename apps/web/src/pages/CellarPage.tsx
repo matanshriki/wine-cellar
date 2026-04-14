@@ -47,6 +47,7 @@ import * as labelParseService from '../services/labelParseService';
 import * as smartScanService from '../services/smartScanService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { translateRegion, translateCountry, translateGrapes } from '../utils/wineTranslations';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
 import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
@@ -169,7 +170,13 @@ export function CellarPage() {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedFields, setParsedFields] = useState<string[]>([]);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const [noCreditsModalContext, setNoCreditsModalContext] = useState<'scan' | 'analysis'>('scan');
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
+
+  function openNoCreditsModal(context: 'scan' | 'analysis' = 'scan') {
+    setNoCreditsModalContext(context);
+    setNoCreditsOpen(true);
+  }
 
   // Always-current ref — readable by stale event-listener closures.
   // Set on every render so it reflects the latest loaded values.
@@ -181,7 +188,7 @@ export function CellarPage() {
   // so the user is blocked BEFORE they open the camera, not after picking a photo.
   function guardedOpenAddSheet() {
     if (creditBlockedRef.current) {
-      setNoCreditsOpen(true);
+      openNoCreditsModal('scan');
       return;
     }
     setShowAddSheet(true);
@@ -189,7 +196,7 @@ export function CellarPage() {
 
   function guardedOpenLabelCapture(mode: 'camera' | 'upload' = 'camera') {
     if (creditBlockedRef.current) {
-      setNoCreditsOpen(true);
+      openNoCreditsModal('scan');
       return;
     }
     setShowLabelCapture(true);
@@ -671,6 +678,15 @@ export function CellarPage() {
       return analysisResult;
     } catch (error: any) {
       console.error('Error analyzing bottle:', error);
+      if (isInsufficientCreditsError(error)) {
+        openNoCreditsModal('analysis');
+        setBottles(
+          bottles.map((b) =>
+            b.id === id ? { ...b, isAnalyzing: false } as any : b
+          )
+        );
+        return undefined;
+      }
       trackSommelier.error('analysis_failed'); // Track analysis error
       // ❌ Only show toast for errors
       toast.error(error.message || t('cellar.sommelier.failed'));
@@ -751,7 +767,7 @@ export function CellarPage() {
 
   function handleBulkAnalysis() {
     if (creditBlockedRef.current) {
-      setNoCreditsOpen(true);
+      openNoCreditsModal('analysis');
       return;
     }
     setShowBulkAnalysis(true);
@@ -776,7 +792,7 @@ export function CellarPage() {
     // Credit enforcement safety net (primary block is in guardedOpen* functions above)
     if (creditBlockedRef.current) {
       setShowAddSheet(false);
-      setNoCreditsOpen(true);
+      openNoCreditsModal('scan');
       return;
     }
 
@@ -818,11 +834,16 @@ export function CellarPage() {
       }
     } catch (error: any) {
       console.error('[CellarPage] Smart scan error:', error);
-      
+
+      if (isInsufficientCreditsError(error)) {
+        openNoCreditsModal('scan');
+        return;
+      }
+
       // Show error toast with details
       const errorDetails = error.message ? ` (${error.message.substring(0, 50)})` : '';
       toast.error('Scan failed' + errorDetails);
-      
+
       // Fallback: open empty form so user can enter manually
       setEditingBottle(null);
       setShowForm(true);
@@ -2154,7 +2175,11 @@ export function CellarPage() {
             }
           } catch (error: any) {
             console.error('[CellarPage] ❌ Wishlist: Label parsing error:', error);
-            toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            if (isInsufficientCreditsError(error)) {
+              openNoCreditsModal('scan');
+            } else {
+              toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            }
           } finally {
             setIsParsing(false);
           }
@@ -2455,7 +2480,7 @@ export function CellarPage() {
       <NoCreditsModal
         isOpen={noCreditsOpen}
         onClose={() => setNoCreditsOpen(false)}
-        context="scan"
+        context={noCreditsModalContext}
       />
 
       {/* Keep / Reserve — date reminder modal */}

@@ -11,6 +11,11 @@
  */
 
 import { supabase } from '../lib/supabase';
+import {
+  isInsufficientCreditsError,
+  throwIfInsufficientCreditsFromFunctionsInvokeError,
+  throwIfInsufficientCreditsInDataPayload,
+} from '../lib/insufficientCredits';
 import type { BottleWithWineInfo } from './bottleService';
 import * as drinkWindowService from './drinkWindowService';
 
@@ -167,9 +172,12 @@ export async function generateAIAnalysis(
     });
 
     if (error) {
+      throwIfInsufficientCreditsFromFunctionsInvokeError(error);
       console.warn('Edge function not available, using fallback analysis:', error);
       throw error; // Trigger fallback
     }
+
+    throwIfInsufficientCreditsInDataPayload(data as { success?: boolean; error?: string; message?: string });
 
     if (!data.success || !data.analysis) {
       console.warn('Invalid Edge function response, using fallback');
@@ -205,8 +213,11 @@ export async function generateAIAnalysis(
       analyzed_at: new Date().toISOString(),
     };
   } catch (error) {
+    if (isInsufficientCreditsError(error)) {
+      throw error;
+    }
     console.warn('AI analysis failed, using deterministic fallback:', error);
-    
+
     // Fallback to deterministic analysis with language support
     const fallbackAnalysis = generateDeterministicAnalysis(bottle, language);
     
@@ -414,9 +425,12 @@ export async function analyzeCellarBulk(
     });
 
     if (error) {
+      throwIfInsufficientCreditsFromFunctionsInvokeError(error);
       console.error('[Bulk Analysis] Edge function error:', error);
       throw new Error(error.message || 'Failed to analyze cellar');
     }
+
+    throwIfInsufficientCreditsInDataPayload(data as { success?: boolean; error?: string; message?: string });
 
     if (!data || !data.success) {
       console.error('[Bulk Analysis] Invalid response:', data);
@@ -620,11 +634,16 @@ export async function analyzeCellarInBatches(
       });
 
       if (error) {
+        throwIfInsufficientCreditsFromFunctionsInvokeError(error);
         console.error('[Batch Analysis] ❌ Batch error:', error);
         // Don't fail entire operation, just log and continue
         totalFailed += pageSize;
         break;
       }
+
+      throwIfInsufficientCreditsInDataPayload(
+        data as { success?: boolean; error?: string; message?: string },
+      );
 
       if (!data || !data.success) {
         console.error('[Batch Analysis] ❌ Invalid batch response:', data);
@@ -664,6 +683,7 @@ export async function analyzeCellarInBatches(
       await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
 
     } catch (error: any) {
+      if (isInsufficientCreditsError(error)) throw error;
       console.error('[Batch Analysis] ❌ Batch failed:', error);
       // Don't fail entire operation
       totalFailed += pageSize;

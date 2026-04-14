@@ -19,6 +19,7 @@ import * as bottleService from '../services/bottleService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import * as drinkWindowService from '../services/drinkWindowService';
 import { toast } from '../lib/toast';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 
 export function DrinkWindowDebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,6 +93,12 @@ export function DrinkWindowDebugPanel() {
       await loadBottles();
     } catch (error: any) {
       console.error('[Debug] Recompute error:', error);
+      if (isInsufficientCreditsError(error)) {
+        window.dispatchEvent(
+          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'analysis' } }),
+        );
+        return;
+      }
       toast.error(error.message);
     }
   }

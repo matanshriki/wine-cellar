@@ -38,6 +38,7 @@ import { SommelierCreditsDisplay } from '../components/SommelierCreditsDisplay';
 import { PricingModal } from '../components/PricingModal';
 import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { useTheme } from '../contexts/ThemeContext';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
@@ -402,6 +403,11 @@ export function AgentPageWorking() {
       
       await saveConversation(finalMessages);
     } catch (error: any) {
+      if (isInsufficientCreditsError(error)) {
+        setMessages(messages);
+        setNoCreditsOpen(true);
+        return;
+      }
       toast.error(error.message || 'Failed to get recommendation');
     } finally {
       setIsSubmitting(false);
@@ -582,6 +588,10 @@ export function AgentPageWorking() {
       toast.success(t('cellarSommelier.transcriptionSuccess'));
     } catch (error: any) {
       console.error('Transcription error:', error);
+      if (isInsufficientCreditsError(error)) {
+        setNoCreditsOpen(true);
+        return;
+      }
       toast.error(error.message || t('cellarSommelier.transcriptionFailed'));
     } finally {
       setIsTranscribing(false);

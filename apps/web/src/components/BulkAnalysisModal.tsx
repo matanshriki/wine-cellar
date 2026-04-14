@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as aiAnalysisService from '../services/aiAnalysisService';
 import { toast } from '../lib/toast';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { WineLoader } from './WineLoader';
 
 interface BulkAnalysisModalProps {
@@ -106,12 +107,17 @@ export function BulkAnalysisModal({
 
     } catch (error: any) {
       console.error('[BulkAnalysisModal] ❌ Error:', error);
-      
+
       // Check if it was cancelled
       if (error.message === 'Analysis cancelled') {
         toast.info('Analysis cancelled');
         // Reset state without showing error
         setProgress({ processed: 0, total: null, failed: 0, skipped: 0 });
+      } else if (isInsufficientCreditsError(error)) {
+        onClose();
+        window.dispatchEvent(
+          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'analysis' } }),
+        );
       } else {
         // Show error in UI
         const errorMsg = error.message || t('bulkAnalysis.error', 'Failed to analyze cellar');

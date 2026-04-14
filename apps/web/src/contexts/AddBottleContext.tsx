@@ -8,6 +8,7 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { toast } from '../lib/toast';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import * as smartScanService from '../services/smartScanService';
 import { trackLabelParse, trackBottle } from '../services/analytics';
 
@@ -192,7 +193,17 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('[AddBottleContext] Smart scan error:', error);
       console.error('[AddBottleContext] Error details:', error.message);
-      
+
+      if (isInsufficientCreditsError(error)) {
+        setScanningState('idle');
+        setScanningMessage('');
+        setShowAddSheet(false);
+        window.dispatchEvent(
+          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'scan' } }),
+        );
+        return;
+      }
+
       // Set error state and keep modal open with helpful message
       setScanningState('error');
       

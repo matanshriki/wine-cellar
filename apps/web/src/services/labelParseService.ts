@@ -5,6 +5,10 @@
  */
 
 import { supabase } from '../lib/supabase';
+import {
+  InsufficientCreditsError,
+  isInsufficientCreditsError,
+} from '../lib/insufficientCredits';
 
 export interface ParsedWineField<T> {
   value: T;
@@ -72,12 +76,25 @@ export async function parseLabelImage(
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Failed to parse label');
+      if (
+        response.status === 402 ||
+        (result as { error?: string })?.error === 'insufficient_credits'
+      ) {
+        throw new InsufficientCreditsError(
+          typeof (result as { message?: string }).message === 'string'
+            ? (result as { message: string }).message
+            : undefined,
+        );
+      }
+      throw new Error((result as { error?: string }).error || 'Failed to parse label');
     }
 
     return result;
 
   } catch (error: any) {
+    if (isInsufficientCreditsError(error)) {
+      throw error;
+    }
     console.error('[LabelParseService] Error:', error.message);
     return {
       success: false,

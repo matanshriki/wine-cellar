@@ -31,6 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const [noCreditsContext, setNoCreditsContext] = useState<'scan' | 'chat' | 'analysis'>('scan');
   const location = useLocation();
 
   // Credit enforcement — must come before any camera-open logic
@@ -84,6 +85,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
       setShowCompleteProfile(false);
     }
   }, [user, profile, profileComplete]);
+
+  // Server-side credit denial (e.g. race: balance hit 0 after UI check) — open same modal as FAB gate
+  useEffect(() => {
+    const onInsufficient = (e: Event) => {
+      const d = (e as CustomEvent<{ context?: string }>).detail?.context;
+      if (d === 'chat' || d === 'scan' || d === 'analysis') {
+        setNoCreditsContext(d);
+      } else {
+        setNoCreditsContext('scan');
+      }
+      setNoCreditsOpen(true);
+    };
+    window.addEventListener('sommi-insufficient-credits', onInsufficient);
+    return () =>
+      window.removeEventListener('sommi-insufficient-credits', onInsufficient);
+  }, []);
 
   // Handle immediate camera trigger (for mobile/PWA fallback)
   useEffect(() => {
@@ -186,6 +203,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     // on some Android browsers the OS picker can open before JS runs the check.
     if (creditBlockedRef.current) {
       e.target.value = '';
+      setNoCreditsContext('scan');
       setNoCreditsOpen(true);
       return;
     }
@@ -208,6 +226,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const handleCameraFabClick = () => {
     // Credit gate — show luxury interstitial before opening any camera UI
     if (creditBlockedRef.current) {
+      setNoCreditsContext('scan');
       setNoCreditsOpen(true);
       return;
     }
@@ -515,6 +534,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // Credit gate applies even on retry
           if (creditBlockedRef.current) {
             closeFallbackSheet();
+            setNoCreditsContext('scan');
             setNoCreditsOpen(true);
             return;
           }
@@ -530,6 +550,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // Credit gate: user may have selected a photo from library
           if (creditBlockedRef.current) {
             closeFallbackSheet();
+            setNoCreditsContext('scan');
             setNoCreditsOpen(true);
             return;
           }
@@ -563,6 +584,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         onCapture={async (file) => {
           closePwaCamera();
           if (creditBlockedRef.current) {
+            setNoCreditsContext('scan');
             setNoCreditsOpen(true);
             return;
           }
@@ -606,7 +628,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <NoCreditsModal
         isOpen={noCreditsOpen}
         onClose={() => setNoCreditsOpen(false)}
-        context="scan"
+        context={noCreditsContext}
       />
 
       {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}

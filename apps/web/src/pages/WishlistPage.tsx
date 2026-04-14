@@ -24,6 +24,7 @@ import { WishlistDetailsModal } from '../components/WishlistDetailsModal'; // Wi
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
 import * as labelParseService from '../services/labelParseService'; // Wishlist feature (dev only)
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink'; // Wishlist feature - auto-generate Vivino URLs
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 
 export function WishlistPage() {
   const { t, i18n } = useTranslation();
@@ -552,6 +553,7 @@ export function WishlistPage() {
           setShowAddSheet(false);
           setIsParsing(true);
           toast.info(t('cellar.labelParse.reading'));
+          let openWishlistFormAfter = true;
 
           try {
             // Step 1: Upload image
@@ -621,10 +623,15 @@ export function WishlistPage() {
             }
           } catch (error: any) {
             console.error('[WishlistPage] ❌ Wishlist: Label parsing error:', error);
-            toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            if (isInsufficientCreditsError(error)) {
+              openWishlistFormAfter = false;
+              window.dispatchEvent(new CustomEvent('sommi-insufficient-credits'));
+            } else {
+              toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            }
           } finally {
             setIsParsing(false);
-            setShowWishlistForm(true); // Open wishlist form after parsing
+            if (openWishlistFormAfter) setShowWishlistForm(true);
           }
         }}
         onPhotoSelectedForWishlist={async (file) => {
@@ -632,6 +639,7 @@ export function WishlistPage() {
           setShowAddSheet(false);
           setIsParsing(true);
           toast.info(t('cellar.labelParse.reading'));
+          let openWishlistFormAfter = true;
 
           try {
             // Step 1: Upload image
@@ -701,10 +709,15 @@ export function WishlistPage() {
             }
           } catch (error: any) {
             console.error('[WishlistPage] ❌ Wishlist: Label parsing error:', error);
-            toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            if (isInsufficientCreditsError(error)) {
+              openWishlistFormAfter = false;
+              window.dispatchEvent(new CustomEvent('sommi-insufficient-credits'));
+            } else {
+              toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
+            }
           } finally {
             setIsParsing(false);
-            setShowWishlistForm(true); // Open wishlist form after parsing
+            if (openWishlistFormAfter) setShowWishlistForm(true);
           }
         }}
       />

@@ -13,6 +13,7 @@ import {
   fetchWineHistoryInsightsForWineIds,
   type WineHistoryInsight,
 } from './historyService';
+import { throwIfInsufficientCreditsResponse } from '../lib/insufficientCredits';
 
 /** Optional — returned by Phase 2 agent; safe for older clients to ignore */
 export interface AgentResponseMeta {
@@ -158,6 +159,7 @@ export async function sendAgentMessage(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throwIfInsufficientCreditsResponse(response.status, error);
     throw new Error(error.error || 'Failed to get recommendation');
   }
 
@@ -339,6 +341,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<{ text: string }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Transcription failed' }));
+    throwIfInsufficientCreditsResponse(response.status, error);
     throw new Error(error.error || 'Failed to transcribe audio');
   }
 

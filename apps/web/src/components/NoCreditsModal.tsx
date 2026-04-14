@@ -209,7 +209,7 @@ export function NoCreditsModal({ isOpen, onClose, context = 'chat' }: NoCreditsM
                 className="text-xl font-bold leading-snug text-white sm:text-2xl"
                 style={{ letterSpacing: '-0.01em' }}
               >
-                You've used all your<br />Sommi credits
+                You don&apos;t have enough<br />Sommi credits
               </h2>
 
               {/* Subtext */}

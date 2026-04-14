@@ -30,6 +30,7 @@ import { OfflineCellarScreen } from '../components/OfflineCellarScreen';
 import { WineLoader } from '../components/WineLoader';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
+import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 
 type WineType = 'red' | 'white' | 'rose' | 'mixed';
 type PriceRange = 0 | 1 | 2 | 3 | 4;
@@ -260,6 +261,12 @@ export function RecommendationPage() {
       }
       return analysisResult;
     } catch (error: any) {
+      if (isInsufficientCreditsError(error)) {
+        window.dispatchEvent(
+          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'analysis' } }),
+        );
+        return undefined;
+      }
       toast.error(error?.message || t('cellar.sommelier.failed'));
       return undefined;
     }

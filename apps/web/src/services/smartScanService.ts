@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { throwIfInsufficientCreditsFromFunctionsInvokeError } from '../lib/insufficientCredits';
 import { uploadLabelImage } from './labelScanService';
 import type { ExtractedWineData } from './labelScanService';
 import type { ExtractedBottleData } from './multiBottleService';
@@ -62,6 +63,7 @@ export async function performSmartScan(file: File): Promise<SmartScanResult> {
     });
 
     if (error) {
+      throwIfInsufficientCreditsFromFunctionsInvokeError(error);
       // FunctionsHttpError carries the response body — extract the human-readable message
       // from our structured error JSON if possible, otherwise fall back to the raw message.
       let detail = (error as any)?.message ?? 'Unknown error';
