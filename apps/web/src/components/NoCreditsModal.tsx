@@ -76,6 +76,8 @@ export interface NoCreditsModalProps {
   onClose: () => void;
   /** Context hint so the copy is specific: 'chat' | 'scan' | 'analysis' */
   context?: 'chat' | 'scan' | 'analysis';
+  /** When known (server or client), show required vs current balance */
+  shortfall?: { required: number; balance: number } | null;
 }
 
 const CONTEXT_COPY: Record<string, { action: string; description: string }> = {
@@ -86,7 +88,12 @@ const CONTEXT_COPY: Record<string, { action: string; description: string }> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function NoCreditsModal({ isOpen, onClose, context = 'chat' }: NoCreditsModalProps) {
+export function NoCreditsModal({
+  isOpen,
+  onClose,
+  context = 'chat',
+  shortfall = null,
+}: NoCreditsModalProps) {
   const navigate = useNavigate();
   const { monetizationEnabled, effectiveBalance, monthlyLimit, planKey } = useMonetizationAccess();
 
@@ -211,6 +218,12 @@ export function NoCreditsModal({ isOpen, onClose, context = 'chat' }: NoCreditsM
               >
                 You don&apos;t have enough<br />Sommi credits
               </h2>
+
+              {shortfall && (
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-amber-200/85">
+                  This action needs {shortfall.required} credits; you have {shortfall.balance}.
+                </p>
+              )}
 
               {/* Subtext */}
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/45">

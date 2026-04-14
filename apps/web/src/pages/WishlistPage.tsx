@@ -625,7 +625,21 @@ export function WishlistPage() {
             console.error('[WishlistPage] ❌ Wishlist: Label parsing error:', error);
             if (isInsufficientCreditsError(error)) {
               openWishlistFormAfter = false;
-              window.dispatchEvent(new CustomEvent('sommi-insufficient-credits'));
+              const detail: {
+                context: 'scan';
+                requiredCredits?: number;
+                balance?: number;
+              } = { context: 'scan' };
+              if (
+                typeof error.requiredCredits === 'number' &&
+                typeof error.balance === 'number'
+              ) {
+                detail.requiredCredits = error.requiredCredits;
+                detail.balance = error.balance;
+              }
+              window.dispatchEvent(
+                new CustomEvent('sommi-insufficient-credits', { detail }),
+              );
             } else {
               toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
             }
@@ -711,7 +725,21 @@ export function WishlistPage() {
             console.error('[WishlistPage] ❌ Wishlist: Label parsing error:', error);
             if (isInsufficientCreditsError(error)) {
               openWishlistFormAfter = false;
-              window.dispatchEvent(new CustomEvent('sommi-insufficient-credits'));
+              const detail: {
+                context: 'scan';
+                requiredCredits?: number;
+                balance?: number;
+              } = { context: 'scan' };
+              if (
+                typeof error.requiredCredits === 'number' &&
+                typeof error.balance === 'number'
+              ) {
+                detail.requiredCredits = error.requiredCredits;
+                detail.balance = error.balance;
+              }
+              window.dispatchEvent(
+                new CustomEvent('sommi-insufficient-credits', { detail }),
+              );
             } else {
               toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
             }

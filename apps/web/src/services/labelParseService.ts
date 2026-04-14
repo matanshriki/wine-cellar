@@ -80,10 +80,17 @@ export async function parseLabelImage(
         response.status === 402 ||
         (result as { error?: string })?.error === 'insufficient_credits'
       ) {
+        const r = result as {
+          message?: string;
+          required?: number;
+          effectiveBalance?: number;
+        };
         throw new InsufficientCreditsError(
-          typeof (result as { message?: string }).message === 'string'
-            ? (result as { message: string }).message
-            : undefined,
+          typeof r.message === 'string' ? r.message : undefined,
+          {
+            requiredCredits: typeof r.required === 'number' ? r.required : undefined,
+            balance: typeof r.effectiveBalance === 'number' ? r.effectiveBalance : undefined,
+          },
         );
       }
       throw new Error((result as { error?: string }).error || 'Failed to parse label');

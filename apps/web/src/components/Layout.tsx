@@ -21,6 +21,7 @@ import { PricingModal } from './PricingModal';
 import { NoCreditsModal } from './NoCreditsModal';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
@@ -32,13 +33,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const [noCreditsContext, setNoCreditsContext] = useState<'scan' | 'chat' | 'analysis'>('scan');
+  const [noCreditsShortfall, setNoCreditsShortfall] = useState<{
+    required: number;
+    balance: number;
+  } | null>(null);
   const location = useLocation();
 
   // Credit enforcement — must come before any camera-open logic
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
-  // Always-current ref so stale closures (e.g. useEffect with []) still read the right value
-  const creditBlockedRef = useRef(false);
-  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
+  /** Smart label scan uses parse-label-image multi-bottle mode (8 credits). */
+  const scanCreditBlockedRef = useRef(false);
+  scanCreditBlockedRef.current = isBelowActionCost(
+    creditEnforcementEnabled,
+    effectiveBalance,
+    'receipt_scan',
+  );
   const { t, i18n } = useTranslation();
   const { 
     showAddSheet, 
@@ -89,11 +98,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // Server-side credit denial (e.g. race: balance hit 0 after UI check) — open same modal as FAB gate
   useEffect(() => {
     const onInsufficient = (e: Event) => {
-      const d = (e as CustomEvent<{ context?: string }>).detail?.context;
-      if (d === 'chat' || d === 'scan' || d === 'analysis') {
-        setNoCreditsContext(d);
+      const d = (e as CustomEvent<{
+        context?: string;
+        requiredCredits?: number;
+        balance?: number;
+      }>).detail;
+      const c = d?.context;
+      if (c === 'chat' || c === 'scan' || c === 'analysis') {
+        setNoCreditsContext(c);
       } else {
         setNoCreditsContext('scan');
+      }
+      if (
+        typeof d?.requiredCredits === 'number' &&
+        typeof d?.balance === 'number'
+      ) {
+        setNoCreditsShortfall({ required: d.requiredCredits, balance: d.balance });
+      } else {
+        setNoCreditsShortfall(null);
       }
       setNoCreditsOpen(true);
     };
@@ -201,9 +223,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     // Safety-net credit check: the primary block is in handleCameraFabClick, but
     // on some Android browsers the OS picker can open before JS runs the check.
-    if (creditBlockedRef.current) {
+    if (scanCreditBlockedRef.current) {
       e.target.value = '';
       setNoCreditsContext('scan');
+      setNoCreditsShortfall({
+        required: getCreditsRequired('receipt_scan'),
+        balance: effectiveBalance,
+      });
       setNoCreditsOpen(true);
       return;
     }
@@ -225,8 +251,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // Handle camera FAB click - different behavior based on platform
   const handleCameraFabClick = () => {
     // Credit gate — show luxury interstitial before opening any camera UI
-    if (creditBlockedRef.current) {
+    if (scanCreditBlockedRef.current) {
       setNoCreditsContext('scan');
+      setNoCreditsShortfall({
+        required: getCreditsRequired('receipt_scan'),
+        balance: effectiveBalance,
+      });
       setNoCreditsOpen(true);
       return;
     }
@@ -532,9 +562,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         reason={fallbackReason}
         onTryCamera={() => {
           // Credit gate applies even on retry
-          if (creditBlockedRef.current) {
+          if (scanCreditBlockedRef.current) {
             closeFallbackSheet();
             setNoCreditsContext('scan');
+            setNoCreditsShortfall({
+              required: getCreditsRequired('receipt_scan'),
+              balance: effectiveBalance,
+            });
             setNoCreditsOpen(true);
             return;
           }
@@ -548,9 +582,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         }}
         onChoosePhoto={async (file) => {
           // Credit gate: user may have selected a photo from library
-          if (creditBlockedRef.current) {
+          if (scanCreditBlockedRef.current) {
             closeFallbackSheet();
             setNoCreditsContext('scan');
+            setNoCreditsShortfall({
+              required: getCreditsRequired('receipt_scan'),
+              balance: effectiveBalance,
+            });
             setNoCreditsOpen(true);
             return;
           }
@@ -583,8 +621,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         }}
         onCapture={async (file) => {
           closePwaCamera();
-          if (creditBlockedRef.current) {
+          if (scanCreditBlockedRef.current) {
             setNoCreditsContext('scan');
+            setNoCreditsShortfall({
+              required: getCreditsRequired('receipt_scan'),
+              balance: effectiveBalance,
+            });
             setNoCreditsOpen(true);
             return;
           }
@@ -627,8 +669,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* No Credits modal — shown from the camera FAB when enforcement is on and balance is 0 */}
       <NoCreditsModal
         isOpen={noCreditsOpen}
-        onClose={() => setNoCreditsOpen(false)}
+        onClose={() => {
+          setNoCreditsOpen(false);
+          setNoCreditsShortfall(null);
+        }}
         context={noCreditsContext}
+        shortfall={noCreditsShortfall}
       />
 
       {/* PWA Install Prompt — shown after first bottle, not in standalone PWA */}

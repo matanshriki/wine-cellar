@@ -116,7 +116,13 @@ export function BulkAnalysisModal({
       } else if (isInsufficientCreditsError(error)) {
         onClose();
         window.dispatchEvent(
-          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'analysis' } }),
+          new CustomEvent('sommi-insufficient-credits', {
+            detail: {
+              context: 'analysis',
+              requiredCredits: error.requiredCredits,
+              balance: error.balance,
+            },
+          }),
         );
       } else {
         // Show error in UI

@@ -135,6 +135,19 @@ export function canUserAffordAction(
 }
 
 /**
+ * True when enforcement is on and the user's total balance is below the cost of this action.
+ * Use `effectiveBalance` from monetization (credit_balance + bonus_credits).
+ */
+export function isBelowActionCost(
+  enforcementEnabled: boolean,
+  effectiveBalance: number,
+  actionType: AiActionType | string,
+): boolean {
+  if (!enforcementEnabled) return false;
+  return effectiveBalance < getCreditsRequired(actionType);
+}
+
+/**
  * Returns true when the effective balance is low enough to show a warning.
  * Threshold: fewer than 5 credits remaining.
  */

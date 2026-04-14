@@ -172,7 +172,7 @@ export async function generateAIAnalysis(
     });
 
     if (error) {
-      throwIfInsufficientCreditsFromFunctionsInvokeError(error);
+      await throwIfInsufficientCreditsFromFunctionsInvokeError(error);
       console.warn('Edge function not available, using fallback analysis:', error);
       throw error; // Trigger fallback
     }
@@ -425,7 +425,7 @@ export async function analyzeCellarBulk(
     });
 
     if (error) {
-      throwIfInsufficientCreditsFromFunctionsInvokeError(error);
+      await throwIfInsufficientCreditsFromFunctionsInvokeError(error);
       console.error('[Bulk Analysis] Edge function error:', error);
       throw new Error(error.message || 'Failed to analyze cellar');
     }
@@ -634,7 +634,7 @@ export async function analyzeCellarInBatches(
       });
 
       if (error) {
-        throwIfInsufficientCreditsFromFunctionsInvokeError(error);
+        await throwIfInsufficientCreditsFromFunctionsInvokeError(error);
         console.error('[Batch Analysis] ❌ Batch error:', error);
         // Don't fail entire operation, just log and continue
         totalFailed += pageSize;

@@ -48,6 +48,7 @@ import * as smartScanService from '../services/smartScanService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
+import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { translateRegion, translateCountry, translateGrapes } from '../utils/wineTranslations';
 import { isDevEnvironment } from '../utils/devOnly'; // Feedback iteration (dev only)
 import { useFeatureFlags } from '../hooks/useFeatureFlags'; // Feature flags for beta features
@@ -171,23 +172,46 @@ export function CellarPage() {
   const [parsedFields, setParsedFields] = useState<string[]>([]);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const [noCreditsModalContext, setNoCreditsModalContext] = useState<'scan' | 'analysis'>('scan');
+  const [noCreditsShortfall, setNoCreditsShortfall] = useState<{
+    required: number;
+    balance: number;
+  } | null>(null);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
 
-  function openNoCreditsModal(context: 'scan' | 'analysis' = 'scan') {
+  function openNoCreditsModal(
+    context: 'scan' | 'analysis' = 'scan',
+    shortfall?: { required: number; balance: number } | null,
+  ) {
     setNoCreditsModalContext(context);
+    setNoCreditsShortfall(shortfall ?? null);
     setNoCreditsOpen(true);
   }
 
   // Always-current ref — readable by stale event-listener closures.
   // Set on every render so it reflects the latest loaded values.
-  const creditBlockedRef = useRef(false);
-  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
+  /** Block add-bottle sheet only at zero balance (manual entry still allowed above zero). */
+  const zeroBalanceBlockedRef = useRef(false);
+  zeroBalanceBlockedRef.current =
+    creditEnforcementEnabled && effectiveBalance === 0;
+  /** Smart scan uses multi-bottle parse-label path (8 credits). */
+  const scanCreditBlockedRef = useRef(false);
+  scanCreditBlockedRef.current = isBelowActionCost(
+    creditEnforcementEnabled,
+    effectiveBalance,
+    'receipt_scan',
+  );
+  const bulkCreditBlockedRef = useRef(false);
+  bulkCreditBlockedRef.current = isBelowActionCost(
+    creditEnforcementEnabled,
+    effectiveBalance,
+    'cellar_analysis',
+  );
 
   // ── Credit-gated scan openers ─────────────────────────────────────────────
   // These replace every bare setShowAddSheet(true) / setShowLabelCapture(true)
   // so the user is blocked BEFORE they open the camera, not after picking a photo.
   function guardedOpenAddSheet() {
-    if (creditBlockedRef.current) {
+    if (zeroBalanceBlockedRef.current) {
       openNoCreditsModal('scan');
       return;
     }
@@ -195,8 +219,11 @@ export function CellarPage() {
   }
 
   function guardedOpenLabelCapture(mode: 'camera' | 'upload' = 'camera') {
-    if (creditBlockedRef.current) {
-      openNoCreditsModal('scan');
+    if (scanCreditBlockedRef.current) {
+      openNoCreditsModal('scan', {
+        required: getCreditsRequired('receipt_scan'),
+        balance: effectiveBalance,
+      });
       return;
     }
     setShowLabelCapture(true);
@@ -679,7 +706,15 @@ export function CellarPage() {
     } catch (error: any) {
       console.error('Error analyzing bottle:', error);
       if (isInsufficientCreditsError(error)) {
-        openNoCreditsModal('analysis');
+        openNoCreditsModal(
+          'analysis',
+          error.requiredCredits != null && error.balance != null
+            ? { required: error.requiredCredits, balance: error.balance }
+            : {
+                required: getCreditsRequired('wine_bottle_analysis'),
+                balance: effectiveBalance,
+              },
+        );
         setBottles(
           bottles.map((b) =>
             b.id === id ? { ...b, isAnalyzing: false } as any : b
@@ -766,8 +801,11 @@ export function CellarPage() {
   }
 
   function handleBulkAnalysis() {
-    if (creditBlockedRef.current) {
-      openNoCreditsModal('analysis');
+    if (bulkCreditBlockedRef.current) {
+      openNoCreditsModal('analysis', {
+        required: getCreditsRequired('cellar_analysis'),
+        balance: effectiveBalance,
+      });
       return;
     }
     setShowBulkAnalysis(true);
@@ -790,9 +828,12 @@ export function CellarPage() {
    */
   const handleSmartScan = async (file: File) => {
     // Credit enforcement safety net (primary block is in guardedOpen* functions above)
-    if (creditBlockedRef.current) {
+    if (scanCreditBlockedRef.current) {
       setShowAddSheet(false);
-      openNoCreditsModal('scan');
+      openNoCreditsModal('scan', {
+        required: getCreditsRequired('receipt_scan'),
+        balance: effectiveBalance,
+      });
       return;
     }
 
@@ -836,7 +877,15 @@ export function CellarPage() {
       console.error('[CellarPage] Smart scan error:', error);
 
       if (isInsufficientCreditsError(error)) {
-        openNoCreditsModal('scan');
+        openNoCreditsModal(
+          'scan',
+          error.requiredCredits != null && error.balance != null
+            ? { required: error.requiredCredits, balance: error.balance }
+            : {
+                required: getCreditsRequired('receipt_scan'),
+                balance: effectiveBalance,
+              },
+        );
         return;
       }
 
@@ -2176,7 +2225,15 @@ export function CellarPage() {
           } catch (error: any) {
             console.error('[CellarPage] ❌ Wishlist: Label parsing error:', error);
             if (isInsufficientCreditsError(error)) {
-              openNoCreditsModal('scan');
+              openNoCreditsModal(
+                'scan',
+                error.requiredCredits != null && error.balance != null
+                  ? { required: error.requiredCredits, balance: error.balance }
+                  : {
+                      required: getCreditsRequired('label_scan'),
+                      balance: effectiveBalance,
+                    },
+              );
             } else {
               toast.error(t('cellar.labelParse.error') + (error.message ? ` (${error.message.substring(0, 50)})` : ''));
             }
@@ -2479,8 +2536,12 @@ export function CellarPage() {
       {/* No-credits interstitial — shown when enforcement is on and balance hits 0 */}
       <NoCreditsModal
         isOpen={noCreditsOpen}
-        onClose={() => setNoCreditsOpen(false)}
+        onClose={() => {
+          setNoCreditsOpen(false);
+          setNoCreditsShortfall(null);
+        }}
         context={noCreditsModalContext}
+        shortfall={noCreditsShortfall}
       />
 
       {/* Keep / Reserve — date reminder modal */}

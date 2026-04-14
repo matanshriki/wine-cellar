@@ -262,8 +262,20 @@ export function RecommendationPage() {
       return analysisResult;
     } catch (error: any) {
       if (isInsufficientCreditsError(error)) {
+        const detail: {
+          context: 'analysis';
+          requiredCredits?: number;
+          balance?: number;
+        } = { context: 'analysis' };
+        if (
+          typeof error.requiredCredits === 'number' &&
+          typeof error.balance === 'number'
+        ) {
+          detail.requiredCredits = error.requiredCredits;
+          detail.balance = error.balance;
+        }
         window.dispatchEvent(
-          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'analysis' } }),
+          new CustomEvent('sommi-insufficient-credits', { detail }),
         );
         return undefined;
       }

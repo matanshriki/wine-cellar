@@ -39,6 +39,7 @@ import { PricingModal } from '../components/PricingModal';
 import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
+import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { useTheme } from '../contexts/ThemeContext';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
@@ -220,14 +221,22 @@ export function AgentPageWorking() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const [noCreditsShortfall, setNoCreditsShortfall] = useState<{
+    required: number;
+    balance: number;
+  } | null>(null);
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
   const { theme } = useTheme();
   const isDark = theme === 'red';
   /** Tagline / editorial accent: champagne gold on dark, classic gold on light */
   const taglineAccent = isDark ? '#C9A962' : '#8b6914';
   // Always-current ref so handleSend never reads a stale closure value
-  const creditBlockedRef = useRef(false);
-  creditBlockedRef.current = creditEnforcementEnabled && effectiveBalance === 0;
+  const chatCreditBlockedRef = useRef(false);
+  chatCreditBlockedRef.current = isBelowActionCost(
+    creditEnforcementEnabled,
+    effectiveBalance,
+    'sommelier_chat_message',
+  );
   const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -360,7 +369,11 @@ export function AgentPageWorking() {
     if (!text.trim() || isSubmitting || bottlesInCellar.length === 0) return;
 
     // Credit enforcement: show luxury interstitial instead of submitting
-    if (creditBlockedRef.current) {
+    if (chatCreditBlockedRef.current) {
+      setNoCreditsShortfall({
+        required: getCreditsRequired('sommelier_chat_message'),
+        balance: effectiveBalance,
+      });
       setNoCreditsOpen(true);
       return;
     }
@@ -405,6 +418,14 @@ export function AgentPageWorking() {
     } catch (error: any) {
       if (isInsufficientCreditsError(error)) {
         setMessages(messages);
+        setNoCreditsShortfall(
+          error.requiredCredits != null && error.balance != null
+            ? { required: error.requiredCredits, balance: error.balance }
+            : {
+                required: getCreditsRequired('sommelier_chat_message'),
+                balance: effectiveBalance,
+              },
+        );
         setNoCreditsOpen(true);
         return;
       }
@@ -589,6 +610,11 @@ export function AgentPageWorking() {
     } catch (error: any) {
       console.error('Transcription error:', error);
       if (isInsufficientCreditsError(error)) {
+        setNoCreditsShortfall(
+          error.requiredCredits != null && error.balance != null
+            ? { required: error.requiredCredits, balance: error.balance }
+            : null,
+        );
         setNoCreditsOpen(true);
         return;
       }
@@ -1454,8 +1480,12 @@ export function AgentPageWorking() {
       {/* No-credits interstitial — shown when enforcement is on and balance hits 0 */}
       <NoCreditsModal
         isOpen={noCreditsOpen}
-        onClose={() => setNoCreditsOpen(false)}
+        onClose={() => {
+          setNoCreditsOpen(false);
+          setNoCreditsShortfall(null);
+        }}
         context="chat"
+        shortfall={noCreditsShortfall}
       />
     </>
   );

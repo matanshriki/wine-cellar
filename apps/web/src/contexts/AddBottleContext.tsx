@@ -199,7 +199,13 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
         setScanningMessage('');
         setShowAddSheet(false);
         window.dispatchEvent(
-          new CustomEvent('sommi-insufficient-credits', { detail: { context: 'scan' } }),
+          new CustomEvent('sommi-insufficient-credits', {
+            detail: {
+              context: 'scan',
+              requiredCredits: error.requiredCredits,
+              balance: error.balance,
+            },
+          }),
         );
         return;
       }
