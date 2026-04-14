@@ -18,6 +18,7 @@
 import { useState, useEffect } from 'react';
 import { isStandalonePwa, isIos, isAndroid } from '../utils/deviceDetection';
 import { supabase } from '../lib/supabase';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 
 // ── localStorage keys ─────────────────────────────────────────────────────────
 const KEY_DISMISSED_UNTIL = 'pwa_prompt_dismissed_until';
@@ -45,7 +46,7 @@ if (typeof window !== 'undefined') {
     'appinstalled',
     () => {
       _deferredPrompt = null;
-      try { localStorage.setItem(KEY_NEVER, 'true'); } catch {}
+      safeSetItem(KEY_NEVER, 'true');
     },
     { once: true },
   );
@@ -63,11 +64,9 @@ function detectPlatform(): PromptPlatform {
 function isEligible(): boolean {
   // Already running as PWA
   if (isStandalonePwa()) return false;
-  try {
-    if (localStorage.getItem(KEY_NEVER) === 'true') return false;
-    const until = localStorage.getItem(KEY_DISMISSED_UNTIL);
-    if (until && Date.now() < parseInt(until, 10)) return false;
-  } catch {}
+  if (safeGetItem(KEY_NEVER) === 'true') return false;
+  const until = safeGetItem(KEY_DISMISSED_UNTIL);
+  if (until && Date.now() < parseInt(until, 10)) return false;
   return true;
 }
 
@@ -83,9 +82,7 @@ export function usePwaInstallPrompt() {
   }, []);
 
   // Track whether user has ever added a bottle (persisted across sessions)
-  const [hasBottle, setHasBottle] = useState(() => {
-    try { return localStorage.getItem(KEY_HAS_BOTTLE) === 'true'; } catch { return false; }
-  });
+  const [hasBottle, setHasBottle] = useState(() => safeGetItem(KEY_HAS_BOTTLE) === 'true');
 
   // Show the prompt (with a 2-second delay so the page settles first)
   const tryShow = () => {
@@ -107,7 +104,7 @@ export function usePwaInstallPrompt() {
     // Fallback: check auth state — any logged-in user is eligible
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        try { localStorage.setItem(KEY_HAS_BOTTLE, 'true'); } catch {}
+        safeSetItem(KEY_HAS_BOTTLE, 'true');
         setHasBottle(true);
       }
     });
@@ -117,7 +114,7 @@ export function usePwaInstallPrompt() {
   // Listen for 'bottleCreated' events (fired by bottleService after a new bottle)
   useEffect(() => {
     const handler = () => {
-      try { localStorage.setItem(KEY_HAS_BOTTLE, 'true'); } catch {}
+      safeSetItem(KEY_HAS_BOTTLE, 'true');
       setHasBottle(true);
     };
     window.addEventListener('bottleCreated', handler);
@@ -142,11 +139,9 @@ export function usePwaInstallPrompt() {
       _deferredPrompt = null;
       setHasNativePrompt(false);
       if (outcome === 'accepted') {
-        try { localStorage.setItem(KEY_NEVER, 'true'); } catch {}
+        safeSetItem(KEY_NEVER, 'true');
       } else {
-        try {
-          localStorage.setItem(KEY_DISMISSED_UNTIL, String(Date.now() + SEVEN_DAYS_MS));
-        } catch {}
+        safeSetItem(KEY_DISMISSED_UNTIL, String(Date.now() + SEVEN_DAYS_MS));
       }
     }
     setIsVisible(false);
@@ -154,9 +149,7 @@ export function usePwaInstallPrompt() {
 
   /** "Maybe later" — suppress for 7 days */
   const handleDismiss = () => {
-    try {
-      localStorage.setItem(KEY_DISMISSED_UNTIL, String(Date.now() + SEVEN_DAYS_MS));
-    } catch {}
+    safeSetItem(KEY_DISMISSED_UNTIL, String(Date.now() + SEVEN_DAYS_MS));
     setIsVisible(false);
   };
 

@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { safeGetItem } from '../utils/safeLocalStorage';
 import type { BottleWithWineInfo } from './bottleService';
 
 export interface ShareData {
@@ -63,14 +64,9 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
   }
 
   // Get user's current sort preference from localStorage
-  let sortBy = 'createdAt';
-  let sortDir: 'asc' | 'desc' = 'desc';
-  try {
-    sortBy = localStorage.getItem('cellar-sort-by') || 'createdAt';
-    sortDir = (localStorage.getItem('cellar-sort-dir') as 'asc' | 'desc') || 'desc';
-  } catch (error) {
-    console.log('[shareService] Could not read sort preferences from localStorage');
-  }
+  const rawDir = safeGetItem('cellar-sort-dir');
+  const sortBy = safeGetItem('cellar-sort-by') || 'createdAt';
+  const sortDir: 'asc' | 'desc' = rawDir === 'asc' || rawDir === 'desc' ? rawDir : 'desc';
 
   // Get user profile for display name (with error handling)
   let userName = 'Wine Enthusiast';

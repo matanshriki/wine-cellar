@@ -12,6 +12,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 
 export type Theme = 'white' | 'red';
 
@@ -56,7 +57,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   async function loadTheme() {
     try {
       // 1. Try localStorage first (instant)
-      const stored = localStorage.getItem('theme');
+      const stored = safeGetItem('theme');
       if (stored === 'white' || stored === 'red') {
         setThemeState(stored);
         applyTheme(stored);
@@ -75,7 +76,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             (profile.theme_preference === 'white' || profile.theme_preference === 'red')) {
           setThemeState(profile.theme_preference);
           applyTheme(profile.theme_preference);
-          localStorage.setItem('theme', profile.theme_preference);
+          safeSetItem('theme', profile.theme_preference);
         }
       }
     } catch (error) {
@@ -94,7 +95,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     try {
       setThemeState(newTheme);
       applyTheme(newTheme);
-      localStorage.setItem('theme', newTheme);
+      safeSetItem('theme', newTheme);
 
       // Save to Supabase in the background (non-blocking)
       const { data: { user } } = await supabase.auth.getUser();

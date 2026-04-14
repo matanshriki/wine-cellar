@@ -25,6 +25,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { trackSommelier } from '../services/analytics';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 
 /** Gold card + desktop scheduling (legacy key — unchanged for backward compat). */
 const DESKTOP_INTRO_KEY = 'sommelier-fab-intro-seen';
@@ -41,7 +42,7 @@ const SOMMELIER_FAB_INTRO_DEBUG =
 
 function hasDesktopIntroBeenSeen(): boolean {
   if (SOMMELIER_FAB_INTRO_DEBUG) return false;
-  return !!localStorage.getItem(DESKTOP_INTRO_KEY);
+  return !!safeGetItem(DESKTOP_INTRO_KEY);
 }
 
 interface SommelierChatButtonProps {
@@ -65,7 +66,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
   const persistDesktopIntroSeen = useCallback(() => {
     if (SOMMELIER_FAB_INTRO_DEBUG) return;
-    localStorage.setItem(DESKTOP_INTRO_KEY, '1');
+    safeSetItem(DESKTOP_INTRO_KEY, '1');
   }, []);
 
   /** Desktop gold card: close UI + mark desktop intro only. */

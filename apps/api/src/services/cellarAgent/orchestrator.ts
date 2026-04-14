@@ -43,6 +43,7 @@ import {
 import type { ActionContext, AgentResponseMeta, RecommendationExplanation } from './sommelierTypes.js';
 import { findSimilarCandidates } from './similarBottles.js';
 import { inferMemoryUpdateFromText } from './preferenceInference.js';
+import { parseJsonFromModelContent } from '../../utils/safeJson.js';
 import {
   markBottleOpened,
   saveSommelierFeedback,
@@ -337,12 +338,16 @@ async function runOrchestratedRecommendation(params: {
         throw new Error('empty_openai_content');
       }
 
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(content) as Record<string, unknown>;
-      } catch {
+      const parsedResult = parseJsonFromModelContent(content);
+      if (
+        !parsedResult.ok ||
+        parsedResult.value === null ||
+        typeof parsedResult.value !== 'object' ||
+        Array.isArray(parsedResult.value)
+      ) {
         throw new Error('json_parse_failed');
       }
+      const parsed = parsedResult.value as Record<string, unknown>;
 
       const ids = new Set(bottles.map((b) => b.id));
 
@@ -778,12 +783,16 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           const content = response.choices[0]?.message?.content;
           if (!content) throw new Error('empty_buy_recommendation_content');
 
-          let parsed: Record<string, unknown>;
-          try {
-            parsed = JSON.parse(content);
-          } catch {
+          const buyParsed = parseJsonFromModelContent(content);
+          if (
+            !buyParsed.ok ||
+            buyParsed.value === null ||
+            typeof buyParsed.value !== 'object' ||
+            Array.isArray(buyParsed.value)
+          ) {
             throw new Error('buy_recommendation_json_parse_failed');
           }
+          const parsed = buyParsed.value as Record<string, unknown>;
 
           parsed.type = 'buy_suggestions';
 

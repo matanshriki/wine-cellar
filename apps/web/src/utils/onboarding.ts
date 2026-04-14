@@ -6,6 +6,8 @@
  * Re-shows after 7 days if cellar is still empty (re-engagement).
  */
 
+import { safeGetItem, safeRemoveItem, safeSetItem } from './safeLocalStorage';
+
 // Onboarding v1 – production: Storage keys
 const ONBOARDING_SEEN_KEY = 'wcb_onboarding_seen';
 const ONBOARDING_TIMESTAMP_KEY = 'wcb_onboarding_timestamp';
@@ -28,7 +30,7 @@ export function shouldShowOnboarding(bottleCount: number = 0): boolean {
     return false;
   }
 
-  const hasSeenOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
+  const hasSeenOnboarding = safeGetItem(ONBOARDING_SEEN_KEY) === 'true';
   
   // First-time user in this browser — show only if cellar is still small/empty
   if (!hasSeenOnboarding) {
@@ -36,7 +38,7 @@ export function shouldShowOnboarding(bottleCount: number = 0): boolean {
   }
   
   // User has seen it before - check if we should re-engage
-  const timestampStr = localStorage.getItem(ONBOARDING_TIMESTAMP_KEY);
+  const timestampStr = safeGetItem(ONBOARDING_TIMESTAMP_KEY);
   if (!timestampStr) {
     // No timestamp (old version) - don't show again
     return false;
@@ -60,8 +62,8 @@ export function shouldShowOnboarding(bottleCount: number = 0): boolean {
  * Stores timestamp for re-engagement logic
  */
 export function markOnboardingSeen(): void {
-  localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
-  localStorage.setItem(ONBOARDING_TIMESTAMP_KEY, Date.now().toString());
+  safeSetItem(ONBOARDING_SEEN_KEY, 'true');
+  safeSetItem(ONBOARDING_TIMESTAMP_KEY, Date.now().toString());
 }
 
 /**
@@ -70,7 +72,7 @@ export function markOnboardingSeen(): void {
  */
 export function syncOnboardingSeenForEstablishedCellar(bottleCount: number): void {
   if (bottleCount <= 2) return;
-  if (localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true') return;
+  if (safeGetItem(ONBOARDING_SEEN_KEY) === 'true') return;
   markOnboardingSeen();
 }
 
@@ -78,35 +80,35 @@ export function syncOnboardingSeenForEstablishedCellar(bottleCount: number): voi
  * Check if demo mode is currently active
  */
 export function isDemoModeActive(): boolean {
-  return localStorage.getItem(DEMO_MODE_ACTIVE_KEY) === 'true';
+  return safeGetItem(DEMO_MODE_ACTIVE_KEY) === 'true';
 }
 
 /**
  * Activate demo mode
  */
 export function activateDemoMode(): void {
-  localStorage.setItem(DEMO_MODE_ACTIVE_KEY, 'true');
+  safeSetItem(DEMO_MODE_ACTIVE_KEY, 'true');
 }
 
 /**
  * Deactivate demo mode
  */
 export function deactivateDemoMode(): void {
-  localStorage.removeItem(DEMO_MODE_ACTIVE_KEY);
+  safeRemoveItem(DEMO_MODE_ACTIVE_KEY);
 }
 
 /**
  * Check if user has added their first bottle
  */
 export function hasAddedFirstBottle(): boolean {
-  return localStorage.getItem(FIRST_BOTTLE_ADDED_KEY) === 'true';
+  return safeGetItem(FIRST_BOTTLE_ADDED_KEY) === 'true';
 }
 
 /**
  * Mark that user has added their first bottle
  */
 export function markFirstBottleAdded(): void {
-  localStorage.setItem(FIRST_BOTTLE_ADDED_KEY, 'true');
+  safeSetItem(FIRST_BOTTLE_ADDED_KEY, 'true');
   // Onboarding v1 – production: Exit demo mode when first bottle is added
   deactivateDemoMode();
 }
@@ -116,10 +118,10 @@ export function markFirstBottleAdded(): void {
  * Available globally as window.resetOnboarding()
  */
 export function resetOnboardingState(): void {
-  localStorage.removeItem(ONBOARDING_SEEN_KEY);
-  localStorage.removeItem(ONBOARDING_TIMESTAMP_KEY);
-  localStorage.removeItem(DEMO_MODE_ACTIVE_KEY);
-  localStorage.removeItem(FIRST_BOTTLE_ADDED_KEY);
+  safeRemoveItem(ONBOARDING_SEEN_KEY);
+  safeRemoveItem(ONBOARDING_TIMESTAMP_KEY);
+  safeRemoveItem(DEMO_MODE_ACTIVE_KEY);
+  safeRemoveItem(FIRST_BOTTLE_ADDED_KEY);
   console.log('[Onboarding] State reset - refresh to see onboarding');
 }
 

@@ -19,6 +19,7 @@ import * as eveningShareService from '../services/eveningShareService';
 import type { GuestShareData } from '../services/eveningShareService';
 import type { QueuedWine } from '../services/eveningPlanService';
 import { MetaHead } from '../components/MetaHead';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 
 // ─── Wine Card ────────────────────────────────────────────────────────────────
 
@@ -201,7 +202,7 @@ export function GuestEveningPage() {
         setVoteCounts(data.vote_counts ?? {});
 
         // Restore my votes from localStorage (in case of page refresh)
-        const saved = localStorage.getItem(sessionVoteKey);
+        const saved = safeGetItem(sessionVoteKey);
         if (saved) {
           try {
             setMyVotes(new Set(JSON.parse(saved)));
@@ -220,7 +221,7 @@ export function GuestEveningPage() {
   // ── Persist my votes to localStorage ─────────────────────────────────────
   const persistMyVotes = useCallback(
     (next: Set<string>) => {
-      localStorage.setItem(sessionVoteKey, JSON.stringify(Array.from(next)));
+      safeSetItem(sessionVoteKey, JSON.stringify(Array.from(next)));
     },
     [sessionVoteKey],
   );

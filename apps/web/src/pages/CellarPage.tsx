@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { MetaHead } from '../components/MetaHead';
 import { isIPad } from '../utils/deviceDetection';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../utils/safeLocalStorage';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,19 +142,10 @@ export function CellarPage() {
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   
   // Sort state - persist in localStorage
-  const [sortBy, setSortBy] = useState<string>(() => {
-    try {
-      return localStorage.getItem('cellar-sort-by') || 'createdAt';
-    } catch {
-      return 'createdAt';
-    }
-  });
+  const [sortBy, setSortBy] = useState<string>(() => safeGetItem('cellar-sort-by') || 'createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(() => {
-    try {
-      return (localStorage.getItem('cellar-sort-dir') as 'asc' | 'desc') || 'desc';
-    } catch {
-      return 'desc';
-    }
+    const d = safeGetItem('cellar-sort-dir') as 'asc' | 'desc' | null;
+    return d === 'asc' || d === 'desc' ? d : 'desc';
   });
   const [showSortMenu, setShowSortMenu] = useState(false);
   
@@ -257,11 +249,7 @@ export function CellarPage() {
     loadBottles(true); // Initial load with reset=true
     
     // Clear any stale form drafts on mount (prevent crashes from old data)
-    try {
-      localStorage.removeItem('wine-form-draft');
-    } catch (e) {
-      console.error('[CellarPage] Failed to clear form draft:', e);
-    }
+    safeRemoveItem('wine-form-draft');
   }, []);
 
   // Listen for Camera FAB actions from global Layout
@@ -387,8 +375,8 @@ export function CellarPage() {
     if (sort) {
       setSortBy('rating');
       setSortDir('desc');
-      localStorage.setItem('cellar-sort-by', 'rating');
-      localStorage.setItem('cellar-sort-dir', 'desc');
+      safeSetItem('cellar-sort-by', 'rating');
+      safeSetItem('cellar-sort-dir', 'desc');
     }
 
     // Clear URL params after applying (clean URL)
@@ -1159,12 +1147,8 @@ export function CellarPage() {
     setSortDir(newSortDir);
     setShowSortMenu(false);
 
-    try {
-      localStorage.setItem('cellar-sort-by', newSortBy);
-      localStorage.setItem('cellar-sort-dir', newSortDir);
-    } catch (e) {
-      console.error('[CellarPage] Failed to persist sort:', e);
-    }
+    safeSetItem('cellar-sort-by', newSortBy);
+    safeSetItem('cellar-sort-dir', newSortDir);
 
     requestAnimationFrame(() => {
       setTimeout(() => {

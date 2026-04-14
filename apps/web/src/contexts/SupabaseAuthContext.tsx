@@ -18,6 +18,7 @@ import {
   setupSessionKeepAlive,
   checkSessionTimeout 
 } from '../utils/sessionPersistence';
+import { safeRemoveItem } from '../utils/safeLocalStorage';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -107,7 +108,13 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
 
     // Get initial session with recovery support
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error: sessionError }) => {
+      if (sessionError) {
+        console.error('[Auth] getSession error:', sessionError);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Set loading false BEFORE profile load
@@ -173,8 +180,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             // Setup timeout checks for recovered session
             timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
           }
+        }).catch((err) => {
+          console.error('[Auth] Session recovery promise rejected:', err);
+          clearSessionMarkers();
         });
       }
+    }).catch((err) => {
+      console.error('[Auth] getSession promise rejected:', err);
+      setLoading(false);
     });
 
     // Listen for auth changes
@@ -303,9 +316,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
     // Clear cookie consent from localStorage on logout
     // This ensures each user gets their own consent prompt
-    localStorage.removeItem('cookie_consent');
-    localStorage.removeItem('analytics_enabled');
-    localStorage.removeItem('consent_user_id');
+    safeRemoveItem('cookie_consent');
+    safeRemoveItem('analytics_enabled');
+    safeRemoveItem('consent_user_id');
 
     setUser(null);
     setSession(null);

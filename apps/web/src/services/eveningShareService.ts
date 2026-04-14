@@ -9,6 +9,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 import type { QueuedWine } from './eveningPlanService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -242,10 +243,10 @@ export async function submitGuestVote(
  */
 export function getGuestSessionId(): string {
   const key = 'guest_evening_session_id';
-  let id = localStorage.getItem(key);
+  let id = safeGetItem(key);
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem(key, id);
+    safeSetItem(key, id);
   }
   return id;
 }

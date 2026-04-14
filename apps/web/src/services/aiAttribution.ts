@@ -26,6 +26,8 @@
  *   Custom:  ?ai_source=<engine>   (highest priority, no medium needed)
  */
 
+import { safeGetItem, safeSessionGetItem, safeSessionSetItem, safeSetItem } from '../utils/safeLocalStorage';
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AttributionData {
@@ -186,12 +188,12 @@ export function captureAttribution(): void {
   };
 
   // First-touch: write once, never overwrite
-  if (!localStorage.getItem(FIRST_TOUCH_KEY)) {
-    localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(data));
+  if (!safeGetItem(FIRST_TOUCH_KEY)) {
+    safeSetItem(FIRST_TOUCH_KEY, JSON.stringify(data));
   }
 
   // Last-touch: always update
-  localStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(data));
+  safeSetItem(LAST_TOUCH_KEY, JSON.stringify(data));
 
   if (import.meta.env.DEV) {
     console.log('[AiAttribution] Captured:', data);
@@ -210,15 +212,15 @@ export function sendAttributionToGA(): void {
   if (!window.gtag) return;
 
   // De-duplicate within a single browser session
-  if (sessionStorage.getItem(SESSION_SENT_KEY)) return;
-  sessionStorage.setItem(SESSION_SENT_KEY, '1');
+  if (safeSessionGetItem(SESSION_SENT_KEY)) return;
+  safeSessionSetItem(SESSION_SENT_KEY, '1');
 
   let firstTouch: AttributionData | null = null;
   let lastTouch: AttributionData | null = null;
 
   try {
-    const ft = localStorage.getItem(FIRST_TOUCH_KEY);
-    const lt = localStorage.getItem(LAST_TOUCH_KEY);
+    const ft = safeGetItem(FIRST_TOUCH_KEY);
+    const lt = safeGetItem(LAST_TOUCH_KEY);
     if (ft) firstTouch = JSON.parse(ft);
     if (lt) lastTouch = JSON.parse(lt);
   } catch {
@@ -272,8 +274,8 @@ export function getStoredAttribution(): {
   lastTouch: AttributionData | null;
 } {
   try {
-    const ft = localStorage.getItem(FIRST_TOUCH_KEY);
-    const lt = localStorage.getItem(LAST_TOUCH_KEY);
+    const ft = safeGetItem(FIRST_TOUCH_KEY);
+    const lt = safeGetItem(LAST_TOUCH_KEY);
     return {
       firstTouch: ft ? JSON.parse(ft) : null,
       lastTouch: lt ? JSON.parse(lt) : null,

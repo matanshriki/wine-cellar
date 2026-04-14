@@ -11,6 +11,7 @@ import type { CellarBottleInput } from './types.js';
 import { buildLegacyCellarContextPayload } from './candidateSelection.js';
 import { sliceHistoryForChat } from './chatMessages.js';
 import { validateModelOutput } from './validation.js';
+import { parseJsonFromModelContent } from '../../utils/safeJson.js';
 
 export async function runLegacyRecommendation(params: {
   openai: OpenAI;
@@ -55,7 +56,16 @@ export async function runLegacyRecommendation(params: {
         throw new Error('Empty response from OpenAI');
       }
 
-      const parsed = JSON.parse(content) as Record<string, unknown>;
+      const parsedResult = parseJsonFromModelContent(content);
+      if (
+        !parsedResult.ok ||
+        parsedResult.value === null ||
+        typeof parsedResult.value !== 'object' ||
+        Array.isArray(parsedResult.value)
+      ) {
+        throw new Error('json_parse_failed');
+      }
+      const parsed = parsedResult.value as Record<string, unknown>;
       const ids = new Set(bottles.map((b) => b.id));
 
       if (parsed.bottles && Array.isArray(parsed.bottles) && parsed.bottles.length > 0) {

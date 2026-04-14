@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 
 export interface WineTimer {
   id: string;
@@ -91,7 +92,7 @@ function getKey(userId: string) {
 
 function loadFromStorage(userId: string): WineTimer[] {
   try {
-    const raw = localStorage.getItem(getKey(userId));
+    const raw = safeGetItem(getKey(userId));
     if (!raw) return [];
     return JSON.parse(raw) as WineTimer[];
   } catch {
@@ -100,11 +101,7 @@ function loadFromStorage(userId: string): WineTimer[] {
 }
 
 function saveToStorage(userId: string, timers: WineTimer[]) {
-  try {
-    localStorage.setItem(getKey(userId), JSON.stringify(timers));
-  } catch {
-    // Silently ignore storage errors
-  }
+  safeSetItem(getKey(userId), JSON.stringify(timers));
 }
 
 export function useTimerManager() {

@@ -9,6 +9,8 @@
  * - Inactivity timeout: 3 days (no user interaction)
  */
 
+import { safeGetItem, safeRemoveItem, safeSetItem } from './safeLocalStorage';
+
 const SESSION_CHECK_KEY = 'wine-cellar-session-active';
 const LAST_ACTIVITY_KEY = 'wine-cellar-last-activity';
 const SESSION_START_KEY = 'wine-cellar-session-start';
@@ -22,18 +24,13 @@ const INACTIVITY_TIMEOUT = 3 * 24 * 60 * 60 * 1000;   // 3 days
  * Also sets session start time if this is a new session
  */
 export function markSessionActive(): void {
-  try {
-    const now = Date.now().toString();
-    localStorage.setItem(SESSION_CHECK_KEY, 'true');
-    localStorage.setItem(LAST_ACTIVITY_KEY, now);
-    
-    // Set session start time if not already set
-    if (!localStorage.getItem(SESSION_START_KEY)) {
-      localStorage.setItem(SESSION_START_KEY, now);
-      console.log('[Session] New session started');
-    }
-  } catch (error) {
-    console.warn('Failed to mark session as active:', error);
+  const now = Date.now().toString();
+  safeSetItem(SESSION_CHECK_KEY, 'true');
+  safeSetItem(LAST_ACTIVITY_KEY, now);
+
+  if (!safeGetItem(SESSION_START_KEY)) {
+    safeSetItem(SESSION_START_KEY, now);
+    console.log('[Session] New session started');
   }
 }
 
@@ -42,32 +39,23 @@ export function markSessionActive(): void {
  * Returns true if there was recent activity (within last 7 days)
  */
 export function shouldRecoverSession(): boolean {
-  try {
-    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
-    if (!lastActivity) return false;
+  const lastActivity = safeGetItem(LAST_ACTIVITY_KEY);
+  if (!lastActivity) return false;
 
-    const lastActivityTime = parseInt(lastActivity, 10);
-    const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-    const timeSinceLastActivity = Date.now() - lastActivityTime;
+  const lastActivityTime = parseInt(lastActivity, 10);
+  const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+  const timeSinceLastActivity = Date.now() - lastActivityTime;
 
-    return timeSinceLastActivity < sevenDaysInMs;
-  } catch (error) {
-    console.warn('Failed to check session recovery:', error);
-    return false;
-  }
+  return timeSinceLastActivity < sevenDaysInMs;
 }
 
 /**
  * Clear session markers (called on logout)
  */
 export function clearSessionMarkers(): void {
-  try {
-    localStorage.removeItem(SESSION_CHECK_KEY);
-    localStorage.removeItem(LAST_ACTIVITY_KEY);
-    localStorage.removeItem(SESSION_START_KEY);
-  } catch (error) {
-    console.warn('Failed to clear session markers:', error);
-  }
+  safeRemoveItem(SESSION_CHECK_KEY);
+  safeRemoveItem(LAST_ACTIVITY_KEY);
+  safeRemoveItem(SESSION_START_KEY);
 }
 
 /**
@@ -76,8 +64,8 @@ export function clearSessionMarkers(): void {
  */
 export function checkSessionTimeout(): { expired: boolean; reason?: string; timeRemaining?: number } {
   try {
-    const sessionStart = localStorage.getItem(SESSION_START_KEY);
-    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+    const sessionStart = safeGetItem(SESSION_START_KEY);
+    const lastActivity = safeGetItem(LAST_ACTIVITY_KEY);
     
     if (!sessionStart || !lastActivity) {
       return { expired: false };

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { config } from '../config.js';
 import { Bottle, BottleAnalysis } from '@prisma/client';
+import { parseJsonFromModelContent } from '../utils/safeJson.js';
 
 const openai = config.openaiApiKey
   ? new OpenAI({ apiKey: config.openaiApiKey })
@@ -84,15 +85,41 @@ Respond ONLY with valid JSON.`;
     });
 
     const content = response.choices[0]?.message?.content || '';
-    const parsed = JSON.parse(content);
+    const parsedResult = parseJsonFromModelContent(content);
+    if (
+      !parsedResult.ok ||
+      parsedResult.value === null ||
+      typeof parsedResult.value !== 'object' ||
+      Array.isArray(parsedResult.value)
+    ) {
+      throw new Error('invalid_analysis_json');
+    }
+    const parsed = parsedResult.value as Record<string, unknown>;
+
+    const rs = parsed.readinessStatus;
+    const readinessStatus: ReadinessStatus =
+      rs === 'TooYoung' ||
+      rs === 'Approaching' ||
+      rs === 'InWindow' ||
+      rs === 'Peak' ||
+      rs === 'PastPeak' ||
+      rs === 'Unknown'
+        ? rs
+        : 'Unknown';
+
+    const optNum = (v: unknown): number | undefined =>
+      typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 
     return {
-      readinessStatus: parsed.readinessStatus || 'Unknown',
-      drinkFromYear: parsed.drinkFromYear,
-      drinkToYear: parsed.drinkToYear,
-      decantMinutes: parsed.decantMinutes,
-      serveTempC: parsed.serveTempC,
-      explanation: parsed.explanation || 'Analysis completed.',
+      readinessStatus,
+      drinkFromYear: optNum(parsed.drinkFromYear),
+      drinkToYear: optNum(parsed.drinkToYear),
+      decantMinutes: optNum(parsed.decantMinutes),
+      serveTempC: optNum(parsed.serveTempC),
+      explanation:
+        typeof parsed.explanation === 'string' && parsed.explanation.trim()
+          ? parsed.explanation
+          : 'Analysis completed.',
       aiGenerated: true,
     };
   } catch (error) {
@@ -310,12 +337,12 @@ Return ONLY the JSON array, no markdown or other text.`;
     });
 
     const content = response.choices[0]?.message?.content || '[]';
-    
-    // Try to extract JSON if wrapped in markdown
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    const jsonContent = jsonMatch ? jsonMatch[0] : content;
-    
-    const recommendations = JSON.parse(jsonContent);
+
+    const parsedResult = parseJsonFromModelContent(content);
+    if (!parsedResult.ok || !Array.isArray(parsedResult.value)) {
+      throw new Error('invalid_recommendations_json');
+    }
+    const recommendations = parsedResult.value;
 
     return recommendations.slice(0, 3);
   } catch (error) {
