@@ -2,7 +2,7 @@
  * Cellar Agent Page - Clean Rebuild
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
@@ -40,8 +40,8 @@ import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { useTheme } from '../contexts/ThemeContext';
 
-/** Served from `public/assets/` (not `public/` root). Bump ?v= when replacing the file so PWAs pick up the new image. */
-const SOMMELIER_AVATAR_URL = '/assets/sommelier-icon.png?v=3';
+/** Served from `public/assets/`. Bump ?v= when replacing the file so PWAs pick up the new image. */
+const SOMMELIER_AVATAR_URL = '/assets/sommelier-icon.png?v=4';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -605,10 +605,6 @@ export function AgentPageWorking() {
   }
 
   const isRtl = i18n.language === 'he';
-  const showStickyGreeting =
-    messages[0]?.role === 'assistant' && Boolean(messages[0]?.isGreeting);
-  const threadMessages = showStickyGreeting ? messages.slice(1) : messages;
-  const greetingMessage = showStickyGreeting ? messages[0] : null;
 
   return (
     <>
@@ -999,185 +995,22 @@ export function AgentPageWorking() {
 
         {bottles.filter((b) => b.quantity > 0).length > 0 && (
           <>
-            {/* Sticky “Tonight” framing — first assistant greeting stays visible while scrolling */}
-            {showStickyGreeting && greetingMessage && (
-              <div
-                style={{
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 4,
-                  marginBottom: '14px',
-                  paddingBottom: '14px',
-                  background: 'var(--bg)',
-                  borderBottom: '1px solid var(--border-subtle)',
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase',
-                    color: taglineAccent,
-                    margin: '0 0 10px 2px',
-                    fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-                  }}
-                >
-                  {t('cellarSommelier.tonightLabel', 'Tonight')}
-                </p>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: 'var(--bg-muted)',
-                      border: '2px solid var(--wine-600)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <img
-                      src={SOMMELIER_AVATAR_URL}
-                      alt="Sommi"
-                      style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      padding: '14px 16px',
-                      borderRadius: '4px 16px 16px 16px',
-                      backgroundColor: 'var(--bg-surface)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)',
-                      borderInlineStart: `3px solid ${taglineAccent}`,
-                      boxShadow: 'var(--shadow-card)',
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: '15px',
-                        lineHeight: 1.55,
-                        margin: 0,
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: isDark
-                          ? 'inherit'
-                          : 'ui-serif, Georgia, "Times New Roman", serif',
-                      }}
-                    >
-                      {greetingMessage.content}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Quick start — text only, same layout in white & red themes */}
-            {messages.length === 1 && messages[0].role === 'assistant' && messages[0].isGreeting && (
-              (() => {
-                const scenarioChips = [
-                  { label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
-                  { label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
-                  { label: t('cellarSommelier.scenarios.celebrate.label'),prompt: t('cellarSommelier.scenarios.celebrate.prompt') },
-                  { label: t('cellarSommelier.scenarios.pizza.label'),    prompt: t('cellarSommelier.scenarios.pizza.prompt') },
-                  { label: t('cellarSommelier.scenarios.cheese.label'),   prompt: t('cellarSommelier.scenarios.cheese.prompt') },
-                  { label: t('cellarSommelier.scenarios.surprise.label'), prompt: t('cellarSommelier.scenarios.surprise.prompt') },
-                ];
-                return (
-                  <div style={{ paddingBottom: '16px' }}>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: 'var(--text-tertiary)',
-                        textAlign: 'center',
-                        marginBottom: '12px',
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {t('cellarSommelier.quickStartHeader')}
-                    </p>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '10px',
-                        maxWidth: '520px',
-                        margin: '0 auto',
-                      }}
-                    >
-                      {scenarioChips.map((chip) => (
-                        <button
-                          key={chip.prompt}
-                          type="button"
-                          onClick={() => handleSend(chip.prompt)}
-                          style={{
-                            padding: '14px 14px',
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            backgroundColor: 'var(--bg-surface)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: '12px',
-                            color: 'var(--text-primary)',
-                            boxShadow: 'var(--shadow-card)',
-                            transition: 'border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease',
-                            fontWeight: 500,
-                            textAlign: 'center',
-                            lineHeight: 1.35,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--wine-600)';
-                            e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                            e.currentTarget.style.boxShadow = 'var(--shadow-card)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                          }}
-                          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
-                          onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                          onTouchStart={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--wine-600)';
-                            e.currentTarget.style.transform = 'scale(0.98)';
-                          }}
-                          onTouchEnd={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
-                        >
-                          {chip.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()
-            )}
-
-            {/* Thread (greeting omitted when shown sticky) */}
-            {threadMessages.map((msg, idx) => {
+            {messages.map((msg, idx) => {
           const isUser = msg.role === 'user';
           const avatarUrl = isUser ? profile?.avatar_url : null;
           const showAvatar = true;
           const hasMultiBottles = msg.bottleList && msg.bottleList.bottles && msg.bottleList.bottles.length > 0;
 
+          const showQuickStart =
+            idx === 0 &&
+            msg.role === 'assistant' &&
+            msg.isGreeting &&
+            messages.length === 1 &&
+            bottles.filter((b) => b.quantity > 0).length > 0;
+
           return (
+            <Fragment key={idx}>
             <div
-              key={idx}
               style={{
                 display: 'flex',
                 flexDirection: isUser ? 'row-reverse' : 'row',
@@ -1190,11 +1023,11 @@ export function AgentPageWorking() {
               {showAvatar && (
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
-                    backgroundColor: isUser ? 'var(--wine-600)' : 'var(--bg-muted)',
-                    border: isUser ? 'none' : '2px solid var(--wine-600)',
+                    backgroundColor: isUser ? 'var(--wine-600)' : 'transparent',
+                    border: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1223,9 +1056,10 @@ export function AgentPageWorking() {
                       src={SOMMELIER_AVATAR_URL}
                       alt="Sommi"
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'contain',
+                        display: 'block',
                       }}
                     />
                   )}
@@ -1340,6 +1174,85 @@ export function AgentPageWorking() {
                 )}
               </div>
             </div>
+
+            {showQuickStart && (
+              <div style={{ paddingBottom: '16px' }}>
+                <p
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-tertiary)',
+                    textAlign: 'center',
+                    marginBottom: '12px',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t('cellarSommelier.quickStartHeader')}
+                </p>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '10px',
+                    maxWidth: '520px',
+                    margin: '0 auto',
+                  }}
+                >
+                  {[
+                    { label: t('cellarSommelier.scenarios.steak.label'),    prompt: t('cellarSommelier.scenarios.steak.prompt') },
+                    { label: t('cellarSommelier.scenarios.romantic.label'), prompt: t('cellarSommelier.scenarios.romantic.prompt') },
+                    { label: t('cellarSommelier.scenarios.celebrate.label'),prompt: t('cellarSommelier.scenarios.celebrate.prompt') },
+                    { label: t('cellarSommelier.scenarios.pizza.label'),    prompt: t('cellarSommelier.scenarios.pizza.prompt') },
+                    { label: t('cellarSommelier.scenarios.cheese.label'),   prompt: t('cellarSommelier.scenarios.cheese.prompt') },
+                    { label: t('cellarSommelier.scenarios.surprise.label'), prompt: t('cellarSommelier.scenarios.surprise.prompt') },
+                  ].map((chip) => (
+                    <button
+                      key={chip.prompt}
+                      type="button"
+                      onClick={() => handleSend(chip.prompt)}
+                      style={{
+                        padding: '14px 14px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '12px',
+                        color: 'var(--text-primary)',
+                        boxShadow: 'var(--shadow-card)',
+                        transition: 'border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease',
+                        fontWeight: 500,
+                        textAlign: 'center',
+                        lineHeight: 1.35,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--wine-600)';
+                        e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                      onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
+                      onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onTouchStart={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--wine-600)';
+                        e.currentTarget.style.transform = 'scale(0.98)';
+                      }}
+                      onTouchEnd={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            </Fragment>
           );
         })}
           </>
