@@ -6,13 +6,11 @@
  * global persistent FAB injected by Layout on Cellar / History / Wishlist.
  *
  * First-visit experience:
- *   - sm+: luxury gold tooltip above the button + golden FAB (unchanged).
- *   - Mobile / narrow: compact “Meet Sommi” chip above the circular FAB; fades
- *     out after ~5 s so the icon isn’t mistaken for decoration.
- *   - Desktop vs mobile hints use separate localStorage keys so a “Meet Sommi”
- *     chip can show on phones even if the gold desktop intro was dismissed earlier.
- *   - Local dev: set VITE_SOMMELIER_FAB_INTRO_DEBUG=true in apps/web/.env to replay
- *     the intro on every refresh (ignored in production builds).
+ *   - sm+: luxury gold tooltip above the button + golden FAB (once; stored in
+ *     localStorage).
+ *   - Mobile / narrow (global FAB only): “Meet Sommi” chip fades in, stays ~5 s,
+ *     fades out, then repeats every 30 s as a CTA. Not persisted — stops when the
+ *     tab closes or site data is cleared.
  *
  * Subsequent visits:
  *   - Compact wine-gradient pill with a subtle wobble + ping animation.
@@ -30,8 +28,10 @@ import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
 /** Gold card + desktop scheduling (legacy key — unchanged for backward compat). */
 const DESKTOP_INTRO_KEY = 'sommelier-fab-intro-seen';
-/** Narrow-viewport “Meet Sommi” chip — separate so mobile isn’t blocked by desktop intro. */
-const MOBILE_HINT_KEY = 'sommelier-fab-mobile-hint-seen';
+
+/** Mobile CTA chip: repeat interval + visible duration (global FAB / narrow viewport only). */
+const MOBILE_HINT_INTERVAL_MS = 30_000;
+const MOBILE_HINT_VISIBLE_MS = 5000;
 
 /** Dev server only: replay first-visit FAB UI every load; never persist intro-seen. */
 const SOMMELIER_FAB_INTRO_DEBUG =
@@ -42,11 +42,6 @@ const SOMMELIER_FAB_INTRO_DEBUG =
 function hasDesktopIntroBeenSeen(): boolean {
   if (SOMMELIER_FAB_INTRO_DEBUG) return false;
   return !!localStorage.getItem(DESKTOP_INTRO_KEY);
-}
-
-function hasMobileHintBeenSeen(): boolean {
-  if (SOMMELIER_FAB_INTRO_DEBUG) return false;
-  return !!localStorage.getItem(MOBILE_HINT_KEY);
 }
 
 interface SommelierChatButtonProps {
@@ -73,49 +68,71 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     localStorage.setItem(DESKTOP_INTRO_KEY, '1');
   }, []);
 
-  const persistMobileHintSeen = useCallback(() => {
-    if (SOMMELIER_FAB_INTRO_DEBUG) return;
-    localStorage.setItem(MOBILE_HINT_KEY, '1');
-  }, []);
-
-  const markAllFabIntrosSeen = useCallback(() => {
-    persistDesktopIntroSeen();
-    persistMobileHintSeen();
-  }, [persistDesktopIntroSeen, persistMobileHintSeen]);
-
-  /** Desktop gold card: close UI + mark desktop intro only (mobile chip may still run later). */
+  /** Desktop gold card: close UI + mark desktop intro only. */
   const dismissGoldIntro = useCallback(() => {
     setShowIntro(false);
     persistDesktopIntroSeen();
     if (introTimerRef.current) clearTimeout(introTimerRef.current);
   }, [persistDesktopIntroSeen]);
 
-  /** User tapped FAB or we want to clear all hints permanently. */
+  /** FAB tap: hide gold + chip UI; persist desktop intro only (mobile chip loops again). */
   const dismissAllFabIntros = useCallback(() => {
     setShowIntro(false);
     setShowMobileHint(false);
-    markAllFabIntrosSeen();
+    persistDesktopIntroSeen();
     if (introTimerRef.current) clearTimeout(introTimerRef.current);
-  }, [markAllFabIntrosSeen]);
+  }, [persistDesktopIntroSeen]);
 
-  // ── First-visit intro (desktop: gold card; mobile: compact chip) ───────────
+  // ── Desktop sm+: gold card once (localStorage) ────────────────────────────
   useEffect(() => {
     const smUp = window.matchMedia('(min-width: 640px)').matches;
-    if (smUp) {
-      if (hasDesktopIntroBeenSeen()) return;
-      const t = setTimeout(() => setShowIntro(true), 1600);
-      return () => clearTimeout(t);
-    }
-    if (hasMobileHintBeenSeen()) return;
-    const t = setTimeout(() => setShowMobileHint(true), 600);
+    if (!smUp) return;
+    if (hasDesktopIntroBeenSeen()) return;
+    const t = setTimeout(() => setShowIntro(true), 1600);
     return () => clearTimeout(t);
   }, []);
 
-  // Mobile chip: hold ~5 s then exit animation runs
+  // ── Mobile: repeating CTA chip (Layout / isGlobal FAB only; not persisted) ─
+  useEffect(() => {
+    if (!isGlobal) return;
+
+    const mq = window.matchMedia('(max-width: 639px)');
+    let cleanupLoop: (() => void) | undefined;
+
+    const startLoop = () => {
+      const initial = window.setTimeout(() => setShowMobileHint(true), 600);
+      const interval = window.setInterval(
+        () => setShowMobileHint(true),
+        MOBILE_HINT_INTERVAL_MS
+      );
+      return () => {
+        window.clearTimeout(initial);
+        window.clearInterval(interval);
+      };
+    };
+
+    const sync = () => {
+      cleanupLoop?.();
+      cleanupLoop = undefined;
+      setShowMobileHint(false);
+      if (mq.matches) {
+        cleanupLoop = startLoop();
+      }
+    };
+
+    sync();
+    mq.addEventListener('change', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+      cleanupLoop?.();
+    };
+  }, [isGlobal]);
+
+  // Mobile chip: visible window then fade out (next show is from interval)
   useEffect(() => {
     if (!showMobileHint) return;
-    const t = setTimeout(() => setShowMobileHint(false), 5000);
-    return () => clearTimeout(t);
+    const t = window.setTimeout(() => setShowMobileHint(false), MOBILE_HINT_VISIBLE_MS);
+    return () => window.clearTimeout(t);
   }, [showMobileHint]);
 
   // Auto-dismiss gold card after 7 s (desktop only in practice)
@@ -287,33 +304,35 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
       {/* ── FAB button ──────────────────────────────────────────────────────── */}
       <div className="relative">
-        {/* Mobile/PWA: short-lived label so the face-only FAB reads as Sommi */}
-        <AnimatePresence onExitComplete={persistMobileHintSeen}>
-          {showMobileHint && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="pointer-events-none absolute end-0 z-[2] sm:hidden"
-              style={{ bottom: 'calc(100% + 10px)' }}
-              aria-hidden="true"
-            >
-              <div
-                className="max-w-[11rem] rounded-2xl px-3 py-2 text-center text-xs font-semibold leading-tight shadow-lg"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  background: 'var(--bg-surface)',
-                  color: 'var(--wine-700)',
-                  border: '1px solid var(--wine-300)',
-                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
-                }}
+        {/* Mobile/PWA (global FAB): repeating CTA — Meet Sommi, fades ~5 s, every 30 s */}
+        {isGlobal && (
+          <AnimatePresence>
+            {showMobileHint && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="pointer-events-none absolute end-0 z-[2] sm:hidden"
+                style={{ bottom: 'calc(100% + 10px)' }}
+                aria-hidden="true"
               >
-                {t('sommelierFab.mobileHint', 'Meet Sommi')}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div
+                  className="max-w-[11rem] rounded-2xl px-3 py-2 text-center text-xs font-semibold leading-tight shadow-lg"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--wine-700)',
+                    border: '1px solid var(--wine-300)',
+                    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                  }}
+                >
+                  {t('sommelierFab.mobileHint', 'Meet Sommi')}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
 
         {/* First-visit golden halo — pulses to attract attention */}
         <AnimatePresence>
