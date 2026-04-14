@@ -24,6 +24,7 @@ import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
+import { APP_ICON_URL } from '../constants/brandAssets';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, profileComplete, refreshProfile } = useAuth();
@@ -348,25 +349,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 aria-label="Scroll to top"
                 tabIndex={0}
               >
-                {/* Wine glass SVG — replaces the emoji for a more refined look */}
-                <svg
-                  className="w-7 h-7 flex-shrink-0 pointer-events-none"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ color: 'var(--wine-600)' }}
+                <img
+                  src={APP_ICON_URL}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 flex-shrink-0 pointer-events-none rounded-lg object-cover"
                   aria-hidden="true"
-                >
-                  {/* Bowl */}
-                  <path d="M6.5 3h11L16 11a4 4 0 01-8 0L6.5 3z" />
-                  {/* Stem */}
-                  <line x1="12" y1="15" x2="12" y2="20" />
-                  {/* Base */}
-                  <path d="M9 20h6" />
-                </svg>
+                  loading="eager"
+                  decoding="async"
+                />
 
                 {/* Title + tagline — visible from smallest phones; compact type for PWA */}
                 <div className="flex flex-col leading-tight pointer-events-none gap-0.5 min-w-0 text-start">

@@ -1515,14 +1515,16 @@ export function CellarPage() {
             onClick={handleBulkAnalysis}
             disabled={bulkAnalysisCooldown}
             title={bulkAnalysisCooldown ? t('bulkAnalysis.cooldownTooltip') : t('bulkAnalysis.buttonLabel')}
-            className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 min-h-[40px]"
+            className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wine-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface)] enabled:hover:brightness-[0.97] enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               backgroundColor: bulkAnalysisCooldown ? 'var(--bg-muted)' : 'var(--wine-50)',
               color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--wine-600)',
-              border: bulkAnalysisCooldown ? '1px solid var(--border-subtle)' : '1px solid var(--wine-200)',
+              border: bulkAnalysisCooldown
+                ? '1px solid var(--border-subtle)'
+                : '1px solid var(--wine-500)',
               cursor: bulkAnalysisCooldown ? 'not-allowed' : 'pointer',
-              opacity: bulkAnalysisCooldown ? 0.5 : 1,
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+              boxShadow:
+                '0 1px 2px rgba(0, 0, 0, 0.04), inset 0 0 0 1px var(--border-subtle)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}

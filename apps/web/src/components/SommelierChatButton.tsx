@@ -6,10 +6,12 @@
  * global persistent FAB injected by Layout on Cellar / History / Wishlist.
  *
  * First-visit experience:
- *   - A luxury gold tooltip slides up above the button with a CTA message.
- *   - The button itself glows gold so users know it's new and special.
- *   - Auto-dismisses after 7 s or immediately when the user taps anywhere.
- *   - State is persisted in localStorage so the intro only shows once.
+ *   - sm+: luxury gold tooltip above the button + golden FAB (unchanged).
+ *   - Mobile / narrow: compact “Meet Sommi” chip above the circular FAB; fades
+ *     out after ~5 s so the icon isn’t mistaken for decoration.
+ *   - Auto-dismiss or tap FAB marks intro seen in localStorage (once).
+ *   - Local dev: set VITE_SOMMELIER_FAB_INTRO_DEBUG=true in apps/web/.env to replay
+ *     the intro on every refresh (ignored in production builds).
  *
  * Subsequent visits:
  *   - Compact wine-gradient pill with a subtle wobble + ping animation.
@@ -23,8 +25,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { trackSommelier } from '../services/analytics';
+import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
 const INTRO_SEEN_KEY = 'sommelier-fab-intro-seen';
+
+/** Dev server only: replay first-visit FAB UI every load; never persist intro-seen. */
+const SOMMELIER_FAB_INTRO_DEBUG =
+  import.meta.env.DEV &&
+  (import.meta.env.VITE_SOMMELIER_FAB_INTRO_DEBUG === 'true' ||
+    import.meta.env.VITE_SOMMELIER_FAB_INTRO_DEBUG === '1');
+
+function hasIntroBeenSeen(): boolean {
+  if (SOMMELIER_FAB_INTRO_DEBUG) return false;
+  return !!localStorage.getItem(INTRO_SEEN_KEY);
+}
 
 interface SommelierChatButtonProps {
   /**
@@ -41,17 +55,34 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
   const { t } = useTranslation();
 
   const [showIntro, setShowIntro] = useState(false);
+  const [showMobileHint, setShowMobileHint] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const introTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── First-visit intro ───────────────────────────────────────────────────────
+  const persistIntroSeen = useCallback(() => {
+    if (SOMMELIER_FAB_INTRO_DEBUG) return;
+    localStorage.setItem(INTRO_SEEN_KEY, '1');
+  }, []);
+
+  // ── First-visit intro (desktop: gold card; mobile: compact chip) ───────────
   useEffect(() => {
-    if (!localStorage.getItem(INTRO_SEEN_KEY)) {
-      // Short delay so the page content loads first
+    if (hasIntroBeenSeen()) return;
+
+    const smUp = window.matchMedia('(min-width: 640px)').matches;
+    if (smUp) {
       const t = setTimeout(() => setShowIntro(true), 1600);
       return () => clearTimeout(t);
     }
+    const t = setTimeout(() => setShowMobileHint(true), 600);
+    return () => clearTimeout(t);
   }, []);
+
+  // Mobile chip: hold ~5 s then exit animation runs
+  useEffect(() => {
+    if (!showMobileHint) return;
+    const t = setTimeout(() => setShowMobileHint(false), 5000);
+    return () => clearTimeout(t);
+  }, [showMobileHint]);
 
   // Auto-dismiss after 7 s
   useEffect(() => {
@@ -87,9 +118,10 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
   const dismissIntro = useCallback(() => {
     setShowIntro(false);
-    localStorage.setItem(INTRO_SEEN_KEY, '1');
+    setShowMobileHint(false);
+    persistIntroSeen();
     if (introTimerRef.current) clearTimeout(introTimerRef.current);
-  }, []);
+  }, [persistIntroSeen]);
 
   const handleClick = useCallback(() => {
     dismissIntro();
@@ -110,7 +142,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
         right: '1rem',
       }}
     >
-      {/* ── First-visit CTA tooltip ─────────────────────────────────────────── */}
+      {/* ── First-visit CTA tooltip (tablet/desktop only) ───────────────────── */}
       <AnimatePresence>
         {showIntro && (
           <motion.div
@@ -118,7 +150,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="absolute right-0 min-w-[232px] max-w-[260px]"
+            className="absolute end-0 hidden min-w-[232px] max-w-[260px] sm:block"
             style={{ bottom: 'calc(100% + 14px)', zIndex: 1 }}
           >
             <div
@@ -229,6 +261,34 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
       {/* ── FAB button ──────────────────────────────────────────────────────── */}
       <div className="relative">
+        {/* Mobile/PWA: short-lived label so the face-only FAB reads as Sommi */}
+        <AnimatePresence onExitComplete={persistIntroSeen}>
+          {showMobileHint && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="pointer-events-none absolute end-0 z-[2] sm:hidden"
+              style={{ bottom: 'calc(100% + 10px)' }}
+              aria-hidden="true"
+            >
+              <div
+                className="max-w-[11rem] rounded-2xl px-3 py-2 text-center text-xs font-semibold leading-tight shadow-lg"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--wine-700)',
+                  border: '1px solid var(--wine-300)',
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                }}
+              >
+                {t('sommelierFab.mobileHint', 'Meet Sommi')}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* First-visit golden halo — pulses to attract attention */}
         <AnimatePresence>
           {showIntro && (
@@ -253,7 +313,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.93 }}
           onClick={handleClick}
-          className="relative flex items-center gap-2.5 px-5 py-3 rounded-full shadow-2xl"
+          className="relative flex h-14 w-14 min-h-[3.5rem] min-w-[3.5rem] items-center justify-center gap-2 rounded-full p-0.5 shadow-2xl sm:h-auto sm:min-h-0 sm:w-auto sm:min-w-0 sm:justify-start sm:gap-2.5 sm:p-0 sm:px-5 sm:py-3"
           style={{
             background: showIntro
               ? 'linear-gradient(135deg, #d4af37, #b8963d)'
@@ -261,7 +321,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
             color: 'white',
             border: showIntro
               ? '2px solid rgba(255,255,255,0.42)'
-              : '2px solid rgba(255,255,255,0.2)',
+              : '2px solid rgba(255,255,255,0.38)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
             boxShadow: showIntro
@@ -273,7 +333,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
           }}
           aria-label={t('cellarSommelier.askSommelier', 'Ask the Sommelier')}
         >
-          {/* Chat icon with animation */}
+          {/* Sommi agent mark — matches chat /agent avatar */}
           <motion.div
             animate={
               showIntro
@@ -285,21 +345,19 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
               repeat: Infinity,
               repeatDelay: showIntro ? 0.9 : 3,
             }}
-            className="flex-shrink-0"
+            className="h-full w-full flex-shrink-0 overflow-hidden rounded-full ring-1 ring-inset ring-white/70 shadow-none sm:h-7 sm:w-7 sm:ring-1"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
+            <img
+              src={SOMMI_AGENT_ICON_URL}
+              alt=""
+              width={512}
+              height={512}
+              className="h-full w-full scale-[1.42] object-cover object-center sm:scale-[1.12]"
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 640px) 28px, 56px"
+            />
           </motion.div>
 
           {/* Label — hidden on mobile (icon-only pill), visible on sm+ screens */}

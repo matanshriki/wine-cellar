@@ -39,9 +39,7 @@ import { PricingModal } from '../components/PricingModal';
 import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { useTheme } from '../contexts/ThemeContext';
-
-/** Served from `public/assets/`. Bump ?v= when replacing the file so PWAs pick up the new image. */
-const SOMMELIER_AVATAR_URL = '/assets/sommelier-icon.png?v=5';
+import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -1053,7 +1051,7 @@ export function AgentPageWorking() {
                     )
                   ) : (
                     <img
-                      src={SOMMELIER_AVATAR_URL}
+                      src={SOMMI_AGENT_ICON_URL}
                       alt="Sommi"
                       style={{
                         width: '100%',

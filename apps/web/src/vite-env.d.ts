@@ -7,6 +7,11 @@ interface ImportMetaEnv {
   readonly VITE_LANDING_DEMO_VIDEO_URL?: string
   /** Optional: poster image for native video element (path or URL) */
   readonly VITE_LANDING_DEMO_VIDEO_POSTER?: string
+  /**
+   * Dev only: `true` or `1` replays Sommi FAB first-visit UI (mobile chip / desktop
+   * gold tooltip) on every refresh; does not write intro-seen to localStorage.
+   */
+  readonly VITE_SOMMELIER_FAB_INTRO_DEBUG?: string
 }
 
 interface ImportMeta {

@@ -1008,6 +1008,7 @@
     }
   },
   "sommelierFab": {
+    "mobileHint": "Meet Sommi",
     "introTitle": "Meet Sommi",
     "introSubtitle": "Your AI sommelier — pairings, when to open a bottle, or what to serve tonight.",
     "introCta": "Tap to try it"

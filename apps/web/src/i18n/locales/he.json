@@ -896,6 +896,7 @@
     "largeCollectionNote": "מרתפים גדולים לוקחים קצת יותר זמן…"
   },
   "sommelierFab": {
+    "mobileHint": "הכירו את Sommi",
     "introTitle": "הכירו את Sommi",
     "introSubtitle": "הסומלייה החכמה שלך — שילובים, מתי לפתוח, ומה להגיש הלילה.",
     "introCta": "לחצו לנסות"
