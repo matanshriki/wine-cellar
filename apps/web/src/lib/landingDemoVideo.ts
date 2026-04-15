@@ -1,5 +1,6 @@
 /**
- * Resolves VITE_LANDING_DEMO_VIDEO_URL for the public landing page:
+ * Resolves VITE_LANDING_DEMO_VIDEO_URL for the public landing page (bundled default
+ * is /videos/sommi-ai-smarter.mp4 unless overridden):
  * YouTube (watch, short, embed), Vimeo, or a direct video file (MP4/WebM path or URL).
  */
 
