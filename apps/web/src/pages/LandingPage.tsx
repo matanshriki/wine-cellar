@@ -19,6 +19,15 @@ import { resolveLandingDemoVideo } from '../lib/landingDemoVideo';
 
 const WHY_KEYS = [1, 2, 3, 4, 5] as const;
 
+/** Older builds / env used /videos/sommi-demo.mp4; asset was renamed to sommi-landing-demo.mp4 */
+function normalizeLandingDemoVideoUrl(raw: string): string {
+  const u = raw.trim();
+  if (u === '/videos/sommi-demo.mp4' || u.endsWith('/videos/sommi-demo.mp4')) {
+    return '/videos/sommi-landing-demo.mp4';
+  }
+  return u;
+}
+
 function videoSourceType(src: string): string | undefined {
   const path = src.split('?')[0].split('#')[0].toLowerCase();
   if (path.endsWith('.webm')) return 'video/webm';
@@ -62,9 +71,10 @@ export function LandingPage() {
   const { t, i18n } = useTranslation();
 
   /** Bundled default; override with VITE_LANDING_DEMO_VIDEO_URL (YouTube/Vimeo or another file path). */
-  const demoUrl =
+  const demoUrl = normalizeLandingDemoVideoUrl(
     import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim() ||
-    '/videos/sommi-landing-demo.mp4';
+      '/videos/sommi-landing-demo.mp4',
+  );
   const demoPoster = import.meta.env.VITE_LANDING_DEMO_VIDEO_POSTER?.trim();
   const demo = useMemo(() => resolveLandingDemoVideo(demoUrl), [demoUrl]);
 
