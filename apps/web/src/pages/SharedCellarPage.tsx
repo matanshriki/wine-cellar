@@ -184,7 +184,7 @@ export function SharedCellarPage() {
                   alt={userName}
                   className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                   style={{
-                    border: '3px solid var(--wine-400)',
+                    border: '3px solid var(--wine-600)',
                   }}
                 />
               ) : (
