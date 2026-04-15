@@ -61,9 +61,12 @@ function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' })
 export function LandingPage() {
   const { t, i18n } = useTranslation();
 
-  const demoUrl = import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim();
+  /** Bundled default; override with VITE_LANDING_DEMO_VIDEO_URL (YouTube/Vimeo or another file path). */
+  const demoUrl =
+    import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim() ||
+    '/videos/sommi-landing-demo.mp4';
   const demoPoster = import.meta.env.VITE_LANDING_DEMO_VIDEO_POSTER?.trim();
-  const demo = useMemo(() => (demoUrl ? resolveLandingDemoVideo(demoUrl) : null), [demoUrl]);
+  const demo = useMemo(() => resolveLandingDemoVideo(demoUrl), [demoUrl]);
 
   const jsonLd = useMemo(
     () => [
