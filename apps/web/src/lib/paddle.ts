@@ -16,45 +16,50 @@ import {
 } from './metaPixel';
 
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
-const ENVIRONMENT  = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as 'sandbox' | 'production';
-const API_BASE     = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const DEFAULT_ENVIRONMENT = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as
+  | 'sandbox'
+  | 'production';
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
-let paddleInstance: Paddle | null = null;
-let initPromise: Promise<Paddle | null> | null = null;
+/** One memoised SDK instance per environment (sandbox vs production tokens/prices must not mix). */
+const paddleInitByEnv = new Map<'sandbox' | 'production', Promise<Paddle | null>>();
 
 /**
- * Returns a ready Paddle instance (initialised once, memoised).
- * The Paddle SDK is dynamically imported on first call so it is excluded from
- * the initial app bundle — users who never open the upgrade flow pay zero cost.
+ * Returns a ready Paddle instance for the given Billing environment.
+ * Always pass `environment` from {@link CheckoutConfig} in checkout flows so the SDK
+ * matches the server-resolved price IDs (Vite env alone can drift from API deploy config).
+ * The Paddle SDK is dynamically imported on first call per environment.
  */
-export async function getPaddle(): Promise<Paddle | null> {
-  if (paddleInstance) return paddleInstance;
-  if (initPromise)    return initPromise;
+export async function getPaddle(environment?: 'sandbox' | 'production'): Promise<Paddle | null> {
+  const env = environment ?? DEFAULT_ENVIRONMENT;
 
   if (!CLIENT_TOKEN) {
     console.warn('[Paddle] VITE_PADDLE_CLIENT_TOKEN not set — checkout disabled');
     return null;
   }
 
-  initPromise = import('@paddle/paddle-js').then(({ initializePaddle }) =>
-    initializePaddle({ token: CLIENT_TOKEN!, environment: ENVIRONMENT })
-  ).then((paddle) => {
-    paddleInstance = paddle ?? null;
-    return paddleInstance;
-  }).catch((err) => {
-    console.error('[Paddle] Init failed:', err);
-    initPromise = null; // allow retry
-    return null;
-  });
-
-  return initPromise;
+  let pending = paddleInitByEnv.get(env);
+  if (!pending) {
+    pending = import('@paddle/paddle-js')
+      .then(({ initializePaddle }) =>
+        initializePaddle({ token: CLIENT_TOKEN!, environment: env }),
+      )
+      .then((paddle) => paddle ?? null)
+      .catch((err) => {
+        console.error('[Paddle] Init failed:', err);
+        paddleInitByEnv.delete(env);
+        return null;
+      });
+    paddleInitByEnv.set(env, pending);
+  }
+  return pending;
 }
 
 // ── Checkout helpers ──────────────────────────────────────────────────────────
 
 export interface CheckoutConfig {
   priceId: string;
-  environment: string;
+  environment: 'sandbox' | 'production';
   email?: string;
   paddleCustomerId?: string;
   userId: string;
@@ -95,7 +100,8 @@ export async function openCheckout(
 
   const cfg: CheckoutConfig = await resp.json();
 
-  const paddle = await getPaddle();
+  const paddleEnv = cfg.environment === 'sandbox' ? 'sandbox' : 'production';
+  const paddle = await getPaddle(paddleEnv);
   if (!paddle) throw new Error('Paddle SDK not available');
 
   const dedupeId = cfg.metaEventId ?? metaEventId;
@@ -110,12 +116,16 @@ export async function openCheckout(
     });
   }
 
-  // Pre-fill the customer email if we have it (Paddle handles returning customers by email)
-  // Do NOT pass paddleCustomerId into the customer object — not a valid overlay field.
+  // Prefer Paddle customer id when we already have one (webhook); else pre-fill email.
+  // Types allow `customer: { id }` OR `customer: { email }`, not both.
   const checkoutOpts: CheckoutOpenOptions = {
     items: [{ priceId: cfg.priceId, quantity: 1 }],
-    customData: { userId: cfg.userId, metaEventId: dedupeId },
-    ...(cfg.email ? { customer: { email: cfg.email } } : {}),
+    customData: { userId: String(cfg.userId), metaEventId: String(dedupeId) },
+    ...(cfg.paddleCustomerId
+      ? { customer: { id: cfg.paddleCustomerId } }
+      : cfg.email
+        ? { customer: { email: cfg.email } }
+        : {}),
   };
 
   // Wire success / close callbacks via the global event system before opening.
@@ -146,6 +156,10 @@ export async function openCheckout(
         paddle.Update({ eventCallback: undefined });
       } else if (event.name === 'checkout.closed') {
         options?.onClose?.();
+        paddle.Update({ eventCallback: undefined });
+      } else if (event.name === 'checkout.error' || event.name === 'checkout.failed') {
+        const detail = typeof event?.detail === 'string' ? event.detail : JSON.stringify(event);
+        console.error('[Paddle] Checkout error:', detail);
         paddle.Update({ eventCallback: undefined });
       }
     },
