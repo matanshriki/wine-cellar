@@ -102,6 +102,48 @@ VITE_FEATURE_GENERATED_LABEL_ART=true
 - Add these same env vars in Vercel Dashboard → Settings → Environment Variables
 - Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set for Production, Preview, and Development environments
 
+### Meta Pixel + Conversions API (optional)
+
+Used for paid acquisition funnel measurement (browser Pixel + server Conversions API with shared `event_id` for deduplication).
+
+**Frontend (`apps/web/.env`)**
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_META_PIXEL_ID` | Meta Pixel ID from Events Manager → Data sources → your Pixel. If unset, the Pixel does not load. |
+| `VITE_API_URL` | Base URL of the Sommi API (e.g. `http://localhost:3001` in dev). Required for the CAPI relay (`POST /api/meta/conversion`). |
+
+**Backend (`apps/api/.env`)**
+
+| Variable | Purpose |
+|----------|---------|
+| `META_PIXEL_ID` | Same numeric ID as the browser Pixel (Data source ID). |
+| `META_CONVERSIONS_API_ACCESS_TOKEN` | From Events Manager → Settings → Generate access token (Conversions API). |
+| `META_TEST_EVENT_CODE` | Optional. Events Manager → **Test events** → copy the code. When set, CAPI sends include this code so events appear under Test events without affecting production reporting. |
+
+**Configuring Meta**
+
+1. Create a Pixel (or use an existing one) in [Meta Events Manager](https://business.facebook.com/events_manager).
+2. Under the Pixel → **Settings**, generate a **Conversions API** access token with `ads_management` or the token type Meta documents for your use case.
+3. Put the Pixel ID in both `VITE_META_PIXEL_ID` (web) and `META_PIXEL_ID` (API).
+
+**Where events fire (Sommi)**
+
+| Funnel step | Pixel / CAPI | Location |
+|-------------|----------------|----------|
+| Landing visit | `PageView` | `PublicMarketingLayout` (public marketing routes) |
+| CTA click | `CTAButtonClick` (custom) | Primary “open app” links on `LandingPage` |
+| Signup started | `SignupStarted` (custom) | Toggling to “create account” on `LoginPage` |
+| Signup completed | `Lead` | After successful email signup on `LoginPage`; CAPI when a session exists (email confirmation off). |
+| Checkout started | `InitiateCheckout` | `openCheckout` in `apps/web/src/lib/paddle.ts` |
+| Purchase | `Purchase` | `checkout.completed` in `paddle.ts` (browser + CAPI); Paddle webhooks also send `Purchase` when `metaEventId` is present in `custom_data`. |
+
+**Testing in Events Manager**
+
+1. Set `META_TEST_EVENT_CODE` on the API and restart the server.
+2. Trigger flows locally or in staging; open Events Manager → **Test events** and select your Pixel to see server events.
+3. Use the **Diagnostics** / **Overview** tabs on the Pixel to confirm browser and server events; matching `event_id` values deduplicate pairs.
+
 ### 4. Start Development Server
 
 ```bash

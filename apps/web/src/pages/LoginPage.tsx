@@ -6,6 +6,13 @@ import { toast } from '../lib/toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { trackAuth } from '../services/analytics';
 import { MetaHead } from '../components/MetaHead';
+import {
+  generateMetaEventId,
+  notifyMetaConversionServer,
+  trackLead,
+  trackSignupStarted,
+} from '../lib/metaPixel';
+import { supabase } from '../lib/supabase';
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,6 +45,18 @@ export function LoginPage() {
         }
         const { needsEmailConfirmation } = await signUp(trimmedEmail, password, name.trim());
         trackAuth.signUp(); // Track successful signup
+        const leadEventId = generateMetaEventId();
+        void trackLead(leadEventId);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (token) {
+          void notifyMetaConversionServer({
+            authToken: token,
+            eventName: 'Lead',
+            eventId: leadEventId,
+            eventSourceUrl: window.location.href,
+          });
+        }
         if (needsEmailConfirmation) {
           toast.success(t('auth.confirmEmailSent'));
           // Stay on login page — user must confirm email before they can sign in
@@ -209,7 +228,10 @@ export function LoginPage() {
           <div className="mt-4 text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                if (isLogin) void trackSignupStarted();
+                setIsLogin(!isLogin);
+              }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
               {isLogin ? t('auth.login.noAccount') : t('auth.login.hasAccount')}

@@ -45,6 +45,12 @@ export const config = {
   paddlePriceCollectorYearly:  process.env.PADDLE_PRICE_COLLECTOR_YEARLY   || '',
   paddlePriceTopup50:          process.env.PADDLE_PRICE_TOPUP_50           || '',
   paddlePriceTopup150:         process.env.PADDLE_PRICE_TOPUP_150          || '',
+
+  /** Meta (Facebook) Conversions API — same pixel id as the browser Pixel */
+  metaPixelId: process.env.META_PIXEL_ID || '',
+  metaConversionsApiAccessToken: process.env.META_CONVERSIONS_API_ACCESS_TOKEN || '',
+  /** Optional — Events Manager → Test events → copy code */
+  metaTestEventCode: process.env.META_TEST_EVENT_CODE || '',
 };
 
 // Log configuration on startup (without sensitive data)
@@ -66,4 +72,5 @@ console.log('[Config] Paddle Price IDs:', [
   config.paddlePriceTopup50,
   config.paddlePriceTopup150,
 ].every(Boolean) ? 'ALL SET ✓' : 'SOME MISSING ✗');
+console.log('[Config] Meta Pixel (CAPI):', config.metaPixelId && config.metaConversionsApiAccessToken ? 'CONFIGURED ✓' : 'NOT SET (optional) ✗');
 

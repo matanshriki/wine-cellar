@@ -8,6 +8,12 @@
 
 // Types-only import keeps the module graph clean while the runtime SDK is lazy-loaded
 import type { Paddle, CheckoutOpenOptions } from '@paddle/paddle-js';
+import {
+  generateMetaEventId,
+  notifyMetaConversionServer,
+  trackInitiateCheckout,
+  trackPurchase,
+} from './metaPixel';
 
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
 const ENVIRONMENT  = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as 'sandbox' | 'production';
@@ -52,6 +58,8 @@ export interface CheckoutConfig {
   email?: string;
   paddleCustomerId?: string;
   userId: string;
+  /** Echo of meta_event_id for Meta Pixel + CAPI deduplication */
+  metaEventId?: string;
 }
 
 /**
@@ -66,9 +74,14 @@ export async function openCheckout(
     onClose?: () => void;
   },
 ): Promise<void> {
-  const query = new URLSearchParams(
+  const metaEventId = generateMetaEventId();
+
+  const search = new URLSearchParams(
     Object.entries(params).filter(([, v]) => Boolean(v)) as [string, string][],
-  ).toString();
+  );
+  search.set('meta_event_id', metaEventId);
+
+  const query = search.toString();
 
   // Fetch server-resolved config (use absolute API URL to avoid hitting the SPA server)
   const resp = await fetch(`${API_BASE}/api/billing/checkout-config?${query}`, {
@@ -85,30 +98,58 @@ export async function openCheckout(
   const paddle = await getPaddle();
   if (!paddle) throw new Error('Paddle SDK not available');
 
+  const dedupeId = cfg.metaEventId ?? metaEventId;
+
+  void trackInitiateCheckout(dedupeId);
+  if (options?.authToken) {
+    void notifyMetaConversionServer({
+      authToken: options.authToken,
+      eventName: 'InitiateCheckout',
+      eventId: dedupeId,
+      eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+    });
+  }
+
   // Pre-fill the customer email if we have it (Paddle handles returning customers by email)
   // Do NOT pass paddleCustomerId into the customer object — not a valid overlay field.
   const checkoutOpts: CheckoutOpenOptions = {
     items: [{ priceId: cfg.priceId, quantity: 1 }],
-    customData: { userId: cfg.userId },
+    customData: { userId: cfg.userId, metaEventId: dedupeId },
     ...(cfg.email ? { customer: { email: cfg.email } } : {}),
   };
 
   // Wire success / close callbacks via the global event system before opening.
-  // We clear the callback immediately after it fires to avoid stale listeners
-  // across multiple checkout sessions.
-  if (options?.onSuccess || options?.onClose) {
-    paddle.Update({
-      eventCallback: (event: any) => {
-        if (event.name === 'checkout.completed') {
-          options?.onSuccess?.();
-          paddle.Update({ eventCallback: undefined });
-        } else if (event.name === 'checkout.closed') {
-          options?.onClose?.();
-          paddle.Update({ eventCallback: undefined });
+  // Always register so Meta Purchase runs even if callers omit onSuccess/onClose.
+  paddle.Update({
+    eventCallback: (event: any) => {
+      if (event.name === 'checkout.completed') {
+        const d = event.data;
+        const total =
+          d?.totals && typeof d.totals.total === 'number' ? d.totals.total : undefined;
+        const currency = typeof d?.currency_code === 'string' ? d.currency_code : 'USD';
+        if (total != null && options?.authToken) {
+          void trackPurchase({
+            eventId: dedupeId,
+            value: total,
+            currency,
+          });
+          void notifyMetaConversionServer({
+            authToken: options.authToken,
+            eventName: 'Purchase',
+            eventId: dedupeId,
+            eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+            value: total,
+            currency,
+          });
         }
-      },
-    });
-  }
+        options?.onSuccess?.();
+        paddle.Update({ eventCallback: undefined });
+      } else if (event.name === 'checkout.closed') {
+        options?.onClose?.();
+        paddle.Update({ eventCallback: undefined });
+      }
+    },
+  });
 
   paddle.Checkout.open({
     ...checkoutOpts,

@@ -17,11 +17,15 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { type AuthRequest, authenticateSupabase } from '../middleware/auth.js';
+import { sendMetaCapiEvent, valueCurrencyFromPaddlePayload } from '../lib/metaConversionsApi.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = SupabaseClient<any, any, any>;
 
 export const billingRouter = Router();
+
+const META_EVENT_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // ── Paddle price ID → plan metadata map ──────────────────────────────────────
 
@@ -133,7 +137,12 @@ billingRouter.get(
   '/checkout-config',
   authenticateSupabase,
   async (req: AuthRequest, res: Response) => {
-    const { plan, topup, period } = req.query as { plan?: string; topup?: string; period?: string };
+    const { plan, topup, period, meta_event_id } = req.query as {
+      plan?: string;
+      topup?: string;
+      period?: string;
+      meta_event_id?: string;
+    };
     const isYearly = period === 'yearly';
 
     // Resolve price ID — server controls which price ID is used; browser never decides.
@@ -175,12 +184,18 @@ billingRouter.get(
       paddleCustomerId = credits?.paddle_customer_id ?? undefined;
     }
 
+    const metaEventId =
+      typeof meta_event_id === 'string' && META_EVENT_ID_RE.test(meta_event_id.trim())
+        ? meta_event_id.trim()
+        : undefined;
+
     return res.json({
       priceId,
       environment: config.paddleEnvironment,
       email,
       paddleCustomerId,
       userId: req.userId,   // passed as customData to Paddle so we can map webhook → user
+      metaEventId,
     });
   },
 );
@@ -316,6 +331,50 @@ billingRouter.get(
   },
 );
 
+// ── Meta Purchase (webhook) — same event_id as browser checkout when metaEventId is in custom_data ──
+
+async function trySendMetaPurchaseFromPaddleWebhook(
+  supabase: AnySupabase,
+  userId: string | null,
+  data: Record<string, unknown>,
+  customData: Record<string, string>,
+) {
+  const metaEventId = customData['metaEventId'] ?? customData['meta_event_id'];
+  if (!metaEventId?.trim() || !userId) return;
+
+  const vc = valueCurrencyFromPaddlePayload(data);
+  if (!vc) {
+    if (config.nodeEnv === 'development') {
+      console.warn('[Meta CAPI] Purchase webhook skipped — could not parse Paddle totals');
+    }
+    return;
+  }
+
+  const { data: auth } = await supabase.auth.admin.getUserById(userId);
+  const email = auth?.user?.email ?? undefined;
+
+  await sendMetaCapiEvent({
+    eventName: 'Purchase',
+    eventId: metaEventId.trim(),
+    eventSourceUrl: `${config.webUrl.replace(/\/$/, '')}/upgrade`,
+    user: {
+      email,
+      externalId: userId,
+    },
+    customData: { value: vc.value, currency: vc.currency },
+  });
+}
+
+function paddleCustomData(data: unknown): Record<string, string> {
+  const raw = data && typeof data === 'object' ? (data as Record<string, unknown>).custom_data : undefined;
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (v != null) out[k] = String(v);
+  }
+  return out;
+}
+
 // ── Event handler ─────────────────────────────────────────────────────────────
 
 async function handlePaddleEvent(
@@ -324,6 +383,8 @@ async function handlePaddleEvent(
   data: any,
   userId: string | null,
 ) {
+  const customData = paddleCustomData(data);
+
   switch (eventType) {
     // ── Subscription created / activated ────────────────────────────────────
     case 'subscription.created':
@@ -353,6 +414,7 @@ async function handlePaddleEvent(
         p_paddle_customer_id:    customerId,
         p_paddle_subscription_id: subscriptionId,
       });
+      await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
       break;
     }
 
@@ -433,6 +495,7 @@ async function handlePaddleEvent(
         throw rpcErr; // surface to outer catch for logging
       }
       console.log(`[Paddle] Successfully granted ${topUp.bonusCredits} credits to user ${userId}`);
+      await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
       break;
     }
 

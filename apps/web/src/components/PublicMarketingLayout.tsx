@@ -3,15 +3,21 @@
  * No cellar FAB, camera, or logged-in-only UI — keeps crawlers and guests focused.
  */
 
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { APP_ICON_URL } from '../constants/brandAssets';
+import { trackPageView } from '../lib/metaPixel';
 
 export function PublicMarketingLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const landingStickyClearance = pathname === '/';
+
+  useEffect(() => {
+    void trackPageView();
+  }, [pathname]);
 
   return (
     <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>

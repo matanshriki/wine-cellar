@@ -5,6 +5,7 @@
 
 import { useMemo, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { trackCTAButtonClick } from '../lib/metaPixel';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation, Trans } from 'react-i18next';
 import { MetaHead } from '../components/MetaHead';
@@ -60,7 +61,14 @@ function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' })
       : 'flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center w-full max-w-xl mx-auto';
   return (
     <div className={row}>
-      <Link to="/login" className={ctaPrimaryClass} style={ctaPrimaryStyle}>
+      <Link
+        to="/login"
+        className={ctaPrimaryClass}
+        style={ctaPrimaryStyle}
+        onClick={() => {
+          void trackCTAButtonClick({ placement: variant === 'hero' ? 'hero' : 'center' });
+        }}
+      >
         {t('landing.ctaOpen')}
       </Link>
       <Link to="/about" className={ctaSecondaryClass} style={ctaSecondaryStyle}>
@@ -279,6 +287,9 @@ export function LandingPage() {
           to="/login"
           className="flex w-full items-center justify-center rounded-full py-3.5 text-base font-semibold text-white shadow-lg active:opacity-95"
           style={ctaPrimaryStyle}
+          onClick={() => {
+            void trackCTAButtonClick({ placement: 'sticky' });
+          }}
         >
           {t('landing.ctaOpen')}
         </Link>
