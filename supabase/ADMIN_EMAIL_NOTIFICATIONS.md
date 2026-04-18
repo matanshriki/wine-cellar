@@ -36,8 +36,8 @@ Set these for **both** functions (same names in Dashboard or `supabase secrets s
 | Name | Example | Notes |
 |------|---------|--------|
 | `RESEND_API_KEY` | `re_...` | [Resend API keys](https://resend.com/docs/dashboard/api-keys/introduction) |
-| `RESEND_FROM_EMAIL` | `Sommi Admin <onboarding@resend.dev>` | Must be a verified sender/domain in Resend. |
-| `ADMIN_EMAIL` | `you@yourdomain.com` | Recipient only. |
+| `RESEND_FROM_EMAIL` | `Sommi Admin <onboarding@resend.dev>` | **Must** be either Resend’s test sender (`onboarding@resend.dev`) or an address on a **domain you verified** in Resend. You **cannot** use `@gmail.com`, `@yahoo.com`, etc. as the sender — Resend returns **403** (`domain is not verified`). Your **admin inbox** (`ADMIN_EMAIL`) can still be Gmail. |
+| `ADMIN_EMAIL` | `you@gmail.com` | Recipient only — any inbox works. |
 | `WEBHOOK_SECRET` | Long random string | Shared secret for `Authorization: Bearer …` on **both** webhooks and manual/cron calls to the daily summary. |
 | `SUPABASE_URL` | Auto in hosted | Usually injected; set explicitly if needed. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role | Required for `daily-bottle-scan-summary` to call `auth.admin` is optional there — actually daily doesn't use auth.admin, only RPC. Still needs service role for RPC. `admin-notifications` uses it to resolve signup **provider** and purchase **user email**. |
@@ -188,6 +188,21 @@ curl -sS -X POST 'http://127.0.0.1:54321/functions/v1/daily-bottle-scan-summary'
 ```
 
 GET is also allowed with the same header.
+
+## Troubleshooting
+
+### `403` — “The gmail.com domain is not verified” (or similar)
+
+The webhook and Edge Function are working; **Resend is rejecting the sender address**.
+
+- **`RESEND_FROM_EMAIL`** is the **From** header. It must use a [verified domain](https://resend.com/domains) (e.g. `Sommi <noreply@yourdomain.com>`) or Resend’s built-in test sender: `Sommi <onboarding@resend.dev>`.
+- **`ADMIN_EMAIL`** is only where the email is delivered. It **can** be `@gmail.com` — that is not the problem.
+
+After changing `RESEND_FROM_EMAIL` in **Project Settings → Edge Functions → Secrets**, redeploy is not required for secrets, but wait a few seconds and trigger the webhook again (or insert a test profile row).
+
+### No email and no Resend error in logs
+
+Confirm **Database → Webhooks** fires on **`profiles` INSERT** (new rows only). Existing users logging in again do not insert a new profile, so **no webhook runs**. Create a brand-new test account to verify signup notifications.
 
 ## Manual Dashboard checklist
 

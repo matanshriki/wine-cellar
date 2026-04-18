@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { purchaseEmailFromPaddle, signupEmailHtml, type ProfileRecord } from '../_shared/adminEmail/formatters.ts';
-import { sendResendEmail } from '../_shared/adminEmail/resendSend.ts';
+import { resendFromMisconfigurationMessage } from '../_shared/adminEmail/resendFromValidation.ts';
+import { logResendFailure, sendResendEmail } from '../_shared/adminEmail/resendSend.ts';
 
 const jsonHeaders = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -44,6 +45,15 @@ serve(async (req) => {
   if (!verifyWebhookSecret(req, webhookSecret)) {
     console.warn('[admin-notifications] Invalid or missing Authorization');
     return jsonResponse({ ok: false, error: 'Unauthorized' }, 401);
+  }
+
+  const fromConfigError = resendFromMisconfigurationMessage(fromEmail);
+  if (fromConfigError) {
+    console.error('[admin-notifications] RESEND_FROM_EMAIL:', fromConfigError);
+    return jsonResponse(
+      { ok: false, error: 'Invalid RESEND_FROM_EMAIL', details: fromConfigError },
+      400,
+    );
   }
 
   let body: DbWebhookBody;
@@ -99,7 +109,7 @@ serve(async (req) => {
         html,
       });
       if (!send.ok) {
-        console.error('[admin-notifications] Resend error:', send.status, send.error);
+        logResendFailure('admin-notifications', send);
         return jsonResponse({ ok: false, error: send.error ?? 'Resend failed' }, 502);
       }
       console.log('[admin-notifications] Signup email sent', { id: send.id, user: p.id });
@@ -142,7 +152,7 @@ serve(async (req) => {
         html: purchase.html,
       });
       if (!send.ok) {
-        console.error('[admin-notifications] Resend error:', send.status, send.error);
+        logResendFailure('admin-notifications', send);
         return jsonResponse({ ok: false, error: send.error ?? 'Resend failed' }, 502);
       }
       console.log('[admin-notifications] Purchase email sent', { id: send.id, event: record.event_type });

@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { dailyScanEmailHtml, type ScanSummaryJson } from '../_shared/adminEmail/formatters.ts';
-import { sendResendEmail } from '../_shared/adminEmail/resendSend.ts';
+import { resendFromMisconfigurationMessage } from '../_shared/adminEmail/resendFromValidation.ts';
+import { logResendFailure, sendResendEmail } from '../_shared/adminEmail/resendSend.ts';
 
 const jsonHeaders = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -72,6 +73,15 @@ serve(async (req) => {
     return jsonResponse({ ok: false, error: 'Unauthorized' }, 401);
   }
 
+  const fromConfigError = resendFromMisconfigurationMessage(fromEmail);
+  if (fromConfigError) {
+    console.error('[daily-bottle-scan-summary] RESEND_FROM_EMAIL:', fromConfigError);
+    return jsonResponse(
+      { ok: false, error: 'Invalid RESEND_FROM_EMAIL', details: fromConfigError },
+      400,
+    );
+  }
+
   const hours = 24;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
   const windowLabel = `last ${hours} hours (rolling), since UTC ${since}`;
@@ -108,7 +118,7 @@ serve(async (req) => {
     });
 
     if (!send.ok) {
-      console.error('[daily-bottle-scan-summary] Resend:', send.status, send.error);
+      logResendFailure('daily-bottle-scan-summary', send);
       return jsonResponse({ ok: false, error: send.error ?? 'Resend failed' }, 502);
     }
 
