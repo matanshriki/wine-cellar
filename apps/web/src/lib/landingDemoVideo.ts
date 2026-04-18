@@ -49,7 +49,8 @@ export function resolveLandingDemoVideo(raw: string): LandingDemoResolved | null
     const sep = embed.includes('?') ? '&' : '?';
     return {
       kind: 'iframe',
-      src: `${embed}${sep}rel=0&autoplay=1&mute=1`,
+      // playsinline: helps iOS inline playback; autoplay/mute required for policy
+      src: `${embed}${sep}rel=0&autoplay=1&mute=1&playsinline=1`,
       allow:
         'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
     };

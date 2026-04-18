@@ -57,6 +57,11 @@ const ctaSecondaryStyle: CSSProperties = {
  * Muted in-view autoplay: browsers only allow automatic playback without a user
  * gesture when muted. Users can unmute via the native video controls.
  * Respects prefers-reduced-motion (no automatic play / pause on scroll is ok).
+ *
+ * Mobile: iOS requires `playsinline` in the DOM, muted, and `play()` often
+ * only succeeds after `canplay`/`loadeddata`. A high IO threshold and missing
+ * initial-callback also prevent autoplay, so we sync from layout + use a
+ * coarser "visible" bar on touch devices.
  */
 function LandingFileDemoVideo({
   src,
@@ -79,25 +84,82 @@ function LandingFileDemoVideo({
       return;
     }
 
-    video.muted = true;
+    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    // Easier to satisfy on small touch screens; desktop keeps a higher bar
+    const minVisible = isCoarse ? 0.1 : 0.25;
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            video.muted = true;
-            void video.play().catch(() => {
-              /* e.g. low-power / strict autoplay: controls still work */
-            });
-          } else {
-            video.pause();
-          }
+    const armMuted = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', 'true');
+      // Legacy WebKit / in-app browsers
+      try {
+        video.setAttribute('webkit-playsinline', 'true');
+      } catch {
+        // ignore
+      }
+    };
+    armMuted();
+
+    const tryPlay = () => {
+      if (!video) return;
+      armMuted();
+      const p = video.play();
+      if (p === undefined) return;
+      p.catch(() => {
+        const onReady = () => {
+          if (!video) return;
+          armMuted();
+          void video.play().catch(() => {});
+        };
+        video.addEventListener('canplay', onReady, { once: true });
+        video.addEventListener('loadeddata', onReady, { once: true });
+      });
+    };
+
+    const onIo: IntersectionObserverCallback = (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio >= minVisible) {
+          tryPlay();
+        } else {
+          video.pause();
         }
-      },
-      { root: null, threshold: 0.3, rootMargin: '0px' },
-    );
+      }
+    };
+
+    const io = new IntersectionObserver(onIo, {
+      root: null,
+      threshold: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1],
+      rootMargin: '60px 0px',
+    });
     io.observe(box);
+
+    const syncFromLayout = () => {
+      const r = box.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const visibleH = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+      const ratio = r.height > 0 ? Math.max(0, visibleH) / r.height : 0;
+      if (ratio >= minVisible) {
+        tryPlay();
+      } else {
+        video.pause();
+      }
+    };
+    // IO can skip the first paint on some mobile WebKit builds — align once
+    // layout is done and again shortly after (decode / shell chrome).
+    const c = { r0: 0, r1: 0, t1: undefined as ReturnType<typeof setTimeout> | undefined };
+    c.r0 = requestAnimationFrame(() => {
+      c.r1 = requestAnimationFrame(() => {
+        syncFromLayout();
+        c.t1 = setTimeout(syncFromLayout, 200);
+      });
+    });
+
     return () => {
+      cancelAnimationFrame(c.r0);
+      cancelAnimationFrame(c.r1);
+      if (c.t1) clearTimeout(c.t1);
       io.disconnect();
     };
   }, [src]);
