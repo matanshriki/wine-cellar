@@ -17,6 +17,7 @@
     "stickyCtaAriaLabel": "Open Sommi - It's free",
     "demoTitle": "Quick demo",
     "demoCaption": "See how Sommi fits your cellar - browse, windows, and Sommi in action.",
+    "demoAutoplayHint": "Starts when you scroll here (plays muted for autoplay). Unmute in the player for sound.",
     "whyTitle": "Built for collectors, not another Vivino clone",
     "why1Lead": "Your cellar, your rules.",
     "why1Body": "Recommendations use bottles you actually own - so \"what should I drink tonight?\" finally has a real answer.",

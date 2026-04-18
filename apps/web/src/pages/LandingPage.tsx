@@ -3,7 +3,7 @@
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
  */
 
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { trackCTAButtonClick } from '../lib/metaPixel';
 import { Helmet } from 'react-helmet-async';
@@ -52,6 +52,73 @@ const ctaSecondaryStyle: CSSProperties = {
   color: 'var(--text-primary)',
   background: 'var(--bg-surface)',
 };
+
+/**
+ * Muted in-view autoplay: browsers only allow automatic playback without a user
+ * gesture when muted. Users can unmute via the native video controls.
+ * Respects prefers-reduced-motion (no automatic play / pause on scroll is ok).
+ */
+function LandingFileDemoVideo({
+  src,
+  poster,
+  onError,
+}: {
+  src: string;
+  poster?: string;
+  onError: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const box = containerRef.current;
+    if (!video || !box) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    video.muted = true;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            video.muted = true;
+            void video.play().catch(() => {
+              /* e.g. low-power / strict autoplay: controls still work */
+            });
+          } else {
+            video.pause();
+          }
+        }
+      },
+      { root: null, threshold: 0.3, rootMargin: '0px' },
+    );
+    io.observe(box);
+    return () => {
+      io.disconnect();
+    };
+  }, [src]);
+
+  return (
+    <div ref={containerRef} className="absolute inset-0">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-contain bg-black/5"
+        controls
+        muted
+        playsInline
+        preload="auto"
+        poster={poster}
+        onError={onError}
+      >
+        <source src={src} type={videoSourceType(src)} />
+      </video>
+    </div>
+  );
+}
 
 function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' }) {
   const { t } = useTranslation();
@@ -145,10 +212,16 @@ export function LandingPage() {
                 {t('landing.demoTitle')}
               </h2>
               <p
-                className="text-sm sm:text-base mb-4 text-center sm:text-start leading-relaxed"
+                className="text-sm sm:text-base mb-2 text-center sm:text-start leading-relaxed"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {t('landing.demoCaption')}
+              </p>
+              <p
+                className="text-xs sm:text-sm mb-4 text-center sm:text-start leading-relaxed"
+                style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}
+              >
+                {t('landing.demoAutoplayHint')}
               </p>
               <div
                 className="relative w-full aspect-video overflow-hidden rounded-2xl border shadow-lg"
@@ -164,12 +237,10 @@ export function LandingPage() {
                     referrerPolicy="strict-origin-when-cross-origin"
                   />
                 ) : (
-                  <video
-                    className="absolute inset-0 h-full w-full object-contain bg-black/5"
-                    controls
-                    playsInline
-                    preload="auto"
-                    poster={demoPoster || undefined}
+                  <LandingFileDemoVideo
+                    key={demo.src}
+                    src={demo.src}
+                    poster={demoPoster}
                     onError={() => {
                       console.error(
                         '[Landing demo] Video failed to load:',
@@ -177,9 +248,7 @@ export function LandingPage() {
                         '— If this is /videos/…, the file must exist under apps/web/public/videos and be deployed. A missing file returns the SPA HTML and playback never starts.',
                       );
                     }}
-                  >
-                    <source src={demo.src} type={videoSourceType(demo.src)} />
-                  </video>
+                  />
                 )}
               </div>
             </section>

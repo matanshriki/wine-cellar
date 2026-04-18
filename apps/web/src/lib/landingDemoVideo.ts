@@ -45,10 +45,11 @@ export function resolveLandingDemoVideo(raw: string): LandingDemoResolved | null
   if (/youtube\.com|youtu\.be/i.test(url)) {
     const embed = toYoutubeEmbed(url);
     if (!embed) return null;
+    // Muted autoplay: browsers allow autoplay only when muted; user can unmute in the player
     const sep = embed.includes('?') ? '&' : '?';
     return {
       kind: 'iframe',
-      src: `${embed}${sep}rel=0`,
+      src: `${embed}${sep}rel=0&autoplay=1&mute=1`,
       allow:
         'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
     };
@@ -59,7 +60,7 @@ export function resolveLandingDemoVideo(raw: string): LandingDemoResolved | null
     if (!vimeoMatch?.[1]) return null;
     return {
       kind: 'iframe',
-      src: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      src: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1`,
       allow: 'autoplay; fullscreen; picture-in-picture',
     };
   }
