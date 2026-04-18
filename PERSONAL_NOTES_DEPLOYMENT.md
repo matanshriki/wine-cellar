@@ -31,7 +31,7 @@ This will add the `notes` column to the `consumption_history` table.
 
 **Expected output:**
 ```
-✅ Migrating up to 20260102_add_notes_to_consumption_history.sql
+✅ Migrating up to 20260102120000_add_notes_to_consumption_history.sql
 ✅ Migration complete
 ```
 
@@ -79,7 +79,7 @@ Once deployed, verify:
 
 ### Database:
 - **Added column**: `consumption_history.notes` (TEXT, nullable)
-- Migration file: `supabase/migrations/20260102_add_notes_to_consumption_history.sql`
+- Migration file: `supabase/migrations/20260102120000_add_notes_to_consumption_history.sql`
 
 ### Backend:
 - **Updated types**: `apps/web/src/types/supabase.ts`

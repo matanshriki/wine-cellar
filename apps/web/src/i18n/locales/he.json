@@ -67,6 +67,7 @@
       "hasAccount": "כבר יש לך חשבון? התחבר",
       "or": "או",
       "googleSignIn": "התחבר עם Google",
+      "googleOnlySubtitle": "השתמש בחשבון Google כדי להתחבר או ליצור חשבון.",
       "demo": {
         "title": "פרטי כניסה להדגמה:",
         "email": "דוא״ל: demo@winecellarbrain.com",

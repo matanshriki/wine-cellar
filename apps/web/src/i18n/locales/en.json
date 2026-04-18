@@ -67,6 +67,7 @@
       "hasAccount": "Already have an account? Sign in",
       "or": "OR",
       "googleSignIn": "Sign in with Google",
+      "googleOnlySubtitle": "Use your Google account to sign in or create an account.",
       "demo": {
         "title": "Demo credentials:",
         "email": "Email: demo@winecellarbrain.com",

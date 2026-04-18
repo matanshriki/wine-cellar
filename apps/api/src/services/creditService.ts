@@ -12,6 +12,8 @@
  *   - The service-role key must NEVER reach the browser.
  *   - All balance mutations go through process_ai_credit_usage RPC
  *     which is SECURITY DEFINER — atomic and tamper-proof.
+ *   - That RPC must be executable only by service_role (never by the browser JWT);
+ *     see migration 20260419000000_lock_down_process_ai_credit_usage.sql.
  *
  * ROLLOUT RULES:
  *   - monetization_enabled  → controls UI visibility only (not enforced here)

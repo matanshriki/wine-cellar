@@ -1,7 +1,18 @@
 node_modules
 dist
 .env
+.env.*
+!.env.example
+!**/.env.example
 *.db
 *.db-journal
 .DS_Store
 apps/web/.venv-pillow
+
+# App env files (Vite / API — never commit secrets)
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.*.local
+apps/api/.env
+apps/api/.env.local
+**/.env.backup
