@@ -3,7 +3,7 @@
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
  */
 
-import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { trackCTAButtonClick } from '../lib/metaPixel';
 import { Helmet } from 'react-helmet-async';
@@ -54,14 +54,11 @@ const ctaSecondaryStyle: CSSProperties = {
 };
 
 /**
- * Muted in-view autoplay: browsers only allow automatic playback without a user
- * gesture when muted. Users can unmute via the native video controls.
- * Respects prefers-reduced-motion (no automatic play / pause on scroll is ok).
- *
- * Mobile: iOS requires `playsinline` in the DOM, muted, and `play()` often
- * only succeeds after `canplay`/`loadeddata`. A high IO threshold and missing
- * initial-callback also prevent autoplay, so we sync from layout + use a
- * coarser "visible" bar on touch devices.
+ * Muted in-view autoplay: unmuted needs a user gesture, but many mobile browsers
+ * (iOS, especially Private) still require a *real* user gesture for the *first*
+ * `play()`. `IntersectionObserver` and timers are not gestures, so if autoplay
+ * is blocked, we show a tap target that uses a true pointer event.
+ * Respects prefers-reduced-motion.
  */
 function LandingFileDemoVideo({
   src,
@@ -72,8 +69,33 @@ function LandingFileDemoVideo({
   poster?: string;
   onError: () => void;
 }) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const inViewRef = useRef(false);
+  const [inView, setInView] = useState(false);
+  const [showTapToPlay, setShowTapToPlay] = useState(false);
+
+  const armMuted = (video: HTMLVideoElement) => {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', 'true');
+    try {
+      video.setAttribute('webkit-playsinline', 'true');
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleUserStart = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    armMuted(video);
+    void video.play().then(() => setShowTapToPlay(false)).catch(() => {
+      // Keep overlay so user can retry; native controls also work
+    });
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -85,32 +107,16 @@ function LandingFileDemoVideo({
     }
 
     const isCoarse = window.matchMedia('(pointer: coarse)').matches;
-    // Easier to satisfy on small touch screens; desktop keeps a higher bar
     const minVisible = isCoarse ? 0.1 : 0.25;
-
-    const armMuted = () => {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.setAttribute('muted', '');
-      video.setAttribute('playsinline', 'true');
-      // Legacy WebKit / in-app browsers
-      try {
-        video.setAttribute('webkit-playsinline', 'true');
-      } catch {
-        // ignore
-      }
-    };
-    armMuted();
+    let tapDebounce: ReturnType<typeof setTimeout> | undefined;
 
     const tryPlay = () => {
-      if (!video) return;
-      armMuted();
+      armMuted(video);
       const p = video.play();
       if (p === undefined) return;
       p.catch(() => {
         const onReady = () => {
-          if (!video) return;
-          armMuted();
+          armMuted(video);
           void video.play().catch(() => {});
         };
         video.addEventListener('canplay', onReady, { once: true });
@@ -118,12 +124,49 @@ function LandingFileDemoVideo({
       });
     };
 
+    const leave = () => {
+      if (tapDebounce) {
+        clearTimeout(tapDebounce);
+        tapDebounce = undefined;
+      }
+      inViewRef.current = false;
+      setInView(false);
+      setShowTapToPlay(false);
+      video.pause();
+    };
+
+    const enter = () => {
+      inViewRef.current = true;
+      setInView(true);
+      setShowTapToPlay(false);
+      tryPlay();
+      if (isCoarse) {
+        if (tapDebounce) {
+          clearTimeout(tapDebounce);
+        }
+        tapDebounce = setTimeout(() => {
+          tapDebounce = undefined;
+          if (inViewRef.current && videoRef.current && videoRef.current.paused) {
+            setShowTapToPlay(true);
+          }
+        }, 480);
+      }
+    };
+    let inViewLatched = false;
+
     const onIo: IntersectionObserverCallback = (entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting && entry.intersectionRatio >= minVisible) {
-          tryPlay();
+        const ok = entry.isIntersecting && entry.intersectionRatio >= minVisible;
+        if (ok) {
+          if (!inViewLatched) {
+            inViewLatched = true;
+            enter();
+          } else if (video.paused) {
+            tryPlay();
+          }
         } else {
-          video.pause();
+          inViewLatched = false;
+          leave();
         }
       }
     };
@@ -141,13 +184,18 @@ function LandingFileDemoVideo({
       const visibleH = Math.min(r.bottom, vh) - Math.max(r.top, 0);
       const ratio = r.height > 0 ? Math.max(0, visibleH) / r.height : 0;
       if (ratio >= minVisible) {
-        tryPlay();
+        if (!inViewLatched) {
+          inViewLatched = true;
+          enter();
+        } else if (video.paused) {
+          tryPlay();
+        }
       } else {
-        video.pause();
+        inViewLatched = false;
+        leave();
       }
     };
-    // IO can skip the first paint on some mobile WebKit builds — align once
-    // layout is done and again shortly after (decode / shell chrome).
+
     const c = { r0: 0, r1: 0, t1: undefined as ReturnType<typeof setTimeout> | undefined };
     c.r0 = requestAnimationFrame(() => {
       c.r1 = requestAnimationFrame(() => {
@@ -160,6 +208,7 @@ function LandingFileDemoVideo({
       cancelAnimationFrame(c.r0);
       cancelAnimationFrame(c.r1);
       if (c.t1) clearTimeout(c.t1);
+      if (tapDebounce) clearTimeout(tapDebounce);
       io.disconnect();
     };
   }, [src]);
@@ -168,16 +217,42 @@ function LandingFileDemoVideo({
     <div ref={containerRef} className="absolute inset-0">
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-contain bg-black/5"
+        className="absolute inset-0 z-0 h-full w-full object-contain bg-black/5"
         controls
         muted
+        autoPlay={inView}
         playsInline
         preload="auto"
         poster={poster}
         onError={onError}
+        onPlaying={() => setShowTapToPlay(false)}
+        onLoadStart={() => {
+          const v = videoRef.current;
+          if (v) armMuted(v);
+        }}
+        onLoadedData={() => {
+          if (!inViewRef.current) return;
+          const v = videoRef.current;
+          if (!v) return;
+          armMuted(v);
+          void v.play().catch(() => {});
+        }}
       >
         <source src={src} type={videoSourceType(src)} />
       </video>
+      {showTapToPlay ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <button
+            type="button"
+            onClick={handleUserStart}
+            className="pointer-events-auto min-h-[44px] min-w-[44px] rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg sm:text-base"
+            style={{ background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' }}
+            aria-label={t('landing.demoTapToPlay')}
+          >
+            {t('landing.demoTapToPlay')}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
