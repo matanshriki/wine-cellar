@@ -116,6 +116,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
               <summary style={{ cursor: 'pointer' }}>Error details</summary>
               <pre style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {this.state.error.message}
+                {this.state.error.stack ? `\n\n${this.state.error.stack}` : ''}
               </pre>
             </details>
           )}

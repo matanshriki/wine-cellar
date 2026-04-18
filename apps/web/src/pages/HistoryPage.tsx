@@ -41,12 +41,13 @@ function parseTastingNotes(raw: string | null): { chipIds: string[]; notes: stri
 
 /** Read-only compact star row */
 function StarDisplay({ rating }: { rating: number }) {
+  const n = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
   return (
-    <div className="flex gap-0.5" aria-label={`${rating} out of 5 stars`}>
+    <div className="flex gap-0.5" aria-label={`${n} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map(star => (
         <span
           key={star}
-          style={{ fontSize: '15px', filter: star <= rating ? 'none' : 'grayscale(1) opacity(0.25)' }}
+          style={{ fontSize: '15px', filter: star <= n ? 'none' : 'grayscale(1) opacity(0.25)' }}
         >
           ⭐
         </span>
@@ -285,11 +286,11 @@ export function HistoryPage() {
             <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>{stats.total_opens}</div>
           </div>
 
-          {stats.average_rating > 0 && (
+          {Number.isFinite(stats.average_rating) && stats.average_rating > 0 && (
             <div className="card">
               <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.averageRating')}</div>
               <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>
-                {stats.average_rating.toFixed(1)}/5
+                {Number(stats.average_rating).toFixed(1)}/5
               </div>
             </div>
           )}
@@ -316,7 +317,7 @@ export function HistoryPage() {
         </div>
       )}
 
-      {stats && stats.top_regions.length > 1 && (
+      {stats && Array.isArray(stats.top_regions) && stats.top_regions.length > 1 && (
         <div className="card mb-6 sm:mb-8">
           <h2 
             className="text-lg sm:text-xl font-bold mb-3 sm:mb-4"
@@ -462,9 +463,9 @@ export function HistoryPage() {
                   style={{ borderColor: 'var(--border-subtle)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  {event.user_rating ? (
+                  {Number(event.user_rating) > 0 ? (
                     <>
-                      <StarDisplay rating={event.user_rating} />
+                      <StarDisplay rating={Number(event.user_rating)} />
                       <button
                         onClick={() => openRateSheet(event)}
                         className="text-xs font-medium"

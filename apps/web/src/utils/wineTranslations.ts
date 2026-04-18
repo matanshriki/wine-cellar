@@ -370,13 +370,14 @@ const APPELLATION_HE: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function caseInsensitiveLookup(dict: Record<string, string>, key: string | null | undefined): string | null {
-  if (!key) return null;
+  if (key == null || key === '') return null;
+  const keyStr = typeof key === 'string' ? key : String(key);
 
   // Try exact match first (fast path)
-  if (dict[key]) return dict[key];
+  if (dict[keyStr]) return dict[keyStr];
 
   // Try case-insensitive match
-  const lowerKey = key.toLowerCase();
+  const lowerKey = keyStr.toLowerCase();
   for (const [k, v] of Object.entries(dict)) {
     if (k.toLowerCase() === lowerKey) return v;
   }
@@ -400,8 +401,10 @@ export function translateAppellation(appellation: string | null | undefined): st
   return caseInsensitiveLookup(APPELLATION_HE, appellation);
 }
 
-export function translateGrape(grape: string): string {
-  return caseInsensitiveLookup(GRAPE_HE, grape) ?? grape;
+export function translateGrape(grape: unknown): string {
+  if (grape == null) return '';
+  const s = typeof grape === 'string' ? grape : String(grape);
+  return caseInsensitiveLookup(GRAPE_HE, s) ?? s;
 }
 
 export function translateGrapes(grapes: string[] | null | undefined): string[] | null {

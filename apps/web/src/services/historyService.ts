@@ -227,11 +227,13 @@ export async function getConsumptionStats(): Promise<ConsumptionStats> {
 
   // Calculate stats
   const totalOpens = history.length;
-  
-  const ratingsCount = history.filter(h => h.user_rating).length;
-  const averageRating = ratingsCount > 0
-    ? history.reduce((sum, h) => sum + (h.user_rating || 0), 0) / ratingsCount
-    : 0;
+
+  // Postgres numeric columns may arrive as strings — coerce so reduce() never string-concatenates.
+  const ratingsCount = history.filter((h) => Number(h.user_rating) > 0).length;
+  const averageRating =
+    ratingsCount > 0
+      ? history.reduce((sum, h) => sum + Number(h.user_rating ?? 0), 0) / ratingsCount
+      : 0;
 
   // Favorite color
   const colorCounts = history.reduce((acc, h) => {

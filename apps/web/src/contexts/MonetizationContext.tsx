@@ -36,11 +36,35 @@ interface MonetizationCache {
 
 function cacheKey(userId: string) { return CACHE_PREFIX + userId; }
 
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
 function readCache(userId: string): MonetizationCache | null {
   try {
     const raw = localStorage.getItem(cacheKey(userId));
-    return raw ? (JSON.parse(raw) as MonetizationCache) : null;
-  } catch { return null; }
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<MonetizationCache>;
+    if (
+      typeof parsed.monetizationEnabled !== 'boolean' ||
+      typeof parsed.creditEnforcementEnabled !== 'boolean' ||
+      !isFiniteNumber(parsed.effectiveBalance) ||
+      typeof parsed.isLowBalance !== 'boolean' ||
+      typeof parsed.balanceLabel !== 'string' ||
+      !isFiniteNumber(parsed.monthlyLimit) ||
+      !(parsed.planKey === null || typeof parsed.planKey === 'string')
+    ) {
+      try {
+        localStorage.removeItem(cacheKey(userId));
+      } catch {
+        /* ignore */
+      }
+      return null;
+    }
+    return parsed as MonetizationCache;
+  } catch {
+    return null;
+  }
 }
 
 function writeCache(userId: string, data: MonetizationCache): void {
