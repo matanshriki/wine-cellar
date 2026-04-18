@@ -37,6 +37,7 @@ A production-grade web application for smart wine cellar management with intelli
   - Authentication (email + OAuth)
   - Storage (avatar uploads)
   - Real-time subscriptions (optional)
+  - **Admin email (Resend):** signup and Paddle purchase alerts plus a daily bottle-scan digest — see [supabase/ADMIN_EMAIL_NOTIFICATIONS.md](supabase/ADMIN_EMAIL_NOTIFICATIONS.md).
 
 ---
 
