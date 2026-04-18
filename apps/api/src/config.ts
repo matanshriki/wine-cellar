@@ -13,8 +13,11 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
 const nodeEnv = process.env.NODE_ENV || 'development';
 const defaultJwtSecret = 'dev-secret-change-in-production';
 if (nodeEnv === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === defaultJwtSecret)) {
-  throw new Error(
-    '[Config] JWT_SECRET must be set to a strong random value in production (not the default dev secret).',
+  // Do not throw: production hosts (e.g. Railway) often omit this when the app uses Supabase
+  // only; legacy /api/auth cookie JWTs still need a real secret if those routes are used.
+  console.warn(
+    '[Config] JWT_SECRET is unset or still the dev default in production. ' +
+      'Add a long random JWT_SECRET in your host env if you use Express /api/auth (not required for Supabase-only sign-in).',
   );
 }
 
