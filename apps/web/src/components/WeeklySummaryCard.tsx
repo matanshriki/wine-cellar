@@ -132,12 +132,12 @@ export function WeeklySummaryCard() {
                 {item.icon}
               </span>
 
-              {/* Text */}
+              {/* Translate here, using the React useTranslation hook — not the i18n singleton */}
               <span
                 className="text-sm leading-snug pt-0.5"
                 style={{ color: 'var(--text-primary)' }}
               >
-                {item.text}
+                {String(t(item.key, item.params as any))}
               </span>
             </motion.li>
           ))}

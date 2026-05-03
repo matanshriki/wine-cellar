@@ -9,19 +9,21 @@
  *   2. top_signal        — best-rated region (conservative by sample size)
  *   3. explore_next      — profile-guided next direction
  *
- * Activity count is metadata exposed on the WeeklySummary object for the
- * caller to surface in the card header, NOT as a list item.
+ * Activity count is metadata for the card header meta line, NOT a bullet.
  *
  * Activity thresholds:
  *   none   (0 opens) → null — render nothing
- *   low    (1 open)  → top_signal only (singleWine wording) + preference_trend if data exists
+ *   low    (1 open)  → top_signal (singleWine) + preference_trend if data exists
  *   medium (2–3)     → preference_trend + top_signal
  *   high   (4+)      → full 3-item summary
+ *
+ * IMPORTANT: Items carry i18n keys + interpolation params — NOT pre-translated
+ * strings. Translation is done in the React component via useTranslation() so
+ * the active locale is always correct.
  *
  * No new database tables required. Pure function: no async, no side effects.
  */
 
-import i18n from '../i18n/config';
 import type { TasteProfile } from '../types/supabase';
 import type { WeeklyActivityEntry } from './historyService';
 
@@ -36,23 +38,22 @@ export type SummaryItemType =
 
 export interface WeeklySummaryItem {
   type: SummaryItemType;
-  text: string;
+  /** i18n key — translate in the component, not here */
+  key: string;
+  /** Interpolation params for the i18n key (e.g. { region: 'Tuscany' }) */
+  params?: Record<string, unknown>;
   icon: string;
 }
 
 export interface WeeklySummary {
-  items: WeeklySummaryItem[];     // 1–3 personalised bullets
+  items: WeeklySummaryItem[];
   activity_level: ActivityLevel;
-  opens_count: number;            // for the card header meta line
+  opens_count: number;
   period_start: Date;
   period_end: Date;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function t(key: string, options?: Record<string, unknown>): string {
-  return i18n.t(key, options as any) as string;
-}
 
 /** Most-frequent element in an array, or null when array is empty. */
 function mode<T>(arr: T[]): T | null {
@@ -127,22 +128,19 @@ export function getWeeklySummary(
         regions.filter((r) => r === dominantRegion).length >=
           Math.ceil(regions.length * 0.6);
 
-      let trendText: string | null = null;
+      let trendKey: string | null = null;
+      let trendParams: Record<string, unknown> | undefined;
 
       if (dominantColor && regionIsStrong && dominantRegion) {
-        const key = `weeklySummary.preferenceTrend.${dominantColor}AndRegion`;
-        const translated = t(key, { region: dominantRegion });
-        if (translated !== key) trendText = translated;
+        trendKey = `weeklySummary.preferenceTrend.${dominantColor}AndRegion`;
+        trendParams = { region: dominantRegion };
+      } else if (dominantColor) {
+        trendKey = `weeklySummary.preferenceTrend.${dominantColor}Only`;
+        trendParams = undefined;
       }
 
-      if (!trendText && dominantColor) {
-        const key = `weeklySummary.preferenceTrend.${dominantColor}Only`;
-        const translated = t(key);
-        if (translated !== key) trendText = translated;
-      }
-
-      if (trendText) {
-        items.push({ type: 'preference_trend', text: trendText, icon: '🍷' });
+      if (trendKey) {
+        items.push({ type: 'preference_trend', key: trendKey, params: trendParams, icon: '🍷' });
       }
     }
   }
@@ -182,15 +180,15 @@ export function getWeeklySummary(
       const top = ranked[0];
 
       if (top) {
-        let signalText: string;
-        if (top.count === 1) {
-          // Only one wine from this region — soften the claim
-          signalText = t('weeklySummary.topSignal.singleWine', { region: top.region });
-        } else {
-          // Two or more wines, confident region-level claim
-          signalText = t('weeklySummary.topSignal.regionPerformed', { region: top.region });
-        }
-        items.push({ type: 'top_signal', text: signalText, icon: '✨' });
+        const signalKey = top.count === 1
+          ? 'weeklySummary.topSignal.singleWine'
+          : 'weeklySummary.topSignal.regionPerformed';
+        items.push({
+          type: 'top_signal',
+          key: signalKey,
+          params: { region: top.region },
+          icon: '✨',
+        });
       }
     }
   }
@@ -213,13 +211,14 @@ export function getWeeklySummary(
     if (suggestedRegion) {
       items.push({
         type: 'explore_next',
-        text: t('weeklySummary.exploreNext.suggestion', { region: suggestedRegion }),
+        key: 'weeklySummary.exploreNext.suggestion',
+        params: { region: suggestedRegion },
         icon: '🧭',
       });
     } else {
       items.push({
         type: 'explore_next',
-        text: t('weeklySummary.exploreNext.generic'),
+        key: 'weeklySummary.exploreNext.generic',
         icon: '🧭',
       });
     }
