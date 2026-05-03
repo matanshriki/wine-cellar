@@ -17,6 +17,7 @@ import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 import { AdminImageBackfill } from '../components/AdminImageBackfill';
 import { TasteProfileCard } from '../components/TasteProfileCard';
+import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -293,6 +294,9 @@ export function ProfilePage() {
 
       {/* Taste Profile */}
       <TasteProfileCard />
+
+      {/* Weekly Summary — reflective taste snapshot for last 7 days */}
+      <WeeklySummaryCard />
 
       {/* Account Information */}
       <div className="card mt-6">

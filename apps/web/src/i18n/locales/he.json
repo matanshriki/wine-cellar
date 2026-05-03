@@ -1542,6 +1542,7 @@
     },
     "topSignal": {
       "regionPerformed": "{{region}} בלטה כאזור המוביל שלך השבוע",
+      "singleWine": "הבקבוק הכי גבוה שקיבל דירוג השבוע הגיע מ{{region}}",
       "profileMatch": "הבחירות השבועיות מתאימות לפרופיל הטעם שלך"
     },
     "exploreNext": {

@@ -1475,7 +1475,8 @@
       "roseAndRegion": "Rosé from {{region}} stood out this week"
     },
     "topSignal": {
-      "regionPerformed": "{{region}} stood out as your top-performing region this week",
+      "regionPerformed": "{{region}} stood out as your top region this week",
+      "singleWine": "Your highest-rated bottle this week came from {{region}}",
       "profileMatch": "This week's choices align with your evolving taste profile"
     },
     "exploreNext": {

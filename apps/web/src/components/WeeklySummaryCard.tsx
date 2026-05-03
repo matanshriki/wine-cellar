@@ -1,16 +1,14 @@
 /**
  * WeeklySummaryCard
  *
- * Self-contained premium card that shows "This Week with Sommi":
- * a concise 1-3 item summary of the user's wine activity and taste
- * signals over the last 7 days.
- *
- * Data is fetched independently so the component can be dropped
- * anywhere without requiring parent refactors.
+ * Self-contained premium card showing "This Week with Sommi":
+ *   – 1–3 personalised insight bullets (preference trend, top signal, explore next)
+ *   – Activity count + date range shown as a compact header meta line, not as a bullet
  *
  * Renders nothing when:
- *   – data is still loading (silent, no skeleton)
- *   – activity_level is 'none' (zero opens this week)
+ *   – data is still loading (silent — no skeleton flicker)
+ *   – opens_count ≤ 1 (low activity level — not enough signal)
+ *   – all dimensions returned null (no interesting pattern this week)
  *   – fetch failed (fails soft)
  */
 
@@ -23,15 +21,19 @@ import { getWeeklySummary } from '../services/weeklySummaryService';
 import type { WeeklySummary } from '../services/weeklySummaryService';
 import { trackWeeklySummary } from '../services/analytics';
 
-// ─── Date range label ─────────────────────────────────────────────────────────
+// ─── Date range helper ────────────────────────────────────────────────────────
 
 function formatDateRange(start: Date, end: Date, locale: string): string {
+  const ll = locale === 'he' ? 'he-IL' : 'en-US';
   const fmt = (d: Date) =>
-    d.toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
+    d.toLocaleDateString(ll, { month: 'short', day: 'numeric' });
   return `${fmt(start)} – ${fmt(end)}`;
+}
+
+function formatOpensLabel(count: number, t: (k: string, o?: any) => string): string {
+  if (count === 1) return t('weeklySummary.activity.one');
+  if (count <= 3) return t('weeklySummary.activity.few', { count });
+  return t('weeklySummary.activity.busy', { count });
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -66,24 +68,25 @@ export function WeeklySummaryCard() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Silent during load and when no activity
+  // Silent on load, no activity, or no interesting pattern
   if (!ready || !summary) return null;
 
   const dateRange = formatDateRange(summary.period_start, summary.period_end, i18n.language);
+  const opensLabel = formatOpensLabel(summary.opens_count, t);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="mb-6 sm:mb-8 rounded-2xl overflow-hidden"
+      className="mt-6 rounded-2xl overflow-hidden"
       style={{
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
       }}
     >
-      {/* Accent bar */}
+      {/* Wine-tone accent bar */}
       <div
         style={{
           height: '3px',
@@ -93,19 +96,21 @@ export function WeeklySummaryCard() {
 
       <div className="px-5 pt-4 pb-5">
         {/* Header */}
-        <div className="flex items-baseline justify-between mb-4">
+        <div className="flex items-baseline justify-between mb-1">
           <h2
             className="text-base font-semibold"
             style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
           >
             {t('weeklySummary.title')}
           </h2>
-          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            {dateRange}
-          </span>
         </div>
 
-        {/* Items */}
+        {/* Meta line: opens count · date range */}
+        <p className="text-xs mb-4" style={{ color: 'var(--text-tertiary)' }}>
+          {opensLabel} · {dateRange}
+        </p>
+
+        {/* Insight bullets */}
         <ul className="space-y-3">
           {summary.items.map((item, idx) => (
             <motion.li

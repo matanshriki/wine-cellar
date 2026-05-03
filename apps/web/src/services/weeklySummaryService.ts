@@ -1,15 +1,24 @@
 /**
  * Weekly Summary Service
  *
- * Derives a structured "This Week with Sommi" summary from the user's
- * last-7-days activity using only existing data sources:
- *   – consumption_history (via fetchWeeklyActivity)
- *   – profiles.taste_profile (via getMyTasteProfile)
+ * Derives a "This Week with Sommi" summary from the last 7 days of activity
+ * using only existing data sources (consumption_history + profiles.taste_profile).
  *
- * Pure function: getWeeklySummary() has no side effects and is fully
- * deterministic for a given input, making it easy to test and maintain.
+ * Priority waterfall — in order of interest:
+ *   1. preference_trend  — color / region dominance this week
+ *   2. top_signal        — best-rated region (conservative by sample size)
+ *   3. explore_next      — profile-guided next direction
  *
- * No new database tables or columns are required.
+ * Activity count is metadata exposed on the WeeklySummary object for the
+ * caller to surface in the card header, NOT as a list item.
+ *
+ * Activity thresholds:
+ *   none  (0 opens)  → null — render nothing
+ *   low   (1 open)   → null — too little data for meaningful claims
+ *   medium (2–3)     → preference_trend + top_signal
+ *   high  (4+)       → full 3-item summary
+ *
+ * No new database tables required. Pure function: no async, no side effects.
  */
 
 import i18n from '../i18n/config';
@@ -19,13 +28,8 @@ import type { WeeklyActivityEntry } from './historyService';
 // ─── Output types ─────────────────────────────────────────────────────────────
 
 export type ActivityLevel = 'none' | 'low' | 'medium' | 'high';
-// none   → 0 opens — render nothing
-// low    → 1 open  — activity item only (no overclaiming)
-// medium → 2-3     — activity + preference trend
-// high   → 4+      — full 3-item summary
 
 export type SummaryItemType =
-  | 'activity'
   | 'preference_trend'
   | 'top_signal'
   | 'explore_next';
@@ -37,9 +41,9 @@ export interface WeeklySummaryItem {
 }
 
 export interface WeeklySummary {
-  /** Localised in the calling component, not here */
-  items: WeeklySummaryItem[];
+  items: WeeklySummaryItem[];     // 1–3 personalised bullets
   activity_level: ActivityLevel;
+  opens_count: number;            // for the card header meta line
   period_start: Date;
   period_end: Date;
 }
@@ -50,17 +54,7 @@ function t(key: string, options?: Record<string, unknown>): string {
   return i18n.t(key, options as any) as string;
 }
 
-/** Normalise grapes JSONB field */
-function parseGrapes(raw: unknown): string[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw.filter((g): g is string => typeof g === 'string');
-  if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return [raw]; }
-  }
-  return [];
-}
-
-/** Most-frequent element in an array, or null if array is empty. */
+/** Most-frequent element in an array, or null when array is empty. */
 function mode<T>(arr: T[]): T | null {
   if (arr.length === 0) return null;
   const counts = new Map<T, number>();
@@ -75,8 +69,7 @@ function mode<T>(arr: T[]): T | null {
 }
 
 function getActivityLevel(count: number): ActivityLevel {
-  if (count === 0) return 'none';
-  if (count === 1) return 'low';
+  if (count <= 1) return count === 0 ? 'none' : 'low';
   if (count <= 3) return 'medium';
   return 'high';
 }
@@ -93,10 +86,8 @@ function topKeys(map: Record<string, number>, n: number): string[] {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
- * Derive a WeeklySummary from the last-7-days activity and the current taste profile.
- *
- * Returns null when activity_level is 'none' (zero opens).
- * All logic is rule-based; no OpenAI dependency.
+ * Derive a WeeklySummary from the last-7-days activity and the user's taste
+ * profile. Returns null for zero or one-open weeks (not enough signal).
  */
 export function getWeeklySummary(
   entries: WeeklyActivityEntry[],
@@ -105,7 +96,8 @@ export function getWeeklySummary(
   const count = entries.length;
   const activityLevel = getActivityLevel(count);
 
-  if (activityLevel === 'none') return null;
+  // Not enough signal
+  if (activityLevel === 'none' || activityLevel === 'low') return null;
 
   const period_end = new Date();
   const period_start = new Date(period_end);
@@ -113,24 +105,11 @@ export function getWeeklySummary(
 
   const items: WeeklySummaryItem[] = [];
 
-  // ── 1. Activity ───────────────────────────────────────────────────────────
-  // Always produced for any non-zero activity.
+  // ── 1. Preference trend ───────────────────────────────────────────────────
+  // Requires wine metadata. Shows color + regional dominance.
   {
-    let activityText: string;
-    if (count === 1) {
-      activityText = t('weeklySummary.activity.one');
-    } else if (count <= 3) {
-      activityText = t('weeklySummary.activity.few', { count });
-    } else {
-      activityText = t('weeklySummary.activity.busy', { count });
-    }
-    items.push({ type: 'activity', text: activityText, icon: '🍾' });
-  }
-
-  // ── 2. Preference trend ───────────────────────────────────────────────────
-  // Requires wine metadata. Shows color + region dominance.
-  if (activityLevel !== 'low') {
     const withWine = entries.filter((e) => e.wine !== null);
+
     if (withWine.length > 0) {
       const colors = withWine.map((e) => e.wine!.color).filter(Boolean);
       const regions = withWine
@@ -140,22 +119,21 @@ export function getWeeklySummary(
       const dominantColor = mode(colors);
       const dominantRegion = mode(regions);
 
-      // Region is "strong" when it represents ≥60 % of wines with a region
+      // Region is "strong" when it covers ≥60 % of wines that have a region
       const regionIsStrong =
         regions.length >= 2 &&
         dominantRegion !== null &&
-        regions.filter((r) => r === dominantRegion).length >= Math.ceil(regions.length * 0.6);
+        regions.filter((r) => r === dominantRegion).length >=
+          Math.ceil(regions.length * 0.6);
 
       let trendText: string | null = null;
 
-      // Preferred: color + region combination
       if (dominantColor && regionIsStrong && dominantRegion) {
         const key = `weeklySummary.preferenceTrend.${dominantColor}AndRegion`;
         const translated = t(key, { region: dominantRegion });
         if (translated !== key) trendText = translated;
       }
 
-      // Fallback: color only
       if (!trendText && dominantColor) {
         const key = `weeklySummary.preferenceTrend.${dominantColor}Only`;
         const translated = t(key);
@@ -168,55 +146,54 @@ export function getWeeklySummary(
     }
   }
 
-  // ── 3. Top signal ─────────────────────────────────────────────────────────
-  // Medium/high activity only. Uses ratings to surface the strongest insight.
-  if ((activityLevel === 'medium' || activityLevel === 'high') && items.length < 3) {
+  // ── 2. Top signal ─────────────────────────────────────────────────────────
+  // Conservative: single-wine regions use softer phrasing.
+  if (items.length < 3) {
     const ratedEntries = entries.filter(
       (e) => typeof e.user_rating === 'number' && e.user_rating > 0,
     );
 
     if (ratedEntries.length > 0) {
-      // Which region had the best average rating this week?
-      const regionRatings: Record<string, number[]> = {};
+      // Group ratings by region
+      const regionRatings: Record<string, { sum: number; count: number; topWine: string }> = {};
       for (const e of ratedEntries) {
         const region = e.wine?.region;
-        if (region) {
-          (regionRatings[region] ??= []).push(e.user_rating!);
+        if (!region) continue;
+        if (!regionRatings[region]) {
+          regionRatings[region] = { sum: 0, count: 0, topWine: e.wine?.wine_name ?? '' };
         }
+        regionRatings[region].sum += e.user_rating!;
+        regionRatings[region].count += 1;
       }
-      const rankedRegions = Object.entries(regionRatings)
-        .map(([region, ratings]) => ({
+
+      // Build ranked list: avg ≥ 3.5 to appear at all
+      const ranked = Object.entries(regionRatings)
+        .map(([region, { sum, count }]) => ({
           region,
-          avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
-          count: ratings.length,
+          avg: sum / count,
+          count,
         }))
-        // At least avg ≥ 4 to claim "stood out"
-        .filter((r) => r.avg >= 4)
+        .filter((r) => r.avg >= 3.5)
         .sort((a, b) => b.avg - a.avg || b.count - a.count);
 
-      if (rankedRegions[0]) {
-        items.push({
-          type: 'top_signal',
-          text: t('weeklySummary.topSignal.regionPerformed', {
-            region: rankedRegions[0].region,
-          }),
-          icon: '✨',
-        });
-      } else if (tasteProfile) {
-        // No stand-out region yet — use profile-level reinforcement
-        items.push({
-          type: 'top_signal',
-          text: t('weeklySummary.topSignal.profileMatch'),
-          icon: '✨',
-        });
+      const top = ranked[0];
+
+      if (top) {
+        let signalText: string;
+        if (top.count === 1) {
+          // Only one wine from this region — soften the claim
+          signalText = t('weeklySummary.topSignal.singleWine', { region: top.region });
+        } else {
+          // Two or more wines, confident region-level claim
+          signalText = t('weeklySummary.topSignal.regionPerformed', { region: top.region });
+        }
+        items.push({ type: 'top_signal', text: signalText, icon: '✨' });
       }
     }
   }
 
-  // ── 4. Explore next ───────────────────────────────────────────────────────
-  // High activity + profile confidence med/high only.
-  // Cross-references taste profile's favourite regions against this week's
-  // explored regions, then suggests a fresh direction.
+  // ── 3. Explore next ───────────────────────────────────────────────────────
+  // High activity + med/high profile confidence only — no overclaiming.
   if (
     activityLevel === 'high' &&
     tasteProfile !== null &&
@@ -228,8 +205,6 @@ export function getWeeklySummary(
     );
 
     const profileTopRegions = topKeys(tasteProfile.preferences.regions, 5);
-
-    // First profile top-region NOT seen this week → suggest it
     const suggestedRegion = profileTopRegions.find((r) => !weekRegions.has(r));
 
     if (suggestedRegion) {
@@ -239,7 +214,6 @@ export function getWeeklySummary(
         icon: '🧭',
       });
     } else {
-      // All top regions were explored — celebrate diversity
       items.push({
         type: 'explore_next',
         text: t('weeklySummary.exploreNext.generic'),
@@ -248,9 +222,12 @@ export function getWeeklySummary(
     }
   }
 
+  if (items.length === 0) return null;
+
   return {
     items: items.slice(0, 3),
     activity_level: activityLevel,
+    opens_count: count,
     period_start,
     period_end,
   };
