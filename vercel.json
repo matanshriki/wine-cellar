@@ -5,6 +5,14 @@
   "devCommand": "cd apps/web && npm run dev",
   "installCommand": "npm install",
   "framework": null,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sommi-ai.com" }],
+      "destination": "https://sommi-ai.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
