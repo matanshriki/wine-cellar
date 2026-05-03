@@ -826,6 +826,7 @@
     "decrease": "Decrease",
     "next": "Next",
     "confirm": "Confirm",
+    "done": "Done",
     "search": "Search",
     "filter": "Filter",
     "sort": "Sort",
@@ -1454,6 +1455,30 @@
         "question": "How are AI recommendations generated?",
         "answer": "The app analyses your cellar — bottle styles, regions, vintages, and drink windows — and suggests what to open tonight based on the occasion, food pairing, and which bottles are at their peak."
       }
+    }
+  },
+  "insights": {
+    "regionAffinity": "You tend to rate {{region}} wines highly",
+    "grapeAffinity": "One of your top varietals: {{grape}}",
+    "drinkWindowReady": "At its peak — great timing to open this",
+    "drinkWindowPeakSoon": "Approaching peak window — open in the coming months",
+    "pastOpenings": "You've enjoyed this wine {{count}} times before",
+    "colorBiasRed": "True to your love of reds",
+    "colorBiasWhite": "Matches your preference for whites",
+    "colorBiasSparkling": "You're a sparkling wine fan",
+    "educational": {
+      "docg": "DOCG signals Italy's strictest quality tier",
+      "doc": "DOC is Italy's protected designation of origin",
+      "aoc": "AOC/AOP is France's top appellation tier",
+      "champagne": "True Champagne comes only from this French region",
+      "cruClasse": "Cru Classé denotes an officially ranked Bordeaux estate",
+      "grandCru": "Grand Cru is the highest quality classification in Burgundy",
+      "premierCru": "Premier Cru is Burgundy's second-highest classification",
+      "reserva": "Reserva means the wine was aged longer before release",
+      "granReserva": "Gran Reserva is the top aging tier in Spanish wine",
+      "biodynamic": "Biodynamic farming treats the vineyard as a living ecosystem",
+      "naturalWine": "Natural wine is made with minimal intervention in the cellar",
+      "organic": "Organic grapes grown without synthetic pesticides or fertilisers"
     }
   }
 }

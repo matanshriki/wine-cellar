@@ -29,6 +29,7 @@ import {
   isStandalonePwa,
 } from '../utils/deviceDetection';
 import { sendAttributionToGA } from './aiAttribution';
+import type { InsightType } from './insightService';
 
 // ── Global gtag types ─────────────────────────────────────────────────────────
 
@@ -542,6 +543,35 @@ export const trackError = {
 export const trackLocalization = {
   changeLanguage: (language: string) =>
     trackEvent('language_change', { language }),
+};
+
+// ── Sommi Insights events ─────────────────────────────────────────────────────
+
+export type InsightSurface =
+  | 'bottle_details'
+  | 'open_ritual_success'
+  | 'post_rating'
+  | 'recommendation_card';
+
+/**
+ * Track a Sommi Insight being displayed to the user.
+ * Called from every surface that renders a SommiInsightPill.
+ */
+export const trackInsight = {
+  shown: (params: {
+    insight_type: InsightType;
+    surface: InsightSurface;
+    is_personalized: boolean;
+    bottle_id?: string;
+    wine_id?: string;
+  }) =>
+    trackEvent('sommi_insight_shown', {
+      insight_type: params.insight_type,
+      surface: params.surface,
+      is_personalized: params.is_personalized,
+      ...(params.bottle_id ? { bottle_id: params.bottle_id } : {}),
+      ...(params.wine_id ? { wine_id: params.wine_id } : {}),
+    }),
 };
 
 // ── AI label events (legacy aliases) ─────────────────────────────────────────

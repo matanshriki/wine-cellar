@@ -24,7 +24,8 @@ import { Toggle } from '../components/ui/Toggle';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
-import { trackRecommendation } from '../services/analytics';
+import { trackRecommendation, trackInsight } from '../services/analytics';
+import type { InsightType } from '../services/insightService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 import { OfflineCellarScreen } from '../components/OfflineCellarScreen';
 import { WineLoader } from '../components/WineLoader';
@@ -170,6 +171,20 @@ export function RecommendationPage() {
       }
 
       trackRecommendation.resultsShown(recs.length);
+
+      // Track each recommendation card that carries an insight pill
+      recs.forEach((rec) => {
+        if (rec.affinityReason && rec.affinityInsightType) {
+          trackInsight.shown({
+            insight_type: rec.affinityInsightType as InsightType,
+            surface: 'recommendation_card',
+            is_personalized: rec.affinityInsightType !== 'educational',
+            bottle_id: rec.bottleId,
+            wine_id: rec.wineId,
+          });
+        }
+      });
+
       setRecommendations(recs);
       setStep('results');
 

@@ -16,6 +16,8 @@ import { getLocalizedWineData } from '../utils/wineTranslations';
 import * as labelArtService from './labelArtService';
 import * as wineProfileService from './wineProfileService';
 import * as tasteProfileService from './tasteProfileService';
+import { getBottleInsight } from './insightService';
+import type { BottleWithWineInfo } from './bottleService';
 
 // LocalStorage key for tracking recently shown recommendations
 const RECENT_RECOMMENDATIONS_KEY = 'wine_recent_recommendations';
@@ -56,10 +58,13 @@ export interface Recommendation {
     vivinoUrl?: string | null;
     imageUrl?: string | null;
   };
+  wineId: string;
   explanation: string;
   servingInstructions: string;
   score: number;
   affinityReason?: string | null;
+  /** The InsightType that generated affinityReason — used for analytics. */
+  affinityInsightType?: string | null;
 }
 
 /**
@@ -171,6 +176,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   const scoredBottles = filteredBottles.map(bottle => {
     let score = 50; // Base score
     let affinityReason: string | null = null;
+    let affinityInsightType: string | null = null;
     
     const wineColor = bottle.wine.color.toLowerCase();
     const mealType = input.mealType?.toLowerCase() || '';
@@ -242,10 +248,13 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
       const affinityBonus = affinity * affinityWeight * 50;
       score += affinityBonus;
       
-      affinityReason = tasteProfileService.generateAffinityReason(wineProfile, userTasteProfile);
-      
-      if (affinityBonus > 5) {
-      }
+      // Use the richer insight service (covers region, grape, structural, drink window,
+      // past openings, color bias, and educational) instead of structural-only generateAffinityReason.
+      // BottleWithWine and BottleWithWineInfo are structurally identical (Bottle + { wine: Wine });
+      // the cast is safe and avoids a spurious as-any.
+      const insight = getBottleInsight(bottle as unknown as BottleWithWineInfo, userTasteProfile);
+      affinityReason = insight ? insight.text : null;
+      affinityInsightType = insight ? insight.type : null;
     }
 
     // Penalty for recently opened bottles (prevents repetition)
@@ -262,7 +271,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     // This ensures different bottles can win even with similar base scores
     score += Math.random() * 25;
 
-    return { bottle, score, affinityReason };
+    return { bottle, score, affinityReason, affinityInsightType };
   });
 
   // Sort by score and take top 3
@@ -274,7 +283,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
 
   // Format recommendations
   const recommendations: Recommendation[] = topBottles.map((item, index) => {
-    const { bottle, score, affinityReason } = item;
+    const { bottle, score, affinityReason, affinityInsightType } = item;
     const wine = bottle.wine;
     const localized = getLocalizedWineData(wine, i18n.language);
 
@@ -289,6 +298,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
 
     return {
       bottleId: bottle.id,
+      wineId: bottle.wine_id,
       bottle: {
         id: bottle.id,
         name: localized.wine_name,
@@ -305,6 +315,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
       servingInstructions,
       score: Math.round(score),
       affinityReason,
+      affinityInsightType,
     };
   });
 

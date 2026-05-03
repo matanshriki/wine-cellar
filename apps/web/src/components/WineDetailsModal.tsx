@@ -4,7 +4,7 @@
  * Displays comprehensive wine information in a beautiful bottle-themed modal
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
@@ -17,9 +17,14 @@ import { AddWineImageDialog } from './AddWineImageDialog';
 import { SommelierNotes } from './SommelierNotes';
 import { KeepBadge } from './KeepBadge';
 import { toast } from '../lib/toast';
-import { trackAILabel, trackUpload } from '../services/analytics';
+import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
 import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
 import type { AIAnalysis } from '../services/aiAnalysisService';
+import type { TasteProfile } from '../types/supabase';
+import * as tasteProfileService from '../services/tasteProfileService';
+import { getBottleInsight } from '../services/insightService';
+import { SommiInsightPill } from './SommiInsightPill';
+import { recordShownInsight } from '../services/insightCache';
 
 interface WineDetailsModalProps {
   isOpen: boolean;
@@ -48,6 +53,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     note: string | null;
     months: number | null;
   } | null>(null);
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
   const localizedWine = useLocalizedWine(bottle?.wine);
@@ -55,6 +61,34 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   useEffect(() => {
     setBarrelFromRefresh(null);
   }, [bottle?.id]);
+
+  // Load taste profile once when the modal opens (cached after first load)
+  useEffect(() => {
+    if (!isOpen || !bottle) return;
+    tasteProfileService.getMyTasteProfile().then(setTasteProfile).catch(() => null);
+  }, [isOpen]);
+
+  // Compute insight once per open — skips demo bottles
+  const insight = useMemo(
+    () => (bottle && !(bottle as any).is_demo ? getBottleInsight(bottle, tasteProfile) : null),
+    [bottle, tasteProfile],
+  );
+
+  // Track + record insight once when the modal first opens and insight is ready
+  useEffect(() => {
+    if (!isOpen || !insight || !bottle) return;
+    recordShownInsight(insight);
+    trackInsight.shown({
+      insight_type: insight.type,
+      surface: 'bottle_details',
+      is_personalized: insight.type !== 'educational',
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id,
+    });
+    // Intentionally only on isOpen change + insight type; avoids tracking
+    // duplicate events if tasteProfile updates asynchronously while modal stays open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, insight?.type]);
 
   /**
    * Wraps the parent's onAnalyze so the modal can show a spinner while the
@@ -527,6 +561,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     )}
                   </div>
                 </div>
+
+                {/* Sommi Insight */}
+                {!isDemoBottle && (
+                  <SommiInsightPill insight={insight} />
+                )}
 
                 {/* Divider */}
                 <div style={{ borderTop: '1px solid var(--border-subtle)' }} />

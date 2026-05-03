@@ -20,6 +20,13 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import type { WineTimer } from '../hooks/useTimerManager';
 import { MOOD_CHIPS } from './RateRitualSheet';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import type { TasteProfile } from '../types/supabase';
+import * as tasteProfileService from '../services/tasteProfileService';
+import { getBottleInsight } from '../services/insightService';
+import type { WineInsight } from '../services/insightService';
+import { SommiInsightPill } from './SommiInsightPill';
+import { recordShownInsight, getRecentlyShownTypes } from '../services/insightCache';
+import { trackInsight } from '../services/analytics';
 
 // ─── Serving guidance derivation ──────────────────────────────────────────────
 
@@ -110,7 +117,7 @@ const stepVariants = {
 const stepTransition: Transition = { type: 'tween', duration: reduce ? 0 : 0.28, ease: [0.4, 0, 0.2, 1] };
 
 // Step ordering used to derive slide direction
-const STEP_ORDER = ['open', 'serve', 'done', 'rate'] as const;
+const STEP_ORDER = ['open', 'serve', 'done', 'rate', 'rated'] as const;
 type Step = (typeof STEP_ORDER)[number];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -355,12 +362,16 @@ export function OpenRitualSheet({
   const [rateLaterMins, setRateLaterMins] = useState(45);
   const [loading, setLoading] = useState(false);
   const [historyId, setHistoryId] = useState<string | null>(null);
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null);
 
   // Rating state (step 4)
   const [rating, setRating] = useState(0);
   const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set());
   const [ratingNotes, setRatingNotes] = useState('');
   const [ratingSaving, setRatingSaving] = useState(false);
+
+  // Post-rating insight shown on the 'rated' confirmation step
+  const [ratedInsight, setRatedInsight] = useState<WineInsight | null>(null);
 
   const serving = bottle ? deriveServingInfo(bottle, t as TFn) : null;
 
@@ -378,6 +389,7 @@ export function OpenRitualSheet({
     setSelectedChips(new Set());
     setRatingNotes('');
     setRatingSaving(false);
+    setRatedInsight(null);
     if (serving) {
       const defaultDecant = serving.decantMins > 0 ? serving.decantMins : 30;
       setTimerEnabled(serving.decantMins > 0);
@@ -386,6 +398,35 @@ export function OpenRitualSheet({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // Load taste profile once on open so Step 3 can show a personalized insight
+  useEffect(() => {
+    if (!isOpen) return;
+    tasteProfileService.getMyTasteProfile().then(setTasteProfile).catch(() => null);
+  }, [isOpen]);
+
+  // Track + record Step 3 insight when user reaches the success screen
+  useEffect(() => {
+    if (step !== 'done' || !bottle) return;
+    const insight = getBottleInsight(bottle, tasteProfile);
+    if (!insight) return;
+    recordShownInsight(insight);
+    trackInsight.shown({
+      insight_type: insight.type,
+      surface: 'open_ritual_success',
+      is_personalized: insight.type !== 'educational',
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, bottle?.id, tasteProfile]);
+
+  // Auto-close the 'rated' confirmation step after 2.5 s
+  useEffect(() => {
+    if (step !== 'rated') return;
+    const timer = setTimeout(onClose, 2500);
+    return () => clearTimeout(timer);
+  }, [step, onClose]);
 
   // Navigate between steps, inferring slide direction from step order
   function goTo(nextStep: Step) {
@@ -496,10 +537,24 @@ export function OpenRitualSheet({
         tasting_notes: combinedNotes,
       });
 
-      import('../lib/toast').then(({ toast }) =>
-        toast.success(t('rateRitual.saved', 'Rating saved!'))
-      );
-      onClose();
+      // Compute a post-rating insight that skips any type already shown on Step 3
+      const postInsight = bottle
+        ? getBottleInsight(bottle, tasteProfile, { excludeTypes: getRecentlyShownTypes() })
+        : null;
+
+      if (postInsight) {
+        recordShownInsight(postInsight);
+        trackInsight.shown({
+          insight_type: postInsight.type,
+          surface: 'post_rating',
+          is_personalized: postInsight.type !== 'educational',
+          bottle_id: bottle?.id,
+          wine_id: bottle?.wine_id,
+        });
+      }
+
+      setRatedInsight(postInsight);
+      goTo('rated');
     } catch (err: any) {
       import('../lib/toast').then(({ toast }) =>
         toast.error(err?.message || t('rateRitual.saveFailed', 'Failed to save rating'))
@@ -519,9 +574,9 @@ export function OpenRitualSheet({
 
   const DECANT_PRESETS = [15, 30, 45, 60];
 
-  // Progress dots: 3 dots (open / serve / done+rate share the 3rd)
+  // Progress dots: 3 dots (open / serve / done+rate+rated share the 3rd)
   const PROGRESS_STEPS = ['open', 'serve', 'done'] as const;
-  const progressActive = step === 'rate' ? 'done' : step;
+  const progressActive = (step === 'rate' || step === 'rated') ? 'done' : step;
 
   return (
     <AnimatePresence>
@@ -540,6 +595,7 @@ export function OpenRitualSheet({
               WebkitBackdropFilter: 'var(--blur-medium)',
             }}
             onClick={step === 'open' || step === 'serve' ? onClose : undefined}
+            aria-hidden
           />
 
           {/* Sheet */}
@@ -761,6 +817,11 @@ export function OpenRitualSheet({
                       </p>
                     </div>
 
+                    {/* Sommi Insight — personalized context on the success screen */}
+                    <div className="flex justify-center">
+                      <SommiInsightPill insight={getBottleInsight(bottle, tasteProfile)} />
+                    </div>
+
                     {/* Divider with label */}
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
@@ -874,6 +935,41 @@ export function OpenRitualSheet({
                         }}
                       />
                     </div>
+                  </motion.div>
+                )}
+
+                {/* ── Step 5: Rating confirmed ────────────────────────── */}
+                {step === 'rated' && (
+                  <motion.div
+                    key="step-rated"
+                    custom={direction}
+                    variants={stepVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={stepTransition}
+                    className="flex flex-col items-center justify-center gap-4 py-8 text-center"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      className="flex items-center justify-center w-16 h-16 rounded-full"
+                      style={{ background: 'var(--wine-50, #fdf2f5)', border: '1px solid var(--wine-200)' }}
+                    >
+                      <span style={{ fontSize: '28px', lineHeight: 1 }}>✓</span>
+                    </motion.div>
+
+                    <p
+                      className="text-base font-semibold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {t('rateRitual.saved', 'Rating saved!')}
+                    </p>
+
+                    {ratedInsight && (
+                      <SommiInsightPill insight={ratedInsight} />
+                    )}
                   </motion.div>
                 )}
 
@@ -1019,6 +1115,23 @@ export function OpenRitualSheet({
                     {t('rateRitual.skipRating', 'Skip for now')}
                   </button>
                 </>
+              )}
+
+              {/* Step 5 footer — auto-closes, but user can tap Done early */}
+              {step === 'rated' && (
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onClose}
+                  className="w-full py-3.5 rounded-xl font-semibold text-sm"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    color: 'white',
+                    border: '1px solid var(--wine-700)',
+                  }}
+                >
+                  {t('common.done', 'Done')}
+                </motion.button>
               )}
             </div>
           </motion.div>
