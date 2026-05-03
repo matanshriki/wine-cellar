@@ -13,10 +13,10 @@
  * caller to surface in the card header, NOT as a list item.
  *
  * Activity thresholds:
- *   none  (0 opens)  → null — render nothing
- *   low   (1 open)   → null — too little data for meaningful claims
+ *   none   (0 opens) → null — render nothing
+ *   low    (1 open)  → top_signal only (singleWine wording) + preference_trend if data exists
  *   medium (2–3)     → preference_trend + top_signal
- *   high  (4+)       → full 3-item summary
+ *   high   (4+)      → full 3-item summary
  *
  * No new database tables required. Pure function: no async, no side effects.
  */
@@ -69,7 +69,8 @@ function mode<T>(arr: T[]): T | null {
 }
 
 function getActivityLevel(count: number): ActivityLevel {
-  if (count <= 1) return count === 0 ? 'none' : 'low';
+  if (count === 0) return 'none';
+  if (count === 1) return 'low';
   if (count <= 3) return 'medium';
   return 'high';
 }
@@ -96,8 +97,8 @@ export function getWeeklySummary(
   const count = entries.length;
   const activityLevel = getActivityLevel(count);
 
-  // Not enough signal
-  if (activityLevel === 'none' || activityLevel === 'low') return null;
+  // Zero opens — nothing to say
+  if (activityLevel === 'none') return null;
 
   const period_end = new Date();
   const period_start = new Date(period_end);
@@ -166,14 +167,16 @@ export function getWeeklySummary(
         regionRatings[region].count += 1;
       }
 
-      // Build ranked list: avg ≥ 3.5 to appear at all
+      // Build ranked list:
+      //   single-wine entries: any positive rating qualifies (≥ 1)
+      //   multi-wine entries:  avg ≥ 3.5 for a confident region-level claim
       const ranked = Object.entries(regionRatings)
         .map(([region, { sum, count }]) => ({
           region,
           avg: sum / count,
           count,
         }))
-        .filter((r) => r.avg >= 3.5)
+        .filter((r) => r.count === 1 ? r.avg >= 1 : r.avg >= 3.5)
         .sort((a, b) => b.avg - a.avg || b.count - a.count);
 
       const top = ranked[0];
