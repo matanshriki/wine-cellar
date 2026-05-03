@@ -8,6 +8,7 @@ import { RateRitualSheet, MOOD_CHIPS } from '../components/RateRitualSheet';
 import * as historyService from '../services/historyService';
 import * as bottleService from '../services/bottleService';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,9 @@ export function HistoryPage() {
           {t('history.subtitle')}
         </p>
       </div>
+
+      {/* Weekly Summary — self-contained, renders nothing when no activity */}
+      <WeeklySummaryCard />
 
       {stats && stats.total_opens > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">

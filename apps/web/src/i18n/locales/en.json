@@ -1457,6 +1457,32 @@
       }
     }
   },
+  "weeklySummary": {
+    "title": "This Week with Sommi",
+    "activity": {
+      "one": "You opened 1 wine this week",
+      "few": "You opened {{count}} wines this week",
+      "busy": "A busy week — you opened {{count}} bottles"
+    },
+    "preferenceTrend": {
+      "redOnly": "You leaned toward red wines this week",
+      "whiteOnly": "You leaned toward white wines this week",
+      "sparklingOnly": "Sparkling wines were your focus this week",
+      "roseOnly": "You favored rosé wines this week",
+      "redAndRegion": "You leaned toward bold reds from {{region}} this week",
+      "whiteAndRegion": "You favored whites from {{region}} this week",
+      "sparklingAndRegion": "Sparkling wines from {{region}} led your week",
+      "roseAndRegion": "Rosé from {{region}} stood out this week"
+    },
+    "topSignal": {
+      "regionPerformed": "{{region}} stood out as your top-performing region this week",
+      "profileMatch": "This week's choices align with your evolving taste profile"
+    },
+    "exploreNext": {
+      "suggestion": "Based on this week, {{region}} could be a strong next direction",
+      "generic": "A diverse week — let your palate guide your next bottle"
+    }
+  },
   "insights": {
     "regionAffinity": "You tend to rate {{region}} wines highly",
     "grapeAffinity": "One of your top varietals: {{grape}}",

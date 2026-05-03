@@ -1523,6 +1523,32 @@
       }
     }
   },
+  "weeklySummary": {
+    "title": "השבוע עם Sommi",
+    "activity": {
+      "one": "פתחת יין אחד השבוע",
+      "few": "פתחת {{count}} יינות השבוע",
+      "busy": "שבוע עמוס — {{count}} בקבוקים נפתחו"
+    },
+    "preferenceTrend": {
+      "redOnly": "השבוע נטית ליינות אדומים",
+      "whiteOnly": "השבוע נטית ליינות לבנים",
+      "sparklingOnly": "יינות מבעבעים הובילו את השבוע",
+      "roseOnly": "יינות רוזה היו הבחירה השבועית",
+      "redAndRegion": "השבוע נטית לאדומים מלאי גוף מ{{region}}",
+      "whiteAndRegion": "יינות לבנים מ{{region}} שלטו השבוע",
+      "sparklingAndRegion": "יינות מבעבעים מ{{region}} הובילו השבוע",
+      "roseAndRegion": "רוזה מ{{region}} בלט השבוע"
+    },
+    "topSignal": {
+      "regionPerformed": "{{region}} בלטה כאזור המוביל שלך השבוע",
+      "profileMatch": "הבחירות השבועיות מתאימות לפרופיל הטעם שלך"
+    },
+    "exploreNext": {
+      "suggestion": "בהתבסס על השבוע, {{region}} יכולה להיות כיוון מצוין הבא",
+      "generic": "שבוע מגוון — תן לחיך שלך להוביל לבקבוק הבא"
+    }
+  },
   "insights": {
     "regionAffinity": "אתה נוטה לדרג יינות מ{{region}} בציונים גבוהים",
     "grapeAffinity": "אחד הזנים המועדפים שלך: {{grape}}",

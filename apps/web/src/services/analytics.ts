@@ -30,6 +30,7 @@ import {
 } from '../utils/deviceDetection';
 import { sendAttributionToGA } from './aiAttribution';
 import type { InsightType } from './insightService';
+import type { ActivityLevel, SummaryItemType } from './weeklySummaryService';
 
 // ── Global gtag types ─────────────────────────────────────────────────────────
 
@@ -571,6 +572,21 @@ export const trackInsight = {
       is_personalized: params.is_personalized,
       ...(params.bottle_id ? { bottle_id: params.bottle_id } : {}),
       ...(params.wine_id ? { wine_id: params.wine_id } : {}),
+    }),
+};
+
+// ── Weekly Summary events ─────────────────────────────────────────────────────
+
+export const trackWeeklySummary = {
+  shown: (params: {
+    activity_level: ActivityLevel;
+    item_types: SummaryItemType[];
+    item_count: number;
+  }) =>
+    trackEvent('sommi_weekly_summary_shown', {
+      activity_level: params.activity_level,
+      item_types: params.item_types.join(','),
+      item_count: params.item_count,
     }),
 };
 

@@ -446,3 +446,70 @@ export async function fetchWineHistoryInsightsForWineIds(
   return out;
 }
 
+// ── Weekly activity ───────────────────────────────────────────────────────────
+
+/**
+ * One history entry with rich wine metadata, used exclusively by weeklySummaryService.
+ * Joined directly to wines via the wine_id FK on consumption_history.
+ */
+export interface WeeklyActivityEntry {
+  id: string;
+  opened_at: string;
+  user_rating: number | null;
+  wine_id: string;
+  wine: {
+    color: string;
+    region: string | null;
+    country: string | null;
+    grapes: unknown;
+    wine_name: string;
+    producer: string;
+  } | null;
+}
+
+/**
+ * Return all consumption_history entries opened within the last `daysBack` days,
+ * joined to wine metadata. Uses a targeted date filter so it stays fast even for
+ * users with large histories. Fails soft (returns []) on any error.
+ */
+export async function fetchWeeklyActivity(daysBack = 7): Promise<WeeklyActivityEntry[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const since = new Date();
+  since.setDate(since.getDate() - daysBack);
+
+  const { data, error } = await supabase
+    .from('consumption_history')
+    .select(`
+      id,
+      opened_at,
+      user_rating,
+      wine_id,
+      wine:wines(
+        color,
+        region,
+        country,
+        grapes,
+        wine_name,
+        producer
+      )
+    `)
+    .eq('user_id', user.id)
+    .gte('opened_at', since.toISOString())
+    .order('opened_at', { ascending: false }) as any;
+
+  if (error || !data) {
+    console.warn('[historyService] fetchWeeklyActivity failed:', error);
+    return [];
+  }
+
+  return (data as any[]).map((entry) => ({
+    id: entry.id,
+    opened_at: entry.opened_at,
+    user_rating: entry.user_rating,
+    wine_id: entry.wine_id,
+    wine: entry.wine ?? null,
+  }));
+}
+
