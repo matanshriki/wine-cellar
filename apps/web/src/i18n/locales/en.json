@@ -1469,7 +1469,7 @@
       "whiteOnly": "You leaned toward white wines this week",
       "sparklingOnly": "Sparkling wines were your focus this week",
       "roseOnly": "You favored rosé wines this week",
-      "redAndRegion": "You leaned toward bold reds from {{region}} this week",
+      "redAndRegion": "You leaned toward reds from {{region}} this week",
       "whiteAndRegion": "You favored whites from {{region}} this week",
       "sparklingAndRegion": "Sparkling wines from {{region}} led your week",
       "roseAndRegion": "Rosé from {{region}} stood out this week"

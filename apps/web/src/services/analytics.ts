@@ -582,11 +582,13 @@ export const trackWeeklySummary = {
     activity_level: ActivityLevel;
     item_types: SummaryItemType[];
     item_count: number;
+    surface?: string;
   }) =>
     trackEvent('sommi_weekly_summary_shown', {
       activity_level: params.activity_level,
       item_types: params.item_types.join(','),
       item_count: params.item_count,
+      surface: params.surface ?? 'profile_page',
     }),
 };
 

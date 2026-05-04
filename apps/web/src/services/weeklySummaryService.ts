@@ -108,11 +108,13 @@ export function getWeeklySummary(
   const items: WeeklySummaryItem[] = [];
 
   // ── 1. Preference trend ───────────────────────────────────────────────────
-  // Requires wine metadata. Shows color + regional dominance.
+  // Requires ≥ 2 data points — a single bottle cannot reveal a "lean" or pattern.
+  // Skip entirely for low activity (count === 1).
   {
     const withWine = entries.filter((e) => e.wine !== null);
+    const isTrend = activityLevel !== 'low';
 
-    if (withWine.length > 0) {
+    if (isTrend && withWine.length > 0) {
       const colors = withWine.map((e) => e.wine!.color).filter(Boolean);
       const regions = withWine
         .map((e) => e.wine!.region)
@@ -166,7 +168,8 @@ export function getWeeklySummary(
       }
 
       // Build ranked list:
-      //   single-wine entries: any positive rating qualifies (≥ 1)
+      //   single-wine entries: avg ≥ 3 (at least a neutral/ok rating; 1–2 stars would
+      //     make "Your highest-rated bottle" feel misleading)
       //   multi-wine entries:  avg ≥ 3.5 for a confident region-level claim
       const ranked = Object.entries(regionRatings)
         .map(([region, { sum, count }]) => ({
@@ -174,7 +177,7 @@ export function getWeeklySummary(
           avg: sum / count,
           count,
         }))
-        .filter((r) => r.count === 1 ? r.avg >= 1 : r.avg >= 3.5)
+        .filter((r) => r.count === 1 ? r.avg >= 3 : r.avg >= 3.5)
         .sort((a, b) => b.avg - a.avg || b.count - a.count);
 
       const top = ranked[0];

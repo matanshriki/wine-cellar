@@ -1535,7 +1535,7 @@
       "whiteOnly": "השבוע נטית ליינות לבנים",
       "sparklingOnly": "יינות מבעבעים הובילו את השבוע",
       "roseOnly": "יינות רוזה היו הבחירה השבועית",
-      "redAndRegion": "השבוע נטית לאדומים מלאי גוף מ{{region}}",
+      "redAndRegion": "השבוע נטית לאדומים מ{{region}}",
       "whiteAndRegion": "יינות לבנים מ{{region}} שלטו השבוע",
       "sparklingAndRegion": "יינות מבעבעים מ{{region}} הובילו השבוע",
       "roseAndRegion": "רוזה מ{{region}} בלט השבוע"

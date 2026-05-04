@@ -7,9 +7,12 @@
  *
  * Renders nothing when:
  *   – data is still loading (silent — no skeleton flicker)
- *   – opens_count ≤ 1 (low activity level — not enough signal)
+ *   – opens_count === 0 (no activity this week)
  *   – all dimensions returned null (no interesting pattern this week)
  *   – fetch failed (fails soft)
+ *
+ * Low activity (1 open) shows top_signal only when rating ≥ 3. No preference_trend
+ * is shown for a single data point (can't claim a "lean" from one bottle).
  */
 
 import { useState, useEffect, useCallback } from 'react';
