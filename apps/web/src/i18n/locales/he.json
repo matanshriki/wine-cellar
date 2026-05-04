@@ -1550,6 +1550,17 @@
       "generic": "שבוע מגוון — תן לחיך שלך להוביל לבקבוק הבא"
     }
   },
+  "foodPairing": {
+    "sectionTitle": "מושלם עם היין הזה",
+    "badge": "Sommi",
+    "pendingTitle": "מכין רעיונות להתאמה…",
+    "pendingSubtitle": "Sommi מכין המלצות התאמה אישיות לאוכל עבור יין זה.",
+    "styleFallbackLabel": "לפי סגנון היין",
+    "premiumPairings": "התאמות פרימיום",
+    "everydayPairings": "התאמות יומיומיות",
+    "avoid": "כדאי להימנע מ",
+    "occasions": "מתאים ל"
+  },
   "insights": {
     "regionAffinity": "אתה נוטה לדרג יינות מ{{region}} בציונים גבוהים",
     "grapeAffinity": "אחד הזנים המועדפים שלך: {{grape}}",

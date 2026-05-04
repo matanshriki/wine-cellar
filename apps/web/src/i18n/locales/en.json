@@ -1484,6 +1484,17 @@
       "generic": "A diverse week — let your palate guide your next bottle"
     }
   },
+  "foodPairing": {
+    "sectionTitle": "Perfect with this wine",
+    "badge": "Sommi",
+    "pendingTitle": "Preparing pairing ideas…",
+    "pendingSubtitle": "Sommi is crafting personalised pairing suggestions for this wine.",
+    "styleFallbackLabel": "Based on wine style",
+    "premiumPairings": "Premium pairings",
+    "everydayPairings": "Everyday pairings",
+    "avoid": "Avoid",
+    "occasions": "Great for"
+  },
   "insights": {
     "regionAffinity": "You tend to rate {{region}} wines highly",
     "grapeAffinity": "One of your top varietals: {{grape}}",

@@ -31,10 +31,9 @@ import type { FoodPairing } from '../services/foodPairingService';
 // ─── Food Pairing Section ─────────────────────────────────────────────────────
 
 function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
+  const { t } = useTranslation();
   const aiPairing = readCachedFoodPairing(wine);
   const fallback = getFoodPairingFallback(wine as any);
-  const pairing: FoodPairing = aiPairing ?? fallback;
-  const isAI = !!aiPairing;
 
   return (
     <div>
@@ -43,8 +42,8 @@ function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
         style={{ color: 'var(--text-primary)' }}
       >
         <span>🍽️</span>
-        <span>Perfect with this wine</span>
-        {isAI && (
+        <span>{t('foodPairing.sectionTitle')}</span>
+        {aiPairing && (
           <span
             className="text-xs px-2 py-0.5 rounded-full font-medium"
             style={{
@@ -53,83 +52,138 @@ function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
               fontSize: '10px',
             }}
           >
-            Sommi
+            {t('foodPairing.badge')}
           </span>
         )}
       </h3>
 
-      <div
-        className="rounded-xl p-4 space-y-4"
-        style={{
-          background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
-          border: '1px solid var(--border-subtle)',
-        }}
-      >
-        {/* Summary */}
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          {pairing.summary}
-        </p>
+      {/* AI-generated data */}
+      {aiPairing && <PairingCard pairing={aiPairing} />}
 
-        {/* Best pairings */}
-        {pairing.best_pairings.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Premium pairings
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {pairing.best_pairings.map((dish, i) => (
-                <span
-                  key={i}
-                  className="text-xs px-2.5 py-1 rounded-full"
-                  style={{
-                    background: 'var(--wine-50, rgba(164,77,90,0.08))',
-                    color: 'var(--wine-700, #8b2e3d)',
-                    border: '1px solid var(--wine-200, rgba(164,77,90,0.2))',
-                  }}
-                >
-                  {dish}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Everyday pairings */}
-        {pairing.everyday_pairings.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Everyday pairings
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {pairing.everyday_pairings.map((dish, i) => (
-                <span
-                  key={i}
-                  className="text-xs px-2.5 py-1 rounded-full"
-                  style={{
-                    background: 'var(--bg-muted)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-base)',
-                  }}
-                >
-                  {dish}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Pairing logic */}
-        {pairing.pairing_logic && (
-          <p
-            className="text-xs italic"
-            style={{ color: 'var(--text-tertiary)', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}
+      {/* Pending state — AI not generated yet; show fallback clearly labelled */}
+      {!aiPairing && (
+        <>
+          {/* Subtle pending notice */}
+          <div
+            className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg"
+            style={{
+              background: 'var(--bg-muted)',
+              border: '1px solid var(--border-subtle)',
+            }}
           >
-            {pairing.pairing_logic}
-          </p>
-        )}
+            <svg className="w-3.5 h-3.5 flex-shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                {t('foodPairing.pendingTitle')}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                {t('foodPairing.pendingSubtitle')}
+              </p>
+            </div>
+          </div>
 
-        {/* Occasions */}
-        {pairing.occasion_fit.length > 0 && (
+          {/* Style-based fallback, clearly labelled */}
+          <div className="mb-2 flex items-center gap-1.5">
+            <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: 'var(--bg-muted)', color: 'var(--text-tertiary)', border: '1px solid var(--border-subtle)' }}>
+              {t('foodPairing.styleFallbackLabel')}
+            </span>
+          </div>
+          <PairingCard pairing={fallback} muted />
+        </>
+      )}
+    </div>
+  );
+}
+
+interface PairingCardProps {
+  pairing: FoodPairing;
+  muted?: boolean;
+}
+
+function PairingCard({ pairing, muted = false }: PairingCardProps) {
+  const { t } = useTranslation();
+  const opacity = muted ? 0.75 : 1;
+
+  return (
+    <div
+      className="rounded-xl p-4 space-y-4"
+      style={{
+        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
+        border: '1px solid var(--border-subtle)',
+        opacity,
+      }}
+    >
+      {/* Summary */}
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        {pairing.summary}
+      </p>
+
+      {/* Best pairings */}
+      {pairing.best_pairings.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('foodPairing.premiumPairings')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {pairing.best_pairings.map((dish, i) => (
+              <span
+                key={i}
+                className="text-xs px-2.5 py-1 rounded-full"
+                style={{
+                  background: 'var(--wine-50, rgba(164,77,90,0.08))',
+                  color: 'var(--wine-700, #8b2e3d)',
+                  border: '1px solid var(--wine-200, rgba(164,77,90,0.2))',
+                }}
+              >
+                {dish}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Everyday pairings */}
+      {pairing.everyday_pairings.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('foodPairing.everydayPairings')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {pairing.everyday_pairings.map((dish, i) => (
+              <span
+                key={i}
+                className="text-xs px-2.5 py-1 rounded-full"
+                style={{
+                  background: 'var(--bg-muted)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-base)',
+                }}
+              >
+                {dish}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pairing logic */}
+      {pairing.pairing_logic && (
+        <p
+          className="text-xs italic"
+          style={{ color: 'var(--text-tertiary)', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}
+        >
+          {pairing.pairing_logic}
+        </p>
+      )}
+
+      {/* Occasions */}
+      {pairing.occasion_fit.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('foodPairing.occasions')}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {pairing.occasion_fit.map((occ, i) => (
               <span
@@ -145,20 +199,20 @@ function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
               </span>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Avoid */}
-        {pairing.avoid.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Avoid
-            </p>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              {pairing.avoid.join(' · ')}
-            </p>
-          </div>
-        )}
-      </div>
+      {/* Avoid */}
+      {pairing.avoid.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('foodPairing.avoid')}
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {pairing.avoid.join(' · ')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
