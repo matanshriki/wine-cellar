@@ -79,12 +79,11 @@ export const AdminEnrichPage: React.FC = () => {
   const [modernQueueTotals, setModernQueueTotals] = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
 
   // ── AI food pairing (wines.food_pairing backfill) ───────────────────────────
-  const [fpRunning, setFpRunning] = useState(false);
-  const [fpDone, setFpDone] = useState(false);
-  const [fpBatch, setFpBatch] = useState(20);
+  const [fpFiring, setFpFiring] = useState(false);
+  const [fpLastResult, setFpLastResult] = useState<{ processedCount: number; skippedCount: number; failedCount: number; fetchedCount: number; isComplete: boolean } | null>(null);
+  const [fpBatch, setFpBatch] = useState(15);
   const [fpForce, setFpForce] = useState(false);
-  const [fpTotals, setFpTotals] = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
-  const [fpLog, setFpLog] = useState<string[]>([]);
+  const [fpError, setFpError] = useState<string | null>(null);
 
   // ── Rule-based wine metadata (internal, no Vivino) ─────────────────────────
   const [rulesDryRun, setRulesDryRun] = useState(true);
@@ -674,22 +673,8 @@ export const AdminEnrichPage: React.FC = () => {
     }
   };
 
-  /** Writes AI food_pairing JSON to wines (paginated Edge Function loop). */
-  const runFoodPairingBackfill = async () => {
-    const scopeNote = fpForce
-      ? 'FORCE — every wine on each page gets food_pairing regenerated (expensive).'
-      : 'missing only — skips wines that already have food_pairing.';
-    if (
-      !confirm(
-        `Run food pairing backfill?\n\n` +
-          `${scopeNote}\n` +
-          `${fpBatch} wines per page · uses OpenAI · keep this tab open.\n\n` +
-          `Deploy Edge Function backfill-food-pairing first. Continue?`,
-      )
-    ) {
-      return;
-    }
-
+  /** Fire one batch of food pairing immediately (does NOT block; pg_cron handles the rest). */
+  const fireFoodPairingBatch = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData.session ?? contextSession;
     if (!session) {
@@ -697,69 +682,36 @@ export const AdminEnrichPage: React.FC = () => {
       return;
     }
 
-    setFpRunning(true);
-    setFpDone(false);
-    setFpTotals({ processed: 0, skipped: 0, failed: 0, pages: 0 });
-    setFpLog([
-      `[${new Date().toLocaleTimeString()}] Starting — batchSize=${fpBatch}, force=${fpForce}`,
-    ]);
-
-    let offset = 0;
-    let totalProcessed = 0;
-    let totalSkipped = 0;
-    let totalFailed = 0;
-    let pages = 0;
+    setFpFiring(true);
+    setFpError(null);
+    setFpLastResult(null);
 
     try {
-      while (true) {
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-food-pairing`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session.access_token}`,
-              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-            },
-            body: JSON.stringify({ batchSize: fpBatch, offset, force: fpForce }),
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-food-pairing`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
           },
-        );
+          body: JSON.stringify({ batchSize: fpBatch, force: fpForce }),
+        },
+      );
 
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`HTTP ${res.status}: ${txt}`);
-        }
-
-        const data = await res.json();
-        if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
-
-        pages += 1;
-        totalProcessed += data.processedCount ?? 0;
-        totalSkipped += data.skippedCount ?? 0;
-        totalFailed += data.failedCount ?? 0;
-        offset = data.nextOffset ?? offset;
-
-        const logLine =
-          `[${new Date().toLocaleTimeString()}] Page ${pages} nextOffset=${offset} | ✅ ${data.processedCount} processed, ⏭ ${data.skippedCount} skipped, ❌ ${data.failedCount} failed (fetched ${data.fetchedCount})`;
-        setFpLog((prev) => [...prev, logLine]);
-        setFpTotals({ processed: totalProcessed, skipped: totalSkipped, failed: totalFailed, pages });
-
-        if (data.isComplete) break;
-
-        await new Promise((r) => setTimeout(r, 800));
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`HTTP ${res.status}: ${txt}`);
       }
 
-      setFpLog((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] ✅ COMPLETE — ${totalProcessed} paired, ${totalSkipped} skipped, ${totalFailed} failed (${pages} pages)`,
-      ]);
-      setFpDone(true);
+      const data = await res.json();
+      if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+      setFpLastResult(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setFpLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ERROR: ${msg}`]);
-      alert(`Error: ${msg}`);
+      setFpError(err instanceof Error ? err.message : String(err));
     } finally {
-      setFpRunning(false);
+      setFpFiring(false);
     }
   };
 
@@ -1702,12 +1654,82 @@ VALUES ('${user?.id}');`}
       <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
 
       <h1>🍽️ Food pairing backfill</h1>
-      <p style={{ color: '#666', marginBottom: '1rem' }}>
-        Generates and stores Sommi food pairing JSON on each <code>wines</code> row (<code>food_pairing</code>).
-        This is the batch job behind the wine detail section &quot;Perfect with this wine&quot;.
-        Earlier this existed only as the Edge Function <code>backfill-food-pairing</code> — you run it from here now.
+      <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+        Generates <code>food_pairing</code> JSON on each <code>wines</code> row (the &quot;Perfect with this wine&quot;
+        section). The recommended way is{' '}
+        <strong>pg_cron on the backend</strong> — it runs one batch every few minutes, no browser needed.
+        The button below fires a single batch for quick testing or manual top-ups.
       </p>
 
+      {/* ── Step 1: pg_cron setup ─────────────────────────────────────────── */}
+      <div
+        style={{
+          backgroundColor: '#e8f4fd',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          border: '1px solid #b8daff',
+        }}
+      >
+        <h3 style={{ marginTop: 0 }}>🕒 Step 1 — Set up automatic queue (pg_cron)</h3>
+        <p style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem' }}>
+          Run <strong>once</strong> in the{' '}
+          <a href="https://supabase.com/dashboard/project/pktelrzyllbwrmcfgocx/editor" target="_blank" rel="noreferrer">
+            Supabase SQL editor
+          </a>
+          . After this, Supabase will automatically process ~15 wines every 5 minutes until all are done.
+          When the backlog is clear, each run completes instantly (no wines to process).
+        </p>
+        <ol style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem', paddingLeft: '1.5rem' }}>
+          <li>
+            Pick a random secret string (e.g. <code>openssl rand -hex 20</code>).
+          </li>
+          <li>
+            Add it as an Edge Function secret in the{' '}
+            <a href="https://supabase.com/dashboard/project/pktelrzyllbwrmcfgocx/functions" target="_blank" rel="noreferrer">
+              Supabase dashboard
+            </a>{' '}
+            → Edge Functions → <code>backfill-food-pairing</code> → Secrets → <code>BACKFILL_CRON_SECRET</code>.
+          </li>
+          <li>
+            Run the SQL below (replace <code>YOUR_SECRET</code> with the same value):
+          </li>
+        </ol>
+        <pre
+          style={{
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            padding: '1rem',
+            borderRadius: '6px',
+            fontSize: '0.75rem',
+            overflowX: 'auto',
+            whiteSpace: 'pre',
+            marginBottom: '1rem',
+          }}
+        >{`SELECT cron.schedule(
+  'food-pairing-backfill',
+  '*/5 * * * *',
+  $$
+  SELECT net.http_post(
+    url     := 'https://pktelrzyllbwrmcfgocx.supabase.co/functions/v1/backfill-food-pairing',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', 'YOUR_SECRET'
+    ),
+    body    := '{"batchSize": 15}'::jsonb
+  );
+  $$
+);`}
+        </pre>
+        <p style={{ fontSize: '0.85rem', color: '#555', margin: 0 }}>
+          To pause once done:{' '}
+          <code>SELECT cron.unschedule(&apos;food-pairing-backfill&apos;);</code>
+          &nbsp;· To check progress:{' '}
+          <code>SELECT COUNT(*) FROM public.wines WHERE food_pairing IS NULL;</code>
+        </p>
+      </div>
+
+      {/* ── Step 2: Manual fire-one-batch ────────────────────────────────── */}
       <div
         style={{
           backgroundColor: '#fff8f0',
@@ -1717,112 +1739,60 @@ VALUES ('${user?.id}');`}
           border: '1px solid #ffd8b8',
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Settings</h3>
-        <label style={{ display: 'block', marginBottom: '1rem' }}>
-          <strong>Wines per page:</strong>
-          <input
-            type="number"
-            value={fpBatch}
-            onChange={(e) =>
-              setFpBatch(Math.min(50, Math.max(5, parseInt(e.target.value, 10) || 20)))
-            }
-            min={5}
-            max={50}
-            style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '70px' }}
-          />
-          <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '0.875rem' }}>max 50 (rate limits)</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={fpForce} onChange={(e) => setFpForce(e.target.checked)} />
-          <span>
-            <strong>Force regenerate</strong>
-            <span style={{ display: 'block', color: '#666', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-              Re-run OpenAI even when <code>food_pairing</code> is already set. Leave off for normal backfill of missing
-              rows only.
-            </span>
-          </span>
-        </label>
-      </div>
+        <h3 style={{ marginTop: 0 }}>🔧 Step 2 (optional) — Fire one batch now</h3>
+        <p style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem' }}>
+          Useful for testing or manually topping up a few wines. Returns immediately after one batch —
+          does not loop.
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <label style={{ fontSize: '0.9rem' }}>
+            <strong>Batch size:</strong>
+            <input
+              type="number"
+              value={fpBatch}
+              onChange={(e) => setFpBatch(Math.min(50, Math.max(5, parseInt(e.target.value, 10) || 15)))}
+              min={5}
+              max={50}
+              style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '65px' }}
+            />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={fpForce} onChange={(e) => setFpForce(e.target.checked)} />
+            <span>Force regenerate (re-run even if already set)</span>
+          </label>
+        </div>
 
-      <button
-        type="button"
-        onClick={runFoodPairingBackfill}
-        disabled={fpRunning}
-        style={{
-          backgroundColor: fpRunning ? '#6c757d' : '#c45c26',
-          color: 'white',
-          padding: '1rem 2rem',
-          borderRadius: '8px',
-          border: 'none',
-          fontSize: '1rem',
-          fontWeight: 'bold',
-          cursor: fpRunning ? 'not-allowed' : 'pointer',
-          opacity: fpRunning ? 0.7 : 1,
-          width: '100%',
-          marginBottom: '1.5rem',
-        }}
-      >
-        {fpRunning ? '⏳ Food pairing backfill running… (keep tab open)' : '🚀 Start food pairing backfill'}
-      </button>
-
-      {(fpRunning || fpDone) && (
-        <div
+        <button
+          type="button"
+          onClick={fireFoodPairingBatch}
+          disabled={fpFiring}
           style={{
-            backgroundColor: fpDone ? '#d4edda' : '#fff3cd',
-            border: `1px solid ${fpDone ? '#c3e6cb' : '#ffc107'}`,
+            backgroundColor: fpFiring ? '#6c757d' : '#c45c26',
+            color: 'white',
+            padding: '0.65rem 1.5rem',
             borderRadius: '8px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem',
+            border: 'none',
+            fontSize: '0.95rem',
+            fontWeight: 'bold',
+            cursor: fpFiring ? 'not-allowed' : 'pointer',
+            opacity: fpFiring ? 0.7 : 1,
           }}
         >
-          <h3 style={{ marginTop: 0 }}>{fpDone ? '✅ Food pairing run finished' : '⏳ In progress…'}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-            {[
-              { label: 'Pages', value: fpTotals.pages, color: '#495057' },
-              { label: 'Paired', value: fpTotals.processed, color: '#28a745' },
-              { label: 'Skipped', value: fpTotals.skipped, color: '#6c757d' },
-              { label: 'Failed', value: fpTotals.failed, color: '#dc3545' },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>{label}</div>
-              </div>
-            ))}
+          {fpFiring ? '⏳ Running…' : '▶ Run one batch now'}
+        </button>
+
+        {fpError && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f8d7da', borderRadius: '6px', color: '#721c24', fontSize: '0.875rem' }}>
+            ❌ {fpError}
           </div>
-        </div>
-      )}
+        )}
 
-      {fpLog.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h4 style={{ marginBottom: '0.5rem' }}>📋 Log</h4>
-          <pre
-            style={{
-              backgroundColor: '#1e1e1e',
-              color: '#d4d4d4',
-              padding: '1rem',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              maxHeight: '280px',
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {fpLog.join('\n')}
-          </pre>
-        </div>
-      )}
-
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '2rem' }}>
-        <h4 style={{ marginTop: 0 }}>ℹ️ Where to find it</h4>
-        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-          <li>
-            On this same page — scroll <strong>past</strong> Vivino, images, Analyze All Cellars, and modern sommelier
-            queue; this block sits <strong>above</strong> Hebrew translations.
-          </li>
-          <li>Requires <code>backfill-food-pairing</code> deployed on Supabase and your user in <code>admins</code>.</li>
-          <li>Without this job, old wines keep <code>food_pairing = null</code> and the app shows style fallback only.</li>
-        </ul>
+        {fpLastResult && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#d4edda', borderRadius: '6px', fontSize: '0.875rem' }}>
+            <strong>✅ Batch complete</strong> — {fpLastResult.processedCount} paired · {fpLastResult.skippedCount} skipped · {fpLastResult.failedCount} failed (fetched {fpLastResult.fetchedCount})
+            {fpLastResult.isComplete && <span style={{ marginLeft: '0.5rem', fontWeight: 'bold' }}>· 🎉 All wines are done!</span>}
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: '2rem' }}>

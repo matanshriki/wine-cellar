@@ -21,6 +21,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const BACKFILL_CRON_SECRET = Deno.env.get('BACKFILL_CRON_SECRET')
 
 const MAX_BATCH = 50
 const DEFAULT_BATCH = 20
@@ -29,7 +30,7 @@ const MAX_CONCURRENT = 2   // conservative — avoids rate-limit bursts
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 }
 
 function json(body: unknown, status = 200) {
@@ -43,21 +44,28 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return json({ error: 'Missing authorization header' }, 401)
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
-    if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
-    // Admin gate
-    const { data: adminRow } = await supabase
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    if (!adminRow) return json({ error: 'Admin access required' }, 403)
+    // Auth: accept either a cron secret header (for pg_cron) or a user JWT (for admin UI)
+    const cronSecret = req.headers.get('x-cron-secret')
+    const isCronCall = BACKFILL_CRON_SECRET && cronSecret === BACKFILL_CRON_SECRET
+
+    if (!isCronCall) {
+      const authHeader = req.headers.get('Authorization')
+      if (!authHeader) return json({ error: 'Missing authorization header' }, 401)
+
+      const token = authHeader.replace('Bearer ', '')
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+      if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+      // Admin gate
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!adminRow) return json({ error: 'Admin access required' }, 403)
+    }
 
     const body = await req.json().catch(() => ({}))
     const batchSize = Math.min(body.batchSize ?? DEFAULT_BATCH, MAX_BATCH)
