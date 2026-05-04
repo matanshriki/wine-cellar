@@ -79,11 +79,14 @@ export const AdminEnrichPage: React.FC = () => {
   const [modernQueueTotals, setModernQueueTotals] = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
 
   // ── AI food pairing (wines.food_pairing backfill) ───────────────────────────
-  const [fpFiring, setFpFiring] = useState(false);
-  const [fpLastResult, setFpLastResult] = useState<{ processedCount: number; skippedCount: number; failedCount: number; fetchedCount: number; isComplete: boolean } | null>(null);
+  const [fpRunning, setFpRunning] = useState(false);
+  const [fpDone, setFpDone] = useState(false);
   const [fpBatch, setFpBatch] = useState(15);
   const [fpForce, setFpForce] = useState(false);
   const [fpError, setFpError] = useState<string | null>(null);
+  const [fpTotals, setFpTotals] = useState({ en: { processed: 0, skipped: 0, failed: 0 }, he: { processed: 0, skipped: 0, failed: 0 }, pages: 0 });
+  const [fpLog, setFpLog] = useState<string[]>([]);
+  const fpAbortRef = React.useRef(false);
 
   // ── Rule-based wine metadata (internal, no Vivino) ─────────────────────────
   const [rulesDryRun, setRulesDryRun] = useState(true);
@@ -673,45 +676,78 @@ export const AdminEnrichPage: React.FC = () => {
     }
   };
 
-  /** Fire one batch of food pairing immediately (does NOT block; pg_cron handles the rest). */
-  const fireFoodPairingBatch = async () => {
+  /** Call the Edge Function once for a given language + offset. */
+  const callFpOnce = async (token: string, language: string, offset: number) => {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-food-pairing`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+        },
+        body: JSON.stringify({ batchSize: fpBatch, offset, force: fpForce, language }),
+      },
+    );
+    if (!res.ok) { const txt = await res.text(); throw new Error(`HTTP ${res.status}: ${txt}`); }
+    const data = await res.json();
+    if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+    return data as { processedCount: number; skippedCount: number; failedCount: number; fetchedCount: number; nextOffset: number; isComplete: boolean };
+  };
+
+  /** Loop through ALL wines for a given language until isComplete. */
+  const runLanguagePass = async (token: string, lang: string) => {
+    let offset = 0;
+    let processed = 0; let skipped = 0; let failed = 0; let pages = 0;
+    while (!fpAbortRef.current) {
+      const data = await callFpOnce(token, lang, offset);
+      pages++;
+      processed += data.processedCount;
+      skipped   += data.skippedCount;
+      failed    += data.failedCount;
+      offset     = data.nextOffset;
+      const ts = new Date().toLocaleTimeString();
+      setFpLog(prev => [...prev, `[${ts}] ${lang.toUpperCase()} page ${pages} offset=${offset} | ✅ ${data.processedCount} · ⏭ ${data.skippedCount} · ❌ ${data.failedCount}`]);
+      setFpTotals(prev => ({ ...prev, [lang]: { processed, skipped, failed }, pages: prev.pages + 1 }));
+      if (data.isComplete) break;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return { processed, skipped, failed, pages };
+  };
+
+  /** Run English backfill then Hebrew backfill for ALL wines. */
+  const runFoodPairingBackfill = async () => {
+    if (!confirm(
+      `This will generate food pairing for every wine in ${fpForce ? 'ALL' : 'missing-only'} mode.\n` +
+      `Runs English first, then Hebrew. Keep this tab open.\n\nContinue?`
+    )) return;
+
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData.session ?? contextSession;
-    if (!session) {
-      alert('Session expired — please refresh the page.');
-      return;
-    }
+    if (!session) { alert('Session expired — please refresh the page.'); return; }
 
-    setFpFiring(true);
+    fpAbortRef.current = false;
+    setFpRunning(true);
+    setFpDone(false);
     setFpError(null);
-    setFpLastResult(null);
+    setFpTotals({ en: { processed: 0, skipped: 0, failed: 0 }, he: { processed: 0, skipped: 0, failed: 0 }, pages: 0 });
+    setFpLog([`[${new Date().toLocaleTimeString()}] Starting — English pass…`]);
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-food-pairing`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-          },
-          body: JSON.stringify({ batchSize: fpBatch, force: fpForce }),
-        },
-      );
-
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`HTTP ${res.status}: ${txt}`);
-      }
-
-      const data = await res.json();
-      if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
-      setFpLastResult(data);
+      const token = await getFreshToken();
+      await runLanguagePass(token, 'en');
+      if (fpAbortRef.current) { setFpLog(prev => [...prev, '⚠️ Aborted.']); return; }
+      setFpLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ English done. Starting Hebrew pass…`]);
+      await runLanguagePass(token, 'he');
+      setFpLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ All languages complete!`]);
+      setFpDone(true);
     } catch (err: unknown) {
-      setFpError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      setFpLog(prev => [...prev, `❌ ERROR: ${msg}`]);
+      setFpError(msg);
     } finally {
-      setFpFiring(false);
+      setFpRunning(false);
     }
   };
 
@@ -1655,10 +1691,9 @@ VALUES ('${user?.id}');`}
 
       <h1>🍽️ Food pairing backfill</h1>
       <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-        Generates <code>food_pairing</code> JSON on each <code>wines</code> row (the &quot;Perfect with this wine&quot;
-        section). The recommended way is{' '}
-        <strong>pg_cron on the backend</strong> — it runs one batch every few minutes, no browser needed.
-        The button below fires a single batch for quick testing or manual top-ups.
+        Generates <code>food_pairing</code> JSON for <strong>every wine, in every language</strong> (English + Hebrew).
+        Click the button below — it loops through the entire wines table automatically, English first then Hebrew.
+        No browser loop needed after setup; pg_cron handles ongoing new wines.
       </p>
 
       {/* ── Step 1: pg_cron setup ─────────────────────────────────────────── */}
@@ -1749,7 +1784,7 @@ VALUES ('${user?.id}');`}
         </p>
       </div>
 
-      {/* ── Step 2: Manual fire-one-batch ────────────────────────────────── */}
+      {/* ── Run full backfill (all languages, all wines) ─────────────────── */}
       <div
         style={{
           backgroundColor: '#fff8f0',
@@ -1759,14 +1794,14 @@ VALUES ('${user?.id}');`}
           border: '1px solid #ffd8b8',
         }}
       >
-        <h3 style={{ marginTop: 0 }}>🔧 Step 2 (optional) — Fire one batch now</h3>
+        <h3 style={{ marginTop: 0 }}>🌍 Run full backfill — English + Hebrew for all wines</h3>
         <p style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem' }}>
-          Useful for testing or manually topping up a few wines. Returns immediately after one batch —
-          does not loop.
+          Loops through <strong>all wines</strong>, generating English first then Hebrew. Already-generated
+          pairings are skipped unless "Force regenerate" is checked. Keep this tab open.
         </p>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <label style={{ fontSize: '0.9rem' }}>
-            <strong>Batch size:</strong>
+            <strong>Wines per page:</strong>
             <input
               type="number"
               value={fpBatch}
@@ -1778,40 +1813,81 @@ VALUES ('${user?.id}');`}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={fpForce} onChange={(e) => setFpForce(e.target.checked)} />
-            <span>Force regenerate (re-run even if already set)</span>
+            <span>Force regenerate (re-run even if already set — expensive)</span>
           </label>
         </div>
 
-        <button
-          type="button"
-          onClick={fireFoodPairingBatch}
-          disabled={fpFiring}
-          style={{
-            backgroundColor: fpFiring ? '#6c757d' : '#c45c26',
-            color: 'white',
-            padding: '0.65rem 1.5rem',
-            borderRadius: '8px',
-            border: 'none',
-            fontSize: '0.95rem',
-            fontWeight: 'bold',
-            cursor: fpFiring ? 'not-allowed' : 'pointer',
-            opacity: fpFiring ? 0.7 : 1,
-          }}
-        >
-          {fpFiring ? '⏳ Running…' : '▶ Run one batch now'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+          <button
+            type="button"
+            onClick={runFoodPairingBackfill}
+            disabled={fpRunning}
+            style={{
+              backgroundColor: fpRunning ? '#6c757d' : '#c45c26',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 'bold',
+              cursor: fpRunning ? 'not-allowed' : 'pointer',
+              opacity: fpRunning ? 0.7 : 1,
+            }}
+          >
+            {fpRunning ? '⏳ Running… (keep tab open)' : '🚀 Start backfill — all wines, all languages'}
+          </button>
+          {fpRunning && (
+            <button
+              type="button"
+              onClick={() => { fpAbortRef.current = true; }}
+              style={{ backgroundColor: '#dc3545', color: 'white', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              ⏹ Stop
+            </button>
+          )}
+        </div>
 
         {fpError && (
-          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f8d7da', borderRadius: '6px', color: '#721c24', fontSize: '0.875rem' }}>
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f8d7da', borderRadius: '6px', color: '#721c24', fontSize: '0.875rem' }}>
             ❌ {fpError}
           </div>
         )}
 
-        {fpLastResult && (
-          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#d4edda', borderRadius: '6px', fontSize: '0.875rem' }}>
-            <strong>✅ Batch complete</strong> — {fpLastResult.processedCount} paired · {fpLastResult.skippedCount} skipped · {fpLastResult.failedCount} failed (fetched {fpLastResult.fetchedCount})
-            {fpLastResult.isComplete && <span style={{ marginLeft: '0.5rem', fontWeight: 'bold' }}>· 🎉 All wines are done!</span>}
+        {/* Progress per language */}
+        {(fpRunning || fpDone) && (
+          <div style={{
+            backgroundColor: fpDone ? '#d4edda' : '#fff3cd',
+            border: `1px solid ${fpDone ? '#c3e6cb' : '#ffc107'}`,
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem',
+          }}>
+            <strong>{fpDone ? '✅ All done!' : '⏳ In progress…'}</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginTop: '0.75rem' }}>
+              {(['en', 'he'] as const).map(lang => (
+                <div key={lang} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: '6px', padding: '0.6rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#555', marginBottom: '0.25rem' }}>
+                    {lang === 'en' ? '🇬🇧 English' : '🇮🇱 Hebrew'}
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#28a745' }}>{fpTotals[lang].processed}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#666' }}>
+                    paired · {fpTotals[lang].skipped} skipped · {fpTotals[lang].failed} failed
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Live log */}
+        {fpLog.length > 0 && (
+          <pre style={{
+            backgroundColor: '#1e1e1e', color: '#d4d4d4', padding: '1rem',
+            borderRadius: '8px', fontSize: '0.72rem', maxHeight: '250px',
+            overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 0,
+          }}>
+            {fpLog.join('\n')}
+          </pre>
         )}
       </div>
 
