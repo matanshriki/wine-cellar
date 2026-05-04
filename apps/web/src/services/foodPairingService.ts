@@ -9,7 +9,7 @@
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 export interface FoodPairing {
   summary: string;
@@ -21,7 +21,7 @@ export interface FoodPairing {
   confidence: 'low' | 'med' | 'high';
 }
 
-// ─── Rule-based fallback ──────────────────────────────────────────────────────
+// Rule-based fallback
 
 interface FallbackRule {
   match: string[];
@@ -45,14 +45,13 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Mushroom tagliatelle with black truffle',
     ],
     everyday_pairings: [
-      'Slow-cooked beef ragù pasta',
+      'Slow-cooked beef ragu pasta',
       'Roasted lamb shoulder with rosemary',
       'Mushroom risotto',
       'Aged hard cheeses',
     ],
     avoid: ['Raw oysters and seafood', 'Very spicy dishes', 'Light cream-based sauces'],
-    pairing_logic:
-      'Nebbiolo\'s high tannin and acidity demand fatty, umami-rich food that softens the structure. The wine's earthy complexity mirrors truffles and mushrooms.',
+    pairing_logic: `Nebbiolo's high tannin and acidity demand fatty, umami-rich food that softens the structure. The wine's earthy complexity mirrors truffles and mushrooms.`,
     occasion_fit: ['Dinner party', 'Romantic dinner', 'Italian feast', 'Special occasion', 'Cheese board'],
   },
   // Aglianico
@@ -61,7 +60,7 @@ const FALLBACK_RULES: FallbackRule[] = [
     colors: ['red'],
     best_pairings: [
       'Braised lamb with olives and tomato',
-      'Wild boar ragù over handmade pasta',
+      'Wild boar ragu over handmade pasta',
       'Smoked pork ribs with herb crust',
       'Pecorino or aged Caciocavallo cheese',
     ],
@@ -72,8 +71,7 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Lentil and smoked meat soup',
     ],
     avoid: ['Delicate fish dishes', 'Creamy risottos', 'Vinaigrette-dressed salads'],
-    pairing_logic:
-      'Aglianico\'s powerful tannins and acidity cut through rich, fatty meats. Smoky and earthy flavors complement its dark-fruit and volcanic-mineral character.',
+    pairing_logic: `Aglianico's powerful tannins and acidity cut through rich, fatty meats. Smoky and earthy flavors complement its dark-fruit and volcanic-mineral character.`,
     occasion_fit: ['Sunday roast', 'BBQ', 'Family dinner', 'Rustic Italian dinner'],
   },
   // Sangiovese / Chianti / Brunello
@@ -93,8 +91,7 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Tomato-braised meatballs',
     ],
     avoid: ['Very rich cream sauces', 'Sushi and raw fish', 'Very sweet desserts'],
-    pairing_logic:
-      'Sangiovese\'s firm acidity mirrors tomato dishes naturally. Its moderate tannin cuts through olive oil and meat fats, while cherry fruit complements charred and herb-rubbed proteins.',
+    pairing_logic: `Sangiovese's firm acidity mirrors tomato dishes naturally. Its moderate tannin cuts through olive oil and meat fats, while cherry fruit complements charred and herb-rubbed proteins.`,
     occasion_fit: ['Italian dinner', 'Pizza night', 'Family feast', 'Alfresco dining'],
   },
   // Tempranillo / Rioja
@@ -103,9 +100,9 @@ const FALLBACK_RULES: FallbackRule[] = [
     colors: ['red'],
     best_pairings: [
       'Roasted rack of lamb with garlic and thyme',
-      'Ibérico ham and charcuterie board',
+      'Iberico ham and charcuterie board',
       'Slow-roasted suckling pig (Cochinillo)',
-      'Manchego and Idiazábal cheese platter',
+      'Manchego and Idiazabal cheese platter',
     ],
     everyday_pairings: [
       'Lamb chops grilled with rosemary',
@@ -114,8 +111,7 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Hard Spanish cheeses',
     ],
     avoid: ['Very spicy Asian cuisine', 'Sushi', 'Bitter greens with vinegar dressing'],
-    pairing_logic:
-      'Tempranillo\'s earthy spice and dried-fruit notes match the smoky, savory character of grilled and roasted meats. Oak aging in Rioja añado layers of vanilla that soften the tannin against fat.',
+    pairing_logic: `Tempranillo's earthy spice and dried-fruit notes match the smoky, savory character of grilled and roasted meats. Oak aging in Rioja layers vanilla that softens the tannin against fat.`,
     occasion_fit: ['Spanish tapas night', 'BBQ', 'Dinner party', 'Cheese board'],
   },
   // Cabernet Sauvignon
@@ -126,7 +122,7 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Dry-aged New York strip steak',
       'Braised lamb shank with red wine sauce',
       'Double-cut pork chops with cherry reduction',
-      'Aged cheddar or Gruyère cheese',
+      'Aged cheddar or Gruyere cheese',
     ],
     everyday_pairings: [
       'Grilled hamburgers',
@@ -135,8 +131,7 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Cheddar grilled cheese sandwich',
     ],
     avoid: ['Delicate fish', 'Spicy Thai or Indian curries', 'Sweet fruit-forward desserts'],
-    pairing_logic:
-      'Cabernet\'s powerful tannins are softened by protein and fat in red meat. The wine\'s cassis and cedar notes complement char and herbal rubs, while acidity cuts through rich sauces.',
+    pairing_logic: `Cabernet's powerful tannins are softened by protein and fat in red meat. The wine's cassis and cedar notes complement char and herbal rubs, while acidity cuts through rich sauces.`,
     occasion_fit: ['Steakhouse night', 'Dinner party', 'BBQ', 'Special occasion', 'Romantic dinner'],
   },
   // Merlot / Pomerol
@@ -156,19 +151,18 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Semi-hard cheeses',
     ],
     avoid: ['Very spicy food', 'Delicate white fish', 'Heavy cream-only sauces'],
-    pairing_logic:
-      'Merlot\'s plummy roundness and softer tannins pair with moderately rich proteins. Duck and pork mirror the wine\'s fruit character, while mushrooms echo its earthy undertones.',
+    pairing_logic: `Merlot's plummy roundness and softer tannins pair with moderately rich proteins. Duck and pork mirror the wine's fruit character, while mushrooms echo its earthy undertones.`,
     occasion_fit: ['Date night', 'Weeknight dinner', 'Dinner party', 'Family roast'],
   },
   // Syrah / Shiraz
   {
-    match: ['syrah', 'shiraz', 'hermitage', 'crozes', 'rhône', 'rhone'],
+    match: ['syrah', 'shiraz', 'hermitage', 'crozes', 'rhone'],
     colors: ['red'],
     best_pairings: [
       'Slow-cooked lamb shoulder with spices',
       'Smoked brisket with peppercorn bark',
       'Merguez sausage with couscous',
-      'Strong aged cheeses like Époisses',
+      'Strong aged cheeses',
     ],
     everyday_pairings: [
       'Grilled lamb kebabs',
@@ -177,18 +171,17 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Spiced lamb burger',
     ],
     avoid: ['Delicate sole or halibut', 'Creamy carbonara', 'Light summer salads'],
-    pairing_logic:
-      'Syrah\'s peppery, meaty character mirrors smoked and grilled proteins. Its dark-fruit intensity can handle bold spices that would overwhelm lighter wines.',
+    pairing_logic: `Syrah's peppery, meaty character mirrors smoked and grilled proteins. Its dark-fruit intensity can handle bold spices that would overwhelm lighter wines.`,
     occasion_fit: ['BBQ', 'Rustic dinner', 'Meat lovers feast', 'Autumn dinner'],
   },
   // Pinot Noir
   {
-    match: ['pinot noir', 'burgundy', 'bourgogne', 'chambolle', 'gevrey', 'volnay', 'pommard', 'oregon pinot'],
+    match: ['pinot noir', 'burgundy', 'bourgogne', 'chambolle', 'gevrey', 'volnay', 'pommard'],
     colors: ['red'],
     best_pairings: [
       'Roasted duck breast with cherry jus',
       'Pan-seared salmon with beurre blanc',
-      'Sautéed wild mushrooms on brioche toast',
+      'Sauteed wild mushrooms on brioche toast',
       'Grilled quail with grape and walnut salad',
     ],
     everyday_pairings: [
@@ -198,19 +191,18 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Brie or soft washed-rind cheese',
     ],
     avoid: ['Very tannic dishes (heavy red sauces)', 'Vinegary pickled foods', 'Strong blue cheeses'],
-    pairing_logic:
-      'Pinot Noir\'s light-medium body and silky tannin pair beautifully with umami-rich but not overpowering dishes. The acidity lifts fatty fish and poultry, while earthy complexity echoes mushrooms.',
+    pairing_logic: `Pinot Noir's light-medium body and silky tannin pair beautifully with umami-rich but not overpowering dishes. The acidity lifts fatty fish and poultry, while earthy complexity echoes mushrooms.`,
     occasion_fit: ['Romantic dinner', 'Dinner party', 'Cheese board', 'Thanksgiving', 'Date night'],
   },
-  // Chardonnay (oaked)
+  // Chardonnay
   {
     match: ['chardonnay', 'meursault', 'puligny', 'chassagne', 'white burgundy'],
     colors: ['white'],
     best_pairings: [
       'Lobster with drawn butter and tarragon',
       'Pan-roasted chicken in cream sauce with morels',
-      'Scallops with cauliflower purée',
-      'Aged Comté or Gruyère fondue',
+      'Scallops with cauliflower puree',
+      'Aged Comte or Gruyere fondue',
     ],
     everyday_pairings: [
       'Roast chicken with butter and herbs',
@@ -219,13 +211,12 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Brie or Camembert',
     ],
     avoid: ['Very spicy Asian food', 'Acidic tomato-based dishes', 'Vinegary ceviche'],
-    pairing_logic:
-      'Chardonnay\'s full body and creamy texture align with butter and cream-based dishes. Oak adds vanilla and toast notes that enhance roasted flavors, while the wine\'s natural acidity cuts richness.',
+    pairing_logic: `Chardonnay's full body and creamy texture align with butter and cream-based dishes. Oak adds vanilla and toast notes that enhance roasted flavors, while the wine's natural acidity cuts richness.`,
     occasion_fit: ['Dinner party', 'Seafood night', 'Sunday lunch', 'Date night'],
   },
   // Sauvignon Blanc
   {
-    match: ['sauvignon blanc', 'sancerre', 'pouilly-fumé', 'marlborough sauvignon'],
+    match: ['sauvignon blanc', 'sancerre', 'pouilly-fume', 'marlborough sauvignon'],
     colors: ['white'],
     best_pairings: [
       'Ceviche with lime and cilantro',
@@ -234,14 +225,13 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Grilled asparagus with hollandaise',
     ],
     everyday_pairings: [
-      'Salad Niçoise',
+      'Salad Nicoise',
       'Grilled chicken with herb salsa verde',
       'Pasta primavera',
-      'Chèvre (fresh goat cheese) on crackers',
+      'Fresh goat cheese on crackers',
     ],
     avoid: ['Steak and heavy red meats', 'Creamy butter-heavy dishes', 'Very rich cheeses'],
-    pairing_logic:
-      'Sauvignon Blanc\'s zippy acidity and herbaceous notes mirror green herbs and citrus perfectly. The wine\'s freshness cuts through tangy goat cheese while its minerality lifts delicate fish.',
+    pairing_logic: `Sauvignon Blanc's zippy acidity and herbaceous notes mirror green herbs and citrus perfectly. The wine's freshness cuts through tangy goat cheese while its minerality lifts delicate fish.`,
     occasion_fit: ['Summer lunch', 'Aperitivo', 'Light dinner', 'Picnic', 'Brunch'],
   },
   // Riesling
@@ -261,18 +251,17 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Hard cheeses',
     ],
     avoid: ['Very tannic red meats', 'Heavy cream sauces', 'Rich lamb dishes'],
-    pairing_logic:
-      'Riesling\'s balance of acidity and residual sugar tames spicy cuisines that would overwhelm most wines. Its petrol and floral notes complement aromatic Asian spices and fruit-glazed meats.',
+    pairing_logic: `Riesling's balance of acidity and residual sugar tames spicy cuisines that would overwhelm most wines. Its floral notes complement aromatic Asian spices and fruit-glazed meats.`,
     occasion_fit: ['Asian takeout', 'Dinner party', 'Sushi night', 'Aperitivo', 'Brunch'],
   },
-  // Rosé
+  // Rose
   {
-    match: ['rose', 'rosé', 'provence rosé', 'tavel'],
+    match: ['rose', 'provence rose', 'tavel'],
     colors: ['rose'],
     best_pairings: [
       'Bouillabaisse with rouille',
       'Grilled whole sea bass with olive oil',
-      'Niçoise-style mezze platter',
+      'Nicoise-style mezze platter',
       'Burrata with heirloom tomatoes',
     ],
     everyday_pairings: [
@@ -282,30 +271,28 @@ const FALLBACK_RULES: FallbackRule[] = [
       'Mediterranean mezze',
     ],
     avoid: ['Heavy red meat stews', 'Very pungent cheeses', 'Rich cream dishes'],
-    pairing_logic:
-      'Rosé bridges red and white wine pairings. Its crisp acidity and light red-fruit character match fresh, lightly prepared fish and vegetables while its subtle body handles richer salads.',
+    pairing_logic: `Rose bridges red and white wine pairings. Its crisp acidity and light red-fruit character match fresh, lightly prepared fish and vegetables while its subtle body handles richer salads.`,
     occasion_fit: ['Summer BBQ', 'Picnic', 'Lunch alfresco', 'Pool party', 'Brunch'],
   },
   // Champagne / Sparkling
   {
-    match: ['champagne', 'sparkling', 'prosecco', 'cava', 'crémant', 'méthode champenoise'],
+    match: ['champagne', 'sparkling', 'prosecco', 'cava', 'cremant', 'methode champenoise'],
     colors: ['sparkling'],
     best_pairings: [
       'Oysters with mignonette',
-      'Blinis with caviar and crème fraîche',
-      'Fried chicken and waffles (brioche)',
+      'Blinis with caviar and creme fraiche',
+      'Fried chicken and waffles',
       'Aged Parmigiano-Reggiano',
     ],
     everyday_pairings: [
       'Fish and chips',
       'Smoked salmon crackers',
-      'Light appetizers and canapés',
+      'Light appetizers and canapes',
       'Mild soft cheese',
     ],
     avoid: ['Very spicy food', 'Heavy red meat', 'Very sweet desserts (unless demi-sec)'],
-    pairing_logic:
-      'Champagne\'s persistent bubbles and high acidity cleanse the palate of oil and fat. The fine bubbles elevate delicate seafood, while yeasty autolytic notes bridge fried and crispy textures.',
-    occasion_fit: ['Celebration', 'Aperitivo', 'New Year\'s Eve', 'Wedding', 'Brunch'],
+    pairing_logic: `Champagne's persistent bubbles and high acidity cleanse the palate of oil and fat. The fine bubbles elevate delicate seafood, while yeasty notes bridge fried and crispy textures.`,
+    occasion_fit: ['Celebration', 'Aperitivo', "New Year's Eve", 'Wedding', 'Brunch'],
   },
 ];
 
@@ -367,26 +354,26 @@ export function getFoodPairingFallback(wine: {
       best_pairings: ['Roast chicken', 'Grilled halibut', 'Lobster with butter', 'Soft fresh cheese'],
       everyday_pairings: ['Pasta primavera', 'Grilled salmon', 'Chicken salad', 'Goat cheese toast'],
       avoid: ['Heavy red meat stews', 'Very spicy curries', 'Tannic red meat'],
-      pairing_logic: 'White wine\'s acidity cuts through fatty fish and poultry, refreshing the palate.',
+      pairing_logic: "White wine's acidity cuts through fatty fish and poultry, refreshing the palate.",
       occasion_fit: ['Summer lunch', 'Dinner party', 'Seafood night', 'Brunch'],
       confidence: 'low',
     },
     rose: {
-      summary: 'This rosé is versatile, pairing with light meats, fish, and Mediterranean flavors.',
+      summary: 'This rose is versatile, pairing with light meats, fish, and Mediterranean flavors.',
       best_pairings: ['Grilled fish', 'Chicken salad', 'Mediterranean mezze', 'Burrata'],
       everyday_pairings: ['Grilled salmon', 'Light pasta', 'Caprese salad', 'Mild cheese'],
       avoid: ['Very heavy stews', 'Pungent blue cheese', 'Cream-heavy dishes'],
-      pairing_logic: 'Rosé bridges red and white pairings with its refreshing acidity and light fruit.',
+      pairing_logic: 'Rose bridges red and white pairings with its refreshing acidity and light fruit.',
       occasion_fit: ['Summer lunch', 'Alfresco dining', 'Picnic', 'Aperitivo'],
       confidence: 'low',
     },
     sparkling: {
       summary: 'This sparkling wine is a natural aperitivo and pairs brilliantly with fried foods and seafood.',
-      best_pairings: ['Oysters', 'Fried calamari', 'Caviar with blinis', 'Light canapés'],
+      best_pairings: ['Oysters', 'Fried calamari', 'Caviar with blinis', 'Light canapes'],
       everyday_pairings: ['Fish and chips', 'Smoked salmon', 'Mild cheese platter', 'Fresh spring rolls'],
       avoid: ['Heavy meat dishes', 'Very sweet desserts', 'Spicy curries'],
       pairing_logic: 'Bubbles and acidity cleanse the palate between bites and elevate delicate flavors.',
-      occasion_fit: ['Celebration', 'Aperitivo', 'Brunch', 'Wedding', 'New Year\'s Eve'],
+      occasion_fit: ['Celebration', 'Aperitivo', 'Brunch', 'Wedding', "New Year's Eve"],
       confidence: 'low',
     },
   };
@@ -394,11 +381,11 @@ export function getFoodPairingFallback(wine: {
   return genericByColor[color] ?? genericByColor.red;
 }
 
-// ─── Read / generate ──────────────────────────────────────────────────────────
+// Read / generate
 
 /**
  * Read food_pairing from the wine object already loaded in the bottle.
- * Returns null if not yet generated (caller should show skeleton + fallback).
+ * Returns null if not yet generated (caller should show fallback).
  */
 export function readCachedFoodPairing(wine: Record<string, unknown>): FoodPairing | null {
   const raw = (wine as any).food_pairing;
@@ -414,7 +401,6 @@ export function readCachedFoodPairing(wine: Record<string, unknown>): FoodPairin
  */
 export function triggerFoodPairingGeneration(bottle: BottleWithWineInfo): void {
   const wine = bottle.wine as any;
-  // Skip if already generated or this is a demo bottle
   if (wine.food_pairing || bottle.id.startsWith('demo-')) return;
 
   supabase.functions
