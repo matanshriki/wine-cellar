@@ -9,6 +9,7 @@
  *   batchSize?: number    — default 20, max 50 (per OpenAI rate-limit safety)
  *   offset?:   number    — default 0 (resume from here)
  *   force?:    boolean   — re-generate even if food_pairing already exists
+ *   wine_id?:  string    — process only this single wine (ignores offset/batchSize)
  * }
  *
  * Response:
@@ -71,17 +72,24 @@ serve(async (req) => {
     const batchSize = Math.min(body.batchSize ?? DEFAULT_BATCH, MAX_BATCH)
     const offset = body.offset ?? 0
     const force: boolean = body.force === true
+    const singleWineId: string | null = body.wine_id ?? null
 
-    console.log(`[backfill-food-pairing] batchSize=${batchSize} offset=${offset} force=${force}`)
+    console.log(`[backfill-food-pairing] batchSize=${batchSize} offset=${offset} force=${force} wine_id=${singleWineId ?? 'all'}`)
 
     let query = supabase
       .from('wines')
       .select('id, wine_name, producer, vintage, country, region, appellation, color, grapes, notes, rating, regional_wine_style, user_id, food_pairing')
-      .order('created_at', { ascending: true })
-      .range(offset, offset + batchSize - 1)
 
-    if (!force) {
-      query = query.is('food_pairing', null)
+    if (singleWineId) {
+      // Single-wine mode: ignore offset/batchSize/force checks, always regenerate
+      query = query.eq('id', singleWineId)
+    } else {
+      query = query
+        .order('created_at', { ascending: true })
+        .range(offset, offset + batchSize - 1)
+      if (!force) {
+        query = query.is('food_pairing', null)
+      }
     }
 
     const { data: wines, error: fetchErr } = await query
