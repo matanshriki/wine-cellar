@@ -1682,7 +1682,18 @@ VALUES ('${user?.id}');`}
         </p>
         <ol style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem', paddingLeft: '1.5rem' }}>
           <li>
-            Pick a random secret string (e.g. <code>openssl rand -hex 20</code>).
+            Copy your <strong>anon / publishable</strong> key from{' '}
+            <a href="https://supabase.com/dashboard/project/pktelrzyllbwrmcfgocx/settings/api" target="_blank" rel="noreferrer">
+              Settings → API
+            </a>
+            . Supabase requires <code>Authorization: Bearer &lt;anon key&gt;</code> on every Edge Function call (
+            <a href="https://supabase.com/docs/guides/functions/schedule-functions" target="_blank" rel="noreferrer">
+              docs
+            </a>
+            ).
+          </li>
+          <li>
+            Pick a random secret for <code>BACKFILL_CRON_SECRET</code> (e.g. <code>openssl rand -hex 20</code>).
           </li>
           <li>
             Add it as an Edge Function secret in the{' '}
@@ -1692,7 +1703,8 @@ VALUES ('${user?.id}');`}
             → Edge Functions → <code>backfill-food-pairing</code> → Secrets → <code>BACKFILL_CRON_SECRET</code>.
           </li>
           <li>
-            Run the SQL below (replace <code>YOUR_SECRET</code> with the same value):
+            Run the SQL below — replace <code>YOUR_ANON_KEY</code>, <code>YOUR_CRON_SECRET</code>, and double-check the URL uses{' '}
+            <code>pktelrzyllbwrmcfgocx</code> (with <strong>te</strong>, not <strong>tl</strong>).
           </li>
         </ol>
         <pre
@@ -1714,13 +1726,21 @@ VALUES ('${user?.id}');`}
     url     := 'https://pktelrzyllbwrmcfgocx.supabase.co/functions/v1/backfill-food-pairing',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-cron-secret', 'YOUR_SECRET'
+      'Authorization', 'Bearer YOUR_ANON_KEY',
+      'apikey', 'YOUR_ANON_KEY',
+      'x-cron-secret', 'YOUR_CRON_SECRET'
     ),
     body    := '{"batchSize": 15}'::jsonb
   );
   $$
 );`}
         </pre>
+        <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.75rem' }}>
+          After a one-off <code>net.http_post</code>, the number it returns is only the <strong>request queue id</strong> — wait a few seconds, then inspect the real HTTP result:{' '}
+          <code style={{ fontSize: '0.78rem' }}>
+            SELECT id, status_code, left(content::text, 500) FROM net._http_response ORDER BY id DESC LIMIT 5;
+          </code>
+        </p>
         <p style={{ fontSize: '0.85rem', color: '#555', margin: 0 }}>
           To pause once done:{' '}
           <code>SELECT cron.unschedule(&apos;food-pairing-backfill&apos;);</code>

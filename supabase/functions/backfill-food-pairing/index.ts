@@ -103,9 +103,13 @@ serve(async (req) => {
     let skippedCount = 0
     let failedCount = 0
 
+    const forceRegenerate = force || singleWineId !== null
+
     for (let i = 0; i < (wines ?? []).length; i += MAX_CONCURRENT) {
       const chunk = (wines ?? []).slice(i, i + MAX_CONCURRENT)
-      const results = await Promise.all(chunk.map((w: any) => processWine(w, supabase)))
+      const results = await Promise.all(
+        chunk.map((w: any) => processWine(w, supabase, forceRegenerate)),
+      )
       for (const r of results) {
         if (r === 'success') processedCount++
         else if (r === 'skip') skippedCount++
@@ -131,10 +135,14 @@ serve(async (req) => {
   }
 })
 
-async function processWine(wine: any, supabase: any): Promise<'success' | 'skip' | 'fail'> {
+async function processWine(
+  wine: any,
+  supabase: any,
+  forceRegenerate: boolean,
+): Promise<'success' | 'skip' | 'fail'> {
   try {
     if (!wine?.wine_name) return 'skip'
-    if (wine.food_pairing) return 'skip'
+    if (!forceRegenerate && wine.food_pairing) return 'skip'
 
     const pairing = await generateFoodPairing(wine)
     if (!pairing) return 'fail'
