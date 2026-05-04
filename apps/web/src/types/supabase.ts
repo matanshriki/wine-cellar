@@ -13,6 +13,16 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export interface FoodPairing {
+  summary: string;
+  best_pairings: string[];
+  everyday_pairings: string[];
+  avoid: string[];
+  pairing_logic: string;
+  occasion_fit: string[];
+  confidence: 'low' | 'med' | 'high';
+}
+
 export interface TasteProfileVector {
   body: number;
   tannin: number;
@@ -116,6 +126,9 @@ export interface Database {
           translations: Json | null
           barrel_aging_note: string | null
           barrel_aging_months_est: number | null
+          food_pairing: FoodPairing | null
+          food_pairing_updated_at: string | null
+          food_pairing_confidence: string | null
           created_at: string
           updated_at: string
         }
@@ -136,6 +149,9 @@ export interface Database {
           translations?: Json | null
           barrel_aging_note?: string | null
           barrel_aging_months_est?: number | null
+          food_pairing?: FoodPairing | null
+          food_pairing_updated_at?: string | null
+          food_pairing_confidence?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -156,6 +172,9 @@ export interface Database {
           translations?: Json | null
           barrel_aging_note?: string | null
           barrel_aging_months_est?: number | null
+          food_pairing?: FoodPairing | null
+          food_pairing_updated_at?: string | null
+          food_pairing_confidence?: string | null
           created_at?: string
           updated_at?: string
         }

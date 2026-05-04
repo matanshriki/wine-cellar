@@ -11,6 +11,7 @@ import {
   normalizeWineMetadataStrings,
   planWineMetadataEnrichment,
 } from '@wine/wine-enrichment';
+import { triggerFoodPairingGeneration } from './foodPairingService';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
 type WineInsert = Database['public']['Tables']['wines']['Insert'];
@@ -351,6 +352,10 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
         console.warn('[bottleService] Background translation failed:', err);
       });
   }
+
+  // Fire-and-forget: trigger food pairing generation for this wine.
+  // Skipped automatically if food_pairing already exists on the wine row.
+  triggerFoodPairingGeneration(newBottle);
 
   return newBottle;
 }

@@ -25,6 +25,145 @@ import * as tasteProfileService from '../services/tasteProfileService';
 import { getBottleInsight } from '../services/insightService';
 import { SommiInsightPill } from './SommiInsightPill';
 import { recordShownInsight } from '../services/insightCache';
+import { readCachedFoodPairing, getFoodPairingFallback } from '../services/foodPairingService';
+import type { FoodPairing } from '../services/foodPairingService';
+
+// ─── Food Pairing Section ─────────────────────────────────────────────────────
+
+function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
+  const aiPairing = readCachedFoodPairing(wine);
+  const fallback = getFoodPairingFallback(wine as any);
+  const pairing: FoodPairing = aiPairing ?? fallback;
+  const isAI = !!aiPairing;
+
+  return (
+    <div>
+      <h3
+        className="text-sm font-semibold mb-3 flex items-center gap-2"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        <span>🍽️</span>
+        <span>Perfect with this wine</span>
+        {isAI && (
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{
+              background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
+              color: 'white',
+              fontSize: '10px',
+            }}
+          >
+            Sommi
+          </span>
+        )}
+      </h3>
+
+      <div
+        className="rounded-xl p-4 space-y-4"
+        style={{
+          background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        {/* Summary */}
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {pairing.summary}
+        </p>
+
+        {/* Best pairings */}
+        {pairing.best_pairings.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Premium pairings
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {pairing.best_pairings.map((dish, i) => (
+                <span
+                  key={i}
+                  className="text-xs px-2.5 py-1 rounded-full"
+                  style={{
+                    background: 'var(--wine-50, rgba(164,77,90,0.08))',
+                    color: 'var(--wine-700, #8b2e3d)',
+                    border: '1px solid var(--wine-200, rgba(164,77,90,0.2))',
+                  }}
+                >
+                  {dish}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Everyday pairings */}
+        {pairing.everyday_pairings.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Everyday pairings
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {pairing.everyday_pairings.map((dish, i) => (
+                <span
+                  key={i}
+                  className="text-xs px-2.5 py-1 rounded-full"
+                  style={{
+                    background: 'var(--bg-muted)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-base)',
+                  }}
+                >
+                  {dish}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pairing logic */}
+        {pairing.pairing_logic && (
+          <p
+            className="text-xs italic"
+            style={{ color: 'var(--text-tertiary)', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}
+          >
+            {pairing.pairing_logic}
+          </p>
+        )}
+
+        {/* Occasions */}
+        {pairing.occasion_fit.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {pairing.occasion_fit.map((occ, i) => (
+              <span
+                key={i}
+                className="text-xs px-2 py-0.5 rounded-full"
+                style={{
+                  background: 'var(--gold-50, rgba(212,175,55,0.08))',
+                  color: 'var(--gold-700, #8a6d00)',
+                  border: '1px solid var(--gold-200, rgba(212,175,55,0.25))',
+                }}
+              >
+                {occ}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Avoid */}
+        {pairing.avoid.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Avoid
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {pairing.avoid.join(' · ')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface WineDetailsModalProps {
   isOpen: boolean;
@@ -753,6 +892,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       {bottle.notes}
                     </p>
                   </div>
+                )}
+
+                {/* Food Pairing — always shown */}
+                {!isDemoBottle && (
+                  <FoodPairingSection wine={wine} />
                 )}
 
                 {/* Keep / Reserved Section */}
