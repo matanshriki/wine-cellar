@@ -25,15 +25,31 @@ import * as tasteProfileService from '../services/tasteProfileService';
 import { getBottleInsight } from '../services/insightService';
 import { SommiInsightPill } from './SommiInsightPill';
 import { recordShownInsight } from '../services/insightCache';
-import { readCachedFoodPairing, getFoodPairingFallback } from '../services/foodPairingService';
+import { readCachedFoodPairing, getFoodPairingFallback, triggerFoodPairingGeneration } from '../services/foodPairingService';
 import type { FoodPairing } from '../services/foodPairingService';
+import type { BottleWithWineInfo } from '../services/bottleService';
 
 // ─── Food Pairing Section ─────────────────────────────────────────────────────
 
-function FoodPairingSection({ wine }: { wine: Record<string, unknown> }) {
-  const { t } = useTranslation();
-  const aiPairing = readCachedFoodPairing(wine);
+function FoodPairingSection({
+  wine,
+  bottle,
+}: {
+  wine: Record<string, unknown>;
+  bottle: BottleWithWineInfo;
+}) {
+  const { t, i18n } = useTranslation();
+  const language = i18n.language ?? 'en';
+  const aiPairing = readCachedFoodPairing(wine, language);
   const fallback = getFoodPairingFallback(wine as any);
+
+  // Auto-trigger generation for the current language if not cached yet
+  useEffect(() => {
+    if (!aiPairing) {
+      triggerFoodPairingGeneration(bottle, language);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, bottle.wine_id]);
 
   return (
     <div>
@@ -950,7 +966,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
                 {/* Food Pairing — always shown */}
                 {!isDemoBottle && (
-                  <FoodPairingSection wine={wine} />
+                  <FoodPairingSection wine={wine} bottle={displayBottle} />
                 )}
 
                 {/* Keep / Reserved Section */}

@@ -66,7 +66,18 @@ function formatGrapes(grapes: WineInput['grapes']): string {
   return 'Unknown'
 }
 
-function buildSystemPrompt(): string {
+const LANGUAGE_NAMES: Record<string, string> = {
+  he: 'Hebrew (עברית)',
+  en: 'English',
+}
+
+function buildSystemPrompt(language = 'en'): string {
+  const langName = LANGUAGE_NAMES[language] ?? 'English'
+  const langInstruction =
+    language === 'en'
+      ? 'Respond in English.'
+      : `Respond ENTIRELY in ${langName}. Every word — dish names, descriptions, explanations, and occasions — MUST be written in ${langName}. Do NOT use English.`
+
   return `You are an expert sommelier specializing in wine and food pairing.
 You MUST respond with valid JSON only, using this exact structure:
 
@@ -87,7 +98,7 @@ RULES:
 - avoid: Clear categories that would clash ("Vinegar-heavy salad dressings", "Very spicy curries")
 - pairing_logic: Explain WHY in terms of the wine's structure (tannin vs fat, acidity vs richness, etc.)
 - If data is missing, lower confidence and make clear you're estimating
-- Respond in English only`
+- ${langInstruction}`
 }
 
 function buildUserPrompt(wine: WineInput): string {
@@ -144,25 +155,39 @@ serve(async (req) => {
       )
     }
 
-    const { wine_id, wine_data, trigger_source } = await req.json()
+    const { wine_id, wine_data, trigger_source, language: rawLang } = await req.json()
     if (!wine_id || !wine_data) {
       throw new Error('Missing wine_id or wine_data')
     }
 
     const wineData = wine_data as WineInput
+    const language: string = (typeof rawLang === 'string' && rawLang.length > 0) ? rawLang : 'en'
 
-    // Skip generation if food_pairing already exists and this isn't a forced regeneration
+    // Fetch current food_pairing once — used for skip-check AND for JSONB merge later
+    const { data: currentWine } = await supabaseAdmin
+      .from('wines')
+      .select('food_pairing')
+      .eq('id', wine_id)
+      .single()
+
+    const existingFp = (currentWine?.food_pairing ?? {}) as Record<string, unknown>
+
+    // Detect legacy flat format (English only, written before multi-language support)
+    const isLegacyFlat =
+      !!(existingFp.summary) &&
+      !('en' in existingFp) &&
+      !('he' in existingFp)
+
+    // Skip if this language is already generated (and not a force re-run)
     if (trigger_source !== 'force') {
-      const { data: existing } = await supabaseAdmin
-        .from('wines')
-        .select('food_pairing')
-        .eq('id', wine_id)
-        .single()
+      const langData = isLegacyFlat
+        ? (language === 'en' ? existingFp : null)
+        : (existingFp[language] as Record<string, unknown> | undefined) ?? null
 
-      if (existing?.food_pairing) {
-        console.log('[generate-food-pairing] Already exists, skipping:', wine_id)
+      if (langData?.summary) {
+        console.log(`[generate-food-pairing] Already exists (${language}), skipping:`, wine_id)
         return new Response(
-          JSON.stringify({ success: true, food_pairing: existing.food_pairing, cached: true }),
+          JSON.stringify({ success: true, food_pairing: langData, cached: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
         )
       }
@@ -182,7 +207,7 @@ serve(async (req) => {
       return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, 1, corsHeaders)
     }
 
-    console.log('[generate-food-pairing] Generating for:', wineData.wine_name)
+    console.log(`[generate-food-pairing] Generating for: ${wineData.wine_name} (lang=${language})`)
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -193,7 +218,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: buildSystemPrompt() },
+          { role: 'system', content: buildSystemPrompt(language) },
           { role: 'user', content: buildUserPrompt(wineData) },
         ],
         temperature: 0.6,
@@ -239,11 +264,16 @@ serve(async (req) => {
       throw new Error('Invalid food pairing structure from OpenAI')
     }
 
+    // Merge the new language key into the existing JSONB (preserve other languages)
+    // Legacy flat format → migrate to keyed: { en: oldData, [language]: newData }
+    const keyedBase = isLegacyFlat ? { en: existingFp } : existingFp
+    const mergedFp = { ...keyedBase, [language]: foodPairing }
+
     // Persist to wines table
     const { error: updateError } = await supabaseAdmin
       .from('wines')
       .update({
-        food_pairing: foodPairing,
+        food_pairing: mergedFp,
         food_pairing_updated_at: new Date().toISOString(),
         food_pairing_confidence: foodPairing.confidence,
       })

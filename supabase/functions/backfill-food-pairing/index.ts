@@ -73,8 +73,11 @@ serve(async (req) => {
     const offset = body.offset ?? 0
     const force: boolean = body.force === true
     const singleWineId: string | null = body.wine_id ?? null
+    const language: string = (typeof body.language === 'string' && body.language.length > 0)
+      ? body.language
+      : 'en'
 
-    console.log(`[backfill-food-pairing] batchSize=${batchSize} offset=${offset} force=${force} wine_id=${singleWineId ?? 'all'}`)
+    console.log(`[backfill-food-pairing] batchSize=${batchSize} offset=${offset} force=${force} wine_id=${singleWineId ?? 'all'} lang=${language}`)
 
     let query = supabase
       .from('wines')
@@ -108,7 +111,7 @@ serve(async (req) => {
     for (let i = 0; i < (wines ?? []).length; i += MAX_CONCURRENT) {
       const chunk = (wines ?? []).slice(i, i + MAX_CONCURRENT)
       const results = await Promise.all(
-        chunk.map((w: any) => processWine(w, supabase, forceRegenerate)),
+        chunk.map((w: any) => processWine(w, supabase, forceRegenerate, language)),
       )
       for (const r of results) {
         if (r === 'success') processedCount++
@@ -139,18 +142,37 @@ async function processWine(
   wine: any,
   supabase: any,
   forceRegenerate: boolean,
+  language: string,
 ): Promise<'success' | 'skip' | 'fail'> {
   try {
     if (!wine?.wine_name) return 'skip'
-    if (!forceRegenerate && wine.food_pairing) return 'skip'
 
-    const pairing = await generateFoodPairing(wine)
+    // Language-aware skip: check if this specific language is already generated
+    if (!forceRegenerate) {
+      const fp = wine.food_pairing as Record<string, unknown> | null
+      if (fp) {
+        // New keyed format: { en: {...}, he: {...} }
+        const hasKeyed = language in fp && (fp[language] as any)?.summary
+        // Legacy flat format (English only)
+        const hasLegacy = language === 'en' && fp.summary
+        if (hasKeyed || hasLegacy) return 'skip'
+      }
+    }
+
+    const pairing = await generateFoodPairing(wine, language)
     if (!pairing) return 'fail'
+
+    // Merge language key into existing JSONB (preserve other languages)
+    const existingFp = (wine.food_pairing ?? {}) as Record<string, unknown>
+    const isLegacyFlat =
+      !!(existingFp.summary) && !('en' in existingFp) && !('he' in existingFp)
+    const keyedBase = isLegacyFlat ? { en: existingFp } : existingFp
+    const mergedFp = { ...keyedBase, [language]: pairing }
 
     const { error } = await supabase
       .from('wines')
       .update({
-        food_pairing: pairing,
+        food_pairing: mergedFp,
         food_pairing_updated_at: new Date().toISOString(),
         food_pairing_confidence: pairing.confidence,
       })
@@ -161,7 +183,7 @@ async function processWine(
       return 'fail'
     }
 
-    console.log(`[backfill-food-pairing] ✅ ${wine.wine_name}`)
+    console.log(`[backfill-food-pairing] ✅ ${wine.wine_name} (${language})`)
     return 'success'
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -170,7 +192,9 @@ async function processWine(
   }
 }
 
-async function generateFoodPairing(wine: any): Promise<Record<string, unknown> | null> {
+const LANGUAGE_NAMES: Record<string, string> = { he: 'Hebrew (עברית)', en: 'English' }
+
+async function generateFoodPairing(wine: any, language = 'en'): Promise<Record<string, unknown> | null> {
   if (!OPENAI_API_KEY) return null
 
   const grapes = Array.isArray(wine.grapes)
@@ -207,7 +231,12 @@ Notes: ${wine.notes?.trim() ? wine.notes : 'None'}`
         messages: [
           {
             role: 'system',
-            content: `You are an expert sommelier specializing in wine and food pairing.
+            content: (() => {
+              const langName = LANGUAGE_NAMES[language] ?? 'English'
+              const langInstruction = language === 'en'
+                ? 'Respond in English.'
+                : `Respond ENTIRELY in ${langName}. Every word — dish names, descriptions, explanations, and occasions — MUST be written in ${langName}. Do NOT use English.`
+              return `You are an expert sommelier specializing in wine and food pairing.
 Respond with valid JSON only using this structure:
 {
   "summary": "2-sentence overview",
@@ -218,7 +247,8 @@ Respond with valid JSON only using this structure:
   "occasion_fit": ["3-5 occasion examples"],
   "confidence": "low" | "med" | "high"
 }
-Be SPECIFIC to this wine. Use named dishes, not vague categories. English only.`,
+Be SPECIFIC to this wine. Use named dishes, not vague categories. ${langInstruction}`
+            })(),
           },
           { role: 'user', content: userPrompt },
         ],

@@ -12,6 +12,7 @@ import {
   planWineMetadataEnrichment,
 } from '@wine/wine-enrichment';
 import { triggerFoodPairingGeneration } from './foodPairingService';
+import i18n from '../i18n/config';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
 type WineInsert = Database['public']['Tables']['wines']['Insert'];
@@ -353,9 +354,9 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
       });
   }
 
-  // Fire-and-forget: trigger food pairing generation for this wine.
-  // Skipped automatically if food_pairing already exists on the wine row.
-  triggerFoodPairingGeneration(newBottle);
+  // Fire-and-forget: trigger food pairing generation for this wine in the user's current language.
+  // Skipped automatically if that language is already cached on the wine row.
+  triggerFoodPairingGeneration(newBottle, i18n.language ?? 'en');
 
   return newBottle;
 }

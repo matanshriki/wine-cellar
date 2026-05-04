@@ -384,24 +384,54 @@ export function getFoodPairingFallback(wine: {
 // Read / generate
 
 /**
- * Read food_pairing from the wine object already loaded in the bottle.
- * Returns null if not yet generated (caller should show fallback).
+ * Reads food_pairing for the given language from the wine object.
+ * Storage format (new): { en: FoodPairing, he: FoodPairing }
+ * Storage format (legacy): flat FoodPairing — treated as English.
+ * Returns null if that language has not been generated yet.
  */
-export function readCachedFoodPairing(wine: Record<string, unknown>): FoodPairing | null {
+export function readCachedFoodPairing(
+  wine: Record<string, unknown>,
+  language = 'en',
+): FoodPairing | null {
   const raw = (wine as any).food_pairing;
   if (!raw || typeof raw !== 'object') return null;
-  const p = raw as Partial<FoodPairing>;
-  if (!p.summary || !Array.isArray(p.best_pairings) || p.best_pairings.length === 0) return null;
-  return p as FoodPairing;
+
+  // New keyed format: { en: {...}, he: {...} }
+  if (language in raw) {
+    const p = raw[language] as Partial<FoodPairing>;
+    if (p?.summary && Array.isArray(p.best_pairings) && p.best_pairings.length > 0) {
+      return p as FoodPairing;
+    }
+    return null;
+  }
+
+  // Legacy flat format — English only
+  if (language === 'en') {
+    const p = raw as Partial<FoodPairing>;
+    if (p.summary && Array.isArray(p.best_pairings) && p.best_pairings.length > 0) {
+      return p as FoodPairing;
+    }
+  }
+
+  return null;
 }
 
 /**
  * Fire-and-forget: trigger generation from the Edge Function.
- * Call this after createBottle; never await it in the critical path.
+ * Call this after createBottle, or when the user switches language and pairing is missing.
+ * Never await it in the critical path.
  */
-export function triggerFoodPairingGeneration(bottle: BottleWithWineInfo): void {
+export function triggerFoodPairingGeneration(
+  bottle: BottleWithWineInfo,
+  language = 'en',
+): void {
+  if (bottle.id.startsWith('demo-')) return;
+
   const wine = bottle.wine as any;
-  if (wine.food_pairing || bottle.id.startsWith('demo-')) return;
+
+  // Skip if this language is already cached
+  const cached = readCachedFoodPairing(wine as Record<string, unknown>, language);
+  if (cached) return;
 
   supabase.functions
     .invoke('generate-food-pairing', {
@@ -420,6 +450,7 @@ export function triggerFoodPairingGeneration(bottle: BottleWithWineInfo): void {
           notes: bottle.notes ?? wine.notes ?? null,
           regional_wine_style: wine.regional_wine_style ?? null,
         },
+        language,
         trigger_source: 'user_scan',
       },
     })
