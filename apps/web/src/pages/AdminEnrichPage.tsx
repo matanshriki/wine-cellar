@@ -81,7 +81,7 @@ export const AdminEnrichPage: React.FC = () => {
   // ── AI food pairing (wines.food_pairing backfill) ───────────────────────────
   const [fpRunning, setFpRunning] = useState(false);
   const [fpDone, setFpDone] = useState(false);
-  const [fpBatch, setFpBatch] = useState(15);
+  const [fpBatch, setFpBatch] = useState(5);
   const [fpForce, setFpForce] = useState(false);
   const [fpError, setFpError] = useState<string | null>(null);
   const [fpTotals, setFpTotals] = useState({ en: { processed: 0, skipped: 0, failed: 0 }, he: { processed: 0, skipped: 0, failed: 0 }, pages: 0 });
@@ -711,7 +711,7 @@ export const AdminEnrichPage: React.FC = () => {
       setFpLog(prev => [...prev, `[${ts}] ${lang.toUpperCase()} page ${pages} offset=${offset} | ✅ ${data.processedCount} · ⏭ ${data.skippedCount} · ❌ ${data.failedCount}`]);
       setFpTotals(prev => ({ ...prev, [lang]: { processed, skipped, failed }, pages: prev.pages + 1 }));
       if (data.isComplete) break;
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 1500)); // pause between pages to avoid compute limits
     }
     return { processed, skipped, failed, pages };
   };
@@ -1805,9 +1805,9 @@ VALUES ('${user?.id}');`}
             <input
               type="number"
               value={fpBatch}
-              onChange={(e) => setFpBatch(Math.min(50, Math.max(5, parseInt(e.target.value, 10) || 15)))}
-              min={5}
-              max={50}
+              onChange={(e) => setFpBatch(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 5)))}
+              min={1}
+              max={10}
               style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ddd', width: '65px' }}
             />
           </label>

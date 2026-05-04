@@ -24,9 +24,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const BACKFILL_CRON_SECRET = Deno.env.get('BACKFILL_CRON_SECRET')
 
-const MAX_BATCH = 50
-const DEFAULT_BATCH = 20
-const MAX_CONCURRENT = 2   // conservative — avoids rate-limit bursts
+const MAX_BATCH = 10       // keep each invocation short to avoid WORKER_RESOURCE_LIMIT
+const DEFAULT_BATCH = 5
+const MAX_CONCURRENT = 1   // serial — one OpenAI call at a time per invocation
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
