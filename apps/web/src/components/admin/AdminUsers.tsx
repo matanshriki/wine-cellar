@@ -23,7 +23,7 @@ export function AdminUsers() {
 
   if (error) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 0', color: '#e05c5c' }}>
+      <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-error)' }}>
         Failed to load: {error instanceof Error ? error.message : 'Unknown error'}
       </div>
     );
@@ -33,7 +33,7 @@ export function AdminUsers() {
 
   if (users.length === 0 && page === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.4)' }}>
+      <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-tertiary)' }}>
         No users found.
       </div>
     );
@@ -44,12 +44,12 @@ export function AdminUsers() {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <tr style={{ borderBottom: '1px solid var(--border-medium)' }}>
               {['Email', 'Signed up', 'Last active', 'Bottles', 'Wines', 'AI calls (7d)', 'Events (7d)', 'Admin'].map(h => (
                 <th key={h} style={{
                   padding: '10px 12px',
                   textAlign: 'left',
-                  color: 'rgba(255,255,255,0.4)',
+                  color: 'var(--text-tertiary)',
                   fontWeight: 500,
                   fontSize: '0.72rem',
                   textTransform: 'uppercase',
@@ -64,50 +64,50 @@ export function AdminUsers() {
           <tbody>
             {users.map((u) => (
               <tr key={u.user_id} style={{
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                borderBottom: '1px solid var(--border-subtle)',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--interactive-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                <td style={{ padding: '10px 12px', color: 'var(--text-primary, #fff)' }}>
-                  {u.email ?? <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>}
+                <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
+                  {u.email ?? <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
                 </td>
-                <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                   {formatDate(u.created_at)}
                 </td>
-                <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                   {u.last_active_at
                     ? formatDate(u.last_active_at)
-                    : <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.72rem' }}>not tracked yet</span>
+                    : <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>not tracked yet</span>
                   }
                 </td>
-                <td style={{ padding: '10px 12px', color: 'var(--text-primary, #fff)', textAlign: 'center' }}>
+                <td style={{ padding: '10px 12px', color: 'var(--text-primary)', textAlign: 'center' }}>
                   {u.bottle_count}
                 </td>
-                <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+                <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
                   {u.wine_count}
                 </td>
                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                   <span style={{
-                    color: u.ai_calls_7d > 0 ? '#6db87a' : 'rgba(255,255,255,0.4)',
+                    color: u.ai_calls_7d > 0 ? 'var(--color-success)' : 'var(--text-tertiary)',
                     fontWeight: u.ai_calls_7d > 0 ? 600 : 400,
                   }}>
                     {u.ai_calls_7d}
                   </span>
                 </td>
-                <td style={{ padding: '10px 12px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
+                <td style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
                   {u.events_7d > 0
-                    ? <span style={{ color: '#6db87a', fontWeight: 600 }}>{u.events_7d}</span>
+                    ? <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{u.events_7d}</span>
                     : <span>—</span>
                   }
                 </td>
                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                   {u.is_admin && (
                     <span style={{
-                      background: 'rgba(212,168,67,0.2)',
-                      color: '#d4a843',
-                      border: '1px solid rgba(212,168,67,0.4)',
+                      background: 'var(--color-warning-light)',
+                      color: 'var(--color-orange-600)',
+                      border: '1px solid var(--color-amber-500)',
                       borderRadius: '4px',
                       fontSize: '0.65rem',
                       fontWeight: 600,
@@ -125,26 +125,27 @@ export function AdminUsers() {
         </table>
       </div>
 
-      {/* Pagination */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: '16px',
         fontSize: '0.8rem',
-        color: 'rgba(255,255,255,0.4)',
+        color: 'var(--text-tertiary)',
       }}>
         <span>Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + users.length}</span>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
+            type="button"
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
             style={{
               padding: '6px 14px',
               borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid var(--border-medium)',
               background: 'transparent',
-              color: page === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)',
+              color: page === 0 ? 'var(--text-tertiary)' : 'var(--text-primary)',
+              opacity: page === 0 ? 0.45 : 1,
               cursor: page === 0 ? 'not-allowed' : 'pointer',
               fontSize: '0.8rem',
             }}
@@ -152,14 +153,16 @@ export function AdminUsers() {
             Prev
           </button>
           <button
+            type="button"
             onClick={() => setPage(p => p + 1)}
             disabled={users.length < PAGE_SIZE}
             style={{
               padding: '6px 14px',
               borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid var(--border-medium)',
               background: 'transparent',
-              color: users.length < PAGE_SIZE ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)',
+              color: users.length < PAGE_SIZE ? 'var(--text-tertiary)' : 'var(--text-primary)',
+              opacity: users.length < PAGE_SIZE ? 0.45 : 1,
               cursor: users.length < PAGE_SIZE ? 'not-allowed' : 'pointer',
               fontSize: '0.8rem',
             }}

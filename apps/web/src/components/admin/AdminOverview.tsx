@@ -15,32 +15,32 @@ function StatCard({
   note?: string;
 }) {
   const accentColor =
-    accent === 'red'   ? '#e05c5c' :
-    accent === 'amber' ? '#d4a843' :
-    accent === 'green' ? '#6db87a' :
-    'var(--text-primary, #fff)';
+    accent === 'red'   ? 'var(--color-error)' :
+    accent === 'amber' ? 'var(--color-warning)' :
+    accent === 'green' ? 'var(--color-success)' :
+    'var(--text-primary)';
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border-medium)',
       borderRadius: '12px',
       padding: '18px 20px',
       display: 'flex',
       flexDirection: 'column',
       gap: '4px',
     }}>
-      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {label}
       </span>
       <span style={{ fontSize: '1.7rem', fontWeight: 700, color: accentColor, lineHeight: 1.1 }}>
         {value}
       </span>
       {sub && (
-        <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>{sub}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>{sub}</span>
       )}
       {note && (
-        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)', marginTop: '2px', fontStyle: 'italic' }}>{note}</span>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: '2px', fontStyle: 'italic' }}>{note}</span>
       )}
     </div>
   );
@@ -51,7 +51,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <h3 style={{
       fontSize: '0.7rem',
       fontWeight: 600,
-      color: 'rgba(255,255,255,0.35)',
+      color: 'var(--text-tertiary)',
       textTransform: 'uppercase',
       letterSpacing: '0.1em',
       margin: '24px 0 10px',
@@ -74,7 +74,7 @@ export function AdminOverview() {
 
   if (error || !data) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 0', color: '#e05c5c' }}>
+      <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-error)' }}>
         Failed to load metrics: {error instanceof Error ? error.message : 'Unknown error'}
       </div>
     );

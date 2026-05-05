@@ -12,9 +12,9 @@ function StatusBadge({ status }: { status: string }) {
       borderRadius: '4px',
       fontSize: '0.7rem',
       fontWeight: 600,
-      background: isOk ? 'rgba(109,184,122,0.15)' : 'rgba(224,92,92,0.15)',
-      color: isOk ? '#6db87a' : '#e05c5c',
-      border: `1px solid ${isOk ? 'rgba(109,184,122,0.3)' : 'rgba(224,92,92,0.3)'}`,
+      background: isOk ? 'var(--color-success-light)' : 'var(--color-error-light)',
+      color: isOk ? 'var(--color-success)' : 'var(--color-error)',
+      border: `1px solid ${isOk ? 'var(--color-success)' : 'var(--color-error)'}`,
     }}>
       {status}
     </span>
@@ -34,24 +34,25 @@ function formatTs(iso: string) {
 }
 
 export function AdminAiUsage() {
-  const [view, setView]         = useState<'summary' | 'calls' | 'errors'>('summary');
-  const [page, setPage]         = useState(0);
+  const [view, setView] = useState<'summary' | 'calls' | 'errors'>('summary');
+  const [page, setPage] = useState(0);
 
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useAdminAiSummary();
-  const { data: calls,   isLoading: callsLoading,   error: callsError   } = useAdminAiCalls(
+  const { data: calls, isLoading: callsLoading, error: callsError } = useAdminAiCalls(
     PAGE_SIZE, page * PAGE_SIZE,
     view === 'errors' ? 'failed' : null,
   );
 
   const Tab = ({ id, label }: { id: typeof view; label: string }) => (
     <button
+      type="button"
       onClick={() => { setView(id); setPage(0); }}
       style={{
         padding: '6px 16px',
         borderRadius: '8px',
-        border: '1px solid rgba(255,255,255,0.12)',
-        background: view === id ? 'rgba(255,255,255,0.12)' : 'transparent',
-        color: view === id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)',
+        border: '1px solid var(--border-medium)',
+        background: view === id ? 'var(--interactive-hover)' : 'transparent',
+        color: view === id ? 'var(--text-primary)' : 'var(--text-tertiary)',
         cursor: 'pointer',
         fontSize: '0.8rem',
         fontWeight: view === id ? 600 : 400,
@@ -70,7 +71,6 @@ export function AdminAiUsage() {
         <Tab id="errors"  label="Errors only" />
       </div>
 
-      {/* ── Summary view ── */}
       {view === 'summary' && (
         <>
           {summaryLoading && (
@@ -79,12 +79,12 @@ export function AdminAiUsage() {
             </div>
           )}
           {summaryError && (
-            <div style={{ color: '#e05c5c', padding: '20px 0' }}>
+            <div style={{ color: 'var(--color-error)', padding: '20px 0' }}>
               {summaryError instanceof Error ? summaryError.message : 'Failed to load'}
             </div>
           )}
           {!summaryLoading && (summary ?? []).length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.35)' }}>
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-tertiary)' }}>
               No AI calls logged yet.
             </div>
           )}
@@ -92,11 +92,11 @@ export function AdminAiUsage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-medium)' }}>
                     {['Feature', 'Model', 'Total', 'Success', 'Failed', 'Fail %', 'Tokens (in+out)', 'Total cost', 'Calls 7d', 'Cost 7d'].map(h => (
                       <th key={h} style={{
                         padding: '8px 10px', textAlign: 'left',
-                        color: 'rgba(255,255,255,0.35)', fontWeight: 500,
+                        color: 'var(--text-tertiary)', fontWeight: 500,
                         fontSize: '0.68rem', textTransform: 'uppercase',
                         letterSpacing: '0.07em', whiteSpace: 'nowrap',
                       }}>{h}</th>
@@ -107,26 +107,26 @@ export function AdminAiUsage() {
                   {(summary ?? []).map((row, i) => (
                     <tr
                       key={i}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--interactive-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <td style={{ padding: '8px 10px', fontWeight: 500, color: 'var(--text-primary,#fff)', whiteSpace: 'nowrap' }}>{row.action_type}</td>
-                      <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.5)' }}>{row.model_name ?? '—'}</td>
-                      <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.7)' }}>{row.total_calls}</td>
-                      <td style={{ padding: '8px 10px', color: '#6db87a' }}>{row.success_count}</td>
-                      <td style={{ padding: '8px 10px', color: row.failure_count > 0 ? '#e05c5c' : 'rgba(255,255,255,0.4)' }}>{row.failure_count}</td>
-                      <td style={{ padding: '8px 10px', fontWeight: 600, color: row.failure_rate > 5 ? '#e05c5c' : row.failure_rate > 0 ? '#d4a843' : '#6db87a' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{row.action_type}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{row.model_name ?? '—'}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{row.total_calls}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--color-success)' }}>{row.success_count}</td>
+                      <td style={{ padding: '8px 10px', color: row.failure_count > 0 ? 'var(--color-error)' : 'var(--text-tertiary)' }}>{row.failure_count}</td>
+                      <td style={{ padding: '8px 10px', fontWeight: 600, color: row.failure_rate > 5 ? 'var(--color-error)' : row.failure_rate > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>
                         {row.failure_rate}%
                       </td>
-                      <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.55)', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                         {(row.total_input_tokens + row.total_output_tokens).toLocaleString()}
                       </td>
-                      <td style={{ padding: '8px 10px', color: row.total_cost_usd > 0.5 ? '#d4a843' : 'rgba(255,255,255,0.55)' }}>
+                      <td style={{ padding: '8px 10px', color: row.total_cost_usd > 0.5 ? 'var(--color-warning)' : 'var(--text-secondary)' }}>
                         {formatCost(row.total_cost_usd)}
                       </td>
-                      <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.6)' }}>{row.calls_7d}</td>
-                      <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.55)' }}>{formatCost(row.cost_7d_usd)}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{row.calls_7d}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{formatCost(row.cost_7d_usd)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -136,7 +136,6 @@ export function AdminAiUsage() {
         </>
       )}
 
-      {/* ── Calls / Errors view ── */}
       {(view === 'calls' || view === 'errors') && (
         <>
           {callsLoading && (
@@ -145,12 +144,12 @@ export function AdminAiUsage() {
             </div>
           )}
           {callsError && (
-            <div style={{ color: '#e05c5c', padding: '20px 0' }}>
+            <div style={{ color: 'var(--color-error)', padding: '20px 0' }}>
               {callsError instanceof Error ? callsError.message : 'Failed to load'}
             </div>
           )}
           {!callsLoading && (calls ?? []).length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.35)' }}>
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-tertiary)' }}>
               {view === 'errors' ? 'No failed AI calls — everything is healthy.' : 'No AI calls found.'}
             </div>
           )}
@@ -159,11 +158,11 @@ export function AdminAiUsage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border-medium)' }}>
                       {['Feature', 'Model', 'Status', 'User', 'In tokens', 'Out tokens', 'Cost', 'When'].map(h => (
                         <th key={h} style={{
                           padding: '8px 10px', textAlign: 'left',
-                          color: 'rgba(255,255,255,0.35)', fontWeight: 500,
+                          color: 'var(--text-tertiary)', fontWeight: 500,
                           fontSize: '0.68rem', textTransform: 'uppercase',
                           letterSpacing: '0.07em', whiteSpace: 'nowrap',
                         }}>{h}</th>
@@ -174,22 +173,22 @@ export function AdminAiUsage() {
                     {(calls ?? []).map(c => (
                       <tr
                         key={c.id}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--interactive-hover)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                       >
-                        <td style={{ padding: '8px 10px', color: 'var(--text-primary,#fff)', whiteSpace: 'nowrap' }}>{c.action_type}</td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.5)' }}>{c.model_name ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{c.action_type}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{c.model_name ?? '—'}</td>
                         <td style={{ padding: '8px 10px' }}><StatusBadge status={c.request_status} /></td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.55)', maxWidth: '140px' }}>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', maxWidth: '140px' }}>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                             {c.user_email ?? '—'}
                           </span>
                         </td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace', fontSize: '0.75rem' }}>{c.input_tokens ?? '—'}</td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace', fontSize: '0.75rem' }}>{c.output_tokens ?? '—'}</td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.55)' }}>{formatCost(c.estimated_cost_usd)}</td>
-                        <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>{formatTs(c.created_at)}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.75rem' }}>{c.input_tokens ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.75rem' }}>{c.output_tokens ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{formatCost(c.estimated_cost_usd)}</td>
+                        <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{formatTs(c.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -197,12 +196,12 @@ export function AdminAiUsage() {
               </div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', marginTop: '16px',
-                fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)',
+                fontSize: '0.8rem', color: 'var(--text-tertiary)',
               }}>
                 <span>Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + (calls ?? []).length}</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: page === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', cursor: page === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}>Prev</button>
-                  <button onClick={() => setPage(p => p + 1)} disabled={(calls ?? []).length < PAGE_SIZE} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: (calls ?? []).length < PAGE_SIZE ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', cursor: (calls ?? []).length < PAGE_SIZE ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}>Next</button>
+                  <button type="button" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border-medium)', background: 'transparent', color: page === 0 ? 'var(--text-tertiary)' : 'var(--text-primary)', opacity: page === 0 ? 0.45 : 1, cursor: page === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}>Prev</button>
+                  <button type="button" onClick={() => setPage(p => p + 1)} disabled={(calls ?? []).length < PAGE_SIZE} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border-medium)', background: 'transparent', color: (calls ?? []).length < PAGE_SIZE ? 'var(--text-tertiary)' : 'var(--text-primary)', opacity: (calls ?? []).length < PAGE_SIZE ? 0.45 : 1, cursor: (calls ?? []).length < PAGE_SIZE ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}>Next</button>
                 </div>
               </div>
             </>

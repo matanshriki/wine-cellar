@@ -70,8 +70,8 @@ export function AdminDashboardPage() {
         padding: '24px',
       }}>
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(224,92,92,0.25)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '16px',
           padding: '40px 32px',
           textAlign: 'center',
@@ -81,18 +81,18 @@ export function AdminDashboardPage() {
           <h2 style={{
             fontSize: '1.1rem',
             fontWeight: 700,
-            color: 'var(--text-primary, #fff)',
+            color: 'var(--text-heading)',
             marginBottom: '10px',
           }}>
             Not authorized
           </h2>
           <p style={{
             fontSize: '0.85rem',
-            color: 'rgba(255,255,255,0.45)',
+            color: 'var(--text-secondary)',
             lineHeight: 1.6,
           }}>
             This page requires admin access.
-            Contact the account owner to enable <code style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '4px', padding: '1px 5px', fontSize: '0.8rem' }}>profiles.is_admin = true</code>.
+            Contact the account owner to enable <code style={{ background: 'var(--bg-muted)', borderRadius: '4px', padding: '1px 5px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>profiles.is_admin = true</code>.
           </p>
         </div>
       </div>
@@ -105,13 +105,13 @@ export function AdminDashboardPage() {
       {/* Header */}
       <div style={{
         padding: '24px 0 20px',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        borderBottom: '1px solid var(--border-subtle)',
         marginBottom: '0',
       }}>
         <h1 style={{
           fontSize: '1.3rem',
           fontWeight: 700,
-          color: 'var(--text-primary, #fff)',
+          color: 'var(--text-heading)',
           margin: '0 0 4px',
           letterSpacing: '-0.01em',
         }}>
@@ -119,7 +119,7 @@ export function AdminDashboardPage() {
         </h1>
         <p style={{
           fontSize: '0.8rem',
-          color: 'rgba(255,255,255,0.35)',
+          color: 'var(--text-tertiary)',
           margin: 0,
         }}>
           Read-only. Data from Supabase only — no mocks.
@@ -132,7 +132,7 @@ export function AdminDashboardPage() {
         gap: '2px',
         overflowX: 'auto',
         padding: '16px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        borderBottom: '1px solid var(--border-subtle)',
         marginBottom: '24px',
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
@@ -147,11 +147,11 @@ export function AdminDashboardPage() {
               borderRadius: '8px',
               border: 'none',
               background: activeTab === tab.id
-                ? 'rgba(255,255,255,0.1)'
+                ? 'var(--interactive-hover)'
                 : 'transparent',
               color: activeTab === tab.id
-                ? 'rgba(255,255,255,0.95)'
-                : 'rgba(255,255,255,0.4)',
+                ? 'var(--text-primary)'
+                : 'var(--text-tertiary)',
               fontWeight: activeTab === tab.id ? 600 : 400,
               fontSize: '0.85rem',
               cursor: 'pointer',

@@ -4,8 +4,6 @@ import { WineLoader } from '../WineLoader';
 
 const PAGE_SIZE = 100;
 
-// Known event names to populate the filter dropdown as they accumulate.
-// Add entries here as new events are instrumented.
 const KNOWN_EVENTS = [
   'user_signed_up',
   'login_completed',
@@ -37,16 +35,15 @@ export function AdminEvents() {
 
   return (
     <div>
-      {/* Filter bar */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <select
           value={eventFilter ?? ''}
           onChange={e => { setEventFilter(e.target.value || null); setPage(0); }}
           style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-medium)',
             borderRadius: '8px',
-            color: 'rgba(255,255,255,0.8)',
+            color: 'var(--text-primary)',
             padding: '7px 12px',
             fontSize: '0.82rem',
           }}
@@ -63,7 +60,7 @@ export function AdminEvents() {
       )}
 
       {error && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#e05c5c' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-error)' }}>
           {error instanceof Error ? error.message : 'Failed to load'}
         </div>
       )}
@@ -72,14 +69,14 @@ export function AdminEvents() {
         <div style={{
           textAlign: 'center',
           padding: '80px 24px',
-          color: 'rgba(255,255,255,0.35)',
+          color: 'var(--text-tertiary)',
         }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '12px', opacity: 0.4 }}>📊</div>
-          <div style={{ fontSize: '1rem', fontWeight: 500, marginBottom: '8px', color: 'rgba(255,255,255,0.55)' }}>
+          <div style={{ fontSize: '1rem', fontWeight: 500, marginBottom: '8px', color: 'var(--text-secondary)' }}>
             No events yet
           </div>
-          <div style={{ fontSize: '0.82rem', maxWidth: '360px', margin: '0 auto', lineHeight: 1.6 }}>
-            Events will appear here as <code style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '4px', padding: '1px 5px' }}>trackEvent()</code> calls are added to the app.
+          <div style={{ fontSize: '0.82rem', maxWidth: '360px', margin: '0 auto', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+            Events will appear here as <code style={{ background: 'var(--bg-muted)', borderRadius: '4px', padding: '1px 5px', color: 'var(--text-primary)' }}>trackEvent()</code> calls are added to the app.
             Auth events (login, signup) and scan events are already instrumented and will show up after the next user action.
           </div>
         </div>
@@ -90,11 +87,11 @@ export function AdminEvents() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-medium)' }}>
                   {['Event', 'Type', 'User', 'Page', 'Source', 'Session', 'When'].map(h => (
                     <th key={h} style={{
                       padding: '8px 10px', textAlign: 'left',
-                      color: 'rgba(255,255,255,0.35)', fontWeight: 500,
+                      color: 'var(--text-tertiary)', fontWeight: 500,
                       fontSize: '0.68rem', textTransform: 'uppercase',
                       letterSpacing: '0.07em', whiteSpace: 'nowrap',
                     }}>
@@ -107,33 +104,33 @@ export function AdminEvents() {
                 {events.map(ev => (
                   <tr
                     key={ev.id}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--interactive-hover)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <td style={{ padding: '8px 10px', fontWeight: 500, color: 'var(--text-primary, #fff)', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                       {ev.event_name}
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>
                       {ev.event_type ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.55)', maxWidth: '160px' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', maxWidth: '160px' }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                        {ev.user_email ?? <span style={{ color: 'rgba(255,255,255,0.25)' }}>anon</span>}
+                        {ev.user_email ?? <span style={{ color: 'var(--text-tertiary)' }}>anon</span>}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)', maxWidth: '120px' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', maxWidth: '120px' }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                         {ev.page ?? '—'}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>
                       {ev.source ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem', fontFamily: 'monospace' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-tertiary)', fontSize: '0.7rem', fontFamily: 'monospace' }}>
                       {ev.session_id ? ev.session_id.slice(0, 8) : '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       {formatTs(ev.created_at)}
                     </td>
                   </tr>
@@ -144,17 +141,19 @@ export function AdminEvents() {
 
           <div style={{
             display: 'flex', justifyContent: 'space-between', marginTop: '16px',
-            fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)',
+            fontSize: '0.8rem', color: 'var(--text-tertiary)',
           }}>
             <span>Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + events.length}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
+                type="button"
                 onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: page === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', cursor: page === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
+                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border-medium)', background: 'transparent', color: page === 0 ? 'var(--text-tertiary)' : 'var(--text-primary)', opacity: page === 0 ? 0.45 : 1, cursor: page === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
               >Prev</button>
               <button
+                type="button"
                 onClick={() => setPage(p => p + 1)} disabled={events.length < PAGE_SIZE}
-                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: events.length < PAGE_SIZE ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', cursor: events.length < PAGE_SIZE ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
+                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border-medium)', background: 'transparent', color: events.length < PAGE_SIZE ? 'var(--text-tertiary)' : 'var(--text-primary)', opacity: events.length < PAGE_SIZE ? 0.45 : 1, cursor: events.length < PAGE_SIZE ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
               >Next</button>
             </div>
           </div>
