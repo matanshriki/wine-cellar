@@ -19,6 +19,7 @@ import {
   checkSessionTimeout 
 } from '../utils/sessionPersistence';
 import { safeRemoveItem } from '../utils/safeLocalStorage';
+import { trackEvent } from '../lib/analytics/trackEvent';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -221,6 +222,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         // Setup timeout checks if not already active (for new sign-ins)
         if (!timeoutCheckInterval && event === 'SIGNED_IN') {
           timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
+          trackEvent({ event_name: 'login_completed', source: 'auth_state_change' });
         }
       } else {
         // Clear session markers on sign out
@@ -275,6 +277,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     if (data.user && data.session) {
       setUser(data.user);
       setSession(data.session);
+      trackEvent({ event_name: 'user_signed_up', source: 'email' });
+    } else if (data.user && !data.session) {
+      // Email confirmation required — user exists but is not yet active
+      trackEvent({ event_name: 'user_signed_up', source: 'email', metadata: { needs_confirmation: true } });
     }
 
     return { needsEmailConfirmation };

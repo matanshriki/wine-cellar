@@ -11,6 +11,7 @@ import { toast } from '../lib/toast';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import * as smartScanService from '../services/smartScanService';
 import { trackLabelParse, trackBottle } from '../services/analytics';
+import { trackEvent } from '../lib/analytics/trackEvent';
 
 type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
 type FallbackReason = 'cancelled' | 'permission-denied' | 'not-available' | 'error';
@@ -127,6 +128,7 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
     // ── Analytics: scan started ──────────────────────────────────────────────
     trackLabelParse.start();
+    trackEvent({ event_name: 'bottle_scan_started', event_type: 'action', source: 'add_bottle_flow' });
     
     try {
       // Keep sheet OPEN and transition to scanning state
@@ -142,6 +144,12 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       // ── Analytics: scan succeeded ──────────────────────────────────────────
       trackLabelParse.success(result.mode, result.detectedCount ?? 0);
       trackBottle.addScan(result.mode, result.detectedCount ?? 0);
+      trackEvent({
+        event_name: 'bottle_scan_completed',
+        event_type: 'action',
+        source: 'add_bottle_flow',
+        metadata: { mode: result.mode, detected_count: result.detectedCount ?? 0 },
+      });
 
       // Mark as complete
       setScanningState('complete');
@@ -233,6 +241,12 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
 
       // ── Analytics: scan failed ─────────────────────────────────────────────
       trackLabelParse.error(analyticsErrorType);
+      trackEvent({
+        event_name: 'bottle_scan_failed',
+        event_type: 'error',
+        source: 'add_bottle_flow',
+        metadata: { error_type: analyticsErrorType },
+      });
       
       setScanningMessage(errorMessage);
       
