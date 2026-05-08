@@ -257,11 +257,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   const [isRemovingKeep, setIsRemovingKeep] = useState(false);
 
   const [userCanGenerateAI, setUserCanGenerateAI] = useState(false);
-  /** After refresh, show barrel from the API response until bottle.wine catches up */
+  /** After refresh, show barrel + serving from the API response until bottle data catches up */
   const [barrelFromRefresh, setBarrelFromRefresh] = useState<{
     note: string | null;
     months: number | null;
   } | null>(null);
+  const [servingGuidanceFromRefresh, setServingGuidanceFromRefresh] = useState<import('../services/aiAnalysisService').ServingGuidance | null>(null);
   const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null);
 
   const displayImage = useWineDisplayImage(bottle?.wine);
@@ -314,6 +315,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               note: ar.barrel_aging_note ?? null,
               months: ar.barrel_aging_months_est ?? null,
             });
+            if (ar.serving_guidance) {
+              setServingGuidanceFromRefresh(ar.serving_guidance);
+            }
           }
         } finally {
           setIsRefreshing(false);
@@ -920,8 +924,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         analysis_summary: (bottle as any).analysis_summary,
                         analysis_reasons: (bottle as any).analysis_reasons || [],
                         readiness_label: (bottle as any).readiness_label,
-                        serving_temp_c: bottle.serve_temp_c || 16,
-                        decant_minutes: bottle.decant_minutes || 0,
+                        serving_temp_c: (bottle as any).serving_guidance?.temp_min ?? bottle.serve_temp_c ?? null,
+                        decant_minutes: (bottle as any).serving_guidance?.decant_min ?? bottle.decant_minutes ?? 0,
+                        serving_guidance: servingGuidanceFromRefresh ?? (bottle as any).serving_guidance ?? null,
                         drink_window_start: (bottle as any).drink_window_start,
                         drink_window_end: (bottle as any).drink_window_end,
                         confidence: (bottle as any).confidence || 'MEDIUM',
@@ -935,6 +940,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           barrelFromRefresh !== null
                             ? barrelFromRefresh.months
                             : (bottle.wine.barrel_aging_months_est ?? null),
+                        barrel_aging_metadata: (bottle.wine as any).barrel_aging_metadata ?? null,
                       }}
                       onRefresh={handleRefreshAnalysis}
                       isRefreshing={isRefreshing}

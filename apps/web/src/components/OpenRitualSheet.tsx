@@ -34,62 +34,93 @@ interface ServingInfo {
   temp: string;
   decantMins: number;
   decantNote: string;
+  /** Short instruction from AI guidance, if available */
+  shortInstruction?: string;
 }
 
 type TFn = (key: string, fallback: string) => string;
 
-function deriveServingInfo(bottle: BottleWithWineInfo, t: TFn): ServingInfo {
-  const color = bottle.wine.color;
-  const profile = (bottle.wine as any).wine_profile as {
-    power?: number;
-    tannin?: number;
-    body?: number;
-  } | null;
+/** Format a Celsius range as "X–Y °C / A–B °F" */
+function formatTempRange(minC: number, maxC: number): string {
+  const minF = Math.round(minC * 9 / 5 + 32);
+  const maxF = Math.round(maxC * 9 / 5 + 32);
+  if (minC === maxC) return `${minC} °C / ${minF} °F`;
+  return `${minC}–${maxC} °C / ${minF}–${maxF} °F`;
+}
 
+/**
+ * Derive serving info for the open ritual sheet.
+ *
+ * Priority:
+ *   1. bottle.serving_guidance (AI-generated structured data — most accurate)
+ *   2. bottle.serve_temp_c / bottle.decant_minutes (legacy scalar AI values)
+ *   3. Heuristic fallback based on wine_profile power/tannin
+ */
+function deriveServingInfo(bottle: BottleWithWineInfo, t: TFn): ServingInfo {
+  const sg = (bottle as any).serving_guidance as {
+    temp_min?: number;
+    temp_max?: number;
+    decanting?: 'recommended' | 'optional' | 'none';
+    decant_min?: number;
+    decant_max?: number;
+    short_instruction?: string;
+  } | null | undefined;
+
+  if (sg && typeof sg.temp_min === 'number' && typeof sg.temp_max === 'number') {
+    const temp = formatTempRange(sg.temp_min, sg.temp_max);
+    const decantMins = sg.decant_min ?? 0;
+    let decantNote: string;
+    switch (sg.decanting) {
+      case 'recommended':
+        decantNote = sg.decant_max && sg.decant_max > sg.decant_min
+          ? t('openRitual.step2.decantNotes.recommended', `Decant ${sg.decant_min}–${sg.decant_max} min to open aromas`)
+          : t('openRitual.step2.decantNotes.heavyRed', 'Decant to soften tannins and open aromas');
+        break;
+      case 'optional':
+        decantNote = t('openRitual.step2.decantNotes.optional', 'A brief decant can help — optional');
+        break;
+      case 'none':
+      default:
+        decantNote = t('openRitual.step2.decantNotes.noDecant', 'No decanting needed');
+    }
+    return { temp, decantMins, decantNote, shortInstruction: sg.short_instruction };
+  }
+
+  // Scalar AI values (older bottles without serving_guidance JSONB)
+  const scalarTemp = (bottle as any).serve_temp_c as number | null | undefined;
+  const scalarDecant = (bottle as any).decant_minutes as number | null | undefined;
+  const color = bottle.wine.color;
+
+  if (typeof scalarTemp === 'number' && scalarTemp > 0) {
+    const tempStr = `${scalarTemp} °C / ${Math.round(scalarTemp * 9 / 5 + 32)} °F`;
+    const decantMins = typeof scalarDecant === 'number' ? scalarDecant : 0;
+    const decantNote = decantMins > 0
+      ? t('openRitual.step2.decantNotes.mediumRed', 'A brief decant brings out complexity')
+      : t('openRitual.step2.decantNotes.noDecant', 'No decanting needed');
+    return { temp: tempStr, decantMins, decantNote };
+  }
+
+  // Heuristic fallback (no AI data at all)
   if (color === 'sparkling') {
-    return {
-      temp: '6–9 °C / 43–48 °F',
-      decantMins: 0,
-      decantNote: t('openRitual.step2.decantNotes.sparkling', 'Serve immediately – no decanting'),
-    };
+    return { temp: '6–9 °C / 43–48 °F', decantMins: 0, decantNote: t('openRitual.step2.decantNotes.sparkling', 'Serve immediately – no decanting') };
   }
   if (color === 'white') {
-    return {
-      temp: '8–12 °C / 46–54 °F',
-      decantMins: 0,
-      decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed'),
-    };
+    return { temp: '8–12 °C / 46–54 °F', decantMins: 0, decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed') };
   }
   if (color === 'rose') {
-    return {
-      temp: '8–12 °C / 46–54 °F',
-      decantMins: 0,
-      decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed'),
-    };
+    return { temp: '8–12 °C / 46–54 °F', decantMins: 0, decantNote: t('openRitual.step2.decantNotes.noDecant', 'No decanting needed') };
   }
 
-  // Red wine
+  const profile = (bottle.wine as any).wine_profile as { power?: number; tannin?: number } | null;
   const power = profile?.power ?? 5;
   const tannin = profile?.tannin ?? 3;
   if (power >= 7 || tannin >= 4) {
-    return {
-      temp: '16–18 °C / 61–64 °F',
-      decantMins: 45,
-      decantNote: t('openRitual.step2.decantNotes.heavyRed', 'Decant to soften tannins and open aromas'),
-    };
+    return { temp: '16–18 °C / 61–64 °F', decantMins: 45, decantNote: t('openRitual.step2.decantNotes.heavyRed', 'Decant to soften tannins and open aromas') };
   }
   if (power >= 5 || tannin >= 3) {
-    return {
-      temp: '14–16 °C / 57–61 °F',
-      decantMins: 20,
-      decantNote: t('openRitual.step2.decantNotes.mediumRed', 'A brief decant brings out complexity'),
-    };
+    return { temp: '14–16 °C / 57–61 °F', decantMins: 20, decantNote: t('openRitual.step2.decantNotes.mediumRed', 'A brief decant brings out complexity') };
   }
-  return {
-    temp: '12–14 °C / 54–57 °F',
-    decantMins: 0,
-    decantNote: t('openRitual.step2.decantNotes.lightRed', 'Ready to enjoy immediately'),
-  };
+  return { temp: '12–14 °C / 54–57 °F', decantMins: 0, decantNote: t('openRitual.step2.decantNotes.lightRed', 'Ready to enjoy immediately') };
 }
 
 function defaultRateLaterMins(decantMins: number): number {
@@ -727,6 +758,15 @@ export function OpenRitualSheet({
                         value={serving.decantNote}
                       />
                     </div>
+
+                    {serving.shortInstruction && (
+                      <p
+                        className="text-sm leading-relaxed px-1"
+                        style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}
+                      >
+                        {serving.shortInstruction}
+                      </p>
+                    )}
 
                     {serving.decantMins > 0 && (
                       <div className="space-y-3">

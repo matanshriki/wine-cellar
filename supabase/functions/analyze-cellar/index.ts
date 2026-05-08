@@ -15,7 +15,11 @@ import {
   buildWineAnalysisSystemPrompt,
   buildWineAnalysisUserPrompt,
   normalizeBarrelFields,
+  normalizeServingGuidance,
+  buildFallbackServingGuidance,
   type WineAnalysisInput,
+  type ServingGuidance,
+  type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 
@@ -283,6 +287,19 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
 
     const analysis = await generateAIAnalysis(wineInput, language);
 
+    // Normalize serving guidance; fall back if AI returned incomplete data
+    const servingGuidance: ServingGuidance = normalizeServingGuidance(analysis.serving) ??
+      buildFallbackServingGuidance(
+        bottle.wine.color,
+        bottle.wine.vintage,
+        new Date().getFullYear(),
+        analysis.readiness_label,
+      );
+
+    if (!analysis.serving) {
+      console.warn('[Analyze Cellar] serving object missing — using fallback for:', bottle.wine.wine_name);
+    }
+
     // Store results in database
     const updateData = {
       analysis_summary: analysis.analysis_summary,
@@ -290,9 +307,10 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
       readiness_label: analysis.readiness_label,
       readiness_status: mapReadinessLabel(analysis.readiness_label),
       readiness_score: mapReadinessScore(analysis.readiness_label),
-      readiness_version: 2, // Mark as analyzed by v2 logic so backfill won't re-run
-      serve_temp_c: analysis.serving_temp_c,
-      decant_minutes: analysis.decant_minutes,
+      readiness_version: 2,
+      serve_temp_c: servingGuidance.temp_min,
+      decant_minutes: servingGuidance.decant_min,
+      serving_guidance: servingGuidance,
       drink_window_start: analysis.drink_window_start,
       drink_window_end: analysis.drink_window_end,
       confidence: analysis.confidence,
@@ -321,6 +339,7 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
         .update({
           barrel_aging_note: analysis.barrel_aging_note ?? null,
           barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+          barrel_aging_metadata: (analysis.barrel_aging_metadata as BarrelAgingMetadata) ?? null,
         })
         .eq('id', bottle.wine_id);
       if (wineErr) {
@@ -385,7 +404,12 @@ async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Pr
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    return normalizeBarrelFields(JSON.parse(content) as Record<string, unknown>);
+    const normalized = normalizeBarrelFields(JSON.parse(content) as Record<string, unknown>);
+    // Attach normalized serving so analyzeBottle can access it
+    if (!normalized.serving) {
+      console.warn('[Analyze Cellar] AI response missing serving object for:', wine.wine_name);
+    }
+    return normalized;
   } catch (error) {
     console.error('[Analyze Cellar] OpenAI failed, using fallback:', error);
     return generateFallbackAnalysis(wine);
@@ -393,7 +417,8 @@ async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Pr
 }
 
 /**
- * Fallback deterministic analysis
+ * Fallback deterministic analysis (used when OpenAI is unavailable).
+ * Produces serving guidance using buildFallbackServingGuidance.
  */
 function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
   const currentYear = new Date().getFullYear();
@@ -401,11 +426,9 @@ function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
   const color = wineInfo.color || 'red';
 
   let readinessLabel = 'READY';
-  let servingTemp = 16;
-  let decantMinutes = 30;
   let summary = `This ${wineInfo.wine_name} is ready to enjoy.`;
   let reasons = ['Based on age and type', 'Suitable for current consumption'];
-  let confidence = 'MEDIUM';
+  const confidence = 'MEDIUM';
 
   if (color === 'red' && age < 3) {
     readinessLabel = 'HOLD';
@@ -416,31 +439,31 @@ function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
     summary = `This ${wineInfo.wine_name} is in its prime drinking window with excellent balance.`;
     reasons = ['Optimal maturity', 'Well-integrated tannins', 'Complex aromatics'];
   } else if (color === 'white' || color === 'rose') {
-    servingTemp = color === 'white' ? 10 : 12;
-    decantMinutes = 0;
     readinessLabel = 'READY';
     summary = `This ${wineInfo.wine_name} is ready to enjoy with bright, fresh characteristics.`;
     reasons = ['Fresh and vibrant', 'Ideal serving temperature', 'No decanting needed'];
   } else if (color === 'sparkling') {
-    servingTemp = 6;
-    decantMinutes = 0;
     readinessLabel = 'READY';
     summary = `This ${wineInfo.wine_name} is ready to enjoy chilled.`;
     reasons = ['Sparkling wines best enjoyed young', 'Serve well-chilled', 'No decanting'];
   }
 
+  const serving = buildFallbackServingGuidance(color, wineInfo.vintage, currentYear, readinessLabel);
+
   return {
     analysis_summary: summary,
     analysis_reasons: reasons,
     readiness_label: readinessLabel,
-    serving_temp_c: servingTemp,
-    decant_minutes: decantMinutes,
+    serving_temp_c: serving.temp_min,
+    decant_minutes: serving.decant_min,
+    serving,
     drink_window_start: null,
     drink_window_end: null,
-    confidence: confidence,
+    confidence,
     assumptions: 'Analysis based on general wine aging principles.',
     barrel_aging_note: null,
     barrel_aging_months_est: null,
+    barrel_aging_metadata: null,
   };
 }
 

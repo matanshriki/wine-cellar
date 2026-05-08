@@ -17,6 +17,32 @@ export interface WineAnalysisInput {
   notes?: string | null;
 }
 
+/** Structured serving guidance returned by AI and stored on bottles.serving_guidance */
+export interface ServingGuidance {
+  temp_min: number;
+  temp_max: number;
+  /** "recommended" = always decant, "optional" = can benefit, "none" = no decanting */
+  decanting: "recommended" | "optional" | "none";
+  decant_min: number;
+  decant_max: number;
+  /** Total minutes the bottle should be open before drinking (includes decant time) */
+  open_before_minutes: number;
+  glassware: string;
+  /** 1-sentence user-facing instruction */
+  short_instruction: string;
+  /** 1-2 sentence explanation of the why */
+  explanation: string;
+  confidence: "high" | "medium" | "low";
+  source_summary: string;
+}
+
+/** Barrel aging metadata stored on wines.barrel_aging_metadata */
+export interface BarrelAgingMetadata {
+  is_estimated: boolean;
+  confidence: "high" | "medium" | "low";
+  source: string;
+}
+
 export function formatGrapesForPrompt(grapes: WineAnalysisInput["grapes"]): string {
   if (Array.isArray(grapes)) return grapes.join(", ") || "Unknown";
   if (typeof grapes === "string" && grapes.trim()) return grapes.trim();
@@ -32,14 +58,55 @@ const BARREL_RULES = `BARREL / OAK (wine-level, for catalog + user preference le
 - For most quality RED wines and many structured whites, you MUST provide your best estimate (do not leave both fields null unless the wine is almost always unoaked in that region/style, e.g. many crisp whites).
 - barrel_aging_note: Short phrase (max ~200 chars) describing typical barrel regimen (e.g. "≈12–18 months American/French oak"). If genuinely no oak is typical, say "Typically little or no oak" and set months to 0.
 - barrel_aging_months_est: Integer — total months in oak/barrel you judge typical for this producer/style (0 = unoaked). Only use null if you have no reasonable basis at all.
+- barrel_aging_confidence: "high" if you have reliable producer/regional knowledge, "medium" if typical for the style, "low" if genuinely uncertain.
+- barrel_aging_source: Short description of where the estimate comes from, e.g. "producer technical sheet", "regional style norm", "AI general knowledge".
 - These are ESTIMATES from general knowledge, not guaranteed facts for this bottle.`;
+
+const SERVING_RULES = `SERVING GUIDANCE — generate accurate, wine-specific serving instructions. This is NOT a generic recommendation.
+
+Use the wine's actual type, age, structure, producer, and region:
+
+TEMPERATURE:
+- Sparkling (Champagne, Prosecco, Cava): 6–9°C
+- Sweet/dessert white (Sauternes, TBA, late harvest): 6–10°C
+- Crisp dry white (Sauvignon Blanc, Pinot Grigio, Riesling): 8–11°C
+- Full-bodied white (aged Burgundy, Viognier, oaked Chardonnay): 10–13°C
+- Rosé: 8–12°C
+- Light red (Pinot Noir, Gamay, Schiava): 13–15°C
+- Medium red (Sangiovese, Tempranillo, Merlot-dominant): 15–17°C
+- Full-bodied/tannic red (Cabernet Sauvignon, Barolo, Aglianico, Amarone, Syrah): 16–18°C
+- Fortified (Port, Sherry, Madeira): varies 6–18°C by style
+
+DECANTING (use "recommended", "optional", or "none"):
+- Young, tannic, full-bodied reds (< 8 years): "recommended", 60–120 min
+- Medium-age structured reds (8–15 years): "recommended", 30–60 min
+- Mature reds (15–25 years): "optional", 15–30 min — handle carefully, no aggressive decanting
+- Very old reds (> 25 years): "optional", 10–20 min — stand upright 24h first; sediment risk
+- Light reds: "optional", 10–20 min
+- Whites and rosés: "none" (or "optional" only if reductive/closed)
+- Sparkling: "none"
+- Dessert wines: "none"
+
+OPEN_BEFORE_MINUTES: total lead time to open bottle before drinking (0 = open and serve immediately)
+
+GLASSWARE: recommend a specific glass type appropriate for the wine
+
+SHORT_INSTRUCTION: 1 sentence the user reads at the moment of opening (e.g. "Decant for 90 minutes before serving.")
+EXPLANATION: 1–2 sentences explaining WHY — mention the specific wine's structure, age, or style
+
+CONFIDENCE:
+- "high": you have reliable producer/regional knowledge for this exact wine
+- "medium": typical for the style/region/age with reasonable certainty
+- "low": missing vintage or limited knowledge; using style-based reasoning
+
+SOURCE_SUMMARY: brief note on the basis (e.g. "Based on Barolo DOCG typical aging; Nebbiolo tannin profile for a 3-year-old wine.")`;
 
 export function buildWineAnalysisSystemPrompt(
   mode: WineAnalysisMode,
   language: string,
 ): string {
   const languageInstruction = language === "he"
-    ? "CRITICAL: You MUST write ALL text fields in HEBREW (עברית). The analysis_summary, analysis_reasons, barrel_aging_note (if not null), and assumptions must be in Hebrew."
+    ? "CRITICAL: You MUST write ALL text fields in HEBREW (עברית). The analysis_summary, analysis_reasons, barrel_aging_note (if not null), assumptions, and ALL serving guidance text fields must be in Hebrew."
     : "Write all text fields in English.";
 
   const heBlock = mode === "single"
@@ -71,7 +138,22 @@ export function buildWineAnalysisSystemPrompt(
   "confidence": "LOW" | "MEDIUM" | "HIGH",
   "assumptions": "string or null",
   "barrel_aging_note": "string or null",
-  "barrel_aging_months_est": number | null${mode === "single" ? "," : ""}${heBlock}
+  "barrel_aging_months_est": number | null,
+  "barrel_aging_confidence": "high" | "medium" | "low" | null,
+  "barrel_aging_source": "string or null",
+  "serving": {
+    "temp_min": number,
+    "temp_max": number,
+    "decanting": "recommended" | "optional" | "none",
+    "decant_min": number,
+    "decant_max": number,
+    "open_before_minutes": number,
+    "glassware": "string",
+    "short_instruction": "string",
+    "explanation": "string",
+    "confidence": "high" | "medium" | "low",
+    "source_summary": "string"
+  }${mode === "single" ? "," : ""}${heBlock}
 }
 
 IMPORTANT:
@@ -79,12 +161,16 @@ IMPORTANT:
 - Do NOT use generic template language
 - If data is missing, lower confidence and mention assumptions
 - Analysis must be unique per bottle
+- serving_temp_c must equal serving.temp_min (kept for backward compatibility)
+- decant_minutes must equal serving.decant_min (kept for backward compatibility)
 - ${languageInstruction}
 ${heInstruction}
 
 ${READINESS_RULES}
 
-${BARREL_RULES}`;
+${BARREL_RULES}
+
+${SERVING_RULES}`;
 }
 
 export function buildWineAnalysisUserPrompt(
@@ -134,7 +220,7 @@ User Notes: ${wine.notes?.trim() ? wine.notes : "None"}
 
 Current Year: ${currentYear}
 
-Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".${mode === "single" ? " Also include Hebrew translations in he_translations." : ""}`;
+Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. Pay close attention to the wine's age and structure when setting serving guidance — young tannic reds need longer decanting than mature or delicate wines. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".${mode === "single" ? " Also include Hebrew translations in he_translations." : ""}`;
 }
 
 /** Normalize OpenAI barrel fields for DB + API */
@@ -159,5 +245,182 @@ export function normalizeBarrelFields<T extends Record<string, unknown>>(a: T): 
 
   (a as Record<string, unknown>).barrel_aging_note = note;
   (a as Record<string, unknown>).barrel_aging_months_est = months;
+
+  // Normalize barrel metadata
+  const rawConf = a.barrel_aging_confidence;
+  const validConf = ["high", "medium", "low"];
+  const barrelConf = typeof rawConf === "string" && validConf.includes(rawConf) ? rawConf : "medium";
+
+  const rawSrc = a.barrel_aging_source;
+  const barrelSrc = typeof rawSrc === "string" && rawSrc.trim() ? rawSrc.trim().slice(0, 500) : "AI general knowledge";
+
+  const barrelMeta: BarrelAgingMetadata = {
+    is_estimated: true,
+    confidence: barrelConf as "high" | "medium" | "low",
+    source: barrelSrc,
+  };
+  (a as Record<string, unknown>).barrel_aging_metadata = barrelMeta;
+
   return a;
+}
+
+/** Validate and normalize a serving guidance object from OpenAI response */
+export function normalizeServingGuidance(raw: unknown): ServingGuidance | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = raw as Record<string, unknown>;
+
+  const tempMin = typeof s.temp_min === "number" && Number.isFinite(s.temp_min) ? s.temp_min : null;
+  const tempMax = typeof s.temp_max === "number" && Number.isFinite(s.temp_max) ? s.temp_max : null;
+  if (tempMin === null || tempMax === null) return null;
+
+  const validDecanting = ["recommended", "optional", "none"];
+  const decanting = typeof s.decanting === "string" && validDecanting.includes(s.decanting)
+    ? (s.decanting as "recommended" | "optional" | "none")
+    : "optional";
+
+  const decantMin = typeof s.decant_min === "number" && Number.isFinite(s.decant_min) ? Math.max(0, s.decant_min) : 0;
+  const decantMax = typeof s.decant_max === "number" && Number.isFinite(s.decant_max) ? Math.max(0, s.decant_max) : decantMin;
+  const openBefore = typeof s.open_before_minutes === "number" && Number.isFinite(s.open_before_minutes)
+    ? Math.max(0, s.open_before_minutes)
+    : decantMax;
+
+  const glassware = typeof s.glassware === "string" && s.glassware.trim() ? s.glassware.trim().slice(0, 200) : "standard wine glass";
+  const shortInstruction = typeof s.short_instruction === "string" && s.short_instruction.trim()
+    ? s.short_instruction.trim().slice(0, 500)
+    : "";
+  const explanation = typeof s.explanation === "string" && s.explanation.trim()
+    ? s.explanation.trim().slice(0, 1000)
+    : "";
+
+  const validConf = ["high", "medium", "low"];
+  const confidence = typeof s.confidence === "string" && validConf.includes(s.confidence)
+    ? (s.confidence as "high" | "medium" | "low")
+    : "medium";
+
+  const sourceSummary = typeof s.source_summary === "string" && s.source_summary.trim()
+    ? s.source_summary.trim().slice(0, 500)
+    : "AI sommelier analysis";
+
+  return {
+    temp_min: tempMin,
+    temp_max: tempMax,
+    decanting,
+    decant_min: decantMin,
+    decant_max: decantMax,
+    open_before_minutes: openBefore,
+    glassware,
+    short_instruction: shortInstruction,
+    explanation,
+    confidence,
+    source_summary: sourceSummary,
+  };
+}
+
+/**
+ * Fallback serving guidance when AI is unavailable or returns incomplete data.
+ * Based on wine color and age (vintage year).
+ */
+export function buildFallbackServingGuidance(
+  color: string | null | undefined,
+  vintage: number | null | undefined,
+  currentYear: number,
+  readinessLabel?: string,
+): ServingGuidance {
+  const c = (color ?? "red").toLowerCase();
+  const age = vintage != null ? currentYear - vintage : null;
+
+  if (c === "sparkling") {
+    return {
+      temp_min: 6, temp_max: 9,
+      decanting: "none", decant_min: 0, decant_max: 0,
+      open_before_minutes: 0,
+      glassware: "Champagne flute or tulip glass",
+      short_instruction: "Serve well chilled immediately after opening.",
+      explanation: "Sparkling wines are served cold to preserve bubbles and freshness.",
+      confidence: "high", source_summary: "Standard sparkling wine serving protocol.",
+    };
+  }
+
+  if (c === "white") {
+    return {
+      temp_min: 8, temp_max: 12,
+      decanting: "none", decant_min: 0, decant_max: 0,
+      open_before_minutes: 0,
+      glassware: "White wine glass",
+      short_instruction: "Serve chilled directly from the fridge.",
+      explanation: "White wines are served cold to highlight acidity and freshness.",
+      confidence: "medium", source_summary: "Standard white wine serving protocol.",
+    };
+  }
+
+  if (c === "rose" || c === "rosé") {
+    return {
+      temp_min: 8, temp_max: 12,
+      decanting: "none", decant_min: 0, decant_max: 0,
+      open_before_minutes: 0,
+      glassware: "White or rosé wine glass",
+      short_instruction: "Serve well chilled.",
+      explanation: "Rosé is best enjoyed cold to preserve its delicate fruit character.",
+      confidence: "high", source_summary: "Standard rosé serving protocol.",
+    };
+  }
+
+  // Red wine — use age to determine guidance
+  if (age !== null && age > 25) {
+    return {
+      temp_min: 16, temp_max: 17,
+      decanting: "optional", decant_min: 10, decant_max: 20,
+      open_before_minutes: 30,
+      glassware: "Large Burgundy or Bordeaux glass",
+      short_instruction: "Stand upright for 24 hours, open gently, and decant briefly only if needed.",
+      explanation: "Very old wines are fragile — excessive oxygen can cause them to fade quickly. Brief decanting separates sediment.",
+      confidence: "medium", source_summary: "Fallback for wines over 25 years old.",
+    };
+  }
+
+  if (age !== null && age > 15) {
+    return {
+      temp_min: 16, temp_max: 17,
+      decanting: "optional", decant_min: 15, decant_max: 30,
+      open_before_minutes: 30,
+      glassware: "Large red wine glass",
+      short_instruction: "Open 30 minutes before serving. Decant briefly if sediment is present.",
+      explanation: "Mature reds have integrated tannins and benefit from careful handling rather than aggressive airing.",
+      confidence: "medium", source_summary: "Fallback for mature reds (15–25 years).",
+    };
+  }
+
+  if (age !== null && age > 8) {
+    return {
+      temp_min: 16, temp_max: 18,
+      decanting: "recommended", decant_min: 30, decant_max: 60,
+      open_before_minutes: 60,
+      glassware: "Large red wine glass",
+      short_instruction: "Open 1 hour before serving and decant for 30–60 minutes.",
+      explanation: "This red is approaching maturity and benefits from moderate aeration to open up.",
+      confidence: "medium", source_summary: "Fallback for medium-age reds (8–15 years).",
+    };
+  }
+
+  if (readinessLabel === "HOLD") {
+    return {
+      temp_min: 16, temp_max: 18,
+      decanting: "recommended", decant_min: 60, decant_max: 120,
+      open_before_minutes: 90,
+      glassware: "Large Bordeaux or Burgundy glass",
+      short_instruction: "Open 90 minutes before serving and decant for at least 1 hour.",
+      explanation: "This is a young, structured red that needs extended airing to soften its tannins.",
+      confidence: "medium", source_summary: "Fallback for young tannic reds.",
+    };
+  }
+
+  return {
+    temp_min: 16, temp_max: 18,
+    decanting: "recommended", decant_min: 30, decant_max: 60,
+    open_before_minutes: 45,
+    glassware: "Large red wine glass",
+    short_instruction: "Open 45 minutes before serving.",
+    explanation: "Red wines generally benefit from some aeration before serving.",
+    confidence: "low", source_summary: "Generic fallback — wine type or age unknown.",
+  };
 }

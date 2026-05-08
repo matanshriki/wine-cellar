@@ -325,19 +325,63 @@ export function EveningQueuePlayer({
                   </div>
 
                   {/* Serving Notes */}
-                  <div
-                    className="p-4 rounded-xl"
-                    style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
-                  >
-                    <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      {t('planEvening.queue.servingNotes', 'Serving notes:')}
-                    </h4>
-                    <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <li>• {t('planEvening.queue.note1', 'Open now and let breathe for 10-15 minutes')}</li>
-                      <li>• {t('planEvening.queue.note2', 'Serve at room temperature (16-18°C)')}</li>
-                      {currentWine.color === 'red' && <li>• {t('planEvening.queue.note3', 'Consider decanting for 30 minutes')}</li>}
-                    </ul>
-                  </div>
+                  {(() => {
+                    const sg = (currentWine as any).serving_guidance as {
+                      temp_min?: number;
+                      temp_max?: number;
+                      decanting?: string;
+                      decant_min?: number;
+                      decant_max?: number;
+                      short_instruction?: string;
+                    } | null | undefined;
+
+                    if (sg && typeof sg.temp_min === 'number') {
+                      const tempStr = sg.temp_min === sg.temp_max
+                        ? `${sg.temp_min}°C`
+                        : `${sg.temp_min}–${sg.temp_max}°C`;
+                      const decantStr = sg.decanting === 'none' || !sg.decant_max
+                        ? null
+                        : sg.decant_min === sg.decant_max
+                        ? `${sg.decant_min} min`
+                        : `${sg.decant_min}–${sg.decant_max} min`;
+
+                      return (
+                        <div
+                          className="p-4 rounded-xl"
+                          style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
+                        >
+                          <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                            {t('planEvening.queue.servingNotes', 'Serving notes:')}
+                          </h4>
+                          <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            <li>• {t('planEvening.queue.serveTemp', 'Serve at {{temp}}', { temp: tempStr })}</li>
+                            {decantStr && (
+                              <li>• {t('planEvening.queue.decantFor', 'Decant for {{time}}', { time: decantStr })}</li>
+                            )}
+                            {sg.short_instruction && (
+                              <li>• {sg.short_instruction}</li>
+                            )}
+                          </ul>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        className="p-4 rounded-xl"
+                        style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
+                      >
+                        <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                          {t('planEvening.queue.servingNotes', 'Serving notes:')}
+                        </h4>
+                        <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          <li>• {t('planEvening.queue.note1', 'Open now and let breathe for 10-15 minutes')}</li>
+                          <li>• {t('planEvening.queue.note2', 'Serve at room temperature (16-18°C)')}</li>
+                          {currentWine.color === 'red' && <li>• {t('planEvening.queue.note3', 'Consider decanting for 30 minutes')}</li>}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               </AnimatePresence>
             </div>

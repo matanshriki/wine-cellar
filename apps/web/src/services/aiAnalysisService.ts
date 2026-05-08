@@ -19,6 +19,28 @@ import {
 import type { BottleWithWineInfo } from './bottleService';
 import * as drinkWindowService from './drinkWindowService';
 
+/** Structured serving guidance stored on bottles.serving_guidance */
+export interface ServingGuidance {
+  temp_min: number;
+  temp_max: number;
+  decanting: 'recommended' | 'optional' | 'none';
+  decant_min: number;
+  decant_max: number;
+  open_before_minutes: number;
+  glassware: string;
+  short_instruction: string;
+  explanation: string;
+  confidence: 'high' | 'medium' | 'low';
+  source_summary: string;
+}
+
+/** Barrel aging metadata stored on wines.barrel_aging_metadata */
+export interface BarrelAgingMetadata {
+  is_estimated: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  source: string;
+}
+
 export interface AIAnalysis {
   analysis_summary: string;
   analysis_reasons: string[];
@@ -30,9 +52,12 @@ export interface AIAnalysis {
   confidence: 'LOW' | 'MEDIUM' | 'HIGH';
   assumptions?: string | null;
   analyzed_at: string;
+  /** Structured per-wine serving guidance (new) */
+  serving_guidance?: ServingGuidance | null;
   /** From wines row — populated after AI analysis (bulk or single) */
   barrel_aging_note?: string | null;
   barrel_aging_months_est?: number | null;
+  barrel_aging_metadata?: BarrelAgingMetadata | null;
 }
 
 const CACHE_FRESHNESS_DAYS = 30;
@@ -43,6 +68,7 @@ const CACHE_FRESHNESS_DAYS = 30;
 function parseBarrelFromAnalysisPayload(a: Record<string, unknown>): {
   barrel_aging_note: string | null;
   barrel_aging_months_est: number | null;
+  barrel_aging_metadata: BarrelAgingMetadata | null;
 } {
   const note = a.barrel_aging_note;
   let barrel_aging_note: string | null = null;
@@ -59,12 +85,111 @@ function parseBarrelFromAnalysisPayload(a: Record<string, unknown>): {
   if (barrel_aging_months_est !== null && (barrel_aging_months_est < 0 || barrel_aging_months_est > 240)) {
     barrel_aging_months_est = null;
   }
-  return { barrel_aging_note, barrel_aging_months_est };
+
+  // Parse barrel metadata
+  let barrel_aging_metadata: BarrelAgingMetadata | null = null;
+  const meta = a.barrel_aging_metadata;
+  if (meta && typeof meta === 'object') {
+    const m2 = meta as Record<string, unknown>;
+    const validConf = ['high', 'medium', 'low'];
+    barrel_aging_metadata = {
+      is_estimated: typeof m2.is_estimated === 'boolean' ? m2.is_estimated : true,
+      confidence: typeof m2.confidence === 'string' && validConf.includes(m2.confidence)
+        ? (m2.confidence as 'high' | 'medium' | 'low')
+        : 'medium',
+      source: typeof m2.source === 'string' && m2.source.trim() ? m2.source.trim() : 'AI general knowledge',
+    };
+  }
+
+  return { barrel_aging_note, barrel_aging_months_est, barrel_aging_metadata };
 }
 
 /**
- * After analyze, overlay barrel fields from the API onto the fetched bottle so the UI
- * updates immediately even if the wines row or PostgREST cache lags behind.
+ * Parse and validate serving guidance from the AI analysis payload.
+ * Returns null if the payload is missing or malformed.
+ */
+function parseServingGuidanceFromPayload(a: Record<string, unknown>): ServingGuidance | null {
+  const s = a.serving;
+  if (!s || typeof s !== 'object') return null;
+  const sg = s as Record<string, unknown>;
+
+  const tempMin = typeof sg.temp_min === 'number' && Number.isFinite(sg.temp_min) ? sg.temp_min : null;
+  const tempMax = typeof sg.temp_max === 'number' && Number.isFinite(sg.temp_max) ? sg.temp_max : null;
+  if (tempMin === null || tempMax === null) return null;
+
+  const validDecanting = ['recommended', 'optional', 'none'];
+  const decanting = typeof sg.decanting === 'string' && validDecanting.includes(sg.decanting)
+    ? (sg.decanting as 'recommended' | 'optional' | 'none')
+    : 'optional';
+
+  const decantMin = typeof sg.decant_min === 'number' ? Math.max(0, sg.decant_min) : 0;
+  const decantMax = typeof sg.decant_max === 'number' ? Math.max(0, sg.decant_max) : decantMin;
+  const openBefore = typeof sg.open_before_minutes === 'number' ? Math.max(0, sg.open_before_minutes) : decantMax;
+
+  const validConf = ['high', 'medium', 'low'];
+  const confidence = typeof sg.confidence === 'string' && validConf.includes(sg.confidence)
+    ? (sg.confidence as 'high' | 'medium' | 'low')
+    : 'medium';
+
+  return {
+    temp_min: tempMin,
+    temp_max: tempMax,
+    decanting,
+    decant_min: decantMin,
+    decant_max: decantMax,
+    open_before_minutes: openBefore,
+    glassware: typeof sg.glassware === 'string' && sg.glassware.trim() ? sg.glassware.trim() : 'standard wine glass',
+    short_instruction: typeof sg.short_instruction === 'string' ? sg.short_instruction.trim().slice(0, 500) : '',
+    explanation: typeof sg.explanation === 'string' ? sg.explanation.trim().slice(0, 1000) : '',
+    confidence,
+    source_summary: typeof sg.source_summary === 'string' && sg.source_summary.trim()
+      ? sg.source_summary.trim().slice(0, 500)
+      : 'AI sommelier analysis',
+  };
+}
+
+/**
+ * Build a client-side fallback serving guidance object based on wine color and vintage.
+ * Mirrors the edge function buildFallbackServingGuidance logic.
+ */
+function buildClientFallbackServing(
+  color: string | null | undefined,
+  vintage: number | null | undefined,
+  readinessLabel?: string,
+): ServingGuidance {
+  const c = (color ?? 'red').toLowerCase();
+  const currentYear = new Date().getFullYear();
+  const age = vintage != null ? currentYear - vintage : null;
+
+  if (c === 'sparkling') {
+    return { temp_min: 6, temp_max: 9, decanting: 'none', decant_min: 0, decant_max: 0, open_before_minutes: 0, glassware: 'Champagne flute', short_instruction: 'Serve well chilled immediately.', explanation: 'Sparkling wines are served cold to preserve bubbles.', confidence: 'high', source_summary: 'Standard sparkling wine protocol.' };
+  }
+  if (c === 'white') {
+    return { temp_min: 8, temp_max: 12, decanting: 'none', decant_min: 0, decant_max: 0, open_before_minutes: 0, glassware: 'White wine glass', short_instruction: 'Serve chilled.', explanation: 'White wines are served cold to highlight acidity and freshness.', confidence: 'medium', source_summary: 'Standard white wine protocol.' };
+  }
+  if (c === 'rose' || c === 'rosé') {
+    return { temp_min: 8, temp_max: 12, decanting: 'none', decant_min: 0, decant_max: 0, open_before_minutes: 0, glassware: 'White or rosé wine glass', short_instruction: 'Serve well chilled.', explanation: 'Rosé is best enjoyed cold to preserve its delicate fruit character.', confidence: 'high', source_summary: 'Standard rosé protocol.' };
+  }
+
+  // Red wine
+  if (age !== null && age > 25) {
+    return { temp_min: 16, temp_max: 17, decanting: 'optional', decant_min: 10, decant_max: 20, open_before_minutes: 30, glassware: 'Large red wine glass', short_instruction: 'Stand upright, open gently, brief decant only if needed.', explanation: 'Very old wines are fragile — excessive oxygen can cause them to fade quickly.', confidence: 'medium', source_summary: 'Fallback for very old reds.' };
+  }
+  if (age !== null && age > 15) {
+    return { temp_min: 16, temp_max: 17, decanting: 'optional', decant_min: 15, decant_max: 30, open_before_minutes: 30, glassware: 'Large red wine glass', short_instruction: 'Open 30 minutes before serving. Decant briefly if sediment present.', explanation: 'Mature reds benefit from careful handling rather than aggressive airing.', confidence: 'medium', source_summary: 'Fallback for mature reds.' };
+  }
+  if (age !== null && age > 8) {
+    return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 30, decant_max: 60, open_before_minutes: 60, glassware: 'Large red wine glass', short_instruction: 'Open 1 hour before serving and decant 30–60 minutes.', explanation: 'This red is approaching maturity and benefits from moderate aeration.', confidence: 'medium', source_summary: 'Fallback for medium-age reds.' };
+  }
+  if (readinessLabel === 'HOLD') {
+    return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 60, decant_max: 120, open_before_minutes: 90, glassware: 'Large Bordeaux glass', short_instruction: 'Open 90 minutes before serving and decant at least 1 hour.', explanation: 'Young tannic red needs extended airing to soften its tannins.', confidence: 'medium', source_summary: 'Fallback for young tannic reds.' };
+  }
+  return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 30, decant_max: 60, open_before_minutes: 45, glassware: 'Large red wine glass', short_instruction: 'Open 45 minutes before serving.', explanation: 'Red wines benefit from some aeration before serving.', confidence: 'low', source_summary: 'Generic fallback.' };
+}
+
+/**
+ * After analyze, overlay barrel + serving fields from the API onto the fetched bottle so the UI
+ * updates immediately even if the DB or PostgREST cache lags behind.
  */
 export function mergeBottleWineWithAnalysisBarrel(
   bottle: BottleWithWineInfo,
@@ -72,12 +197,14 @@ export function mergeBottleWineWithAnalysisBarrel(
 ): BottleWithWineInfo {
   return {
     ...bottle,
+    serving_guidance: analysis.serving_guidance ?? (bottle as any).serving_guidance ?? null,
     wine: {
       ...bottle.wine,
       barrel_aging_note: analysis.barrel_aging_note ?? null,
       barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+      barrel_aging_metadata: analysis.barrel_aging_metadata ?? null,
     },
-  };
+  } as BottleWithWineInfo;
 }
 
 /**
@@ -99,7 +226,7 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     .from('bottles')
     .select(`
       *,
-      wine:wines(barrel_aging_note, barrel_aging_months_est)
+      wine:wines(barrel_aging_note, barrel_aging_months_est, barrel_aging_metadata)
     `)
     .eq('id', bottleId)
     .single();
@@ -108,12 +235,17 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     return null;
   }
 
-  // Check if all AI fields are present
   if (!data.analysis_summary || !data.readiness_label) {
     return null;
   }
 
-  const wine = (data as { wine?: { barrel_aging_note?: string | null; barrel_aging_months_est?: number | null } }).wine;
+  const wine = (data as {
+    wine?: {
+      barrel_aging_note?: string | null;
+      barrel_aging_months_est?: number | null;
+      barrel_aging_metadata?: BarrelAgingMetadata | null;
+    }
+  }).wine;
 
   return {
     analysis_summary: data.analysis_summary,
@@ -121,6 +253,7 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     readiness_label: data.readiness_label as 'READY' | 'HOLD' | 'PEAK_SOON',
     serving_temp_c: data.serve_temp_c,
     decant_minutes: data.decant_minutes,
+    serving_guidance: (data as any).serving_guidance ?? null,
     drink_window_start: data.drink_window_start,
     drink_window_end: data.drink_window_end,
     confidence: data.confidence as 'LOW' | 'MEDIUM' | 'HIGH',
@@ -128,6 +261,7 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     analyzed_at: data.analyzed_at || data.updated_at,
     barrel_aging_note: wine?.barrel_aging_note ?? null,
     barrel_aging_months_est: wine?.barrel_aging_months_est ?? null,
+    barrel_aging_metadata: wine?.barrel_aging_metadata ?? null,
   };
 }
 
@@ -186,9 +320,12 @@ export async function generateAIAnalysis(
 
     const raw = data.analysis as Record<string, unknown>;
     const barrel = parseBarrelFromAnalysisPayload(raw);
+    const servingGuidance = parseServingGuidanceFromPayload(raw) ??
+      buildClientFallbackServing(bottle.wine.color, bottle.wine.vintage, (data.analysis as AIAnalysis).readiness_label);
     const analysis: AIAnalysis = {
       ...(data.analysis as AIAnalysis),
       ...barrel,
+      serving_guidance: servingGuidance,
     };
 
     // Store in database
@@ -242,53 +379,32 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
     language,
     includeDebug: true,
   });
-  
-  // Determine serving temperature based on wine type
-  const wineType = (bottle.wine.color || 'red').toLowerCase();
-  let servingTemp = 16;
-  let decantMinutes = 30;
-  
-  if (wineType.includes('sparkling')) {
-    servingTemp = 6;
-    decantMinutes = 0;
-  } else if (wineType.includes('white')) {
-    servingTemp = 10;
-    decantMinutes = 0;
-  } else if (wineType.includes('rose')) {
-    servingTemp = 12;
-    decantMinutes = 0;
-  } else if (drinkWindow.readiness_label === 'HOLD') {
-    decantMinutes = 60;
-  } else if (drinkWindow.readiness_label === 'READY') {
-    const age = drinkWindow._debug?.age || 0;
-    if (age < 5) {
-      decantMinutes = 45;
-    } else if (age < 10) {
-      decantMinutes = 30;
-    } else {
-      decantMinutes = 15;
-    }
-  }
-  
-  // Generate summary from reasons
+
+  const servingGuidance = buildClientFallbackServing(
+    bottle.wine.color,
+    bottle.wine.vintage,
+    drinkWindow.readiness_label,
+  );
+
   const t = (en: string, he: string) => language === 'he' ? he : en;
-  const statusText = drinkWindow.readiness_label === 'READY' 
+  const statusText = drinkWindow.readiness_label === 'READY'
     ? t('ready to enjoy', 'מוכן ליהנות')
     : drinkWindow.readiness_label === 'HOLD'
     ? t('still young, consider aging', 'עדיין צעיר, כדאי להתיישן')
     : t('approaching peak', 'מתקרב לשיא');
-  
+
   const summary = t(
     `This ${bottle.wine.wine_name} is ${statusText}. ${drinkWindow.reasons[0]}`,
     `${bottle.wine.wine_name} ${statusText}. ${drinkWindow.reasons[0]}`
   );
-  
+
   return {
     analysis_summary: summary,
     analysis_reasons: drinkWindow.reasons,
     readiness_label: drinkWindow.readiness_label,
-    serving_temp_c: servingTemp,
-    decant_minutes: decantMinutes,
+    serving_temp_c: servingGuidance.temp_min,
+    decant_minutes: servingGuidance.decant_min,
+    serving_guidance: servingGuidance,
     drink_window_start: drinkWindow.drink_window_start,
     drink_window_end: drinkWindow.drink_window_end,
     confidence: drinkWindow.confidence,
@@ -296,6 +412,7 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
     analyzed_at: new Date().toISOString(),
     barrel_aging_note: null,
     barrel_aging_months_est: null,
+    barrel_aging_metadata: null,
   };
 }
 
@@ -303,12 +420,13 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
  * Store analysis in database
  */
 async function storeAnalysis(bottleId: string, analysis: AIAnalysis): Promise<void> {
-  const analysisData = {
+  const analysisData: Record<string, unknown> = {
     readiness_status: mapReadinessLabelToStatus(analysis.readiness_label),
     readiness_score: mapReadinessToScore(analysis.readiness_label),
     readiness_label: analysis.readiness_label,
-    serve_temp_c: analysis.serving_temp_c,
-    decant_minutes: analysis.decant_minutes,
+    serve_temp_c: analysis.serving_guidance?.temp_min ?? analysis.serving_temp_c,
+    decant_minutes: analysis.serving_guidance?.decant_min ?? analysis.decant_minutes,
+    serving_guidance: analysis.serving_guidance ?? null,
     analysis_notes: analysis.analysis_summary,
     analysis_summary: analysis.analysis_summary,
     analysis_reasons: analysis.analysis_reasons,

@@ -7,6 +7,10 @@ import {
   buildWineAnalysisSystemPrompt,
   buildWineAnalysisUserPrompt,
   normalizeBarrelFields,
+  normalizeServingGuidance,
+  buildFallbackServingGuidance,
+  type ServingGuidance,
+  type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
 
@@ -41,6 +45,10 @@ interface AnalysisResult {
   assumptions?: string
   barrel_aging_note?: string | null
   barrel_aging_months_est?: number | null
+  barrel_aging_confidence?: string | null
+  barrel_aging_source?: string | null
+  barrel_aging_metadata?: BarrelAgingMetadata | null
+  serving?: ServingGuidance | null
   he_translations?: {
     wine_name?: string
     producer?: string
@@ -52,19 +60,16 @@ interface AnalysisResult {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get OpenAI API key from environment
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiApiKey) {
       throw new Error('OPENAI_API_KEY not configured')
     }
 
-    // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -73,7 +78,6 @@ serve(async (req) => {
       )
     }
 
-    // Verify user JWT via service role key (most reliable pattern)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -84,7 +88,7 @@ serve(async (req) => {
       data: { user },
       error: userError,
     } = await supabaseAdmin.auth.getUser(token)
-    
+
     if (userError || !user) {
       console.error('[Analyze Wine] Auth failed:', userError?.message)
       return new Response(
@@ -93,22 +97,15 @@ serve(async (req) => {
       )
     }
 
-    // Parse request body
     const { bottle_id, wine_data, wine_id, trigger_source } = await req.json()
-    
+
     if (!bottle_id || !wine_data) {
       throw new Error('Missing bottle_id or wine_data')
     }
 
     const wineData = wine_data as WineData
-    const language = wineData.language || 'en' // Default to English
+    const language = wineData.language || 'en'
 
-    // ── Credit pre-flight check ──────────────────────────────────────────────
-    // trigger_source: 'user' (manual) | 'system' (auto after bottle creation)
-    // During dark launch enforcement is OFF → always passes.
-    // When Stage 3 enforcement is enabled: system-triggered calls with 0 balance
-    // will be blocked. Stage 3 guidance: consider setting wine_bottle_analysis
-    // cost to 0 for system-triggered paths, or add a bypass flag here.
     const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'wine_bottle_analysis', 1)
     if (!creditCheck.allowed) {
       await logCreditUsage(supabaseAdmin, {
@@ -121,7 +118,7 @@ serve(async (req) => {
       return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, 1, corsHeaders)
     }
 
-    console.log('[Analyze Wine] Generating analysis in language:', language)
+    console.log('[Analyze Wine] Generating analysis in language:', language, 'for wine:', wineData.wine_name)
 
     const currentYear = new Date().getFullYear()
     const systemPrompt = buildWineAnalysisSystemPrompt('single', language)
@@ -142,7 +139,6 @@ serve(async (req) => {
       'single',
     )
 
-    // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -162,7 +158,7 @@ serve(async (req) => {
 
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text()
-      console.error('OpenAI API error:', errorData)
+      console.error('[Analyze Wine] OpenAI API error:', errorData)
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: 'wine_bottle_analysis',
@@ -181,15 +177,50 @@ serve(async (req) => {
       throw new Error('No response from OpenAI')
     }
 
-    // Parse ChatGPT response
-    const analysis: AnalysisResult = normalizeBarrelFields(JSON.parse(content) as Record<string, unknown>) as AnalysisResult
+    const rawAnalysis = JSON.parse(content) as Record<string, unknown>
+    const analysis: AnalysisResult = normalizeBarrelFields(rawAnalysis) as AnalysisResult
 
-    // Validate response structure
     if (!analysis.analysis_summary || !analysis.analysis_reasons || !analysis.readiness_label) {
       throw new Error('Invalid response structure from ChatGPT')
     }
 
-    // Persist wine-level fields (translations + barrel estimates)
+    // Normalize serving guidance from AI response
+    const servingGuidance = normalizeServingGuidance(analysis.serving)
+    if (!servingGuidance) {
+      // AI didn't return a valid serving object — build fallback
+      console.warn('[Analyze Wine] serving object missing or invalid — using fallback for:', wineData.wine_name)
+      analysis.serving = buildFallbackServingGuidance(
+        wineData.color,
+        wineData.vintage,
+        currentYear,
+        analysis.readiness_label,
+      )
+    } else {
+      analysis.serving = servingGuidance
+    }
+
+    const servingConf = analysis.serving?.confidence ?? 'low'
+    console.log('[Analyze Wine] Serving guidance confidence:', servingConf, '| Readiness:', analysis.readiness_label)
+
+    // Persist bottle-level fields (serving_guidance + scalar compat fields)
+    const bottlePatch: Record<string, unknown> = {
+      serve_temp_c: analysis.serving.temp_min,
+      decant_minutes: analysis.serving.decant_min,
+      serving_guidance: analysis.serving,
+    }
+
+    const { error: bottleErr } = await supabaseAdmin
+      .from('bottles')
+      .update(bottlePatch)
+      .eq('id', bottle_id)
+
+    if (bottleErr) {
+      console.error('[Analyze Wine] Failed to persist serving_guidance to bottle:', bottleErr.message)
+    } else {
+      console.log('[Analyze Wine] Persisted serving_guidance to bottle:', bottle_id)
+    }
+
+    // Persist wine-level fields (translations + barrel estimates + barrel metadata)
     if (wine_id) {
       try {
         const { data: currentWine } = await supabaseAdmin
@@ -201,6 +232,7 @@ serve(async (req) => {
         const patch: Record<string, unknown> = {
           barrel_aging_note: analysis.barrel_aging_note ?? null,
           barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
+          barrel_aging_metadata: (analysis.barrel_aging_metadata as BarrelAgingMetadata) ?? null,
         }
 
         if (analysis.he_translations) {
@@ -212,13 +244,12 @@ serve(async (req) => {
         }
 
         await supabaseAdmin.from('wines').update(patch).eq('id', wine_id)
-        console.log('[Analyze Wine] Updated wine profile fields:', wine_id)
+        console.log('[Analyze Wine] Updated wine barrel + metadata fields:', wine_id)
       } catch (wineUpdateError) {
         console.error('[Analyze Wine] Failed to update wines row:', wineUpdateError)
       }
     }
 
-    // ── Log successful credit usage (best-effort, non-blocking) ────────────
     await logCreditUsage(supabaseAdmin, {
       userId: user.id,
       actionType: 'wine_bottle_analysis',
@@ -231,10 +262,11 @@ serve(async (req) => {
         language,
         trigger_source: trigger_source ?? 'user',
         wine_name: wineData.wine_name,
+        serving_confidence: servingConf,
+        readiness_label: analysis.readiness_label,
       },
     })
 
-    // Return analysis result
     return new Response(
       JSON.stringify({ success: true, analysis }),
       {
@@ -243,7 +275,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Edge function error:', error)
+    console.error('[Analyze Wine] Edge function error:', error)
     return new Response(
       JSON.stringify({
         success: false,
@@ -256,4 +288,3 @@ serve(async (req) => {
     )
   }
 })
-

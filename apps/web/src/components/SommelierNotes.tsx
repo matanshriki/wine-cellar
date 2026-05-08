@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { AIAnalysis } from '../services/aiAnalysisService';
+import type { AIAnalysis, ServingGuidance } from '../services/aiAnalysisService';
 
 interface SommelierNotesProps {
   analysis: AIAnalysis;
@@ -153,6 +153,90 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
         {analysis.analysis_summary}
       </p>
 
+      {/* Serving Guidance */}
+      {(() => {
+        const sg = analysis.serving_guidance as ServingGuidance | null | undefined;
+        if (sg && typeof sg.temp_min === 'number') {
+          const tempStr = sg.temp_min === sg.temp_max
+            ? `${sg.temp_min}°C`
+            : `${sg.temp_min}–${sg.temp_max}°C`;
+          const decantLabel = sg.decanting === 'recommended'
+            ? t('cellar.sommelier.decanting.recommended', 'Decant recommended')
+            : sg.decanting === 'optional'
+            ? t('cellar.sommelier.decanting.optional', 'Optional decant')
+            : t('cellar.sommelier.decanting.none', 'No decanting');
+          const decantTime = sg.decant_max > 0
+            ? sg.decant_min === sg.decant_max
+              ? `${sg.decant_min} min`
+              : `${sg.decant_min}–${sg.decant_max} min`
+            : null;
+
+          return (
+            <div
+              className="mb-3 p-3 rounded-lg space-y-2"
+              style={{ backgroundColor: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}
+            >
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  <span>🌡️</span>
+                  <span>{tempStr}</span>
+                </div>
+                <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  <span>🫙</span>
+                  <span>{decantLabel}{decantTime ? ` · ${decantTime}` : ''}</span>
+                </div>
+                {analysis.drink_window_start && analysis.drink_window_end && (
+                  <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <span>📅</span>
+                    <span>{analysis.drink_window_start}–{analysis.drink_window_end}</span>
+                  </div>
+                )}
+              </div>
+              {sg.short_instruction ? (
+                <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {sg.short_instruction}
+                </p>
+              ) : null}
+              {sg.explanation ? (
+                <p className="text-xs italic" style={{ color: 'var(--text-secondary)' }}>
+                  {sg.explanation}
+                </p>
+              ) : null}
+              {sg.confidence === 'low' && sg.source_summary ? (
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {t('cellar.sommelier.servingSource', 'Basis')}: {sg.source_summary}
+                </p>
+              ) : null}
+            </div>
+          );
+        }
+
+        // Fallback: old scalar display
+        return (
+          <div className="flex items-center gap-3 mb-3 text-sm">
+            {analysis.serving_temp_c ? (
+              <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                <span>🌡️</span>
+                <span>{analysis.serving_temp_c}°C</span>
+              </div>
+            ) : null}
+            {analysis.decant_minutes > 0 ? (
+              <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                <span>⏱️</span>
+                <span>{analysis.decant_minutes} min</span>
+              </div>
+            ) : null}
+            {analysis.drink_window_start && analysis.drink_window_end ? (
+              <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                <span>📅</span>
+                <span>{analysis.drink_window_start}–{analysis.drink_window_end}</span>
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Barrel Aging */}
       {(analysis.barrel_aging_note ||
         (analysis.barrel_aging_months_est !== null && analysis.barrel_aging_months_est !== undefined)) && (
         <div
@@ -163,7 +247,17 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
           }}
         >
           <div className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-            {t('cellar.sommelier.barrelAging', 'Barrel aging (estimate)')}
+            {t('cellar.sommelier.barrelAging', 'Barrel aging')}
+            {' '}
+            <span className="font-normal text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              ({(() => {
+                const meta = analysis.barrel_aging_metadata;
+                if (meta && !meta.is_estimated && meta.confidence === 'high') {
+                  return t('cellar.sommelier.barrelConfirmed', 'confirmed');
+                }
+                return t('cellar.sommelier.barrelEstimate', 'estimate');
+              })()})
+            </span>
           </div>
           {analysis.barrel_aging_note ? (
             <p className="leading-relaxed mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -172,50 +266,22 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
           ) : null}
           {analysis.barrel_aging_months_est !== null && analysis.barrel_aging_months_est !== undefined ? (
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {t('cellar.sommelier.barrelMonthsEst', '~{{months}} months in barrel (estimate)', {
+              {t('cellar.sommelier.barrelMonthsEst', '~{{months}} months in barrel', {
                 months: analysis.barrel_aging_months_est,
               })}
             </p>
           ) : null}
           <p className="text-xs mt-2 italic" style={{ color: 'var(--text-tertiary)' }}>
-            {t(
-              'cellar.sommelier.barrelDisclaimer',
-              'From public wine knowledge — not verified for this bottle.',
-            )}
+            {(() => {
+              const meta = analysis.barrel_aging_metadata;
+              if (meta?.source && meta.source !== 'AI general knowledge') {
+                return `${t('cellar.sommelier.barrelSource', 'Source')}: ${meta.source}`;
+              }
+              return t('cellar.sommelier.barrelDisclaimer', 'From public wine knowledge — not verified for this bottle.');
+            })()}
           </p>
         </div>
       )}
-
-      {/* Serving Suggestions */}
-      <div className="flex items-center gap-3 mb-3 text-sm">
-        {analysis.serving_temp_c && (
-          <div 
-            className="flex items-center gap-1.5"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span>🌡️</span>
-            <span>{analysis.serving_temp_c}°C</span>
-          </div>
-        )}
-        {analysis.decant_minutes > 0 && (
-          <div 
-            className="flex items-center gap-1.5"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span>⏱️</span>
-            <span>{analysis.decant_minutes}min</span>
-          </div>
-        )}
-        {analysis.drink_window_start && analysis.drink_window_end && (
-          <div 
-            className="flex items-center gap-1.5"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span>📅</span>
-            <span>{analysis.drink_window_start}-{analysis.drink_window_end}</span>
-          </div>
-        )}
-      </div>
 
       {/* Expandable "Why" Section */}
       {analysis.analysis_reasons && analysis.analysis_reasons.length > 0 && (
