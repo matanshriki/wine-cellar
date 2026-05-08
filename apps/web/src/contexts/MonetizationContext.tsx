@@ -130,10 +130,10 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
         const monEnabled = ent?.monetization_enabled ?? false;
         const enfEnabled = ent?.credit_enforcement_enabled ?? false;
         const creditRow = cred ?? {
-          credit_balance:       0,
-          bonus_credits:        0,
-          monthly_credit_limit: 0,
-          plan_key:             null,
+          credit_balance: 0,
+          bonus_credits:  0,
+          monthly_limit:  0,
+          plan_key:       null,
         };
 
         const fresh: MonetizationCache = {
@@ -142,7 +142,7 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
           effectiveBalance: getEffectiveCreditBalance(creditRow),
           isLowBalance:     monEnabled ? isLowCreditBalance(creditRow) : false,
           balanceLabel:     creditBalanceLabel(creditRow),
-          monthlyLimit:     creditRow.monthly_credit_limit ?? 0,
+          monthlyLimit:     (creditRow as any).monthly_limit ?? 0,
           planKey:          creditRow.plan_key ?? null,
         };
 
@@ -170,10 +170,10 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
                 const row = payload.new as Record<string, unknown>;
                 // Safely extract typed credit values from the Realtime payload
                 const creditRow = {
-                  credit_balance:       Number(row.credit_balance ?? 0),
-                  bonus_credits:        Number(row.bonus_credits ?? 0),
-                  monthly_credit_limit: Number(row.monthly_credit_limit ?? 0),
-                  plan_key:             (row.plan_key as string | null) ?? null,
+                  credit_balance: Number(row.credit_balance ?? 0),
+                  bonus_credits:  Number(row.bonus_credits ?? 0),
+                  monthly_limit:  Number(row.monthly_limit ?? 0),
+                  plan_key:       (row.plan_key as string | null) ?? null,
                 };
                 setValues((prev) => {
                   const updated: MonetizationCache = {
@@ -183,7 +183,7 @@ export function MonetizationProvider({ children }: { children: ReactNode }) {
                       ? isLowCreditBalance(creditRow)
                       : false,
                     balanceLabel: creditBalanceLabel(creditRow),
-                    monthlyLimit: creditRow.monthly_credit_limit,
+                    monthlyLimit: creditRow.monthly_limit,
                     planKey:      creditRow.plan_key,
                   };
                   writeCache(userId, updated);

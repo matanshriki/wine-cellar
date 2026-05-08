@@ -397,6 +397,7 @@ async function handlePaddleEvent(
       const subscriptionId  = data?.id;
       const customerId      = data?.customer_id;
       const periodEnd       = data?.current_billing_period?.ends_at ?? null;
+      const periodStart     = data?.current_billing_period?.starts_at ?? null;
 
       const plan = getPlanMeta(priceId);
       if (!plan) {
@@ -406,30 +407,70 @@ async function handlePaddleEvent(
 
       console.log(`[Paddle] Provisioning ${plan.planKey} for user ${userId}`);
       await supabase.rpc('paddle_grant_credits', {
-        p_user_id:               userId,
-        p_plan_key:              plan.planKey,
-        p_credits_to_set:        plan.monthlyCredits,
-        p_bonus_credits_to_add:  0,
-        p_billing_period_end:    periodEnd,
-        p_paddle_customer_id:    customerId,
+        p_user_id:                userId,
+        p_plan_key:               plan.planKey,
+        p_credits_to_set:         plan.monthlyCredits,
+        p_bonus_credits_to_add:   0,
+        p_billing_period_end:     periodEnd,
+        p_billing_period_start:   periodStart,
+        p_billing_status:         'active',
+        p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: subscriptionId,
       });
       await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
       break;
     }
 
-    // ── Subscription renewed / updated ────────────────────────────────────
+    // ── Subscription renewed (Paddle v2: fires on every successful recurring charge) ──
+    // This is the canonical renewal event. Always grant fresh credits here.
+    case 'subscription.renewed': {
+      if (!userId) {
+        console.warn('[Paddle] subscription.renewed: no userId in custom_data — cannot provision');
+        return;
+      }
+      const priceId        = data?.items?.[0]?.price?.id;
+      const subscriptionId = data?.id;
+      const customerId     = data?.customer_id;
+      const periodEnd      = data?.current_billing_period?.ends_at ?? null;
+      const periodStart    = data?.current_billing_period?.starts_at ?? null;
+
+      const plan = getPlanMeta(priceId);
+      if (!plan) {
+        console.warn(`[Paddle] subscription.renewed: unknown price ${priceId}`);
+        return;
+      }
+
+      console.log(`[Paddle] Renewal — granting ${plan.monthlyCredits} credits (${plan.planKey}) to user ${userId}`);
+      await supabase.rpc('paddle_grant_credits', {
+        p_user_id:                userId,
+        p_plan_key:               plan.planKey,
+        p_credits_to_set:         plan.monthlyCredits,
+        p_bonus_credits_to_add:   0,
+        p_billing_period_end:     periodEnd,
+        p_billing_period_start:   periodStart,
+        p_billing_status:         'active',
+        p_paddle_customer_id:     customerId,
+        p_paddle_subscription_id: subscriptionId,
+      });
+      break;
+    }
+
+    // ── Subscription updated (plan change, payment method, address, etc.) ─────
+    // Only refresh credits when the billing period actually advances (i.e. the
+    // period end moved forward). This prevents unnecessary credit resets when a
+    // user updates their card mid-cycle or when Paddle fires administrative updates.
     case 'subscription.updated': {
       if (!userId) return;
       const priceId        = data?.items?.[0]?.price?.id;
       const subscriptionId = data?.id;
       const customerId     = data?.customer_id;
       const periodEnd      = data?.current_billing_period?.ends_at ?? null;
+      const periodStart    = data?.current_billing_period?.starts_at ?? null;
       const status         = data?.status;
 
-      // Cancellation-pending updates — don't reset credits yet
-      if (status === 'canceled') {
-        console.log(`[Paddle] subscription.updated with status=canceled for ${userId} — cancelling`);
+      // Cancelled status on subscription.updated — downgrade to free immediately
+      if (status === 'cancelled' || status === 'canceled') {
+        console.log(`[Paddle] subscription.updated status=${status} for ${userId} — cancelling`);
         await supabase.rpc('paddle_cancel_subscription', { p_user_id: userId });
         return;
       }
@@ -440,14 +481,52 @@ async function handlePaddleEvent(
         return;
       }
 
-      console.log(`[Paddle] Renewing ${plan.planKey} credits for user ${userId}`);
+      // Only reset credits if the billing period has advanced since what we stored.
+      // Compare the incoming period_end with the DB value; skip if unchanged.
+      const { data: existing } = await supabase
+        .from('user_ai_credits')
+        .select('billing_period_end, current_period_end')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const storedEnd = existing?.billing_period_end ?? existing?.current_period_end;
+      const incomingEnd = periodEnd ? new Date(periodEnd) : null;
+      const storedEndDate = storedEnd ? new Date(storedEnd) : null;
+
+      const periodAdvanced =
+        incomingEnd !== null &&
+        (storedEndDate === null || incomingEnd > storedEndDate);
+
+      if (!periodAdvanced) {
+        // Paddle fired subscription.updated for a non-renewal change (e.g. payment method,
+        // address update, quantity change). Update plan metadata without touching credit_balance.
+        console.log(`[Paddle] subscription.updated (no period advance) for ${userId} — updating metadata only`);
+        await supabase.rpc('paddle_grant_credits', {
+          p_user_id:                userId,
+          p_plan_key:               plan.planKey,
+          p_credits_to_set:         0, // 0 = don't touch credit_balance
+          p_bonus_credits_to_add:   0,
+          p_billing_period_end:     periodEnd,
+          p_billing_period_start:   periodStart,
+          p_billing_status:         status === 'active' ? 'active' : status ?? null,
+          p_paddle_customer_id:     customerId,
+          p_paddle_subscription_id: subscriptionId,
+        });
+        return;
+      }
+
+      // Period advanced — this is effectively a renewal processed via subscription.updated
+      // (e.g. if subscription.renewed was not sent). Grant fresh credits.
+      console.log(`[Paddle] subscription.updated (period advanced) — renewing ${plan.planKey} credits for ${userId}`);
       await supabase.rpc('paddle_grant_credits', {
-        p_user_id:               userId,
-        p_plan_key:              plan.planKey,
-        p_credits_to_set:        plan.monthlyCredits,
-        p_bonus_credits_to_add:  0,
-        p_billing_period_end:    periodEnd,
-        p_paddle_customer_id:    customerId,
+        p_user_id:                userId,
+        p_plan_key:               plan.planKey,
+        p_credits_to_set:         plan.monthlyCredits,
+        p_bonus_credits_to_add:   0,
+        p_billing_period_end:     periodEnd,
+        p_billing_period_start:   periodStart,
+        p_billing_status:         'active',
+        p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: subscriptionId,
       });
       break;
@@ -461,38 +540,71 @@ async function handlePaddleEvent(
       break;
     }
 
-    // ── One-time top-up (transaction completed) ────────────────────────────
+    // ── Transaction completed ──────────────────────────────────────────────
     case 'transaction.completed': {
       if (!userId) return;
-      // Only handle non-subscription transactions (top-ups)
-      const originType = data?.origin ?? '';
-      if (originType === 'subscription_recurring' || originType === 'subscription_create') {
-        // Handled by subscription.activated / subscription.updated
+
+      const originType     = data?.origin ?? '';
+      const priceId        = data?.items?.[0]?.price?.id;
+      const subscriptionId = data?.subscription_id ?? null;
+      const customerId     = data?.customer_id;
+
+      // ── Subscription renewal safety net ──────────────────────────────────
+      // subscription.renewed is the canonical renewal event (handled above).
+      // transaction.completed (origin: subscription_recurring) fires for the
+      // same payment and is used here as a fallback: if subscription.renewed
+      // was already processed (idempotency check above catches duplicate
+      // event_ids), this path is a no-op. If subscription.renewed never fired
+      // (rare Paddle routing edge case), this path ensures credits are granted.
+      if (originType === 'subscription_recurring') {
+        const plan = getPlanMeta(priceId);
+        if (!plan) {
+          console.warn(`[Paddle] transaction.completed(subscription_recurring): unknown price ${priceId} — skipping`);
+          return;
+        }
+        console.log(`[Paddle] transaction.completed(subscription_recurring) — safety-net renewal for user ${userId}`);
+        await supabase.rpc('paddle_grant_credits', {
+          p_user_id:                userId,
+          p_plan_key:               plan.planKey,
+          p_credits_to_set:         plan.monthlyCredits,
+          p_bonus_credits_to_add:   0,
+          p_billing_period_end:     null, // period dates come from subscription events
+          p_billing_period_start:   null,
+          p_billing_status:         'active',
+          p_paddle_customer_id:     customerId,
+          p_paddle_subscription_id: subscriptionId,
+        });
         return;
       }
 
-      const priceId    = data?.items?.[0]?.price?.id;
-      const customerId = data?.customer_id;
+      // ── Subscription initial charge — credits already granted by subscription.activated ──
+      if (originType === 'subscription_create') {
+        console.log(`[Paddle] transaction.completed(subscription_create) for ${userId} — credits already handled by subscription.activated`);
+        return;
+      }
 
+      // ── One-time top-up ───────────────────────────────────────────────────
       const topUp = getTopUpMeta(priceId);
       if (!topUp) {
-        console.warn(`[Paddle] transaction.completed: unknown price ${priceId}`);
+        console.warn(`[Paddle] transaction.completed: unknown price ${priceId} (origin: ${originType})`);
         return;
       }
 
       console.log(`[Paddle] Adding ${topUp.bonusCredits} bonus credits for user ${userId}`);
       const { error: rpcErr } = await supabase.rpc('paddle_grant_credits', {
-        p_user_id:               userId,
-        p_plan_key:              'topup',
-        p_credits_to_set:        0,
-        p_bonus_credits_to_add:  topUp.bonusCredits,
-        p_billing_period_end:    null,
-        p_paddle_customer_id:    customerId,
+        p_user_id:                userId,
+        p_plan_key:               'topup',
+        p_credits_to_set:         0,
+        p_bonus_credits_to_add:   topUp.bonusCredits,
+        p_billing_period_end:     null,
+        p_billing_period_start:   null,
+        p_billing_status:         null,
+        p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: null,
       });
       if (rpcErr) {
-        console.error('[Paddle] paddle_grant_credits RPC failed (function may be missing):', rpcErr.message);
-        throw rpcErr; // surface to outer catch for logging
+        console.error('[Paddle] paddle_grant_credits RPC failed:', rpcErr.message);
+        throw rpcErr;
       }
       console.log(`[Paddle] Successfully granted ${topUp.bonusCredits} credits to user ${userId}`);
       await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
