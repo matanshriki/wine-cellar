@@ -605,9 +605,12 @@ export function OpenRitualSheet({
 
   const DECANT_PRESETS = [15, 30, 45, 60];
 
-  // Progress dots: 3 dots (open / serve / done+rate+rated share the 3rd)
-  const PROGRESS_STEPS = ['open', 'serve', 'done'] as const;
-  const progressActive = (step === 'rate' || step === 'rated') ? 'done' : step;
+  // Progress dots: 2 dots when no decant needed (open / done), 3 otherwise (open / serve / done)
+  const needsServeStep = serving && serving.decantMins > 0;
+  const PROGRESS_STEPS = needsServeStep
+    ? (['open', 'serve', 'done'] as const)
+    : (['open', 'done'] as const);
+  const progressActive = (step === 'serve' || step === 'rate' || step === 'rated') ? 'done' : step;
 
   return (
     <AnimatePresence>
@@ -1027,15 +1030,26 @@ export function OpenRitualSheet({
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => goTo('serve')}
-                    className="w-full py-3.5 rounded-xl font-semibold text-sm"
+                    onClick={() => {
+                      // Skip the serve step when no decanting is needed
+                      if (!serving || serving.decantMins === 0) {
+                        handleStartAndOpen(true);
+                      } else {
+                        goTo('serve');
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm transition-opacity"
                     style={{
                       background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                       color: 'white',
                       border: '1px solid var(--wine-700)',
+                      opacity: loading ? 0.7 : 1,
                     }}
                   >
-                    {t('openRitual.step1.continue', 'Continue')}
+                    {loading
+                      ? t('openRitual.step2.opening', 'Opening…')
+                      : t('openRitual.step1.continue', 'Continue')}
                   </motion.button>
                   <button
                     onClick={onClose}
