@@ -387,7 +387,7 @@ export function CellarPage() {
     if (readiness) {
       const filterMap: Record<string, string> = {
         'READY': 'ready',
-        'PEAK_SOON': 'aging',
+        'PEAK_SOON': 'peakSoon',
         'HOLD': 'aging',
       };
       
@@ -996,8 +996,8 @@ export function CellarPage() {
       result = result.filter((bottle) => {
         // Group filters by category
         const colorFilters = activeFilters.filter(f => ['red', 'white', 'rose', 'sparkling'].includes(f));
-        const readinessFilters = activeFilters.filter(f => ['ready', 'aging', 'pastPeak'].includes(f)); // Feedback iteration (dev only) - added pastPeak
-        const otherFilters = activeFilters.filter(f => !['red', 'white', 'rose', 'sparkling', 'ready', 'aging', 'pastPeak'].includes(f));
+        const readinessFilters = activeFilters.filter(f => ['ready', 'peakSoon', 'aging', 'pastPeak'].includes(f)); // Feedback iteration (dev only) - added pastPeak
+        const otherFilters = activeFilters.filter(f => !['red', 'white', 'rose', 'sparkling', 'ready', 'peakSoon', 'aging', 'pastPeak'].includes(f));
         
         // Check color filters (OR logic - wine matches ANY selected color)
         const matchesColor = colorFilters.length === 0 || colorFilters.some((filter) => {
@@ -1024,11 +1024,14 @@ export function CellarPage() {
                 bottle.readiness_status === 'Peak' ||
                 (bottle as any).readiness_label === 'READY'
               );
+            case 'peakSoon':
+              return (
+                bottle.readiness_status === 'Approaching' ||
+                (bottle as any).readiness_label === 'PEAK_SOON'
+              );
             case 'aging':
               return (
                 bottle.readiness_status === 'TooYoung' ||
-                bottle.readiness_status === 'Approaching' ||
-                (bottle as any).readiness_label === 'PEAK_SOON' ||
                 (bottle as any).readiness_label === 'HOLD'
               );
             case 'pastPeak': // Feedback iteration (dev only)
