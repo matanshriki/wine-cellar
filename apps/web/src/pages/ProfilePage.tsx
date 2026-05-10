@@ -32,6 +32,7 @@ export function ProfilePage() {
     email: contextProfile?.email || '',
     avatar_url: contextProfile?.avatar_url || '',
     preferred_language: contextProfile?.preferred_language || 'en',
+    preferred_currency: contextProfile?.preferred_currency || 'USD',
   });
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function ProfilePage() {
         email: contextProfile.email || '',
         avatar_url: contextProfile.avatar_url || '',
         preferred_language: contextProfile.preferred_language || 'en',
+        preferred_currency: contextProfile.preferred_currency || 'USD',
       });
     }
   }, [contextProfile]);
@@ -64,6 +66,7 @@ export function ProfilePage() {
         last_name: formData.last_name.trim() || null,
         avatar_url: formData.avatar_url || null,
         preferred_language: formData.preferred_language as 'en' | 'he',
+        preferred_currency: formData.preferred_currency as 'USD' | 'ILS',
       });
       setProfile(updated);
       setIsEditing(false);
@@ -87,6 +90,7 @@ export function ProfilePage() {
       email: profile?.email || '',
       avatar_url: profile?.avatar_url || '',
       preferred_language: profile?.preferred_language || 'en',
+      preferred_currency: profile?.preferred_currency || 'USD',
     });
     setIsEditing(false);
   }
@@ -218,6 +222,22 @@ export function ProfilePage() {
               </select>
             </div>
 
+            <div>
+              <label htmlFor="preferred_currency" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                {t('profile.preferredCurrency')}
+              </label>
+              <select
+                id="preferred_currency"
+                value={formData.preferred_currency}
+                onChange={(e) => setFormData({ ...formData, preferred_currency: e.target.value })}
+                className="input"
+                disabled={loading}
+              >
+                <option value="USD">USD ($)</option>
+                <option value="ILS">NIS ₪</option>
+              </select>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
@@ -263,6 +283,13 @@ export function ProfilePage() {
                 <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredLanguage')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_language === 'he' ? 'עברית (Hebrew)' : 'English'}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredCurrency')}</h3>
+                <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                  {profile.preferred_currency === 'ILS' ? 'NIS ₪' : 'USD $'}
                 </p>
               </div>
 

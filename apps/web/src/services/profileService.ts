@@ -147,6 +147,7 @@ export async function getOrCreateProfile(): Promise<{ profile: Profile; isComple
         email: user.email || null,
         avatar_url: user.user_metadata?.avatar_url || null,
         preferred_language: 'en',
+        preferred_currency: 'USD',
       };
 
       const { data, error } = await supabase
@@ -168,6 +169,7 @@ export async function getOrCreateProfile(): Promise<{ profile: Profile; isComple
               email: user.email || null,
               avatar_url: null,
               preferred_language: 'en',
+              preferred_currency: 'USD',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             } as Profile,

@@ -38,7 +38,7 @@ export function getCurrencySymbol(locale: string): string {
  * Format a price with the appropriate currency symbol
  * 
  * @param amount - The amount to format
- * @param locale - The current language locale ('en' or 'he')
+ * @param locale - The current language locale ('en' or 'he'), used for number formatting
  * @param options - Formatting options
  * @returns Formatted price string (e.g., "$50.00" or "₪50.00")
  */
@@ -48,19 +48,20 @@ export function formatCurrency(
   options: {
     showSymbol?: boolean;
     decimals?: number;
+    /** Override the currency code (e.g. 'ILS') instead of deriving from locale */
+    currencyOverride?: string;
   } = {}
 ): string {
-  const { showSymbol = true, decimals = 2 } = options;
+  const { showSymbol = true, decimals = 2, currencyOverride } = options;
 
   if (amount === null || amount === undefined || isNaN(amount)) {
     return '';
   }
 
-  const currencyCode = getCurrencyCode(locale);
-  const symbol = getCurrencySymbol(locale);
+  const currencyCode = currencyOverride || getCurrencyCode(locale);
+  const symbol = currencyCode === 'ILS' ? '₪' : '$';
 
   try {
-    // Use Intl.NumberFormat for proper locale formatting
     const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currencyCode,
@@ -70,7 +71,6 @@ export function formatCurrency(
 
     return formatter.format(amount);
   } catch (error) {
-    // Fallback to simple formatting if Intl fails
     const formattedAmount = amount.toFixed(decimals);
     return showSymbol ? `${symbol}${formattedAmount}` : formattedAmount;
   }
@@ -152,19 +152,22 @@ export function convertCurrency(
  * @param amount - The stored amount
  * @param storedCurrency - The currency the amount was stored in ('USD' or 'ILS')
  * @param displayLocale - The current display locale ('en' or 'he')
+ * @param displayCurrencyOverride - Explicit display currency ('USD' or 'ILS'); overrides locale-derived currency
  * @returns Object with converted amount and display currency
  */
 export function getDisplayPrice(
   amount: number | null | undefined,
   storedCurrency: string | null | undefined,
-  displayLocale: string
+  displayLocale: string,
+  displayCurrencyOverride?: string
 ): { amount: number | null; currency: string } {
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return { amount: null, currency: getCurrencyCode(displayLocale) };
+    const currency = displayCurrencyOverride || getCurrencyCode(displayLocale);
+    return { amount: null, currency };
   }
 
-  const displayCurrency = getCurrencyCode(displayLocale);
-  const sourceCurrency = storedCurrency || 'USD'; // Default to USD if not specified
+  const displayCurrency = displayCurrencyOverride || getCurrencyCode(displayLocale);
+  const sourceCurrency = storedCurrency || 'USD';
 
   const convertedAmount = convertCurrency(amount, sourceCurrency, displayCurrency);
 

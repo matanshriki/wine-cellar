@@ -18,7 +18,8 @@ import { SommelierNotes } from './SommelierNotes';
 import { KeepBadge } from './KeepBadge';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
-import { getCurrencySymbol, getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
+import { getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import type { AIAnalysis } from '../services/aiAnalysisService';
 import type { TasteProfile } from '../types/supabase';
 import * as tasteProfileService from '../services/tasteProfileService';
@@ -250,6 +251,7 @@ interface WineDetailsModalProps {
 
 export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRefresh, onAnalyze }: WineDetailsModalProps) {
   const { t, i18n } = useTranslation();
+  const { preferredCurrency } = useAuth();
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -889,18 +891,13 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                             {(() => {
                               const locale = i18n.language;
-                              const displayCurrencyCode = getCurrencyCode(locale);
-                              const displayCurrencySymbol = getCurrencySymbol(locale);
                               const storedCurrency = bottle.purchase_price_currency || 'USD';
-                              
-                              // Convert if needed
                               const convertedAmount = convertCurrency(
                                 bottle.purchase_price,
                                 storedCurrency,
-                                displayCurrencyCode
+                                preferredCurrency
                               );
-                              
-                              return formatCurrency(convertedAmount, locale, displayCurrencyCode);
+                              return formatCurrency(convertedAmount, locale, { currencyOverride: preferredCurrency });
                             })()}
                           </div>
                         </div>

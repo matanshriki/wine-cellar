@@ -93,6 +93,7 @@
     "avatarUrl": "Avatar URL",
     "avatarUrlHint": "Optional: Link to your profile picture",
     "preferredLanguage": "Preferred Language",
+    "preferredCurrency": "Preferred Currency",
     "memberSince": "Member Since",
     "accountInfo": "Account Information",
     "userId": "User ID",

@@ -67,6 +67,7 @@ export interface Database {
           email: string | null
           avatar_url: string | null
           preferred_language: string
+          preferred_currency: string
           cellar_agent_enabled: boolean
           plan_evening_enabled: boolean
           taste_profile: TasteProfile | null
@@ -83,6 +84,7 @@ export interface Database {
           email?: string | null
           avatar_url?: string | null
           preferred_language?: string
+          preferred_currency?: string
           cellar_agent_enabled?: boolean
           plan_evening_enabled?: boolean
           taste_profile?: TasteProfile | null
@@ -99,6 +101,7 @@ export interface Database {
           email?: string | null
           avatar_url?: string | null
           preferred_language?: string
+          preferred_currency?: string
           cellar_agent_enabled?: boolean
           plan_evening_enabled?: boolean
           taste_profile?: TasteProfile | null

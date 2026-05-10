@@ -29,6 +29,7 @@ interface AuthContextType {
   profile: Profile | null;
   profileComplete: boolean;
   loading: boolean;
+  preferredCurrency: string;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -336,6 +337,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     await loadProfile(user);
   };
 
+  const preferredCurrency = profile?.preferred_currency || 'USD';
+
   return (
     <AuthContext.Provider
       value={{
@@ -344,6 +347,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         profile,
         profileComplete,
         loading,
+        preferredCurrency,
         signUp,
         signIn,
         signInWithGoogle,

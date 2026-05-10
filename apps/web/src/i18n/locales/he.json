@@ -93,6 +93,7 @@
     "avatarUrl": "כתובת תמונה",
     "avatarUrlHint": "אופציונלי: קישור לתמונת הפרופיל שלך",
     "preferredLanguage": "שפה מועדפת",
+    "preferredCurrency": "מטבע מועדף",
     "memberSince": "חבר מאז",
     "accountInfo": "מידע על החשבון",
     "userId": "מזהה משתמש",

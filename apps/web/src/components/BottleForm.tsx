@@ -4,7 +4,8 @@ import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
 import { toast } from '../lib/toast';
 import { trackBottle } from '../services/analytics';
-import { getCurrencySymbol, getCurrencyCode, getDisplayPrice } from '../utils/currency';
+import { getCurrencySymbol, getDisplayPrice } from '../utils/currency';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper';
 import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
@@ -36,8 +37,9 @@ interface Props {
 
 export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishlistOption = false }: Props) {
   const { t, i18n } = useTranslation();
-  const currencySymbol = getCurrencySymbol(i18n.language);
-  const currentCurrency = getCurrencyCode(i18n.language);
+  const { preferredCurrency } = useAuth();
+  const currencySymbol = getCurrencySymbol(preferredCurrency === 'ILS' ? 'he' : 'en');
+  const currentCurrency = preferredCurrency;
   
   // ROBUST: Check sessionStorage first (for Vivino flow), then prefillData/bottle
   const getInitialFormData = () => {
@@ -70,11 +72,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       quantity: (bottle?.quantity != null ? String(bottle.quantity) : '1') || '1',
       purchase_price: (() => {
         if (!bottle?.purchase_price) return '';
-        // Convert price to current currency for display
         const displayPrice = getDisplayPrice(
           bottle.purchase_price,
           (bottle as any).purchase_price_currency || 'USD',
-          i18n.language
+          i18n.language,
+          preferredCurrency
         );
         return displayPrice.amount?.toFixed(2) || '';
       })(),
@@ -127,20 +129,21 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     }
   }, [bottle?.id]);
 
-  // Update displayed price when language changes
+  // Update displayed price when language or currency preference changes
   useEffect(() => {
     if (bottle?.purchase_price) {
       const displayPrice = getDisplayPrice(
         bottle.purchase_price,
         (bottle as any).purchase_price_currency || 'USD',
-        i18n.language
+        i18n.language,
+        preferredCurrency
       );
       setFormData(prev => ({
         ...prev,
         purchase_price: displayPrice.amount?.toFixed(2) || '',
       }));
     }
-  }, [i18n.language, bottle?.purchase_price, (bottle as any)?.purchase_price_currency]);
+  }, [i18n.language, preferredCurrency, bottle?.purchase_price, (bottle as any)?.purchase_price_currency]);
   
   // **AUTO-FETCH FROM VIVINO (Background)**
   // When user manually types wine name + producer, automatically fetch from Vivino
