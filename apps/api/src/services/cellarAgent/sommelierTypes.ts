@@ -41,6 +41,7 @@ export interface RecommendationExplanation {
 
 export type AgentRoute =
   | 'recommend'
+  | 'conversational'
   | 'open_bottle'
   | 'memory_update'
   | 'similar'
@@ -67,5 +68,5 @@ export interface AgentResponseMeta {
    * - orchestrated_shortlist: LLM on server-ranked shortlist + validation
    * - legacy_full_cellar: fallback LLM over full cellar (orchestrated path failed)
    */
-  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar';
+  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar' | 'conversational_response';
 }

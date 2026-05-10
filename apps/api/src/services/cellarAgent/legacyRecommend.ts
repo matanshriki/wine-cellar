@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai';
+import { config } from '../../config.js';
 import { buildLegacySystemPrompt } from './prompt.js';
 import type { CellarBottleInput } from './types.js';
 import { buildLegacyCellarContextPayload } from './candidateSelection.js';
@@ -41,7 +42,7 @@ export async function runLegacyRecommendation(params: {
 
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: config.openaiModel,
         messages: [
           { role: 'system', content: systemContent },
           ...conversationHistory,

@@ -36,6 +36,30 @@ function soundsLikeQuestionHebrew(t: string): boolean {
   );
 }
 
+/**
+ * Aging / readiness questions about a specific wine — always conversational regardless of anchor.
+ * e.g. "Should I age this?", "Is it ready to drink?", "How long until peak?"
+ */
+const CONVERSATIONAL_AGING_EN =
+  /\b(should\s+i\s+(age|cellar|wait|hold|keep)\s+(it|this|longer)?|worth\s+(aging|cellaring|waiting|holding|keeping)|age\s+this|cellar\s+(this|it|longer)|is\s+(it|this)\s+ready(\s+to\s+drink)?|ready\s+to\s+(drink|open)|when\s+(to|should\s+i)\s+(drink|open)\s+(it|this)?|how\s+(long|much\s+longer)\s+(to|should|can|will|do\s+i)|how\s+many\s+(more\s+)?(years?|months?)\s+(left|to\s+wait|should)|drink(ing)?\s+window|aging\s+potential|at\s+(its|the)\s+peak|will\s+it\s+improve|benefit\s+from\s+(more\s+)?aging|needs?\s+more\s+time|too\s+young(\s+to\s+drink)?|not\s+ready\s+yet|peak\s+(in|around|at|year)|prime\s+drinking)\b/i;
+
+const CONVERSATIONAL_AGING_HE =
+  /(כמה\s+(עוד\s+)?שנים|להמתין\s+(עם\s+)?הבקבוק|לשמור\s+(את\s+)?הבקבוק|מתי\s+(כדאי\s+)?לפתוח|חלון\s+שתייה|פוטנציאל\s+הבשלה|עוד\s+כמה\s+(שנים|זמן)|האם\s+(כדאי|מומלץ)\s+להמתין|להמשיך\s+לשמור|הגיע\s+לשיאו|עדיין\s+צעיר|זקוק\s+לזמן|כדאי\s+לחכות|שנות\s+הבשלה)/;
+
+/**
+ * Questions asking to explain or elaborate on the currently-shown wine.
+ * e.g. "Tell me more about this wine", "Why did you recommend this?"
+ */
+const CONVERSATIONAL_INFO_EN =
+  /\b(tell\s+me\s+more(\s+about\s+(this|the\s+wine))?|more\s+about\s+this(\s+wine)?|what\s+does\s+(it|this)\s+taste\s+like|tasting\s+notes(\s+for\s+this)?|why\s+(did\s+you|this\s+wine|recommend\s+this)|explain\s+(this\s+choice|why\s+this|the\s+recommendation)|describe\s+(this\s+wine|it\s+to\s+me)|what\s+are\s+the\s+(flavors?|aromas?|notes?|characteristics)|what\s+makes\s+this\s+(wine\s+)?special|tell\s+me\s+about\s+this\s+wine)\b/i;
+
+/**
+ * Signals that unambiguously mean "give me a NEW recommendation" — used to block
+ * short follow-ups from being misclassified as conversational.
+ */
+const NEW_RECOMMENDATION_SIGNALS =
+  /\b(another|different\s+(bottle|wine|one)|something\s+(else|different|lighter|heavier|instead)|other\s+(bottle|wine|options?)|instead\s+of\s+this|not\s+this\s+one|recommend\s+(me\s+)?(something|another|a\s+different)|suggest\s+(something|another|a\s+different)|show\s+me\s+(another|different|something\s+else)|find\s+(me\s+)?(a\s+)?different)\b/i;
+
 /** "Buy / purchase / shopping / expand cellar" — user wants wine suggestions to purchase, not from cellar */
 const BUY_INTENT_EN =
   /\b(what\s+(wine|bottle)s?\s+should\s+i\s+buy|recommend.{0,30}(to\s+buy|to\s+purchase|for\s+purchase)|wines?\s+to\s+buy|buy\s+new\s+wine|buy\s+something\s+new|expand\s+my\s+(cellar|collection)|add\s+to\s+my\s+(cellar|collection)|new\s+wines?\s+to\s+try|what\s+should\s+i\s+(add|get|purchase)|shopping\s+list|wine\s+shopping|looking\s+to\s+buy|want\s+to\s+buy|next\s+purchase|what\s+to\s+buy|suggest.{0,20}(to\s+buy|new\s+wine))\b/i;
@@ -130,6 +154,28 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
 
   if (BUY_INTENT_EN.test(lower) || BUY_INTENT_HE.test(t)) {
     return 'buy_recommendation';
+  }
+
+  // Explicit aging / readiness questions about the current wine — always conversational
+  if (CONVERSATIONAL_AGING_EN.test(lower) || CONVERSATIONAL_AGING_HE.test(t)) {
+    return 'conversational';
+  }
+
+  // Explicit info / explain questions about the current wine — always conversational
+  if (CONVERSATIONAL_INFO_EN.test(lower)) {
+    return 'conversational';
+  }
+
+  // Short follow-up question when an anchor bottle exists AND user isn't asking for a new pick
+  if (ctx?.lastRecommendationBottleId) {
+    const isShortFollowUp = t.length <= 160;
+    const startsLikeFollowUpQuestion =
+      /^(is\s+(it|this)|would\s+(it|this)|should\s+i|how\s+(long|much|is|old|many|does|good)|when\s+(did|was|should|to|can|will)|what\s+(is|are|does|would|food|pairs?)|why\s+(is|did|was|would|this)|can\s+(i|it|this)|could\s+(i|it)|will\s+it|does\s+it|how\s+does\s+it)/i.test(
+        t.trim()
+      );
+    if (isShortFollowUp && startsLikeFollowUpQuestion && !NEW_RECOMMENDATION_SIGNALS.test(lower)) {
+      return 'conversational';
+    }
   }
 
   return 'recommend';

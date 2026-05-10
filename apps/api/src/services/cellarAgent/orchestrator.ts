@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { config } from '../../config.js';
 import {
   buildLegacyCellarContextPayload,
   compactBottlesForLlm,
@@ -16,7 +17,7 @@ import {
   shortlistCandidates,
   takeTopForCap,
 } from './candidateSelection.js';
-import { buildOrchestratedSystemPrompt, buildBuyRecommendationPrompt } from './prompt.js';
+import { buildOrchestratedSystemPrompt, buildBuyRecommendationPrompt, buildConversationalSystemPrompt } from './prompt.js';
 import type { CellarBottleInput, CellarIntent, OrchestrationLogPayload, ScoredCandidate } from './types.js';
 import { validateModelOutput } from './validation.js';
 import {
@@ -212,6 +213,8 @@ async function runOrchestratedRecommendation(params: {
   extendedShortlist?: boolean;
   /** When true, reserved (Keep) bottles are included in the candidate pool */
   includeReserved?: boolean;
+  /** Pin this bottle ID into the shortlist so the model always sees it */
+  anchorBottleId?: string;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
@@ -230,6 +233,7 @@ async function runOrchestratedRecommendation(params: {
     language,
     extendedShortlist,
     includeReserved,
+    anchorBottleId,
   } = params;
 
   const conversationHistory = sliceHistoryForChat(history, 8);
@@ -273,10 +277,20 @@ async function runOrchestratedRecommendation(params: {
   const cap = computeEffectiveShortlistCap(scored.length, extendedShortlist);
   const top = takeTopForCap(scored, cap);
 
-  const diversified =
+  let diversified =
     intent === 'multi_recommendation' && top.length > 1
       ? diversifyShortlistForPrompt(scored, cap)
       : top;
+
+  // Pin the anchor bottle (from the previous turn) into the shortlist so the model
+  // always sees the wine the user is referring to, even if the heuristic scorer ranked
+  // it out of the current shortlist.
+  if (anchorBottleId && !diversified.some((s) => s.bottle.id === anchorBottleId)) {
+    const anchorBottle = cellarBottles.find((b) => b.id === anchorBottleId);
+    if (anchorBottle) {
+      diversified = [{ bottle: anchorBottle, score: 999, features: ['anchor'] }, ...diversified];
+    }
+  }
 
   const compact = compactBottlesForLlm(diversified);
 
@@ -323,7 +337,7 @@ async function runOrchestratedRecommendation(params: {
 
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: config.openaiModel,
         messages: [
           { role: 'system', content: systemContent },
           ...conversationHistory,
@@ -464,6 +478,7 @@ async function runLlmPathThenPersist(params: {
   language?: string;
   extendedShortlist?: boolean;
   includeReserved?: boolean;
+  anchorBottleId?: string;
 }): Promise<unknown> {
   const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
     openai: params.openai,
@@ -478,6 +493,7 @@ async function runLlmPathThenPersist(params: {
     language: params.language,
     extendedShortlist: params.extendedShortlist,
     includeReserved: params.includeReserved,
+    anchorBottleId: params.anchorBottleId,
   });
 
   logSommelier('orchestration', {
@@ -554,6 +570,29 @@ async function legacyFallback(params: {
     routedAction: params.routedAction,
     processingMode: 'legacy_full_cellar',
   });
+}
+
+function formatBottleForConversation(bottle: CellarBottleInput): string {
+  const parts: string[] = [];
+  const name = [bottle.producer, bottle.wineName].filter(Boolean).join(' ');
+  if (name) parts.push(`Wine: ${name}`);
+  if (bottle.vintage) parts.push(`Vintage: ${bottle.vintage}`);
+  if (bottle.region) parts.push(`Region: ${bottle.region}`);
+  if (bottle.country) parts.push(`Country: ${bottle.country}`);
+  const grapes = Array.isArray(bottle.grapes) ? bottle.grapes.join(', ') : bottle.grapes;
+  if (grapes) parts.push(`Grapes: ${grapes}`);
+  if (bottle.color) parts.push(`Color: ${bottle.color}`);
+  if (bottle.readinessStatus) parts.push(`Readiness: ${bottle.readinessStatus}`);
+  if (bottle.drinkWindowStart || bottle.drinkWindowEnd) {
+    parts.push(`Drink window: ${bottle.drinkWindowStart ?? '?'}–${bottle.drinkWindowEnd ?? '?'}`);
+  }
+  if (bottle.notes) parts.push(`Cellar notes: ${bottle.notes}`);
+  if (bottle.pastOpeningsCount) {
+    parts.push(`Past opens: ${bottle.pastOpeningsCount}`);
+    if (bottle.pastOpeningsAvgRating) parts.push(`Avg rating: ${bottle.pastOpeningsAvgRating}/5`);
+  }
+  if (bottle.pastNotesSummary) parts.push(`Tasting notes: ${bottle.pastNotesSummary}`);
+  return parts.join('\n') || 'No detailed information available for this wine.';
 }
 
 export interface RecommendCellarParams {
@@ -770,7 +809,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           const conversationHistory = sliceHistoryForChat(history, 8);
 
           const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
+            model: config.openaiModel,
             messages: [
               { role: 'system', content: systemContent },
               ...conversationHistory,
@@ -822,6 +861,62 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         }
       }
 
+      case 'conversational': {
+        try {
+          const anchorId =
+            actionContext?.lastRecommendationBottleId ?? actionContext?.anchorBottleId ?? null;
+          const anchorBottle = anchorId
+            ? cellarBottles.find((b) => b.id === anchorId) ?? null
+            : null;
+          const wineDetails = anchorBottle
+            ? formatBottleForConversation(anchorBottle)
+            : 'No specific wine context available — answer based on the conversation history.';
+
+          const systemContent = buildConversationalSystemPrompt({
+            wineDetails,
+            tasteContext,
+            language,
+          });
+
+          const conversationHistory = sliceHistoryForChat(history, 8);
+
+          const response = await openai.chat.completions.create({
+            model: config.openaiModel,
+            messages: [
+              { role: 'system', content: systemContent },
+              ...conversationHistory,
+              { role: 'user', content: message },
+            ],
+            temperature: 0.75,
+          });
+
+          const content = response.choices[0]?.message?.content?.trim() ?? '';
+          logSommelier('orchestration', {
+            route: 'conversational',
+            user: shortUser(userId),
+            anchorId: anchorId ?? 'none',
+          });
+
+          return withMeta(
+            { message: content, type: 'message' },
+            { routedAction: 'conversational', processingMode: 'conversational_response' }
+          );
+        } catch (e) {
+          logSommelierError('llm', e, { user: shortUser(userId), route: 'conversational' });
+          return withMeta(
+            {
+              message: m(
+                language,
+                "I'm having trouble answering that right now. Please try again in a moment.",
+                'אני נתקל בבעיה כרגע. נסה שוב בעוד רגע.'
+              ),
+              type: 'message',
+            },
+            { routedAction: 'conversational', actionResult: 'error', processingMode: 'deterministic_action' }
+          );
+        }
+      }
+
       case 'similar': {
         const anchor = resolveAnchorForSimilar(message, actionContext);
         if (!anchor) {
@@ -850,6 +945,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             memory: memoryPrefs, tasteContext,
             scoredOverride: similarScored, intentOverride: 'similar_cellar',
             routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
+            anchorBottleId: anchor,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
@@ -882,6 +978,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             openai, userId, supabase, message, history, cellarBottles,
             memory: memoryPrefs, tasteContext,
             routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
+            anchorBottleId: actionContext?.lastRecommendationBottleId ?? actionContext?.anchorBottleId,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });

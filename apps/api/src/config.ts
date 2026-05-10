@@ -26,6 +26,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || defaultJwtSecret,
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o',
   nodeEnv,
   
   // Google OAuth (optional)
@@ -68,6 +69,7 @@ export const config = {
 console.log('[Config] Environment:', config.nodeEnv);
 console.log('[Config] Port:', config.port);
 console.log('[Config] OpenAI API Key:', config.openaiApiKey ? 'SET ✓' : 'NOT SET ✗');
+console.log('[Config] OpenAI Model:', config.openaiModel);
 console.log('[Config] Supabase URL:', config.supabaseUrl ? 'SET ✓' : 'NOT SET ✗');
 console.log('[Config] Supabase Anon Key:', config.supabaseAnonKey ? 'SET ✓' : 'NOT SET ✗');
 console.log('[Config] Supabase Service Role Key:', config.supabaseServiceRoleKey ? 'SET ✓' : 'NOT SET (credit deduction will be best-effort) ✗');

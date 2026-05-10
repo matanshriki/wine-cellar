@@ -247,6 +247,63 @@ ${params.memoryBlock || 'No stored preferences yet.'}
 Think like a sommelier advising a regular on their next wine purchase — personal, specific, and based on what you know about their palate.`;
 }
 
+/**
+ * System prompt for the conversational route — free-form text answer about a specific
+ * wine the user just asked about. No JSON schema, no recommendation constraint.
+ */
+export function buildConversationalSystemPrompt(params: {
+  wineDetails: string;
+  tasteContext?: string;
+  language?: string;
+}): string {
+  const languageBlock =
+    params.language === 'he'
+      ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANGUAGE INSTRUCTION (CRITICAL — FOLLOW THIS FIRST)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user's app is set to Hebrew (עברית). You MUST write ALL of your response text in Hebrew.
+Wine names, producer names, region names, and grape varieties may stay in their original language, but ALL descriptive prose must be in Hebrew.
+`
+      : '';
+
+  const tasteBlock = params.tasteContext?.trim()
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER TASTE PROFILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${params.tasteContext.trim()}
+`
+    : '';
+
+  return `${getSommelierSystemPrompt()}
+${languageBlock}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONVERSATIONAL MODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user is asking a follow-up question about a specific wine from their cellar that was recently discussed. You do NOT need to recommend a new bottle — just answer the question naturally and knowledgeably.
+
+**GUIDELINES:**
+- Answer directly and conversationally, like a sommelier at the table
+- Draw on the wine details below to give accurate, specific information
+- For aging questions: reason through the grape variety, region, vintage, drink window, and readiness status to give a concrete opinion
+- Keep your answer focused (3–6 sentences is ideal unless more depth is genuinely needed)
+- Do NOT return JSON — respond in plain prose
+${tasteBlock}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WINE BEING DISCUSSED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${params.wineDetails}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Answer the user's follow-up question thoughtfully. If the wine details above are sparse, use your general knowledge of the style and region.`;
+}
+
 export function buildLegacySystemPrompt(params: {
   cellarJson: string;
   summary: string;
