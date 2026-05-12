@@ -170,7 +170,7 @@ curl -sS -X POST 'http://127.0.0.1:54321/functions/v1/admin-notifications' \
         "data": {
           "id": "txn_abc",
           "currency_code": "USD",
-          "totals": { "total": 2900 },
+          "totals": { "total": "2900" },
           "items": [{ "price": { "id": "pri_xxx", "name": "Collector monthly" } }]
         }
       }
@@ -178,7 +178,7 @@ curl -sS -X POST 'http://127.0.0.1:54321/functions/v1/admin-notifications' \
   }'
 ```
 
-(Amounts in Paddle are often in minor units; adjust `totals.total` to match your real payloads.)
+(Paddle sends amounts as strings in minor units — `"2900"` = $29.00. The parser converts to major units automatically.)
 
 ### Example: daily summary
 

@@ -124,6 +124,19 @@ export async function sendMetaCapiEvent(params: SendMetaCapiEventParams): Promis
   }
 }
 
+/**
+ * Paddle amounts are in minor units and arrive as strings (e.g. "1000" = $10.00).
+ * Numeric values (used in tests/sandbox) are also accepted.
+ */
+function parseMinorUnits(v: unknown): number | undefined {
+  if (typeof v === 'number' && !Number.isNaN(v)) return v / 100;
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = parseInt(v, 10);
+    if (!Number.isNaN(n)) return n / 100;
+  }
+  return undefined;
+}
+
 /** Extract Paddle Billing webhook totals when present (shape varies slightly by event). */
 export function valueCurrencyFromPaddlePayload(data: Record<string, unknown> | null | undefined): {
   value: number;
@@ -149,15 +162,13 @@ export function valueCurrencyFromPaddlePayload(data: Record<string, unknown> | n
     (typeof topTotals?.currency_code === 'string' && topTotals.currency_code) ||
     'USD';
 
-  const rawTotal =
-    (typeof detailsTotals?.total === 'number' ? detailsTotals.total : undefined) ??
-    (typeof detailsTotals?.grand_total === 'number' ? detailsTotals.grand_total : undefined) ??
-    (typeof topTotals?.total === 'number' ? topTotals.total : undefined) ??
-    (typeof topTotals?.grand_total === 'number' ? topTotals.grand_total : undefined);
+  const value =
+    parseMinorUnits(detailsTotals?.total) ??
+    parseMinorUnits(detailsTotals?.grand_total) ??
+    parseMinorUnits(topTotals?.total) ??
+    parseMinorUnits(topTotals?.grand_total);
 
-  if (rawTotal == null || typeof rawTotal !== 'number' || Number.isNaN(rawTotal)) {
-    return null;
-  }
+  if (value == null) return null;
 
-  return { value: rawTotal, currency };
+  return { value, currency };
 }

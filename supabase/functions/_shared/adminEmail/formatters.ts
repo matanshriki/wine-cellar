@@ -88,7 +88,7 @@ export function purchaseEmailFromPaddle(
   const data = (payload['data'] as Record<string, unknown> | undefined) ?? {};
   const vc = valueCurrencyFromPaddlePayload(data);
   const currency = vc?.currency ?? 'USD';
-  const amountStr = vc != null ? `${vc.value} ${currency}` : 'amount n/a';
+  const amountStr = vc != null ? `${vc.value.toFixed(2)} ${currency}` : 'amount n/a';
   const subject = `New purchase - ${amountStr}`;
 
   const provider = 'Paddle';
@@ -101,7 +101,7 @@ export function purchaseEmailFromPaddle(
     { label: 'User ID', value: (record.user_id ?? '—').toString() },
     { label: 'Email', value: (userEmail ?? '—').toString() },
     { label: 'Plan / tier', value: planKeyFromPaddleData(data) },
-    { label: 'Amount', value: vc != null ? String(vc.value) : '—' },
+    { label: 'Amount', value: vc != null ? vc.value.toFixed(2) : '—' },
     { label: 'Currency', value: currency },
     { label: 'Provider', value: provider },
     { label: 'Transaction / event id', value: txnId },
