@@ -12,6 +12,7 @@ import { MobileFloatingFooter } from './MobileFloatingFooter';
 import { AddBottleSheet } from './AddBottleSheet';
 import { CameraFallbackSheet } from './CameraFallbackSheet';
 import { PwaCameraCaptureModal } from './PwaCameraCaptureModal';
+import { ImageCropEditor } from './ImageCropEditor';
 import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { CompactThemeToggle } from './ThemeToggle';
@@ -38,6 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     balance: number;
   } | null>(null);
   const location = useLocation();
+
+  // Crop editor state — shown after photo capture, before scan
+  const [cropPendingFile, setCropPendingFile] = useState<File | null>(null);
+  const [cropPendingPreview, setCropPendingPreview] = useState<string | null>(null);
 
   // Credit enforcement — must come before any camera-open logic
   const { creditEnforcementEnabled, effectiveBalance } = useMonetizationAccess();
@@ -234,19 +239,47 @@ export function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    openAddBottleFlowForScanning();
-    
-    // Minimal delay to ensure sheet is mounted, then begin scan
-    // The sheet animation will mask any transition to scanning state
-    requestAnimationFrame(() => {
-      handleSmartScan(file);
-    });
-    
+    // Show crop editor; scanning starts only after the user confirms the crop
+    showCropEditor(file);
+
     // Reset input for next time
     setTimeout(() => {
       e.target.value = '';
     }, 500);
   };
+
+  // Show the crop editor for any file from any scan entry point
+  function showCropEditor(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCropPendingPreview(e.target?.result as string);
+      setCropPendingFile(file);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleCropComplete(croppedBlob: Blob) {
+    const croppedFile = new File(
+      [croppedBlob],
+      cropPendingFile?.name || 'label.jpg',
+      { type: 'image/jpeg' },
+    );
+    setCropPendingFile(null);
+    setCropPendingPreview(null);
+    openAddBottleFlowForScanning();
+    requestAnimationFrame(() => {
+      handleSmartScan(croppedFile);
+    });
+  }
+
+  function handleCropCancel() {
+    setCropPendingFile(null);
+    setCropPendingPreview(null);
+    // Return user to the fallback sheet so they can try again or add manually
+    window.dispatchEvent(
+      new CustomEvent('showCameraFallback', { detail: { reason: 'cancelled' } }),
+    );
+  }
 
   // Handle camera FAB click - different behavior based on platform
   const handleCameraFabClick = () => {
@@ -331,6 +364,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
       {/* Luxury Background (light with subtle texture) */}
       <div className="luxury-background" />
+
+      {/* Crop editor — shown after photo capture on any FAB path, before scanning */}
+      {cropPendingPreview && (
+        <ImageCropEditor
+          imageUrl={cropPendingPreview}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
 
       {/**
        * Top Navigation Bar - Sticky with translucent glass effect
@@ -539,8 +581,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         scanningState={scanningState}
         scanningMessage={scanningMessage}
         onPhotoSelected={async (file) => {
-          // Call smart scan from context
-          await handleSmartScan(file);
+          // Show crop editor first; scan runs after user confirms crop
+          showCropEditor(file);
         }}
         onManualEntry={() => {
           closeAddBottleFlow();
@@ -593,14 +635,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             return;
           }
           closeFallbackSheet();
-          
-          // CRITICAL FIX: Open AddBottleSheet to show loader
-          openAddBottleFlowForScanning();
-          
-          // Minimal delay to ensure sheet is mounted, then begin scan
-          requestAnimationFrame(async () => {
-            await handleSmartScan(file);
-          });
+
+          // Show crop editor; scanning starts only after the user confirms the crop
+          showCropEditor(file);
         }}
         onManualEntry={() => {
           closeFallbackSheet();
@@ -630,14 +667,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             setNoCreditsOpen(true);
             return;
           }
-          
-          // Open AddBottleSheet to show scanning loader
-          openAddBottleFlowForScanning();
-          
-          // Start scan
-          requestAnimationFrame(async () => {
-            await handleSmartScan(file);
-          });
+
+          // Show crop editor; scanning starts only after the user confirms the crop
+          showCropEditor(file);
         }}
         onError={(error) => {
           closePwaCamera();
