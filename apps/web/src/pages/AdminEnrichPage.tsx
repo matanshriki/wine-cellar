@@ -363,6 +363,7 @@ export const AdminEnrichPage: React.FC = () => {
   };
 
   const runRulesBackfill = async () => {
+    if (!rulesDryRun && !confirm(
       'Apply rule-based grape / style updates to the wines table?\n\n' +
       'Only rows that match the filter and have a planned change are written.\n\nContinue?',
     )) return;
