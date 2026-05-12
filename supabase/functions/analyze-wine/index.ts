@@ -103,19 +103,102 @@ serve(async (req) => {
       throw new Error('Missing bottle_id or wine_data')
     }
 
+    // ── Ownership check ───────────────────────────────────────────────────────
+    // Load the bottle and verify it belongs to the calling user.
+    // Also fetch created_at + analysis sentinel fields needed for the
+    // system_background eligibility check below.
+    const { data: bottleRow, error: bottleOwnerErr } = await supabaseAdmin
+      .from('bottles')
+      .select('id, user_id, wine_id, created_at, readiness_label, analysis_summary')
+      .eq('id', bottle_id)
+      .single()
+
+    if (bottleOwnerErr || !bottleRow) {
+      console.warn('[Analyze Wine] Bottle not found:', bottle_id)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Bottle not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
+    }
+
+    if (bottleRow.user_id !== user.id) {
+      console.warn('[Analyze Wine] Ownership check failed: bottle', bottle_id,
+        'belongs to', bottleRow.user_id, 'not', user.id)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    // If caller supplied a wine_id, it must match the bottle's wine to prevent
+    // a cross-wine update (e.g., overwriting another wine's barrel fields).
+    const resolvedWineId: string | null = wine_id ?? bottleRow.wine_id ?? null
+    if (wine_id && bottleRow.wine_id && bottleRow.wine_id !== wine_id) {
+      console.warn('[Analyze Wine] wine_id mismatch for bottle', bottle_id)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
     const wineData = wine_data as WineData
     const language = wineData.language || 'en'
 
-    const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'wine_bottle_analysis', 1)
+    // ── Credit action type ────────────────────────────────────────────────────
+    // system_background is only accepted when ALL of the following hold:
+    //   1. bottle.created_at is within the last 5 minutes (recency window).
+    //      This is the primary defence: even if a user clears translations.he,
+    //      they cannot claim system_background outside the creation window.
+    //   2. The wine has no Hebrew translations yet  OR  the bottle has no
+    //      initial analysis (readiness_label / analysis_summary). This ensures
+    //      the 0-credit path is never granted for a re-analysis request.
+    // Any condition that fails → fall back to wine_bottle_analysis (1 credit).
+    let creditActionType = 'wine_bottle_analysis'
+    let creditCost = 1
+
+    if (trigger_source === 'system_background' && resolvedWineId) {
+      const SYSTEM_BG_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+
+      // Condition 1 — recency
+      const bottleAgeMs = Date.now() - new Date(bottleRow.created_at).getTime()
+      const isRecentBottle = bottleAgeMs <= SYSTEM_BG_WINDOW_MS
+
+      if (isRecentBottle) {
+        // Condition 2 — data is genuinely missing
+        const { data: wineTransRow } = await supabaseAdmin
+          .from('wines')
+          .select('translations')
+          .eq('id', resolvedWineId)
+          .single()
+
+        const existingHe = (wineTransRow?.translations as Record<string, unknown> | null)?.he
+        const heIsEmpty = !existingHe || Object.keys(existingHe as object).length === 0
+        const analysisIsMissing = !bottleRow.readiness_label && !bottleRow.analysis_summary
+        const dataIsMissing = heIsEmpty || analysisIsMissing
+
+        if (dataIsMissing) {
+          // Both conditions satisfied — no credit charge
+          creditActionType = 'system_analysis'
+          creditCost = 0
+          console.log(`[Analyze Wine] Confirmed system background: bottle age ${Math.round(bottleAgeMs / 1000)}s, heEmpty=${heIsEmpty}, analysisNew=${analysisIsMissing}`)
+        } else {
+          console.log('[Analyze Wine] system_background declined: data already exists, charging normally')
+        }
+      } else {
+        console.log(`[Analyze Wine] system_background declined: bottle age ${Math.round(bottleAgeMs / 1000)}s exceeds ${SYSTEM_BG_WINDOW_MS / 1000}s window, charging normally`)
+      }
+    }
+
+    const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, creditActionType, creditCost)
     if (!creditCheck.allowed) {
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
-        actionType: 'wine_bottle_analysis',
-        creditsRequired: 1,
+        actionType: creditActionType,
+        creditsRequired: creditCost,
         requestStatus: 'error',
         metadata: { blocked: true, reason: creditCheck.reason, trigger_source: trigger_source ?? 'user' },
       })
-      return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, 1, corsHeaders)
+      return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, creditCost, corsHeaders)
     }
 
     console.log('[Analyze Wine] Generating analysis in language:', language, 'for wine:', wineData.wine_name)
@@ -161,8 +244,8 @@ serve(async (req) => {
       console.error('[Analyze Wine] OpenAI API error:', errorData)
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
-        actionType: 'wine_bottle_analysis',
-        creditsRequired: 1,
+        actionType: creditActionType,
+        creditsRequired: creditCost,
         requestStatus: 'failed',
         modelName: 'gpt-4o-mini',
         metadata: { openai_status: openaiResponse.status, trigger_source: trigger_source ?? 'user' },
@@ -221,12 +304,12 @@ serve(async (req) => {
     }
 
     // Persist wine-level fields (translations + barrel estimates + barrel metadata)
-    if (wine_id) {
+    if (resolvedWineId) {
       try {
         const { data: currentWine } = await supabaseAdmin
           .from('wines')
           .select('translations')
-          .eq('id', wine_id)
+          .eq('id', resolvedWineId)
           .single()
 
         const patch: Record<string, unknown> = {
@@ -243,7 +326,7 @@ serve(async (req) => {
           }
         }
 
-        await supabaseAdmin.from('wines').update(patch).eq('id', wine_id)
+        await supabaseAdmin.from('wines').update(patch).eq('id', resolvedWineId)
         console.log('[Analyze Wine] Updated wine barrel + metadata fields:', wine_id)
       } catch (wineUpdateError) {
         console.error('[Analyze Wine] Failed to update wines row:', wineUpdateError)
@@ -252,8 +335,8 @@ serve(async (req) => {
 
     await logCreditUsage(supabaseAdmin, {
       userId: user.id,
-      actionType: 'wine_bottle_analysis',
-      creditsRequired: 1,
+      actionType: creditActionType,
+      creditsRequired: creditCost,
       requestStatus: 'success',
       modelName: 'gpt-4o-mini',
       inputTokens: openaiData.usage?.prompt_tokens ?? null,

@@ -163,12 +163,31 @@ serve(async (req) => {
     const wineData = wine_data as WineInput
     const language: string = (typeof rawLang === 'string' && rawLang.length > 0) ? rawLang : 'en'
 
-    // Fetch current food_pairing once — used for skip-check AND for JSONB merge later
+    // Fetch current food_pairing and user_id in a single query.
+    // user_id is needed for the ownership check below.
     const { data: currentWine } = await supabaseAdmin
       .from('wines')
-      .select('food_pairing')
+      .select('food_pairing, user_id')
       .eq('id', wine_id)
       .single()
+
+    // ── Ownership check ───────────────────────────────────────────────────────
+    // Verify the wine belongs to the calling user before writing to it.
+    if (!currentWine) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Wine not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 },
+      )
+    }
+
+    if (currentWine.user_id !== user.id) {
+      console.warn('[generate-food-pairing] Ownership check failed: wine', wine_id,
+        'belongs to', currentWine.user_id, 'not', user.id)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 },
+      )
+    }
 
     const existingFp = (currentWine?.food_pairing ?? {}) as Record<string, unknown>
 
@@ -193,18 +212,25 @@ serve(async (req) => {
       }
     }
 
-    // Credit check — food pairing is system-triggered so we keep cost at 1
-    // but the credit system is fail-open during dark launch anyway.
-    const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, 'food_pairing_generation', 1)
+    // ── Credit check ─────────────────────────────────────────────────────────
+    // Background system triggers (e.g., auto-pairing on bottle create) use
+    // system_analysis (0 credits). The cache-skip above already ensures this
+    // path is only reached for genuinely new generations, limiting abuse to
+    // one free generation per language per wine.
+    const isBgSystemTrigger = trigger_source === 'system_background'
+    const creditActionType = isBgSystemTrigger ? 'system_analysis' : 'food_pairing_generation'
+    const creditCost = isBgSystemTrigger ? 0 : 1
+
+    const creditCheck = await checkCreditAccess(supabaseAdmin, user.id, creditActionType, creditCost)
     if (!creditCheck.allowed) {
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
-        actionType: 'food_pairing_generation',
-        creditsRequired: 1,
+        actionType: creditActionType,
+        creditsRequired: creditCost,
         requestStatus: 'error',
         metadata: { blocked: true, reason: creditCheck.reason, trigger_source: trigger_source ?? 'user_scan' },
       })
-      return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, 1, corsHeaders)
+      return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, creditCost, corsHeaders)
     }
 
     console.log(`[generate-food-pairing] Generating for: ${wineData.wine_name} (lang=${language})`)
@@ -232,8 +258,8 @@ serve(async (req) => {
       console.error('[generate-food-pairing] OpenAI error:', errText)
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
-        actionType: 'food_pairing_generation',
-        creditsRequired: 1,
+        actionType: creditActionType,
+        creditsRequired: creditCost,
         requestStatus: 'failed',
         modelName: 'gpt-4o-mini',
         metadata: { openai_status: openaiResponse.status, trigger_source: trigger_source ?? 'user_scan' },
@@ -288,8 +314,8 @@ serve(async (req) => {
 
     await logCreditUsage(supabaseAdmin, {
       userId: user.id,
-      actionType: 'food_pairing_generation',
-      creditsRequired: 1,
+      actionType: creditActionType,
+      creditsRequired: creditCost,
       requestStatus: 'success',
       modelName: 'gpt-4o-mini',
       inputTokens: openaiData.usage?.prompt_tokens ?? null,

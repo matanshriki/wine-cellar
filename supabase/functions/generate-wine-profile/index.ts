@@ -153,6 +153,40 @@ serve(async (req) => {
       )
     }
 
+    // ── Ownership check (when wine_id provided) ───────────────────────────────
+    // Verify the wine belongs to the calling user before writing to it.
+    // A valid JWT + guessed wine_id must not allow overwriting another user's profile.
+    if (input.wine_id) {
+      const { data: wineOwnerRow, error: wineOwnerErr } = await supabase
+        .from('wines')
+        .select('id, user_id')
+        .eq('id', input.wine_id)
+        .single()
+
+      if (wineOwnerErr || !wineOwnerRow) {
+        console.warn('[generate-wine-profile] Wine not found:', input.wine_id)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'Wine not found' },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        )
+      }
+
+      if (wineOwnerRow.user_id !== user.id) {
+        console.warn('[generate-wine-profile] Ownership check failed: wine', input.wine_id,
+          'belongs to', wineOwnerRow.user_id, 'not', user.id)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'FORBIDDEN', message: 'This wine does not belong to you' },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+        )
+      }
+    }
+
     // Build context for OpenAI
     const grapesStr = Array.isArray(input.grapes) ? input.grapes.join(', ') : input.grapes || 'Unknown'
     const vintageStr = input.vintage ? ` (${input.vintage})` : ''

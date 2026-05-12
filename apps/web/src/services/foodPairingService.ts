@@ -420,10 +420,14 @@ export function readCachedFoodPairing(
  * Fire-and-forget: trigger generation from the Edge Function.
  * Call this after createBottle, or when the user switches language and pairing is missing.
  * Never await it in the critical path.
+ *
+ * @param triggerSource - Defaults to 'user_scan'. Pass 'system_background' when called
+ *   automatically after bottle creation so the edge function logs 0 credits.
  */
 export function triggerFoodPairingGeneration(
   bottle: BottleWithWineInfo,
   language = 'en',
+  triggerSource: 'user_scan' | 'backfill' | 'manual' | 'system_background' = 'user_scan',
 ): void {
   if (bottle.id.startsWith('demo-')) return;
 
@@ -451,7 +455,7 @@ export function triggerFoodPairingGeneration(
           regional_wine_style: wine.regional_wine_style ?? null,
         },
         language,
-        trigger_source: 'user_scan',
+        trigger_source: triggerSource,
       },
     })
     .catch((err) => {

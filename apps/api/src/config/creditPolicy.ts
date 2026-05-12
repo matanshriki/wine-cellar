@@ -24,6 +24,10 @@ export const AI_ACTION_TYPES = [
   'wine_profile_generation',
   'label_art_generation',
   'voice_transcription',
+  // Edge function — food pairing generation (separate from agent 'food_pairing')
+  'food_pairing_generation',
+  // System / background operations — always 0 credits (server-validated)
+  'system_analysis',
 ] as const;
 
 export type AiActionType = (typeof AI_ACTION_TYPES)[number];
@@ -50,6 +54,10 @@ export const ACTION_CREDIT_COSTS: Record<AiActionType, number> = {
   wine_profile_generation:     1,   // generate-wine-profile: taste vector generation
   label_art_generation:        5,   // generate-label-art: DALL-E 3 (expensive)
   voice_transcription:         0,   // transcribe: supporting feature, no charge
+  // Edge function — food pairing (distinct from agent 'food_pairing' for analytics)
+  food_pairing_generation:     1,   // generate-food-pairing: background pairing generation
+  // System / background — always free; enforced server-side in edge functions
+  system_analysis:             0,   // Hebrew translation, auto food-pairing on bottle create
 };
 
 // ── Plan definitions (scaffold — not wired to Stripe yet) ────────────────────

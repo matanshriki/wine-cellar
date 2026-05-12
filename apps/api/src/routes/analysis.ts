@@ -1,9 +1,24 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { analyzeBottle } from '../services/ai.js';
 
 export const analysisRouter = Router();
+
+// ── Legacy route guard ────────────────────────────────────────────────────────
+// This router uses Prisma/SQLite + direct OpenAI with NO Sommi credit enforcement.
+// It is disabled by default to prevent production use.
+// Set LEGACY_ROUTES_ENABLED=true in your local .env if you need it for dev testing.
+// Production AI analysis MUST go through supabase/functions/analyze-wine (credit-enforced).
+if (process.env.LEGACY_ROUTES_ENABLED !== 'true') {
+  analysisRouter.all('*', (_req: Request, res: Response) => {
+    res.status(503).json({
+      error: 'disabled_in_production',
+      message: 'This endpoint is disabled. Use the Supabase Edge Function analyze-wine instead.',
+    });
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 analysisRouter.use(authenticate);
 

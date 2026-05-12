@@ -451,8 +451,64 @@ async function storeAnalysis(bottleId: string, analysis: AIAnalysis): Promise<vo
 }
 
 /**
- * Get or generate analysis (with caching)
+ * Parse a raw analyze-wine edge response and persist the full analysis result
+ * to the bottles table. Used by background callers (e.g., bottleService.createBottle)
+ * that invoke the edge function directly and need to save readiness_status,
+ * drink_window_start/end, and analysis_notes — fields the edge function does not
+ * write itself (it only updates serving scalars + barrel fields).
+ *
+ * This is exported so bottleService.ts can call it without a circular runtime import.
+ * (aiAnalysisService imports only `type BottleWithWineInfo` from bottleService, which
+ * is elided at runtime.)
  */
+export async function storeBottleAnalysisFromEdgeResponse(
+  bottleId: string,
+  rawAnalysis: Record<string, unknown>,
+): Promise<void> {
+  const barrel = parseBarrelFromAnalysisPayload(rawAnalysis);
+  // The edge function always populates `serving` (AI or fallback), so prefer that.
+  const servingGuidance = parseServingGuidanceFromPayload(rawAnalysis);
+
+  const validReadiness = ['READY', 'HOLD', 'PEAK_SOON'];
+  const readiness_label = (
+    typeof rawAnalysis.readiness_label === 'string' &&
+    validReadiness.includes(rawAnalysis.readiness_label)
+      ? rawAnalysis.readiness_label
+      : 'HOLD'
+  ) as 'READY' | 'HOLD' | 'PEAK_SOON';
+
+  const validConf = ['LOW', 'MEDIUM', 'HIGH'];
+  const confidence = (
+    typeof rawAnalysis.confidence === 'string' && validConf.includes(rawAnalysis.confidence)
+      ? rawAnalysis.confidence
+      : 'LOW'
+  ) as 'LOW' | 'MEDIUM' | 'HIGH';
+
+  const analysis: AIAnalysis = {
+    analysis_summary: typeof rawAnalysis.analysis_summary === 'string' ? rawAnalysis.analysis_summary : '',
+    analysis_reasons: Array.isArray(rawAnalysis.analysis_reasons)
+      ? (rawAnalysis.analysis_reasons as string[])
+      : [],
+    readiness_label,
+    serving_temp_c: servingGuidance?.temp_min ??
+      (typeof rawAnalysis.serving_temp_c === 'number' ? rawAnalysis.serving_temp_c : 0),
+    decant_minutes: servingGuidance?.decant_min ??
+      (typeof rawAnalysis.decant_minutes === 'number' ? rawAnalysis.decant_minutes : 0),
+    drink_window_start: typeof rawAnalysis.drink_window_start === 'number'
+      ? rawAnalysis.drink_window_start : null,
+    drink_window_end: typeof rawAnalysis.drink_window_end === 'number'
+      ? rawAnalysis.drink_window_end : null,
+    confidence,
+    assumptions: typeof rawAnalysis.assumptions === 'string' ? rawAnalysis.assumptions : null,
+    analyzed_at: new Date().toISOString(),
+    serving_guidance: servingGuidance,
+    ...barrel,
+  };
+
+  await storeAnalysis(bottleId, analysis);
+}
+
+
 export async function getOrGenerateAnalysis(bottle: BottleWithWineInfo): Promise<AIAnalysis> {
   // Check if we have existing analysis
   const existing = await getBottleAnalysis(bottle.id);

@@ -1,10 +1,25 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { recommendationRequestSchema } from '../validation/schemas.js';
 import { recommendBottles } from '../services/ai.js';
 
 export const recommendationsRouter = Router();
+
+// ── Legacy route guard ────────────────────────────────────────────────────────
+// This router uses Prisma/SQLite + direct OpenAI with NO Sommi credit enforcement.
+// It is disabled by default to prevent production use.
+// Set LEGACY_ROUTES_ENABLED=true in your local .env if you need it for dev testing.
+// Production recommendation flows MUST use Supabase Edge Functions (credit-enforced).
+if (process.env.LEGACY_ROUTES_ENABLED !== 'true') {
+  recommendationsRouter.all('*', (_req: Request, res: Response) => {
+    res.status(503).json({
+      error: 'disabled_in_production',
+      message: 'This endpoint is disabled. Use the Supabase Edge Function cellar-agent instead.',
+    });
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 recommendationsRouter.use(authenticate);
 

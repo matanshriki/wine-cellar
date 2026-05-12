@@ -12,6 +12,7 @@ import {
   planWineMetadataEnrichment,
 } from '@wine/wine-enrichment';
 import { triggerFoodPairingGeneration } from './foodPairingService';
+import { storeBottleAnalysisFromEdgeResponse } from './aiAnalysisService';
 import i18n from '../i18n/config';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
@@ -328,6 +329,9 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   // analyze-wine edge function. Runs silently in the background — the user
   // doesn't wait for it. Skipped when translations.he is already present
   // (e.g. a second bottle of the same wine was added).
+  // trigger_source='system_background' tells the edge function to:
+  //   a) validate server-side that translations.he is truly missing before granting 0 credits
+  //   b) log as system_analysis (0 credits) rather than wine_bottle_analysis (1 credit)
   const existingHe = (wine as any).translations?.he;
   if (!existingHe || Object.keys(existingHe).length === 0) {
     supabase.functions
@@ -346,7 +350,18 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
             color: wine.color,
             language: 'he',
           },
+          trigger_source: 'system_background',
         },
+      })
+      .then(({ data, error }) => {
+        if (!error && data?.success && data?.analysis) {
+          // Persist the full analysis result so readiness_status, drink_window_start,
+          // drink_window_end, and analysis_notes are saved on the bottles row.
+          return storeBottleAnalysisFromEdgeResponse(
+            newBottle.id,
+            data.analysis as Record<string, unknown>,
+          );
+        }
       })
       .catch((err) => {
         // Non-critical — admin backfill is always available as fallback.
@@ -356,7 +371,8 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
 
   // Fire-and-forget: trigger food pairing generation for this wine in the user's current language.
   // Skipped automatically if that language is already cached on the wine row.
-  triggerFoodPairingGeneration(newBottle, i18n.language ?? 'en');
+  // trigger_source='system_background' → edge function logs 0 credits (first-time generation only).
+  triggerFoodPairingGeneration(newBottle, i18n.language ?? 'en', 'system_background');
 
   return newBottle;
 }
