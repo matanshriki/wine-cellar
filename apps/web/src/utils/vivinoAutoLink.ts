@@ -36,10 +36,10 @@ export function isLocalDevEnvironment(): boolean {
  * - Web scraping (against Vivino ToS)
  * - User manually copying the URL after visiting Vivino
  * 
- * Strategy for MAXIMUM PRECISION:
- * 1. Use exact match syntax with quotes: "Producer" "Wine Name" vintage
- * 2. Add region/grape if available for disambiguation
- * 3. Order matters: Producer → Wine Name → Vintage → Region
+ * Strategy:
+ * 1. Plain text query (Vivino does NOT support quoted/boolean operators)
+ * 2. Order: Producer → Wine Name → Vintage → Region (if distinct from wine name)
+ * 3. Region is omitted when it duplicates the wine name (e.g., "Barolo" wine in "Barolo" region)
  * 
  * @param data - Extracted wine data from AI
  * @returns Vivino search URL or null if insufficient data
@@ -65,37 +65,27 @@ export function generateVivinoSearchUrl(data: WineDataForVivino): string | null 
     console.warn('[Vivino Auto-Link] ⚠️ Low confidence - missing producer. Search may return multiple wines.');
   }
   
-  // Build search query with QUOTED TERMS for exact matching
+  // Build search query — Vivino does NOT support quoted/boolean operators
+  // Using plain text gives better results than quoted terms
   const queryParts: string[] = [];
   
-  // Producer (quoted for exact match)
+  // Producer first (most specific)
   if (producer) {
-    queryParts.push(`"${producer}"`);
+    queryParts.push(producer);
   }
   
-  // Wine name (quoted for exact match)
-  queryParts.push(`"${wineName}"`);
+  // Wine name
+  queryParts.push(wineName);
   
-  // Vintage (unquoted, numeric)
+  // Vintage (numeric year, helps narrow results)
   if (vintage && /^\d{4}$/.test(vintage)) {
     queryParts.push(vintage);
   }
   
-  // Region (quoted, helps disambiguation)
-  if (region && region.length > 2) {
-    queryParts.push(`"${region}"`);
-  }
+  // Note: region is intentionally omitted — broad regional terms like "Piedmont" or
+  // "Burgundy" tend to over-filter Vivino's search and return unrelated wines.
+  // Producer + wine name + vintage is precise enough for most searches.
   
-  // Grape variety (quoted, additional filter)
-  if (grape && grape.length > 2) {
-    // Only include if it's a single grape (not a blend description)
-    const grapeWords = grape.split(/[,\s]+/);
-    if (grapeWords.length <= 2) {
-      queryParts.push(`"${grape}"`);
-    }
-  }
-  
-  // Join with spaces (Vivino's search engine handles quoted terms)
   const searchQuery = queryParts.join(' ').trim();
   const encodedQuery = encodeURIComponent(searchQuery);
   

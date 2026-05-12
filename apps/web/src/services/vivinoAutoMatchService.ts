@@ -87,7 +87,9 @@ async function fetchWineById(wine_id: string): Promise<VivinoWineData | null> {
  * Main entry point: auto-match Vivino wine from AI-extracted data.
  *
  * Runs the full pipeline:
- *   search → match → fetch
+ *   0. DB cache lookup (reuse existing vivino_wine_id for repeat scans — 0 API calls)
+ *   1. search-vivino-wine edge function (slug + explore + winery drill-down)
+ *   2. fetch-vivino-data for full details
  *
  * Returns null on any failure so callers can silently fall back to the
  * existing search-URL flow.
@@ -105,13 +107,39 @@ export async function autoMatchVivino(
       vintage: input.vintage,
     });
 
-    // Step 1: Find best Vivino match
+    // Step 0: Check if the current user already has this wine with a known vivino_wine_id.
+    // This covers repeat scans of the same bottle already in the cellar — zero API calls.
+    if (input.producer && input.wine_name) {
+      const { data: existingWines } = await supabase
+        .from('wines')
+        .select('vivino_wine_id, vivino_url, rating')
+        .eq('producer', input.producer)
+        .ilike('wine_name', `%${input.wine_name}%`)
+        .not('vivino_wine_id', 'is', null)
+        .limit(1);
+
+      const existing = existingWines?.[0];
+      if (existing?.vivino_wine_id) {
+        console.log('[VivinoAutoMatch] DB cache hit — reusing vivino_wine_id:', existing.vivino_wine_id);
+        const cachedData = await fetchWineById(existing.vivino_wine_id);
+        if (cachedData) {
+          return {
+            wine_id: existing.vivino_wine_id,
+            confidence: 1.0,
+            vivino_url: existing.vivino_url ?? `https://www.vivino.com/w/${existing.vivino_wine_id}`,
+            data: cachedData,
+          };
+        }
+      }
+    }
+
+    // Step 1: Find best Vivino match via edge function
     const match = await findVivinoMatch(input);
     if (!match) return null;
 
     console.log('[VivinoAutoMatch] Matched wine_id:', match.wine_id, 'confidence:', match.confidence);
 
-    // Step 2: Fetch full wine data
+    // Step 2: Fetch full wine data from the matched wine_id
     const wineData = await fetchWineById(match.wine_id);
     if (!wineData) return null;
 

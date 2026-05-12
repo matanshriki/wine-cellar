@@ -47,6 +47,13 @@ export const AdminEnrichPage: React.FC = () => {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [detailFilter, setDetailFilter] = useState<'all' | 'enriched' | 'skipped' | 'failed'>('all');
 
+  // ── Find Missing Vivino IDs state ─────────────────────────────────────────
+  const [missingIdsRunning, setMissingIdsRunning] = useState(false);
+  const [missingIdsDone, setMissingIdsDone]       = useState(false);
+  const [missingIdsDryRun, setMissingIdsDryRun]   = useState(true);
+  const [missingIdsLog, setMissingIdsLog]         = useState<string[]>([]);
+  const [missingIdsTotals, setMissingIdsTotals]   = useState({ processed: 0, enriched: 0, skipped: 0, failed: 0, pages: 0 });
+
   // ── Fetch Vivino Images state ──────────────────────────────────────────────
   const [imageRunning,  setImageRunning]  = useState(false);
   const [imageBatch,    setImageBatch]    = useState(10);
@@ -284,8 +291,78 @@ export const AdminEnrichPage: React.FC = () => {
     }
   };
 
+  const runMissingVivinoIds = async () => {
+    if (!user) { alert('You must be logged in'); return; }
+    if (!missingIdsDryRun && !confirm(
+      `This will call search-vivino-wine for all wines that still have no vivino_wine_id.\n\n` +
+      `Rate-limited to ~1 request/second. Runs in chunks of 10.\n\nContinue?`
+    )) return;
+
+    setMissingIdsRunning(true);
+    setMissingIdsDone(false);
+    setMissingIdsLog([`[${new Date().toLocaleTimeString()}] Starting — dryRun=${missingIdsDryRun}`]);
+    setMissingIdsTotals({ processed: 0, enriched: 0, skipped: 0, failed: 0, pages: 0 });
+
+    let offset = 0;
+    let totalProcessed = 0, totalEnriched = 0, totalSkipped = 0, totalFailed = 0, pages = 0;
+
+    try {
+      while (true) {
+        const token = await getFreshToken();
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-enrich-vivino`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              dryRun: missingIdsDryRun,
+              limit: 10,
+              offset,
+              enrichment_scope: 'search_missing_ids',
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+
+        const data = await res.json();
+        pages++;
+        const p = data.progress;
+        offset += p.total;
+        totalProcessed += p.processed;
+        totalEnriched  += p.enriched;
+        totalSkipped   += p.skipped;
+        totalFailed    += p.failed;
+
+        const ts = new Date().toLocaleTimeString();
+        setMissingIdsLog(prev => [
+          ...prev,
+          `[${ts}] page ${pages} offset=${offset} | ✅ ${p.enriched} · ⏭ ${p.skipped} · ❌ ${p.failed}`,
+        ]);
+        setMissingIdsTotals({ processed: totalProcessed, enriched: totalEnriched, skipped: totalSkipped, failed: totalFailed, pages });
+
+        if (!data.has_more || p.total === 0) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      setMissingIdsLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ COMPLETE — ${totalEnriched} IDs found, ${totalSkipped} skipped, ${totalFailed} failed`]);
+      setMissingIdsDone(true);
+    } catch (err: any) {
+      setMissingIdsLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ERROR: ${err.message}`]);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setMissingIdsRunning(false);
+    }
+  };
+
   const runRulesBackfill = async () => {
-    if (!rulesDryRun && !confirm(
       'Apply rule-based grape / style updates to the wines table?\n\n' +
       'Only rows that match the filter and have a planned change are written.\n\nContinue?',
     )) return;
@@ -1267,6 +1344,85 @@ VALUES ('${user?.id}');`}
           Use the "Fetch Data" button in the bottle form to add Vivino URLs first.
         </p>
       </div>
+
+      {/* ── Find Missing Vivino IDs ──────────────────────────────────────────── */}
+      <hr style={{ margin: '2rem 0', borderColor: '#dee2e6' }} />
+      <h2 style={{ fontSize: '1.15rem' }}>Find Missing Vivino IDs</h2>
+      <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+        For wines that have no <code>vivino_wine_id</code> yet (e.g. added before auto-match, or with a
+        search-only URL), this job calls <code>search-vivino-wine</code> for each one and saves the discovered
+        wine ID + a canonical <code>/w/&#123;id&#125;</code> URL back to the database.
+        Run the SQL migration first to handle easy cases automatically, then use this for the rest.
+      </p>
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0' }}>
+          <input
+            type="checkbox"
+            checked={missingIdsDryRun}
+            onChange={e => setMissingIdsDryRun(e.target.checked)}
+            style={{ marginRight: '0.5rem' }}
+          />
+          <strong>Dry run</strong>
+          <span style={{ marginLeft: '0.35rem', color: '#666', fontSize: '0.85rem' }}>(preview only — no DB writes)</span>
+        </label>
+      </div>
+
+      <button
+        type="button"
+        onClick={runMissingVivinoIds}
+        disabled={missingIdsRunning}
+        style={{
+          backgroundColor: missingIdsRunning ? '#6c757d' : missingIdsDryRun ? '#6c757d' : '#8b1a1a',
+          color: '#fff',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '8px',
+          border: 'none',
+          fontWeight: 'bold',
+          fontSize: '0.95rem',
+          cursor: missingIdsRunning ? 'not-allowed' : 'pointer',
+          opacity: missingIdsRunning ? 0.65 : 1,
+          marginBottom: '1.5rem',
+        }}
+      >
+        {missingIdsRunning ? '⏳ Running…' : missingIdsDryRun ? '🔍 Preview (Dry Run)' : '🔎 Find Missing Vivino IDs'}
+      </button>
+
+      {(missingIdsRunning || missingIdsDone) && (
+        <div style={{
+          backgroundColor: missingIdsDone ? '#d4edda' : '#fff3cd',
+          border: `1px solid ${missingIdsDone ? '#c3e6cb' : '#ffc107'}`,
+          borderRadius: '8px',
+          padding: '1rem',
+          marginBottom: '1rem',
+        }}>
+          <strong>{missingIdsDone ? '✅ Complete!' : '⏳ In progress…'}</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginTop: '0.75rem' }}>
+            {[
+              { label: 'Pages',     value: missingIdsTotals.pages,     color: '#495057' },
+              { label: 'Processed', value: missingIdsTotals.processed,  color: '#495057' },
+              { label: 'Found',     value: missingIdsTotals.enriched,   color: '#28a745' },
+              { label: 'Skipped',   value: missingIdsTotals.skipped,    color: '#6c757d' },
+              { label: 'Failed',    value: missingIdsTotals.failed,     color: '#dc3545' },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>{value}</div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {missingIdsLog.length > 0 && (
+        <pre style={{
+          backgroundColor: '#1e1e1e', color: '#d4d4d4', padding: '1rem',
+          borderRadius: '8px', fontSize: '0.75rem', maxHeight: '200px',
+          overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: '1rem',
+        }}>
+          {missingIdsLog.join('\n')}
+        </pre>
+      )}
 
       {/* ── Fetch Vivino Images ──────────────────────────────────────────────── */}
       <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />

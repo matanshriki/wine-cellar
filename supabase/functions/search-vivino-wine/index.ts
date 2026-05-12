@@ -1,8 +1,15 @@
 /**
  * Supabase Edge Function: Search Vivino Wine
  *
- * Takes AI-extracted wine data, searches Vivino, fuzzy-matches candidates,
- * and returns the best matching wine ID automatically.
+ * Takes AI-extracted wine data and tries multiple strategies to find
+ * the exact wine page on Vivino, returning the wine ID for use with
+ * the fetch-vivino-data function.
+ *
+ * Strategies (in order):
+ * 1. Slug URL guessing: construct /en/{producer-wine-slug}/w and follow redirects
+ * 2. API explore/explore: fetch top candidates, extract winery_id, drill down into
+ *    /api/wineries/{id}/wines for a targeted full-catalog fuzzy match
+ * 3. Direct fuzzy match on explore candidates (fallback if no winery found)
  *
  * Endpoint: POST /functions/v1/search-vivino-wine
  * Body: { producer?, wine_name, vintage?, region?, grape? }
@@ -16,7 +23,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Minimum confidence score required to return a match (0-1)
 const CONFIDENCE_THRESHOLD = 0.5;
 
 interface WineInput {
@@ -31,6 +37,7 @@ interface WineCandidate {
   wine_id: string;
   name: string;
   winery: string;
+  winery_id: string | null;
   vintage: number | null;
   raw_text: string;
 }
@@ -39,19 +46,35 @@ interface ScoredCandidate extends WineCandidate {
   confidence: number;
 }
 
+// ── Shared HTTP headers ───────────────────────────────────────────────────────
+
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Referer': 'https://www.vivino.com/',
+  'Cache-Control': 'no-cache',
+};
+
 // ── String utilities ──────────────────────────────────────────────────────────
 
 function normalizeString(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // strip combining diacritics
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/château/g, 'chateau')
     .replace(/\bch\.\s*/g, 'chateau ')
-    .replace(/domaine\b/g, 'domaine')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function toSlug(s: string): string {
+  return normalizeString(s)
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function tokenize(s: string): Set<string> {
@@ -63,7 +86,6 @@ function tokenize(s: string): Set<string> {
   );
 }
 
-/** Jaccard similarity between two token sets, 0-1 */
 function jaccardScore(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 && b.size === 0) return 1;
   if (a.size === 0 || b.size === 0) return 0;
@@ -72,99 +94,227 @@ function jaccardScore(a: Set<string>, b: Set<string>): number {
   return intersection / union;
 }
 
-/** Soft substring bonus — rewards when all input tokens appear in candidate text */
 function subsetBonus(inputTokens: Set<string>, candidateTokens: Set<string>): number {
   if (inputTokens.size === 0) return 0;
   const matched = [...inputTokens].filter(t => candidateTokens.has(t)).length;
   return matched / inputTokens.size;
 }
 
-// ── Query builder ─────────────────────────────────────────────────────────────
+// ── Strategy 1: Slug-based URL guessing ──────────────────────────────────────
 
-function buildSearchQuery(input: WineInput): string {
-  const parts: string[] = [];
-
-  if (input.producer?.trim()) {
-    parts.push(`"${input.producer.trim()}"`);
-  }
-  if (input.wine_name?.trim()) {
-    parts.push(`"${input.wine_name.trim()}"`);
-  }
-  const vintage = input.vintage ? String(input.vintage).trim() : '';
-  if (/^\d{4}$/.test(vintage)) {
-    parts.push(vintage);
-  }
-  if (input.region?.trim() && input.region.trim().length > 2) {
-    parts.push(`"${input.region.trim()}"`);
-  }
-
-  return parts.join(' ');
-}
-
-// ── HTML parsing ──────────────────────────────────────────────────────────────
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+/**
+ * Extract wine_id from a Vivino wine page URL.
+ * Handles patterns like:
+ *   https://www.vivino.com/w/123456
+ *   https://www.vivino.com/en/wine-name/w/123456?year=2020
+ */
+function extractWineIdFromUrl(url: string): string | null {
+  const m = url.match(/\/w\/(\d{4,10})(?:[?&/]|$)/);
+  return m ? m[1] : null;
 }
 
 /**
- * Extract wine candidates from Vivino search page HTML.
- * Finds all /w/{id} links and extracts surrounding text for name/winery.
+ * Try to find a wine by constructing its likely Vivino URL slug.
+ * Vivino wine URLs follow the pattern: /en/{producer-slug}-{wine-slug}/w/{id}
+ *
+ * We request the URL without the ID and follow the redirect to discover the ID.
  */
-function parseSearchResults(html: string): WineCandidate[] {
+async function trySlugStrategies(input: WineInput): Promise<WineCandidate | null> {
+  const producer = input.producer?.trim() ?? '';
+  const wineName = input.wine_name?.trim() ?? '';
+  if (!producer && !wineName) return null;
+
+  const producerSlug = toSlug(producer);
+  const wineSlug = toSlug(wineName);
+
+  const slugCandidates: string[] = [];
+
+  if (producerSlug && wineSlug) {
+    slugCandidates.push(`${producerSlug}-${wineSlug}`);
+    slugCandidates.push(wineSlug);
+  } else if (wineSlug) {
+    slugCandidates.push(wineSlug);
+  }
+
+  for (const slug of slugCandidates) {
+    const testUrl = `https://www.vivino.com/en/${slug}/w`;
+    console.log('[Search Vivino Wine] Trying slug URL:', testUrl);
+
+    try {
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: BROWSER_HEADERS,
+        redirect: 'follow',
+      });
+
+      const finalUrl = response.url;
+      console.log('[Search Vivino Wine] Final URL after redirect:', finalUrl, '| Status:', response.status);
+
+      if (response.ok) {
+        const wine_id = extractWineIdFromUrl(finalUrl);
+        if (wine_id) {
+          console.log('[Search Vivino Wine] ✅ Found wine_id via slug:', wine_id, '| from URL:', finalUrl);
+          const urlSlugMatch = finalUrl.match(/\/en\/([^/]+)\/w\//);
+          const urlSlug = urlSlugMatch ? urlSlugMatch[1] : slug;
+          return {
+            wine_id,
+            name: wineName,
+            winery: producer,
+            winery_id: null,
+            vintage: input.vintage ? parseInt(String(input.vintage)) : null,
+            raw_text: urlSlug,
+          };
+        }
+      }
+    } catch (err) {
+      console.log('[Search Vivino Wine] Slug fetch error:', err);
+    }
+  }
+
+  return null;
+}
+
+// ── Strategy 2: API JSON endpoint ─────────────────────────────────────────────
+
+/**
+ * Parse Vivino /api/explore/explore JSON response into wine candidates.
+ * The correct response path is data.explore_vintage.matches.
+ * Results are sorted by popularity (not text relevance) — we use fuzzy matching
+ * to find the best fit from the top candidates.
+ */
+function parseExploreResults(data: any): WineCandidate[] {
   const candidates: WineCandidate[] = [];
   const seenIds = new Set<string>();
 
-  // Find all wine page links: href=".../ w/{id}..."
-  const linkPattern = /href="([^"]*\/w\/(\d{4,8})[^"]*)"/g;
-  let m: RegExpExecArray | null;
+  const matches = data?.explore_vintage?.matches ?? [];
 
-  while ((m = linkPattern.exec(html)) !== null) {
-    const wine_id = m[2];
+  for (const match of matches.slice(0, 25)) {
+    const vintageObj = match?.vintage;
+    const wine = vintageObj?.wine;
+    if (!wine?.id || !wine?.name) continue;
+
+    const wine_id = String(wine.id);
     if (seenIds.has(wine_id)) continue;
     seenIds.add(wine_id);
 
-    // Grab ~600 chars of surrounding HTML for context
-    const ctxStart = Math.max(0, m.index - 350);
-    const ctxEnd = Math.min(html.length, m.index + 350);
-    const contextHtml = html.slice(ctxStart, ctxEnd);
+    const name = wine.name as string;
+    const winery = (wine.winery?.name as string) ?? '';
+    const winery_id = wine.winery?.id ? String(wine.winery.id) : null;
+    const region = (wine.region?.name as string) ?? '';
 
-    // Strip HTML to readable text
-    const text = stripHtml(contextHtml);
+    const vintageStr: string = vintageObj?.name ?? vintageObj?.seo_name ?? '';
+    const vintageMatch = vintageStr.match(/\b(19[5-9]\d|20[0-3]\d)\b/);
+    const vintage = vintageMatch ? parseInt(vintageMatch[1]) : null;
 
-    // Extract vintage year (1950-2030)
-    const vintageMatch = text.match(/\b(19[5-9]\d|20[0-3]\d)\b/);
-    const vintage = vintageMatch ? parseInt(vintageMatch[0]) : null;
+    const raw_text = `${winery} ${name} ${region}`.trim();
+    candidates.push({ wine_id, name, winery, winery_id, vintage, raw_text });
+  }
 
-    // Split text into meaningful chunks by common separators
-    const parts = text
-      .split(/[\n\r,|·•·–—\t]+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 2 && s.length < 120 && !/^\d+$/.test(s));
+  return candidates;
+}
 
-    const name = parts[0] || '';
-    const winery = parts.length > 1 ? parts[1] : '';
+async function fetchExploreCandidates(query: string): Promise<WineCandidate[]> {
+  const params = new URLSearchParams({
+    country_code: 'en',
+    currency_code: 'USD',
+    grape_filter: 'varietal',
+    min_rating: '1',
+    page: '1',
+    price_range_max: '50000',
+    price_range_min: '1',
+    q: query,
+  });
 
+  // Correct endpoint: /api/explore/explore (not /api/explore)
+  const apiUrl = `https://www.vivino.com/api/explore/explore?${params.toString()}`;
+  console.log('[Search Vivino Wine] Explore API URL:', apiUrl);
+
+  const response = await fetch(apiUrl, {
+    headers: { ...BROWSER_HEADERS, 'Accept': 'application/json' },
+  });
+
+  if (!response.ok) throw new Error(`Vivino explore API returned ${response.status}`);
+
+  const data = await response.json();
+  console.log('[Search Vivino Wine] Explore records_matched:', data?.explore_vintage?.records_matched);
+  return parseExploreResults(data);
+}
+
+// ── Strategy 3: Winery drill-down ─────────────────────────────────────────────
+
+/**
+ * From explore candidates, find the winery_id whose name best matches the input producer.
+ * Returns the winery_id if we find a reasonably confident match (Jaccard ≥ 0.3).
+ */
+function findWineryId(candidates: WineCandidate[], input: WineInput): string | null {
+  if (!input.producer || candidates.length === 0) return null;
+
+  const producerTokens = tokenize(input.producer);
+  if (producerTokens.size === 0) return null;
+
+  let bestWineryId: string | null = null;
+  let bestScore = 0;
+
+  for (const candidate of candidates) {
+    if (!candidate.winery_id || !candidate.winery) continue;
+    const candidateWineryTokens = tokenize(candidate.winery);
+    const jaccard = jaccardScore(producerTokens, candidateWineryTokens);
+    const subset = subsetBonus(producerTokens, candidateWineryTokens);
+    const score = Math.max(jaccard, subset * 0.8);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestWineryId = candidate.winery_id;
+    }
+  }
+
+  console.log('[Search Vivino Wine] Best winery match score:', bestScore, '→ winery_id:', bestWineryId);
+  return bestScore >= 0.3 ? bestWineryId : null;
+}
+
+/**
+ * Fetch all wines for a specific winery from Vivino.
+ * Response: { wines: [{ id, name, seo_name, winery, ... }] }
+ */
+async function fetchWineryWines(winery_id: string): Promise<WineCandidate[]> {
+  const params = new URLSearchParams({ per_page: '100' });
+  const url = `https://www.vivino.com/api/wineries/${winery_id}/wines?${params.toString()}`;
+  console.log('[Search Vivino Wine] Winery wines URL:', url);
+
+  const response = await fetch(url, {
+    headers: { ...BROWSER_HEADERS, 'Accept': 'application/json' },
+  });
+
+  if (!response.ok) {
+    console.log('[Search Vivino Wine] Winery wines API returned', response.status);
+    return [];
+  }
+
+  const data = await response.json();
+
+  // Handle both possible response shapes: { wines: [...] } or { winery: {...}, wines: [...] }
+  const winesArray: any[] = Array.isArray(data?.wines)
+    ? data.wines
+    : Array.isArray(data)
+    ? data
+    : [];
+
+  console.log('[Search Vivino Wine] Winery wines count:', winesArray.length);
+
+  const candidates: WineCandidate[] = [];
+  for (const wine of winesArray) {
+    if (!wine?.id || !wine?.name) continue;
+    const wine_id = String(wine.id);
+    const name = wine.name as string;
+    const wineryName = (wine.winery?.name as string) ?? '';
     candidates.push({
       wine_id,
       name,
-      winery,
-      vintage,
-      raw_text: text.slice(0, 300),
+      winery: wineryName,
+      winery_id,
+      vintage: null, // Winery endpoint returns base wines, not vintages
+      raw_text: `${wineryName} ${name}`.trim(),
     });
-
-    if (candidates.length >= 12) break; // Cap at 12 to avoid junk results
   }
 
   return candidates;
@@ -172,15 +322,6 @@ function parseSearchResults(html: string): WineCandidate[] {
 
 // ── Fuzzy scoring ─────────────────────────────────────────────────────────────
 
-/**
- * Score a candidate against the user's input.
- * Returns 0-1 confidence value.
- *
- * Weights:
- *   - Wine name match vs combined candidate text: 0.45
- *   - Producer/winery match vs combined candidate text: 0.35
- *   - Vintage exact match: 0.20
- */
 function scoreCandidate(candidate: WineCandidate, input: WineInput, totalCandidates: number): number {
   const candidateText = `${candidate.name} ${candidate.winery} ${candidate.raw_text}`;
   const candidateTokens = tokenize(candidateText);
@@ -188,27 +329,22 @@ function scoreCandidate(candidate: WineCandidate, input: WineInput, totalCandida
   let score = 0;
   let weightUsed = 0;
 
-  // Wine name match (0.45)
   if (input.wine_name) {
     const inputTokens = tokenize(input.wine_name);
     const jaccard = jaccardScore(inputTokens, candidateTokens);
     const subset = subsetBonus(inputTokens, candidateTokens);
-    const nameScore = Math.max(jaccard, subset * 0.8);
-    score += nameScore * 0.45;
+    score += Math.max(jaccard, subset * 0.8) * 0.45;
     weightUsed += 0.45;
   }
 
-  // Producer/winery match (0.35)
   if (input.producer) {
     const inputTokens = tokenize(input.producer);
     const jaccard = jaccardScore(inputTokens, candidateTokens);
     const subset = subsetBonus(inputTokens, candidateTokens);
-    const producerScore = Math.max(jaccard, subset * 0.8);
-    score += producerScore * 0.35;
+    score += Math.max(jaccard, subset * 0.8) * 0.35;
     weightUsed += 0.35;
   }
 
-  // Vintage exact match (0.20)
   if (input.vintage && candidate.vintage) {
     const inputVintage = parseInt(String(input.vintage));
     if (!isNaN(inputVintage)) {
@@ -218,11 +354,23 @@ function scoreCandidate(candidate: WineCandidate, input: WineInput, totalCandida
   }
 
   const rawScore = weightUsed > 0 ? score / weightUsed : 0;
-
-  // Boost confidence when there are very few candidates (search was precise)
   const precisionBoost = totalCandidates === 1 ? 0.15 : totalCandidates === 2 ? 0.08 : 0;
-
   return Math.min(1, rawScore + precisionBoost);
+}
+
+/**
+ * Score winery wines (winery already confirmed — weight entirely on wine name).
+ */
+function scoreWineryCandidate(candidate: WineCandidate, input: WineInput): number {
+  if (!input.wine_name) return 0;
+
+  const nameTokens = tokenize(input.wine_name);
+  const candidateTokens = tokenize(candidate.name);
+
+  const jaccard = jaccardScore(nameTokens, candidateTokens);
+  const subset = subsetBonus(nameTokens, candidateTokens);
+  // Winery already matched — wine name match alone is authoritative
+  return Math.max(jaccard, subset * 0.85);
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -241,64 +389,96 @@ serve(async (req) => {
 
     console.log('[Search Vivino Wine] Input:', JSON.stringify(input));
 
-    // Build search query
-    const query = buildSearchQuery(input);
-    console.log('[Search Vivino Wine] Query:', query);
+    // ── Strategy 1: Slug-based URL guessing ──────────────────────────────────
+    const slugMatch = await trySlugStrategies(input);
 
-    // Fetch Vivino search page
-    const searchUrl = `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
-    console.log('[Search Vivino Wine] Fetching:', searchUrl);
+    if (slugMatch) {
+      const confidence = scoreCandidate(slugMatch, input, 1);
+      const finalConfidence = Math.max(confidence, 0.75);
+      console.log('[Search Vivino Wine] ✅ Slug match confidence:', finalConfidence);
 
-    const response = await fetch(searchUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.vivino.com/',
-        'Cache-Control': 'no-cache',
-      },
-      redirect: 'follow',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Vivino search returned ${response.status}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          match: {
+            wine_id: slugMatch.wine_id,
+            confidence: finalConfidence,
+            name: slugMatch.name,
+            winery: slugMatch.winery,
+          },
+          candidates: [{ wine_id: slugMatch.wine_id, confidence: finalConfidence, name: slugMatch.name, winery: slugMatch.winery }],
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
     }
 
-    const html = await response.text();
-    console.log('[Search Vivino Wine] Got HTML, length:', html.length);
+    // ── Strategy 2: API explore/explore (correct endpoint + response key) ────
+    console.log('[Search Vivino Wine] Slug strategy failed, trying explore API...');
 
-    // Parse candidates
-    const candidates = parseSearchResults(html);
-    console.log('[Search Vivino Wine] Parsed candidates:', candidates.length);
+    const query = [input.producer?.trim(), input.wine_name?.trim()]
+      .filter(Boolean).join(' ');
 
-    if (candidates.length === 0) {
-      // Try a simpler query without quotes as fallback
-      const simpleQuery = [input.producer, input.wine_name, input.vintage]
-        .filter(Boolean).join(' ');
+    let exploreCandidates = await fetchExploreCandidates(query);
+    console.log('[Search Vivino Wine] Explore candidates:', exploreCandidates.length);
 
-      if (simpleQuery !== query) {
-        console.log('[Search Vivino Wine] No results, trying simple query:', simpleQuery);
-        const fallbackUrl = `https://www.vivino.com/search/wines?q=${encodeURIComponent(simpleQuery)}`;
-        const fallbackRes = await fetch(fallbackUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.vivino.com/',
-          },
-          redirect: 'follow',
-        });
+    if (exploreCandidates.length === 0 && input.wine_name?.trim()) {
+      exploreCandidates = await fetchExploreCandidates(input.wine_name.trim());
+      console.log('[Search Vivino Wine] Name-only explore candidates:', exploreCandidates.length);
+    }
 
-        if (fallbackRes.ok) {
-          const fallbackHtml = await fallbackRes.text();
-          const fallbackCandidates = parseSearchResults(fallbackHtml);
-          candidates.push(...fallbackCandidates);
+    // ── Strategy 3: Winery drill-down ────────────────────────────────────────
+    // Find the winery ID from explore results, then fetch ALL wines from that winery.
+    // This gives us a targeted, fully-fuzzy-matchable catalog (5–100 wines vs 25 popularity-sorted).
+    if (exploreCandidates.length > 0) {
+      const wineryId = findWineryId(exploreCandidates, input);
+
+      if (wineryId) {
+        console.log('[Search Vivino Wine] Drilling down into winery:', wineryId);
+        const wineryCandidates = await fetchWineryWines(wineryId);
+
+        if (wineryCandidates.length > 0) {
+          const scored: ScoredCandidate[] = wineryCandidates.map(c => ({
+            ...c,
+            confidence: scoreWineryCandidate(c, input),
+          }));
+          scored.sort((a, b) => b.confidence - a.confidence);
+
+          const best = scored[0];
+          console.log('[Search Vivino Wine] Best winery drill-down candidate:', {
+            wine_id: best.wine_id,
+            confidence: best.confidence,
+            name: best.name,
+            winery: best.winery,
+          });
+
+          if (best.confidence >= CONFIDENCE_THRESHOLD) {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                match: {
+                  wine_id: best.wine_id,
+                  confidence: best.confidence,
+                  name: best.name,
+                  winery: best.winery,
+                },
+                candidates: scored.slice(0, 5).map(c => ({
+                  wine_id: c.wine_id,
+                  confidence: c.confidence,
+                  name: c.name,
+                  winery: c.winery,
+                })),
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+            );
+          }
+
+          console.log('[Search Vivino Wine] Winery drill-down best score below threshold:', best.confidence);
         }
       }
     }
 
-    if (candidates.length === 0) {
+    // ── Fallback: fuzzy match directly on explore candidates ─────────────────
+    if (exploreCandidates.length === 0) {
       console.log('[Search Vivino Wine] No candidates found');
       return new Response(
         JSON.stringify({ success: true, match: null, candidates: [] }),
@@ -306,38 +486,35 @@ serve(async (req) => {
       );
     }
 
-    // Score all candidates
-    const scored: ScoredCandidate[] = candidates.map(c => ({
+    const scored: ScoredCandidate[] = exploreCandidates.map(c => ({
       ...c,
-      confidence: scoreCandidate(c, input, candidates.length),
+      confidence: scoreCandidate(c, input, exploreCandidates.length),
     }));
-
-    // Sort by confidence descending
     scored.sort((a, b) => b.confidence - a.confidence);
 
     const best = scored[0];
-    console.log('[Search Vivino Wine] Best candidate:', {
+    console.log('[Search Vivino Wine] Best explore candidate (direct):', {
       wine_id: best.wine_id,
       confidence: best.confidence,
       name: best.name,
       winery: best.winery,
     });
 
-    // Return match only if confidence is above threshold
     const match = best.confidence >= CONFIDENCE_THRESHOLD
       ? { wine_id: best.wine_id, confidence: best.confidence, name: best.name, winery: best.winery }
       : null;
 
-    // Return top 5 candidates for potential UI use
-    const topCandidates = scored.slice(0, 5).map(c => ({
-      wine_id: c.wine_id,
-      confidence: c.confidence,
-      name: c.name,
-      winery: c.winery,
-    }));
-
     return new Response(
-      JSON.stringify({ success: true, match, candidates: topCandidates }),
+      JSON.stringify({
+        success: true,
+        match,
+        candidates: scored.slice(0, 5).map(c => ({
+          wine_id: c.wine_id,
+          confidence: c.confidence,
+          name: c.name,
+          winery: c.winery,
+        })),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
