@@ -224,6 +224,8 @@
       "reading": "Reading label with AI...",
       "analyzing": "Reading your wine label...",
       "analyzingSubtitle": "Our AI is extracting wine details from your photo",
+      "matchingTitle": "Finding your wine...",
+      "matchingSubtitle": "Matching against Vivino's wine database",
       "success_one": "✨ Extracted {{count}} field from label",
       "success_other": "✨ Extracted {{count}} fields from label",
       "vivinoEnhanced": "🍷 Enriched with Vivino data!",

@@ -224,6 +224,8 @@
       "reading": "קורא תווית עם בינה מלאכותית...",
       "analyzing": "קורא את תווית היין שלך...",
       "analyzingSubtitle": "הבינה המלאכותית שלנו מחלצת פרטי יין מהתמונה שלך",
+      "matchingTitle": "מוצא את היין שלך...",
+      "matchingSubtitle": "מתאים מול מסד הנתונים של Vivino",
       "success_one": "✨ חולץ {{count}} שדה מהתווית",
       "success_other": "✨ חולצו {{count}} שדות מהתווית",
       "vivinoEnhanced": "🍷 הועשר בנתונים מ-Vivino!",

@@ -16,6 +16,7 @@ import { scanMultipleBottles, checkForDuplicate } from '../services/multiBottleS
 import * as bottleService from '../services/bottleService';
 import { trackBottle } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
+import { autoMatchVivino } from '../services/vivinoAutoMatchService';
 
 interface Props {
   isOpen: boolean;
@@ -156,26 +157,63 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
       setProgress({ current: i + 1, total: selectedBottles.length });
 
       try {
-        // Generate Vivino search URL for this bottle
-        const vivinoUrl = generateVivinoSearchUrl({
-          producer: bottle.producer,
-          wine_name: bottle.wineName,
-          vintage: bottle.vintage,
-          region: bottle.region,
-        });
+        // Try Vivino auto-match (silent, with 5 s timeout per bottle)
+        let vivinoUrl: string | null = null;
+        let vivinoRating: number | null = null;
+        let vivinoRegion: string | null = bottle.region || null;
+        let vivinoGrapes: string[] | null = bottle.grapes
+          ? bottle.grapes.split(',').map(g => g.trim())
+          : null;
+        let vivinoWineId: string | null = null;
+
+        try {
+          const match = await Promise.race([
+            autoMatchVivino({
+              producer: bottle.producer,
+              wine_name: bottle.wineName,
+              vintage: bottle.vintage,
+              region: bottle.region,
+            }),
+            new Promise<null>(resolve => setTimeout(() => resolve(null), 5000)),
+          ]);
+
+          if (match) {
+            vivinoUrl = match.vivino_url;
+            vivinoWineId = match.wine_id;
+            vivinoRating = match.data.rating ?? null;
+            vivinoRegion = match.data.region || vivinoRegion;
+            if (match.data.grapes) {
+              vivinoGrapes = match.data.grapes.split(',').map(g => g.trim()).filter(Boolean);
+            } else if (match.data.grape) {
+              vivinoGrapes = [match.data.grape];
+            }
+          }
+        } catch {
+          // Silent fail — fall through to search URL
+        }
+
+        // Fall back to generated search URL when auto-match didn't find anything
+        if (!vivinoUrl) {
+          vivinoUrl = generateVivinoSearchUrl({
+            producer: bottle.producer,
+            wine_name: bottle.wineName,
+            vintage: bottle.vintage,
+            region: bottle.region,
+          });
+        }
 
         await bottleService.createBottle({
           producer: bottle.producer,
           wine_name: bottle.wineName,
           vintage: bottle.vintage || null,
-          region: bottle.region || null,
-          grapes: bottle.grapes ? bottle.grapes.split(',').map(g => g.trim()) : null,
+          region: vivinoRegion,
+          grapes: vivinoGrapes,
           color: bottle.color,
           country: null,
           appellation: null,
-          vivino_wine_id: null,
-          rating: null,
-          vivino_url: vivinoUrl, // Save the generated Vivino search URL
+          vivino_wine_id: vivinoWineId,
+          rating: vivinoRating,
+          vivino_url: vivinoUrl,
           wine_notes: bottle.notes || null,
           quantity: 1,
           purchase_date: null,

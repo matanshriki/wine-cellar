@@ -47,6 +47,8 @@ import * as labelParseService from '../services/labelParseService';
 import * as smartScanService from '../services/smartScanService';
 import { trackBottle, trackCSV, trackSommelier } from '../services/analytics';
 import { generateVivinoSearchUrl } from '../utils/vivinoAutoLink';
+import { autoMatchVivino } from '../services/vivinoAutoMatchService';
+import type { VivinoAutoMatchResult } from '../services/vivinoAutoMatchService';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { translateRegion, translateCountry, translateGrapes } from '../utils/wineTranslations';
@@ -167,8 +169,10 @@ export function CellarPage() {
     imagePath?: string;
     imageBucket?: string;
     data: ExtractedWineData;
+    vivinoMatch?: VivinoAutoMatchResult | null;
   } | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [scanPhase, setScanPhase] = useState<'scanning' | 'matching'>('scanning');
   const [parsedFields, setParsedFields] = useState<string[]>([]);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const [noCreditsModalContext, setNoCreditsModalContext] = useState<'scan' | 'analysis'>('scan');
@@ -258,11 +262,14 @@ export function CellarPage() {
     onCreateSeparate: async (candidate: any) => {
       // Continue with normal add flow (prefer path so we never store signed URL)
       if (candidate.extractedData) {
+        // Run Vivino auto-match for the separate bottle flow too
+        const vivinoMatch = await runVivinoAutoMatch(candidate.extractedData);
         setExtractedData({
           imagePath: candidate.imagePath,
           imageBucket: candidate.imageBucket ?? 'labels',
           imageUrl: candidate.imageUrl,
           data: candidate.extractedData,
+          vivinoMatch,
         });
         setEditingBottle(null);
         setShowForm(true);
@@ -331,11 +338,14 @@ export function CellarPage() {
           }
           
           // No duplicate, proceed with normal flow. Store path so DB never gets signed URL.
+          // Also run Vivino auto-match in the background.
+          const vivinoMatch = await runVivinoAutoMatch(singleBottle.extractedData);
           setExtractedData({
             imagePath: imagePath ?? undefined,
             imageBucket: imageBucket ?? 'labels',
             imageUrl,
             data: singleBottle.extractedData,
+            vivinoMatch,
           });
         }
         setEditingBottle(null);
@@ -823,6 +833,29 @@ export function CellarPage() {
   }
 
   /**
+   * Run Vivino auto-match with a 5-second timeout.
+   * Returns the match result or null on failure / timeout.
+   */
+  async function runVivinoAutoMatch(wineData: ExtractedWineData): Promise<VivinoAutoMatchResult | null> {
+    const TIMEOUT_MS = 5000;
+    try {
+      const result = await Promise.race([
+        autoMatchVivino({
+          producer: wineData.producer,
+          wine_name: wineData.wine_name,
+          vintage: wineData.vintage,
+          region: wineData.region,
+          grape: wineData.grape,
+        }),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), TIMEOUT_MS)),
+      ]);
+      return result;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Handle smart scan - unified single/multi bottle detection
    * Automatically routes to appropriate confirmation flow
    */
@@ -840,6 +873,7 @@ export function CellarPage() {
     try {
       // Start loading state
       setIsParsing(true);
+      setScanPhase('scanning');
       toast.info('Identifying bottle(s)…');
       
       // Close sheet after starting loading (critical for iOS file reference stability)
@@ -852,10 +886,17 @@ export function CellarPage() {
       if (result.mode === 'single') {
         // Single bottle detected - show single bottle form. Pass path only (no signed URL in DB).
         if (result.singleBottle) {
+          // AI scan done — switch to Vivino matching phase so the overlay text updates.
+          setScanPhase('matching');
+
+          // Run Vivino auto-match. The overlay stays visible with the updated message.
+          const vivinoMatch = await runVivinoAutoMatch(result.singleBottle.extractedData);
+
           setExtractedData({
             imagePath: result.imagePath,
             imageBucket: result.imageBucket ?? 'labels',
             data: result.singleBottle.extractedData,
+            vivinoMatch,
           });
         }
         
@@ -898,6 +939,7 @@ export function CellarPage() {
       setShowForm(true);
     } finally {
       setIsParsing(false);
+      setScanPhase('scanning'); // Reset for next scan
     }
   };
 
@@ -1976,23 +2018,28 @@ export function CellarPage() {
             setExtractedData(null);
           }}
           prefillData={extractedData ? {
-            wine_name: extractedData.data?.wine_name || '',
-            producer: extractedData.data?.producer || '',
-            vintage: extractedData.data?.vintage,
-            region: extractedData.data?.region || '',
-            country: extractedData.data?.country || '',
-            grapes: extractedData.data?.grape || '',
+            wine_name: extractedData.vivinoMatch?.data.name || extractedData.data?.wine_name || '',
+            producer: extractedData.vivinoMatch?.data.winery || extractedData.data?.producer || '',
+            vintage: extractedData.vivinoMatch?.data.vintage ?? extractedData.data?.vintage,
+            region: extractedData.vivinoMatch?.data.region || extractedData.data?.region || '',
+            country: extractedData.vivinoMatch?.data.country || extractedData.data?.country || '',
+            grapes: extractedData.vivinoMatch?.data.grapes || extractedData.vivinoMatch?.data.grape || extractedData.data?.grape || '',
             color: extractedData.data?.wine_color || 'red',
             label_image_path: extractedData.imagePath ?? '',
             label_image_bucket: extractedData.imageBucket ?? 'labels',
             // Do not store signed URL in DB; display URL is generated from path at runtime
             label_image_url: '',
-            vivino_url: generateVivinoSearchUrl({
+            // Use actual wine page URL if auto-matched, otherwise fall back to search URL
+            vivino_url: extractedData.vivinoMatch?.vivino_url || generateVivinoSearchUrl({
               producer: extractedData.data?.producer,
               wine_name: extractedData.data?.wine_name,
               vintage: extractedData.data?.vintage,
               region: extractedData.data?.region,
             }) || '',
+            // Auto-matched Vivino extras
+            rating: extractedData.vivinoMatch?.data.rating?.toString() || '',
+            regional_wine_style: extractedData.vivinoMatch?.data.regional_wine_style || extractedData.vivinoMatch?.data.wine_style || '',
+            vivino_wine_id: extractedData.vivinoMatch?.wine_id || '',
           } : undefined}
           showWishlistOption={!!extractedData && !editingBottle} // Wishlist feature (dev only) - Show wishlist option for scanned wines
         />
@@ -2271,28 +2318,57 @@ export function CellarPage() {
                 />
               </div>
               
-              {/* Message */}
-              <div className="space-y-3">
-                <h3 
-                  className="text-2xl font-semibold"
-                  style={{
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 'var(--font-bold)',
-                  }}
+              {/* Phase-aware message — transitions smoothly between scan phases */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={scanPhase}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3"
                 >
-                  {t('cellar.labelParse.analyzing')}
-                </h3>
-                <p 
-                  className="text-base leading-relaxed"
-                  style={{ 
-                    color: 'var(--text-secondary)',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                >
-                  {t('cellar.labelParse.analyzingSubtitle')}
-                </p>
-              </div>
+                  <h3 
+                    className="text-2xl font-semibold"
+                    style={{
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 'var(--font-bold)',
+                    }}
+                  >
+                    {scanPhase === 'matching'
+                      ? t('cellar.labelParse.matchingTitle')
+                      : t('cellar.labelParse.analyzing')}
+                  </h3>
+                  <p 
+                    className="text-base leading-relaxed"
+                    style={{ 
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {scanPhase === 'matching'
+                      ? t('cellar.labelParse.matchingSubtitle')
+                      : t('cellar.labelParse.analyzingSubtitle')}
+                  </p>
+                  {/* Step indicator dots */}
+                  <div className="flex justify-center gap-2 pt-1">
+                    {(['scanning', 'matching'] as const).map((phase) => (
+                      <div
+                        key={phase}
+                        className="rounded-full transition-all duration-300"
+                        style={{
+                          width: scanPhase === phase ? '20px' : '8px',
+                          height: '8px',
+                          background: scanPhase === phase
+                            ? 'var(--wine-500)'
+                            : 'var(--border-medium)',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </motion.div>
         )}

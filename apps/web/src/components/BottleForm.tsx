@@ -7,7 +7,7 @@ import { trackBottle } from '../services/analytics';
 import { getCurrencySymbol, getDisplayPrice } from '../utils/currency';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { fetchVivinoWineData, isVivinoWineUrl } from '../services/vivinoScraper';
-import { isLocalDevEnvironment } from '../utils/vivinoAutoLink';
+import { isLocalDevEnvironment, generateVivinoSearchUrl as generateVivinoSearchUrlFromLink } from '../utils/vivinoAutoLink';
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
 import * as storageImageService from '../services/storageImageService';
@@ -31,6 +31,10 @@ interface Props {
     // Legacy: URL for backward compatibility
     label_image_url?: string;
     vivino_url?: string;
+    // Auto-matched Vivino data (populated when auto-match succeeds)
+    rating?: string;
+    regional_wine_style?: string;
+    vivino_wine_id?: string;
   };
   showWishlistOption?: boolean; // Wishlist feature (dev only) - Show "Save to Wishlist" button
 }
@@ -85,7 +89,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       label_image_path: prefillData?.label_image_path || '',
       label_image_bucket: prefillData?.label_image_bucket || 'labels',
       vivino_url: prefillData?.vivino_url || (bottle?.wine as any)?.vivino_url || '',
-      rating: (bottle?.wine as any)?.rating?.toString() || '', // Vivino rating (0-5 scale)
+      rating: prefillData?.rating || (bottle?.wine as any)?.rating?.toString() || '', // Vivino rating (0-5 scale)
     };
   };
   
@@ -250,15 +254,14 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     !!prefillData.region
   );
   
-  // Generate Vivino search URL from wine details
+  // Generate Vivino search URL from wine details (uses shared utility for consistency)
   function generateVivinoSearchUrl(): string {
-    const searchTerms = [
-      formData.producer,
-      formData.wine_name,
-      formData.vintage,
-    ].filter(Boolean).join(' ');
-    
-    return `https://www.vivino.com/search/wines?q=${encodeURIComponent(searchTerms)}`;
+    return generateVivinoSearchUrlFromLink({
+      producer: formData.producer,
+      wine_name: formData.wine_name,
+      vintage: formData.vintage,
+      region: formData.region,
+    }) ?? `https://www.vivino.com/search/wines?q=${encodeURIComponent([formData.producer, formData.wine_name, formData.vintage].filter(Boolean).join(' '))}`;
   }
   
   function handleSearchVivino() {
@@ -470,7 +473,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           color: formData.color as 'red' | 'white' | 'rose' | 'sparkling',
           country: null,
           appellation: null,
-          vivino_wine_id: null,
+          vivino_wine_id: prefillData?.vivino_wine_id || null,
           vivino_url: formData.vivino_url || null,
           rating: formData.rating ? parseFloat(formData.rating) : null, // Save Vivino rating (0-5 scale)
           wine_notes: null,
