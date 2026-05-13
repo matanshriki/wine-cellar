@@ -11,10 +11,10 @@
 
 import { Helmet } from 'react-helmet-async';
 
-const SITE_URL = 'https://sommi-ai.com';
+export const SITE_URL = 'https://www.sommi-ai.com';
 const SITE_NAME = 'Sommi';
 const DEFAULT_DESCRIPTION =
-  'Sommi — your AI sommelier. Track your cellar, discover drink windows, and get pairing suggestions tailored to your collection.';
+  'Sommi — your AI sommelier. Track your cellar, discover drink windows, and get pairing suggestions tailored to the bottles you actually own.';
 const DEFAULT_IMAGE = `${SITE_URL}/icon-512.png`;
 
 interface MetaHeadProps {

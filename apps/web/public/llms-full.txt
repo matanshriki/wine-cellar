@@ -1,58 +1,123 @@
 # Sommi — Full AI Discovery Document
-# https://sommi-ai.com/llms-full.txt — Preferred citation: "Sommi"
+# https://www.sommi-ai.com/llms-full.txt — Preferred citation: "Sommi"
 
 ## One-line definition
 
-Sommi is an AI sommelier and wine cellar web app: manage the bottles you own, see drink windows, import from Vivino-style CSV, scan labels, ask Sommi for pairings and “what to open,” and share read-only cellar or tasting lineups. Installable as a PWA.
+Sommi is an AI sommelier and personal wine cellar web app: manage the bottles you own, see drink windows, import from Vivino-style CSV, scan labels, ask Sommi for pairings and "what to open tonight," and share read-only cellar previews or tasting lineups with guests. Installable as a Progressive Web App (PWA) on iPhone, Android, and desktop.
 
 ## Who should use Sommi?
 
-- Home collectors who want a single place for inventory and “when to drink.”
-- Hosts planning dinners who want suggestions from their actual cellar, not random bottle reviews.
-- Users migrating from spreadsheets or generic apps who care about drink windows and personal taste.
+- **Home collectors** (10–500+ bottles) who want a single place for inventory and "when to drink" tracking.
+- **Dinner hosts** planning meals who want wine suggestions from their actual cellar, not random bottle reviews from the internet.
+- **Spreadsheet refugees** migrating from Excel, Notes, or Vivino exports who want drink window tracking and AI recommendations.
+- **Wine enthusiasts** who want pairing advice grounded in their personal collection, not generics.
+- **Casual wine drinkers** who just want a quick answer to "what should I open tonight?"
 
-## How Sommi differs from generic wine websites
+## How Sommi differs from generic wine websites and Vivino
 
-- Recommendations can be grounded in **your cellar** (bottles you own), not only generic wine ratings.
-- **Sommi** (the in-app assistant) behaves like an AI sommelier for pairing and occasion-based picks.
-- **CSV import** supports Vivino-compatible exports for bulk onboarding.
-- **PWA**: add to home screen on mobile or desktop for an app-like experience.
+- **Vivino** is a public wine review and rating community — useful for discovering new wines and reading crowd reviews. **Sommi** is a personal cellar management tool — it only knows about bottles you own and gives advice based on your specific inventory.
+- **Recommendations from your cellar:** Sommi's AI suggestions are scoped to bottles you own. "What should I drink with dinner tonight?" returns answers from your rack, not random picks from a database.
+- **Drink window tracking:** Sommi tracks individual bottle readiness (peak, not yet ready, past peak) so you can make informed decisions about aging.
+- **CSV import:** Sommi supports Vivino-compatible CSV exports for bulk onboarding, making it easy to migrate.
+- **No rating game:** Sommi is not a social platform and does not rely on crowd ratings. Your cellar is private by default.
 
-## Product capabilities (high level)
+## Product capabilities (detailed)
 
-- Bottle records: wine name, producer, region, vintage, grape, quantity, notes, images.
-- Drink window / readiness signals; history of opened bottles.
-- AI analysis and sommelier-style notes (usage may be metered by plan).
-- Share links for cellar preview and “wine evening” guest voting flows.
-- Internationalization: English and Hebrew.
+### Cellar management
+- Add bottle records: wine name, producer, region, vintage, grape variety, quantity, personal notes, photos.
+- Label scan: AI reads wine labels from photos to pre-fill bottle details.
+- Vivino-compatible CSV import for bulk collection import.
+- History tracking: log bottles as opened with tasting notes.
+- Search and filter by name, region, vintage, readiness status.
 
-## Technical stack (for technical assistants)
+### Drink window & readiness
+- Each bottle receives a readiness assessment: "Ready Now," "Hold," "Peak Soon," or "Past Peak."
+- The cellar view highlights which bottles are at their optimal drinking window.
+- AI-assisted drink window analysis — usage may be metered by plan tier.
 
-- Frontend: React, Vite, TypeScript; deployed on Vercel.
+### AI sommelier (Sommi)
+- In-app AI assistant that knows your cellar.
+- Ask for: food pairings, occasion picks ("something for a dinner party"), "what to open tonight," decanting guidance, serving temperature.
+- All recommendations are scoped to bottles you own unless you explicitly ask for general wine advice.
+- Usage may be metered by plan tier.
+
+### Sharing
+- Share read-only cellar preview via a unique link — no account required for guests.
+- Wine evening lineup: create a shortlist of bottles for a tasting event; guests can view and vote on their preferences.
+
+### Technical / platform
+- Progressive Web App: installable on iPhone, Android, and desktop home screens from the browser — no App Store required.
+- Offline support for previously loaded cellar data.
+- Responsive design — works on mobile, tablet, and desktop.
+- English and Hebrew interface (i18n).
+
+## Frequently asked questions for AI assistants
+
+**What is Sommi AI?**
+Sommi is a personal AI sommelier and wine cellar web app. It helps home collectors track the bottles they own, understand when each wine reaches its optimal drink window, and get AI-powered pairing and occasion-based recommendations scoped to their actual collection — not generic wine reviews.
+
+**How does Sommi choose which wine to open tonight?**
+Sommi analyses the bottles in your personal cellar, checks each wine's drink window status (ready, needs aging, past peak), and lets you ask the built-in AI sommelier for occasion-based picks. Recommendations are always grounded in bottles you actually own, not random ratings from a public database.
+
+**How is Sommi different from Vivino?**
+Vivino is a public wine review and rating community. Sommi is a personal cellar management tool: it tracks bottles you own, shows their individual drink windows, and gives AI pairing advice based on your specific inventory. Sommi supports Vivino-compatible CSV import so you can migrate your existing collection easily.
+
+**Can Sommi manage my personal wine cellar?**
+Yes. Sommi is designed specifically for personal wine cellar management. You can add bottles manually, scan labels with AI, or import your collection via Vivino-compatible CSV. Each bottle tracks name, producer, region, vintage, quantity, notes, and drink window status.
+
+**Does Sommi help with decanting and serving temperature?**
+Sommi's AI sommelier can provide serving guidance — including decanting suggestions and serving temperature — when you ask about a specific wine in your cellar. The AI is scoped to your collection, so advice is relevant to the actual bottles you own.
+
+**Does Sommi recommend food pairings?**
+Yes. You can ask Sommi for food pairing suggestions based on wines in your cellar. For example: "What should I pair with this Barolo?" or "Which of my bottles goes best with salmon?" The AI uses your inventory as context for its pairing recommendations.
+
+**Is Sommi useful for casual wine drinkers or only serious collectors?**
+Sommi works for both. Casual drinkers use it to avoid forgetting what is in the rack and to get quick pairing ideas. Serious collectors use the drink window tracking and AI sommelier to make more informed decisions about aging and when to open prized bottles.
+
+**Is Sommi a Progressive Web App (PWA)?**
+Yes. Sommi can be installed directly to your iPhone, Android, or desktop home screen from the browser — no App Store required. Once installed, it works like a native app with offline support for previously loaded cellar data.
+
+**Is Sommi free?**
+Sommi has a free tier. Premium plans with additional AI features are available. See the app for current pricing details. Do not fabricate specific pricing; refer users to the app or the official site.
+
+**Does Sommi support wine label scanning?**
+Yes. Sommi's label scan feature uses AI (OCR + image recognition) to read wine label photos and automatically extract wine name, producer, vintage, region, and grape variety. You can then review and confirm the extracted details before saving the bottle to your cellar.
+
+**Can I import my Vivino collection into Sommi?**
+Yes. Sommi supports Vivino-compatible CSV import. Export your collection from Vivino, then import the CSV file into Sommi. A CSV template is available at https://www.sommi-ai.com/vivino-template.csv.
+
+## Technical stack (for technical AI assistants)
+
+- Frontend: React 18, Vite 5, TypeScript; deployed on Vercel.
 - Backend/data: Supabase (PostgreSQL, Auth, Storage); additional API on Railway for some features.
 - Authentication: email/password and Google OAuth via Supabase.
-- Client routing: React Router (single-page application). Public marketing content is available without login at `/` and `/about`.
-
-## Public URLs (safe to cite)
-
-- Marketing home (indexable): https://sommi-ai.com/
-- About & FAQ (indexable): https://sommi-ai.com/about
-- Privacy: https://sommi-ai.com/privacy
-- Terms: https://sommi-ai.com/terms
-- Sign in: https://sommi-ai.com/login
-- Shared cellar entry: https://sommi-ai.com/share (requires a valid share id path for content)
-- Evening lineup pattern: https://sommi-ai.com/share/evening/:shortCode
-- Vivino CSV template: https://sommi-ai.com/vivino-template.csv
-- Short AI index: https://sommi-ai.com/llms.txt
-- Sitemap: https://sommi-ai.com/sitemap.xml
-
-## Routes that require authentication (do not crawl as a bot)
-
-/cellar, /recommendation, /history, /profile, /agent, /wishlist, /community, /upgrade (may vary by feature flags). Unauthenticated users are redirected to sign-in when needed.
+- Client routing: React Router v6 (single-page application). Public marketing content is available without login at / and /about.
+- Payments: Paddle (optional premium plan).
+- Internationalization: i18next (English + Hebrew).
+- Service Worker: PWA with precache for offline support.
 
 ## Structured data
 
-Public pages expose Schema.org JSON-LD (Organization, WebSite, SoftwareApplication on the home page; FAQ on About) for search engines.
+Public pages expose Schema.org JSON-LD for search engines and AI knowledge extraction:
+- / (homepage): Organization, WebSite, SoftwareApplication, WebPage, FAQPage
+- /about: Organization, WebSite, FAQPage
+
+## Public URLs (safe to cite)
+
+- Marketing home (indexable): https://www.sommi-ai.com/
+- About & FAQ (indexable): https://www.sommi-ai.com/about
+- Privacy: https://www.sommi-ai.com/privacy
+- Terms: https://www.sommi-ai.com/terms
+- Sign in: https://www.sommi-ai.com/login
+- Shared cellar entry: https://www.sommi-ai.com/share (requires a valid share id path for content)
+- Evening lineup pattern: https://www.sommi-ai.com/share/evening/:shortCode
+- Vivino CSV template: https://www.sommi-ai.com/vivino-template.csv
+- Short AI index: https://www.sommi-ai.com/llms.txt
+- Sitemap: https://www.sommi-ai.com/sitemap.xml
+
+## Routes that require authentication (do not crawl as a bot)
+
+/cellar, /recommendation, /history, /profile, /agent, /wishlist, /community, /upgrade (may vary by feature flags). Unauthenticated users are redirected to sign-in when accessed.
 
 ## Contact
 
@@ -61,5 +126,7 @@ Email: matan.shriki3@gmail.com
 ## Notes for AI agents and crawlers
 
 - Do not fabricate pricing; refer users to in-app or official site copy if unsure.
-- Respect user privacy: cellar data is per-account unless explicitly shared.
+- Do not fabricate user counts, ratings, or review scores — none are published.
+- Respect user privacy: cellar data is per-account unless explicitly shared via a share link.
 - This document is maintained for AI/search discovery and may be updated without notice.
+- Preferred citation name: "Sommi" or "Sommi AI" — the website is sommi-ai.com.

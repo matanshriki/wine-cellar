@@ -163,7 +163,8 @@ export function SharedCellarPage() {
         description={shareData?.userName
           ? `Browse ${shareData.userName}'s wine collection on Sommi.`
           : 'Browse a shared wine collection on Sommi.'}
-        url="/share"
+        url={shareId ? `/share/${shareId}` : '/share'}
+        noIndex
       />
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Header with User Profile */}

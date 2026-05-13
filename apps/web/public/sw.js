@@ -84,13 +84,26 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(RUNTIME_CACHE).then((c) => c.put(request, clone));
-          }
-          return response;
-        });
+        return fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(RUNTIME_CACHE).then((c) => c.put(request, clone));
+            }
+            return response;
+          })
+          .catch((err) => {
+            // Network failure for a hashed asset (poor signal, offline, etc.).
+            // Return a synthetic 503 so the browser gets a clean HTTP error rather than
+            // an unhandled promise rejection, which would surface as
+            // "Importing a module script failed" and crash the entire React tree.
+            console.warn('[Service Worker] Asset fetch failed (network error):', request.url, err && err.message);
+            return new Response('Network error – asset unavailable offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' },
+            });
+          });
       })
     );
     return;

@@ -27,25 +27,26 @@
     <meta name="msapplication-TileColor" content="#2d1810" />
     <meta name="msapplication-TileImage" content="/icon-192.png" />
     
-    <!-- Description -->
-    <meta name="description" content="Sommi — your AI sommelier. Track your cellar, drink windows, and pairing ideas tailored to your collection." />
+    <!-- Primary SEO — static fallback; react-helmet-async overrides per route for JS-capable crawlers -->
+    <title>Sommi — AI Sommelier &amp; Wine Cellar App</title>
+    <meta name="description" content="Sommi is your personal AI sommelier and wine cellar app. Track bottles you own, understand drink windows, get AI pairing suggestions, import from Vivino CSV, and scan labels. Free to start. PWA for iPhone and Android." />
     
-    <!-- Canonical -->
-    <link rel="canonical" href="https://sommi-ai.com/" />
+    <!-- Canonical (homepage; react-helmet-async overrides per route) -->
+    <link rel="canonical" href="https://www.sommi-ai.com/" />
 
     <!-- Open Graph (fallback — react-helmet-async overrides per route) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Sommi" />
-    <meta property="og:title" content="Sommi" />
-    <meta property="og:description" content="Sommi — AI sommelier &amp; wine cellar app. Track bottles, drink windows, label scan, Vivino CSV import, pairings from your collection. PWA." />
-    <meta property="og:image" content="https://sommi-ai.com/icon-512.png" />
-    <meta property="og:url" content="https://sommi-ai.com/" />
+    <meta property="og:title" content="Sommi — AI Sommelier &amp; Wine Cellar App" />
+    <meta property="og:description" content="Track bottles you own, understand drink windows, and get AI pairing suggestions from your personal collection. Vivino CSV import, label scan, PWA." />
+    <meta property="og:image" content="https://www.sommi-ai.com/icon-512.png" />
+    <meta property="og:url" content="https://www.sommi-ai.com/" />
 
     <!-- Twitter Card (fallback) -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Sommi" />
-    <meta name="twitter:description" content="Sommi — AI sommelier &amp; wine cellar app. Track bottles, drink windows, label scan, Vivino CSV import, pairings from your collection. PWA." />
-    <meta name="twitter:image" content="https://sommi-ai.com/icon-512.png" />
+    <meta name="twitter:title" content="Sommi — AI Sommelier &amp; Wine Cellar App" />
+    <meta name="twitter:description" content="Track bottles you own, understand drink windows, and get AI pairing suggestions from your personal collection. Vivino CSV import, label scan, PWA." />
+    <meta name="twitter:image" content="https://www.sommi-ai.com/icon-512.png" />
 
     <!-- Google Search Console Verification -->
     <meta name="google-site-verification" content="L5yXqSdTyZALHJiyPCwX4oYNAucmy-oubVYSnPxPr0g" />
@@ -95,8 +96,6 @@
       fbq('track', 'PageView');
     </script>
     <!-- End Meta Pixel Code (noscript fallback is in <body> — <img> is not allowed inside <head><noscript> per HTML5) -->
-    
-    <title>Sommi</title>
   </head>
   <body>
     <!-- Meta Pixel: noscript fallback (must be in body for valid HTML5) -->
@@ -107,8 +106,112 @@
         style="display:none"
         src="https://www.facebook.com/tr?id=924633507006073&ev=PageView&noscript=1"
     /></noscript>
+
+    <!--
+      Static content for crawlers that do not execute JavaScript
+      (GPTBot, ClaudeBot, PerplexityBot, Bingbot, and other bots that
+      fetch only raw HTML). Visually hidden from sighted users.
+      react-helmet-async and React render the real interactive page above this.
+    -->
+    <noscript>
+      <main style="font-family:Georgia,serif;max-width:780px;margin:0 auto;padding:2rem 1.5rem;color:#1a1a1a">
+        <header>
+          <p style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:#8b1a1a;margin-bottom:0.75rem">
+            Wine cellar app &middot; AI sommelier
+          </p>
+          <h1 style="font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:1rem">
+            Sommi &mdash; Your Private AI Sommelier for the Wines You Already Own
+          </h1>
+          <p style="font-size:1.1rem;line-height:1.7;margin-bottom:1.5rem;color:#444">
+            Track your personal wine cellar, understand drink windows, and get smart food
+            pairing recommendations &mdash; all tailored to the bottles you actually have at home.
+            Free to start. Works as a web app and installs as a PWA on iPhone and Android.
+          </p>
+          <p>
+            <a href="https://www.sommi-ai.com/login" style="color:#8b1a1a;font-weight:600">Try Sommi for free</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://www.sommi-ai.com/about" style="color:#8b1a1a">About &amp; FAQ</a>
+          </p>
+        </header>
+
+        <section style="margin-top:2.5rem">
+          <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:1rem">
+            Built for collectors, not another Vivino clone
+          </h2>
+          <ul style="line-height:1.9;color:#444;padding-left:1.25rem">
+            <li><strong>Your cellar, your rules.</strong> Recommendations use bottles you actually own &mdash;
+              so &ldquo;what should I drink tonight?&rdquo; finally has a real answer.</li>
+            <li><strong>Drink windows &amp; readiness.</strong> See what is in its prime, what to hold,
+              and what to open before it fades.</li>
+            <li><strong>Sommi, the AI sommelier.</strong> Ask for pairings, occasions, or &ldquo;something
+              impressive&rdquo; &mdash; scoped to your collection.</li>
+            <li><strong>Import &amp; capture.</strong> Vivino-friendly CSV import and label scan help you
+              onboard fast.</li>
+            <li><strong>Install like an app.</strong> Add Sommi to your home screen (PWA) on iPhone,
+              Android, or desktop.</li>
+          </ul>
+        </section>
+
+        <section style="margin-top:2.5rem">
+          <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:1rem">Who Sommi is for</h2>
+          <p style="line-height:1.7;color:#444">
+            Home collectors, dinner hosts, and anyone who wants a calmer way to choose wine &mdash;
+            without spreadsheets or forgetting what is in the rack. If you are searching for a
+            <em>wine cellar app</em>, an <em>AI sommelier</em>, or a way to
+            <em>track your wine collection</em>, Sommi is designed exactly for that.
+          </p>
+        </section>
+
+        <section style="margin-top:2.5rem">
+          <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:1rem">Frequently Asked Questions</h2>
+
+          <h3 style="font-size:1rem;font-weight:600;margin-top:1.25rem">What is Sommi AI?</h3>
+          <p style="line-height:1.7;color:#444">
+            Sommi is a personal AI sommelier and wine cellar web app. It helps home collectors track
+            the bottles they own, understand when each wine reaches its optimal drink window, and get
+            AI-powered pairing and occasion-based recommendations scoped to their actual
+            collection &mdash; not generic wine reviews.
+          </p>
+
+          <h3 style="font-size:1rem;font-weight:600;margin-top:1.25rem">How is Sommi different from Vivino?</h3>
+          <p style="line-height:1.7;color:#444">
+            Vivino is a public wine review and rating community. Sommi is a personal cellar management
+            tool: it tracks bottles you own, shows their individual drink windows, and gives AI pairing
+            advice based on your specific inventory. Sommi supports Vivino-compatible CSV import so
+            you can migrate your existing collection easily.
+          </p>
+
+          <h3 style="font-size:1rem;font-weight:600;margin-top:1.25rem">How does Sommi choose which wine to open tonight?</h3>
+          <p style="line-height:1.7;color:#444">
+            Sommi analyses the bottles in your personal cellar, checks each wine&rsquo;s drink window
+            status (ready, needs aging, past peak), and lets you ask the built-in AI sommelier for
+            occasion-based picks. Recommendations are always grounded in bottles you actually own.
+          </p>
+
+          <h3 style="font-size:1rem;font-weight:600;margin-top:1.25rem">Is Sommi free?</h3>
+          <p style="line-height:1.7;color:#444">
+            Sommi is free to start. Premium plans with additional AI features are available. See the
+            app for current pricing details.
+          </p>
+        </section>
+
+        <footer style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid #e0d8d0;font-size:0.85rem;color:#777">
+          <p>
+            &copy; Sommi &middot;
+            <a href="https://www.sommi-ai.com/privacy" style="color:#8b1a1a">Privacy Policy</a>
+            &middot;
+            <a href="https://www.sommi-ai.com/terms" style="color:#8b1a1a">Terms</a>
+            &middot;
+            <a href="https://www.sommi-ai.com/about" style="color:#8b1a1a">About</a>
+          </p>
+          <p style="margin-top:0.5rem">
+            Machine-readable index: <a href="https://www.sommi-ai.com/llms.txt" style="color:#8b1a1a">llms.txt</a>
+          </p>
+        </footer>
+      </main>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

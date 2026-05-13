@@ -301,7 +301,8 @@ export function GuestEveningPage() {
         description={shareData?.share?.plan_name
           ? `Vote for your favourite wines at "${shareData.share.plan_name}" tasting evening.`
           : 'View and vote on a curated wine evening lineup.'}
-        url="/share/evening"
+        url={shortCode ? `/share/evening/${shortCode}` : '/share/evening'}
+        noIndex
       />
       <div className="max-w-lg mx-auto">
         {/* ── Header ─────────────────────────────────────────────────────── */}

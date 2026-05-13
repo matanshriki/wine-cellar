@@ -69,6 +69,23 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
+/** Key used in sessionStorage to prevent an infinite reload loop. */
+const CHUNK_RELOAD_KEY = 'sommi_chunk_error_reload_at';
+
+/**
+ * Returns true when the error is a stale-chunk / SW-update module loading failure.
+ * These strings cover Chrome, Firefox, and Safari phrasing.
+ */
+function isChunkLoadError(error: Error): boolean {
+  const msg = (error?.message ?? '') + (error?.stack ?? '');
+  return (
+    msg.includes('Importing a module script failed') ||
+    msg.includes('dynamically imported module') ||
+    msg.includes('Failed to fetch dynamically') ||
+    msg.includes('error loading dynamically imported module')
+  );
+}
+
 class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -76,6 +93,23 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Stale-chunk / SW-update: the browser can't load a JS module (old hash, network
+    // failure, or newly activated service worker serving different bundles).
+    // Auto-reload once per session — if the reload itself fails we fall through and
+    // show the normal error screen so the user can retry manually.
+    if (isChunkLoadError(error)) {
+      const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) ?? 0);
+      const now = Date.now();
+      if (now - lastReload > 15_000) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
+        console.warn('[ErrorBoundary] Chunk load failure — auto-reloading once:', error.message);
+        window.location.reload();
+        // Return no-error state while the reload is in flight so React doesn't
+        // render the error screen in the brief moment before the page refreshes.
+        return { hasError: false, error: null };
+      }
+      console.warn('[ErrorBoundary] Chunk load failure — already reloaded recently, showing error');
+    }
     return { hasError: true, error };
   }
 

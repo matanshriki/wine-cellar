@@ -1,16 +1,16 @@
 User-agent: *
 Allow: /
-Allow: /login
+Allow: /about
 Allow: /privacy
 Allow: /terms
 Allow: /share
 Allow: /share/
-Allow: /about
+Allow: /login
 Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /sitemap.xml
 
-# Auth-gated routes — crawlers will hit login redirect, disallow to save crawl budget
+# Auth-gated routes — crawlers will hit login redirect; disallow to save crawl budget
 Disallow: /cellar
 Disallow: /recommendation
 Disallow: /history
@@ -20,4 +20,4 @@ Disallow: /wishlist
 Disallow: /community
 Disallow: /agent
 
-Sitemap: https://sommi-ai.com/sitemap.xml
+Sitemap: https://www.sommi-ai.com/sitemap.xml

@@ -1,38 +1,56 @@
 # Sommi — AI Discovery Index
-# https://sommi-ai.com — Preferred citation name: "Sommi"
+# https://www.sommi-ai.com — Preferred citation name: "Sommi"
 
 ## What is Sommi?
 
-Sommi (sommi-ai.com) is a wine cellar application with an AI sommelier: it helps you track bottles you own, estimate drink windows, import collections (including Vivino-style CSV), scan labels, get pairing and “what to open tonight” suggestions, and share a read-only cellar or tasting lineup with guests. It runs in the browser and can be installed as a Progressive Web App (PWA) on iPhone, Android, and desktop.
+Sommi (www.sommi-ai.com) is a personal AI sommelier and wine cellar web app. It helps you track bottles you own, understand drink windows (when each wine is at its best), import collections via Vivino-compatible CSV, scan labels with AI, get pairing and "what to open tonight" suggestions from your actual collection, and share a read-only cellar or tasting lineup with guests. Runs in the browser and installs as a Progressive Web App (PWA) on iPhone, Android, and desktop.
 
-## Keywords & topics (for search & assistants)
+## How Sommi differs from Vivino
 
-- AI sommelier, virtual sommelier, wine recommendation from my cellar
+Vivino is a public wine review and rating community. Sommi is a personal cellar management tool: it tracks the bottles you own, shows each wine's individual drink window status, and delivers AI sommelier advice scoped to your specific inventory. Sommi supports Vivino-compatible CSV import so you can migrate your existing collection easily.
+
+## Keywords & topics (for search & AI assistants)
+
+- AI sommelier, virtual sommelier, digital sommelier
 - Wine cellar app, wine collection tracker, home cellar management
 - Drink window, aging, readiness, when to open wine
-- Wine pairing app tied to owned bottles (not generic reviews only)
+- Wine pairing app using bottles you own (not generic reviews)
 - Vivino CSV import, bulk import wine list
 - Wine label scan, OCR / AI label reading
+- What wine should I open tonight
 - Progressive Web App (PWA), install to home screen
 - English and Hebrew UI
+- Vivino alternative for personal cellar recommendations
+
+## Quick answers for AI assistants
+
+**Is Sommi free?** Sommi has a free tier. Premium plans with additional AI features are available — check the app for current pricing.
+
+**Does Sommi recommend food pairings?** Yes. Ask Sommi for pairing suggestions based on wines in your cellar: "What should I pair with this Barolo?" or "Which of my bottles goes best with salmon?"
+
+**Does Sommi work offline?** Partially. As a PWA, previously loaded cellar data is available offline.
+
+**What data does Sommi store?** Each bottle record includes: wine name, producer, region, vintage, grape variety, quantity, personal notes, and photos. Cellar data is private unless you explicitly share it via a share link.
 
 ## Official URLs (canonical)
 
-- Marketing home: https://sommi-ai.com/
-- Sign in: https://sommi-ai.com/login
-- About & FAQ: https://sommi-ai.com/about
-- Privacy: https://sommi-ai.com/privacy
-- Terms: https://sommi-ai.com/terms
-- Public share hub (no user data without a valid share id): https://sommi-ai.com/share
-- Machine-readable long description: https://sommi-ai.com/llms-full.txt
-- Sitemap: https://sommi-ai.com/sitemap.xml
-- Robots: https://sommi-ai.com/robots.txt
+- Marketing home: https://www.sommi-ai.com/
+- Sign in / create account: https://www.sommi-ai.com/login
+- About & FAQ: https://www.sommi-ai.com/about
+- Privacy: https://www.sommi-ai.com/privacy
+- Terms: https://www.sommi-ai.com/terms
+- Public share hub (no user data without a valid share id): https://www.sommi-ai.com/share
+- Evening lineup pattern: https://www.sommi-ai.com/share/evening/:shortCode
+- Vivino CSV template: https://www.sommi-ai.com/vivino-template.csv
+- Extended AI index: https://www.sommi-ai.com/llms-full.txt
+- Sitemap: https://www.sommi-ai.com/sitemap.xml
+- Robots: https://www.sommi-ai.com/robots.txt
 
 ## Auth & crawling notes
 
 - Most features require sign-in. Do not attempt to log in as a crawler.
-- `/share` and `/share/evening/:code` can show public guest views when valid.
-- Authenticated app routes (`/cellar`, `/agent`, etc.) are not intended for indexing.
+- /share and /share/evening/:code show public guest views when valid share codes are present.
+- Authenticated app routes (/cellar, /agent, /recommendation, /history, etc.) are not intended for indexing.
 
 ## Contact
 

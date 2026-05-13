@@ -15,6 +15,7 @@ import {
   webSiteSchema,
   softwareApplicationSchema,
   webPageSchema,
+  landingFaqSchema,
 } from '../lib/seoSchemas';
 import { resolveLandingDemoVideo } from '../lib/landingDemoVideo';
 
@@ -299,6 +300,7 @@ export function LandingPage() {
       webSiteSchema(),
       softwareApplicationSchema(),
       webPageSchema('/', t('landing.jsonLdPageTitle'), t('landing.metaDescription')),
+      landingFaqSchema(),
     ],
     [t, i18n.language],
   );
