@@ -422,7 +422,8 @@ async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Pr
  */
 function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
   const currentYear = new Date().getFullYear();
-  const age = wineInfo.vintage ? currentYear - wineInfo.vintage : 0;
+  // Use null (not 0) for missing vintage so age-based branches are not triggered for NV wines.
+  const age = wineInfo.vintage != null ? currentYear - wineInfo.vintage : null;
   const color = wineInfo.color || 'red';
 
   let readinessLabel = 'READY';
@@ -430,7 +431,30 @@ function generateFallbackAnalysis(wineInfo: WineAnalysisInput): any {
   let reasons = ['Based on age and type', 'Suitable for current consumption'];
   const confidence = 'MEDIUM';
 
-  if (color === 'red' && age < 3) {
+  if (age === null) {
+    // Vintage unknown — cannot infer age; derive guidance from color only.
+    if (color === 'red') {
+      readinessLabel = 'READY';
+      summary = `This ${wineInfo.wine_name} appears ready to enjoy. Vintage is unknown, so guidance is based on wine style rather than age.`;
+      reasons = [
+        'No vintage information available',
+        'Guidance based on wine color and style',
+        'Check the bottle for its actual vintage before making aging decisions',
+      ];
+    } else if (color === 'white' || color === 'rose') {
+      readinessLabel = 'READY';
+      summary = `This ${wineInfo.wine_name} is ready to enjoy with fresh, vibrant characteristics. Vintage is unknown.`;
+      reasons = [
+        'No vintage information available',
+        'Most whites and rosés are best enjoyed young and fresh',
+        'Serve well-chilled',
+      ];
+    } else if (color === 'sparkling') {
+      readinessLabel = 'READY';
+      summary = `This ${wineInfo.wine_name} is ready to enjoy chilled.`;
+      reasons = ['Sparkling wines are best enjoyed young', 'Serve well-chilled', 'No decanting needed'];
+    }
+  } else if (color === 'red' && age < 3) {
     readinessLabel = 'HOLD';
     summary = `This ${wineInfo.wine_name} is still young and would benefit from additional aging.`;
     reasons = ['Young red wine', 'Tannins still developing', 'Consider aging 2-5 more years'];

@@ -438,7 +438,7 @@ function generateServingInstructions(bottle: BottleWithWine, wine: Wine): string
   const t = i18n.t.bind(i18n);
   const wineColor = wine.color.toLowerCase();
 
-  let temp = '16°C';
+  let temp: string | null = null;
   let decanting = t('recommendation.generated.noDecanting');
 
   if (wineColor === 'red') {
@@ -455,8 +455,12 @@ function generateServingInstructions(bottle: BottleWithWine, wine: Wine): string
     temp = bottle.serve_temp_c ? `${bottle.serve_temp_c}°C` : '8-12°C';
     decanting = t('recommendation.generated.noDecanting');
   } else if (wineColor === 'sparkling') {
-    temp = '6-8°C';
+    temp = bottle.serve_temp_c ? `${bottle.serve_temp_c}°C` : '6-8°C';
     decanting = t('recommendation.generated.serveImmediately');
+  }
+
+  if (temp === null) {
+    return decanting;
   }
 
   return `${t('recommendation.generated.serveAt', { temp })} ${decanting}.`;
