@@ -149,7 +149,11 @@ serve(async (req) => {
           country,
           appellation,
           grapes,
-          color
+          color,
+          regional_wine_style,
+          wine_profile,
+          rating,
+          vivino_wine_id
         )
       `)
       .eq('user_id', user.id)
@@ -270,7 +274,12 @@ serve(async (req) => {
  */
 async function analyzeBottle(bottle: any, supabase: any, language: string): Promise<BottleStatus> {
   try {
-    console.log('[Analyze Cellar] Processing:', bottle.wine.wine_name);
+    const enrichmentLog = {
+      hasWineProfile: !!bottle.wine.wine_profile,
+      hasRegionalStyle: !!bottle.wine.regional_wine_style,
+      hasVivinoRating: bottle.wine.rating != null,
+    };
+    console.log('[Analyze Cellar] Processing:', bottle.wine.wine_name, '| Enrichment:', JSON.stringify(enrichmentLog));
 
     // Call OpenAI for analysis
     const wineInput: WineAnalysisInput = {
@@ -283,6 +292,11 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
       grapes: bottle.wine.grapes,
       color: bottle.wine.color,
       notes: bottle.notes,
+      // Enrichment fields loaded from the wines join (Phase 2C)
+      regional_wine_style: bottle.wine.regional_wine_style ?? undefined,
+      wine_profile: bottle.wine.wine_profile ?? undefined,
+      rating: bottle.wine.rating ?? undefined,
+      vivino_wine_id: bottle.wine.vivino_wine_id ?? undefined,
     };
 
     const analysis = await generateAIAnalysis(wineInput, language);
