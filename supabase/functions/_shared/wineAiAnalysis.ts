@@ -15,6 +15,23 @@ export interface WineAnalysisInput {
   grapes?: string[] | string | null;
   color?: string | null;
   notes?: string | null;
+  /** Loaded from wines.regional_wine_style when available */
+  regional_wine_style?: string | null;
+  /** Loaded from wines.wine_profile when available (body, tannin, acidity, oak, sweetness, etc.) */
+  wine_profile?: {
+    body?: number | null;
+    tannin?: number | null;
+    acidity?: number | null;
+    oak?: number | null;
+    sweetness?: number | null;
+    alcohol_est?: number | null;
+    power?: number | null;
+    style_tags?: string[] | null;
+  } | null;
+  /** Vivino community rating 0–5, from wines.rating */
+  rating?: number | null;
+  /** Vivino wine ID, from wines.vivino_wine_id */
+  vivino_wine_id?: string | null;
 }
 
 /** Structured serving guidance returned by AI and stored on bottles.serving_guidance */
@@ -49,10 +66,44 @@ export function formatGrapesForPrompt(grapes: WineAnalysisInput["grapes"]): stri
   return "Unknown";
 }
 
-const READINESS_RULES = `READINESS LABEL RULES — follow strictly based on the wine's actual age:
+/** Format a stored wine_profile object into a concise human-readable block for the prompt. */
+function formatWineProfileForPrompt(profile: WineAnalysisInput["wine_profile"]): string | null {
+  if (!profile || typeof profile !== "object") return null;
+
+  const label = (
+    val: number | null | undefined,
+    scale: [string, string, string, string, string],
+  ): string | null => {
+    if (val == null) return null;
+    const idx = Math.max(0, Math.min(4, Math.round(val) - 1));
+    return `${val}/5 (${scale[idx]})`;
+  };
+
+  const lines: string[] = [];
+  const b = label(profile.body, ["very light", "light", "medium", "full", "very full"]);
+  if (b) lines.push(`  Body: ${b}`);
+  const t = label(profile.tannin, ["silky/no tannin", "soft", "medium", "firm", "grippy/astringent"]);
+  if (t) lines.push(`  Tannin: ${t}`);
+  const a = label(profile.acidity, ["low", "medium-low", "medium", "bright", "high/racy"]);
+  if (a) lines.push(`  Acidity: ${a}`);
+  const o = label(profile.oak, ["none/minimal", "light", "moderate", "strong", "heavy"]);
+  if (o) lines.push(`  Oak: ${o}`);
+  const s = label(profile.sweetness, ["bone dry", "dry", "off-dry", "medium-sweet", "sweet"]);
+  if (s) lines.push(`  Sweetness: ${s}`);
+  if (profile.alcohol_est != null) lines.push(`  Estimated alcohol: ${profile.alcohol_est}%`);
+  if (Array.isArray(profile.style_tags) && profile.style_tags.length) {
+    lines.push(`  Style tags: ${profile.style_tags.join(", ")}`);
+  }
+
+  return lines.length ? lines.join("\n") : null;
+}
+
+const READINESS_RULES = `READINESS LABEL RULES — follow strictly based on the wine's actual age and structure:
 - "HOLD": Wine is too young; tannins and structure need time. Typically reds under 5 years, structured whites under 2 years.
 - "PEAK_SOON": Wine is approaching but has not yet reached its optimal window; generally 5–15 years for most quality reds.
-- "READY": Wine is in its drinking window now. ANY wine 15 years or older must use "READY". For wines 30+ years old, ALWAYS use "READY" — they are at peak or already declining and should be consumed soon. NEVER assign "HOLD" or "PEAK_SOON" to a wine that is over 20 years old. Mention explicitly in the summary whether the wine is at its peak or may be past it.`;
+- "READY": Wine is in its drinking window now. ANY wine 15 years or older must use "READY". For wines 30+ years old, ALWAYS use "READY" — they are at peak or already declining and should be consumed soon. NEVER assign "HOLD" or "PEAK_SOON" to a wine that is over 20 years old. Mention explicitly in the summary whether the wine is at its peak or may be past it.
+- If wine_profile is provided: tannin score 4–5 and age < 5 years → strongly prefer "HOLD"; tannin score 1–2 → prefer "READY" or "PEAK_SOON" even at moderate age; this overrides the default age thresholds when structure data is available.
+- If vintage is unknown (NV or missing): do NOT assume the wine is young. Set readiness to "READY" unless the wine style is known to require significant aging (e.g., young Vintage Port, Barolo Riserva with no age data). Use confidence "LOW".`;
 
 const BARREL_RULES = `BARREL / OAK (wine-level, for catalog + user preference learning):
 - For most quality RED wines and many structured whites, you MUST provide your best estimate (do not leave both fields null unless the wine is almost always unoaked in that region/style, e.g. many crisp whites).
@@ -99,7 +150,15 @@ CONFIDENCE:
 - "medium": typical for the style/region/age with reasonable certainty
 - "low": missing vintage or limited knowledge; using style-based reasoning
 
-SOURCE_SUMMARY: brief note on the basis (e.g. "Based on Barolo DOCG typical aging; Nebbiolo tannin profile for a 3-year-old wine.")`;
+SOURCE_SUMMARY: brief note on the basis (e.g. "Based on Barolo DOCG typical aging; Nebbiolo tannin profile for a 3-year-old wine.")
+
+WHEN WINE STRUCTURE DATA IS PROVIDED (wine_profile fields above):
+- Calibrate decanting by tannin score: score 4–5 and age < 6 years → 90–120 min recommended; score 1–2 → 10–20 min optional at most even for reds
+- Calibrate serving temperature by body: score 4–5 → use the warmer end of the range; score 1–2 → use the cooler end
+- Alcohol ≥ 14.5%: serve 1–2°C cooler within the range so the wine does not taste hot
+- Heavy oak (score 4–5) in a young wine: recommend extra airing before serving
+- Aged white wine (color = white, age ≥ 10 years): serve at 12–15°C — cold (8°C) suppresses aromatic complexity in aged whites
+- NV or vintage-unknown wine: base guidance on color, regional_wine_style, and style_tags only; never assume the wine is young; set confidence to "low" unless the wine style clearly implies readiness (e.g. most Prosecco, Champagne NV)`;
 
 export function buildWineAnalysisSystemPrompt(
   mode: WineAnalysisMode,
@@ -181,12 +240,23 @@ export function buildWineAnalysisUserPrompt(
 ): string {
   const age = wine.vintage != null ? currentYear - wine.vintage : null;
   const grapes = formatGrapesForPrompt(wine.grapes);
+  const profileText = formatWineProfileForPrompt(wine.wine_profile);
 
   const heSuffix = mode === "single"
     ? " כתוב הכל בעברית. הוסף גם תרגומים לעברית בשדה he_translations."
     : "";
 
   if (language === "he") {
+    const heProfileSection = profileText
+      ? `\nמבנה היין (פרופיל מאוחסן):\n${profileText}`
+      : "";
+    const heStyleSection = wine.regional_wine_style
+      ? `\nסיווג סגנון: ${wine.regional_wine_style}`
+      : "";
+    const heRatingSection = wine.rating != null
+      ? `\nדירוג קהילת Vivino: ${wine.rating}/5`
+      : "";
+
     return `נתח את היין הזה וספק הערות סומלייה:
 
 שם היין: ${wine.wine_name}
@@ -198,29 +268,39 @@ export function buildWineAnalysisUserPrompt(
 אפלסיון: ${wine.appellation ?? "לא ידוע"}
 ענבים: ${grapes}
 סגנון: ${wine.color ?? "לא ידוע"}
-הערות משתמש: ${wine.notes?.trim() ? wine.notes : "אין"}
+הערות משתמש: ${wine.notes?.trim() ? wine.notes : "אין"}${heProfileSection}${heStyleSection}${heRatingSection}
 
 שנה נוכחית: ${currentYear}
 
-ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY".${heSuffix}`;
+ספק ניתוח מפורט וספציפי לבקבוק. התייחס ליצרן, לאזור ולבציר האמיתיים בסיכום שלך. אל תיתן עצות גנריות. אם סופק פרופיל מבנה יין, השתמש בנתוני טאנינים, גוף ואלכוהול כדי לכייל את הנחיות ההגשה. אם היין הוא בן 20 שנה ומעלה, דון במפורש האם הוא בשיאו, עבר את שיאו, או עדיין מפתיע בחיוניותו — והגדר את readiness_label כ-"READY".${heSuffix}`;
   }
+
+  const profileSection = profileText
+    ? `\nWine Structure (stored profile):\n${profileText}`
+    : "";
+  const styleSection = wine.regional_wine_style
+    ? `\nWine Style Classification: ${wine.regional_wine_style}`
+    : "";
+  const ratingSection = wine.rating != null
+    ? `\nVivino Community Rating: ${wine.rating}/5 (use as a quality/popularity signal, not as the sole quality source)`
+    : "";
 
   return `Analyze this wine and provide sommelier notes:
 
 Wine Name: ${wine.wine_name}
 Producer: ${wine.producer ?? "Unknown"}
 Vintage: ${wine.vintage ?? "NV"}
-Age: ${age != null ? `${age} years` : "Unknown"}
+Age: ${age != null ? `${age} years` : "Unknown — do not assume the wine is young"}
 Region: ${wine.region ?? "Unknown"}
 Country: ${wine.country ?? "Unknown"}
 Appellation: ${wine.appellation ?? "Unknown"}
 Grapes: ${grapes}
 Style: ${wine.color ?? "Unknown"}
-User Notes: ${wine.notes?.trim() ? wine.notes : "None"}
+User Notes: ${wine.notes?.trim() ? wine.notes : "None"}${profileSection}${styleSection}${ratingSection}
 
 Current Year: ${currentYear}
 
-Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. Pay close attention to the wine's age and structure when setting serving guidance — young tannic reds need longer decanting than mature or delicate wines. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".${mode === "single" ? " Also include Hebrew translations in he_translations." : ""}`;
+Provide a detailed, bottle-specific analysis. Reference the actual producer, region, and vintage in your summary. Do not give generic advice. If wine structure data is provided above, use tannin, body, oak, and alcohol values to calibrate decant time and serving temperature — do not ignore them. Pay close attention to the wine's age: young tannic reds need longer decanting than mature or delicate wines; very old reds need gentle, brief handling. If the wine is 20+ years old, explicitly discuss whether it is at its peak, past its prime, or still surprisingly vibrant — and set readiness_label to "READY".${mode === "single" ? " Also include Hebrew translations in he_translations." : ""}`;
 }
 
 /** Normalize OpenAI barrel fields for DB + API */

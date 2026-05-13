@@ -9,6 +9,7 @@ import {
   normalizeBarrelFields,
   normalizeServingGuidance,
   buildFallbackServingGuidance,
+  type WineAnalysisInput,
   type ServingGuidance,
   type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts'
@@ -144,6 +145,32 @@ serve(async (req) => {
     const wineData = wine_data as WineData
     const language = wineData.language || 'en'
 
+    // ── Enrich wine data from DB ───────────────────────────────────────────────
+    // Load additional fields (wine_profile, regional_wine_style, rating, vivino_wine_id)
+    // from the wines row to improve prompt quality. Best-effort: failures are non-fatal.
+    // This query runs early so the resolved wine ID is already available.
+    let wineEnrichment: {
+      regional_wine_style?: string | null
+      wine_profile?: Record<string, unknown> | null
+      rating?: number | null
+      vivino_wine_id?: string | null
+    } = {}
+
+    if (resolvedWineId) {
+      try {
+        const { data: enrichedWine } = await supabaseAdmin
+          .from('wines')
+          .select('regional_wine_style, wine_profile, rating, vivino_wine_id')
+          .eq('id', resolvedWineId)
+          .single()
+        if (enrichedWine) {
+          wineEnrichment = enrichedWine
+        }
+      } catch (_enrichErr) {
+        // Non-fatal — analysis continues with base wine_data fields
+      }
+    }
+
     // ── Credit action type ────────────────────────────────────────────────────
     // system_background is only accepted when ALL of the following hold:
     //   1. bottle.created_at is within the last 5 minutes (recency window).
@@ -201,7 +228,14 @@ serve(async (req) => {
       return insufficientCreditsResponse(creditCheck.effectiveBalance ?? 0, creditCost, corsHeaders)
     }
 
+    const enrichmentLog = {
+      hasWineProfile: !!wineEnrichment.wine_profile,
+      hasRegionalStyle: !!wineEnrichment.regional_wine_style,
+      hasVivinoRating: wineEnrichment.rating != null,
+      hasVivinoId: !!wineEnrichment.vivino_wine_id,
+    }
     console.log('[Analyze Wine] Generating analysis in language:', language, 'for wine:', wineData.wine_name)
+    console.log('[Analyze Wine] Enrichment fields:', JSON.stringify(enrichmentLog))
 
     const currentYear = new Date().getFullYear()
     const systemPrompt = buildWineAnalysisSystemPrompt('single', language)
@@ -216,6 +250,11 @@ serve(async (req) => {
         grapes: wineData.grapes,
         color: wineData.color,
         notes: wineData.notes,
+        // Enrichment fields from the wines row (undefined when not available)
+        regional_wine_style: wineEnrichment.regional_wine_style ?? undefined,
+        wine_profile: wineEnrichment.wine_profile as WineAnalysisInput['wine_profile'] ?? undefined,
+        rating: wineEnrichment.rating ?? undefined,
+        vivino_wine_id: wineEnrichment.vivino_wine_id ?? undefined,
       },
       currentYear,
       language,
