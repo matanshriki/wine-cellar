@@ -221,7 +221,8 @@ export function initializeAnalytics(): void {
   }
 
   const measurementId = getGA4MeasurementId();
-  const debugMode = import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV;
+  // Never enable debug_mode in production — it routes events to DebugView only
+  const debugMode = !import.meta.env.PROD && (import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV);
 
   // Upgrade consent from 'denied' (set in index.html) to 'granted'
   window.gtag('consent', 'update', {
