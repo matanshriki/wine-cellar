@@ -76,7 +76,8 @@ export function useAdminGoogleAnalytics() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Not authenticated');
 
-      const res = await fetch('/api/analytics/ga4', {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/analytics/ga4`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
