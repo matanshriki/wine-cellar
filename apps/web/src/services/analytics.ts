@@ -10,9 +10,9 @@
  * USAGE
  *   import { trackEvent, trackBottle, trackAuth, … } from './analytics';
  *
- * ENV VARS
- *   VITE_GA4_MEASUREMENT_ID   GA4 measurement ID (e.g. G-XXXXXXXXXX)
- *   VITE_ANALYTICS_ENABLED    Set to "true" to enable tracking
+ * ENV VARS (all optional in production — see GA4_HARDCODED_ID below)
+ *   VITE_GA4_MEASUREMENT_ID   Override the hardcoded measurement ID
+ *   VITE_ANALYTICS_ENABLED    Set to "false" to explicitly disable (default: auto-enabled in prod)
  *   VITE_GA_DEBUG             Set to "true" to enable GA DebugView (dev-only)
  *
  * UTM LINK TEMPLATES (attach to links you control for reliable AI attribution)
@@ -31,6 +31,16 @@ import {
 import { sendAttributionToGA } from './aiAttribution';
 import type { InsightType } from './insightService';
 import type { ActivityLevel, SummaryItemType } from './weeklySummaryService';
+
+// ── Measurement ID ────────────────────────────────────────────────────────────
+// The gtag script in index.html already hardcodes this ID, so we use it as the
+// canonical fallback. VITE_GA4_MEASUREMENT_ID can override it (e.g. for staging).
+const GA4_HARDCODED_ID = 'G-30KY78JBLP';
+
+/** Resolves the active GA4 measurement ID at runtime. */
+function getGA4MeasurementId(): string {
+  return (import.meta.env.VITE_GA4_MEASUREMENT_ID as string) || GA4_HARDCODED_ID;
+}
 
 // ── Global gtag types ─────────────────────────────────────────────────────────
 
@@ -92,16 +102,32 @@ function getContextParams(): Record<string, unknown> {
 
 // ── Guards ────────────────────────────────────────────────────────────────────
 
-/** True when GA is configured via env and the user hasn't opted out. */
+/**
+ * True when GA is active and the user hasn't opted out.
+ *
+ * Enabled when ANY of these is true:
+ *   a) VITE_ANALYTICS_ENABLED === 'true'  (explicit opt-in, any environment)
+ *   b) Production build (import.meta.env.PROD) — gtag is already loaded in index.html
+ *
+ * Disabled when:
+ *   - VITE_ANALYTICS_ENABLED === 'false'  (explicit opt-out, e.g. for staging)
+ *   - User has set localStorage analytics_disabled = 'true'
+ */
 export function isAnalyticsEnabled(): boolean {
-  const enabled = import.meta.env.VITE_ANALYTICS_ENABLED === 'true';
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID;
+  // Explicit opt-out always wins
+  if (import.meta.env.VITE_ANALYTICS_ENABLED === 'false') return false;
 
-  if (!enabled) return false;
-  if (!measurementId) {
-    console.warn('[Analytics] No measurement ID — set VITE_GA4_MEASUREMENT_ID');
+  // Explicit opt-in (dev or staging with the var set)
+  const explicitlyEnabled = import.meta.env.VITE_ANALYTICS_ENABLED === 'true';
+
+  // Auto-enable in production builds — the gtag script is already in index.html
+  const autoEnabled = import.meta.env.PROD === true;
+
+  if (!explicitlyEnabled && !autoEnabled) {
+    // Dev build without explicit opt-in: skip to avoid polluting real data
     return false;
   }
+
   // Runtime opt-out (see disableAnalytics())
   if (localStorage.getItem('analytics_disabled') === 'true') return false;
 
@@ -113,6 +139,42 @@ export function hasAnalyticsConsent(): boolean {
   const consent = localStorage.getItem('cookie_consent');
   const analyticsEnabled = localStorage.getItem('analytics_enabled');
   return consent === 'accepted' && analyticsEnabled === 'true';
+}
+
+/**
+ * Debug helper — call window.__sommiAnalyticsStatus() in the browser console
+ * to see exactly why analytics is or isn't active.
+ */
+export function registerAnalyticsDebug(): void {
+  if (typeof window === 'undefined') return;
+  (window as any).__sommiAnalyticsStatus = () => {
+    const measurementId = getGA4MeasurementId();
+    const status = {
+      isEnabled: isAnalyticsEnabled(),
+      hasConsent: hasAnalyticsConsent(),
+      measurementId,
+      gtagPresent: !!window.gtag,
+      localStorage: {
+        cookie_consent: localStorage.getItem('cookie_consent'),
+        analytics_enabled: localStorage.getItem('analytics_enabled'),
+        analytics_disabled: localStorage.getItem('analytics_disabled'),
+      },
+      envVars: {
+        VITE_ANALYTICS_ENABLED: import.meta.env.VITE_ANALYTICS_ENABLED ?? '(not set — auto-enabled in prod)',
+        VITE_GA4_MEASUREMENT_ID: import.meta.env.VITE_GA4_MEASUREMENT_ID ?? `(not set — using hardcoded ${measurementId})`,
+        PROD: import.meta.env.PROD,
+      },
+      conclusion:
+        !isAnalyticsEnabled() ? 'DISABLED — see isEnabled reason above' :
+        !hasAnalyticsConsent() ? 'WAITING FOR CONSENT — accept the cookie banner to start tracking' :
+        !window.gtag ? 'BLOCKED — gtag not found in window (check index.html)' :
+        'ACTIVE — events are being sent to GA4',
+    };
+    console.table(status.localStorage);
+    console.table(status.envVars);
+    console.log('[Sommi Analytics Status]', status);
+    return status;
+  };
 }
 
 /** Disable analytics at runtime (called when user opts out). */
@@ -158,7 +220,7 @@ export function initializeAnalytics(): void {
     return;
   }
 
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
+  const measurementId = getGA4MeasurementId();
   const debugMode = import.meta.env.VITE_GA_DEBUG === 'true' || import.meta.env.DEV;
 
   // Upgrade consent from 'denied' (set in index.html) to 'granted'
@@ -192,7 +254,7 @@ export function initializeAnalytics(): void {
 export function setAnalyticsUser(supabaseUserId: string): void {
   if (!isAnalyticsEnabled() || !hasAnalyticsConsent() || !window.gtag) return;
 
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
+  const measurementId = getGA4MeasurementId();
   window.gtag('config', measurementId, { user_id: supabaseUserId });
 
   console.log('[Analytics] User ID set (pseudonymous)');
@@ -204,9 +266,7 @@ export function setAnalyticsUser(supabaseUserId: string): void {
 export function clearAnalyticsUser(): void {
   if (!window.gtag) return;
 
-  const measurementId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string;
-  if (!measurementId) return;
-
+  const measurementId = getGA4MeasurementId();
   window.gtag('config', measurementId, { user_id: undefined });
   console.log('[Analytics] User ID cleared');
 }

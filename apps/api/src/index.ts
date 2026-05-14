@@ -90,6 +90,23 @@ app.use('/api/billing', billingRouter); // Paddle Billing (checkout-config, port
 app.use('/api/meta', metaRouter); // Meta CAPI (authenticated)
 app.use('/api/analytics', analyticsRouter); // GA4 Data API (admin-only)
 
+// Startup diagnostic for GA4 config
+const ga4Method =
+  process.env.GA4_SERVICE_ACCOUNT_JSON ? 'service_account' :
+  (process.env.GA4_OAUTH_CLIENT_ID && process.env.GA4_OAUTH_CLIENT_SECRET && process.env.GA4_OAUTH_REFRESH_TOKEN) ? 'oauth2' :
+  'none';
+const ga4PropId = process.env.GA4_PROPERTY_ID || '';
+const ga4PropIdWrong = ga4PropId.startsWith('G-') || ga4PropId.startsWith('g-');
+if (!ga4PropId || ga4Method === 'none' || ga4PropIdWrong) {
+  console.warn('[Analytics] GA4 Traffic tab will not work:',
+    !ga4PropId ? 'GA4_PROPERTY_ID not set.' : '',
+    ga4PropIdWrong ? `GA4_PROPERTY_ID "${ga4PropId}" is a Measurement ID — use the numeric Property ID from GA4 Admin → Property Settings.` : '',
+    ga4Method === 'none' ? 'No auth credentials (GA4_OAUTH_* or GA4_SERVICE_ACCOUNT_JSON).' : '',
+  );
+} else {
+  console.log(`[Analytics] GA4 configured: property=${ga4PropId} auth=${ga4Method}`);
+}
+
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);

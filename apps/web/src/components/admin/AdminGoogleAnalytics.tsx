@@ -469,17 +469,35 @@ export function AdminGoogleAnalytics() {
 
   if (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    if (msg.toLowerCase().includes('not configured') || msg.toLowerCase().includes('ga4')) {
+
+    // "Not configured" state — show the full setup guide
+    if (
+      msg.toLowerCase().includes('not configured') ||
+      msg.toLowerCase().includes('no auth credentials') ||
+      msg.toLowerCase().includes('ga4_property_id is not set')
+    ) {
       return <Not_Configured />;
     }
+
+    // Specific actionable error from the API — show in a clear card
     return (
       <div style={{
-        padding: '40px 0',
-        textAlign: 'center',
-        color: 'var(--color-error)',
-        fontSize: '0.88rem',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--color-error)',
+        borderRadius: '12px',
+        padding: '20px 22px',
+        maxWidth: 600,
       }}>
-        Failed to load GA4 data: {msg}
+        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-error)', marginBottom: '8px' }}>
+          GA4 error
+        </div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.6, margin: '0 0 12px' }}>
+          {msg}
+        </p>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', margin: 0 }}>
+          Check Railway logs (filter: <code style={{ fontSize: '0.7rem' }}>[Analytics]</code>) for the full Google error message.
+          Then visit <code style={{ fontSize: '0.7rem' }}>{(import.meta.env.VITE_API_URL || '') + '/api/analytics/ga4/status'}</code> in your browser for a config health check.
+        </p>
       </div>
     );
   }

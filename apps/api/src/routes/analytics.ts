@@ -84,6 +84,42 @@ async function isAdminUser(userId: string): Promise<boolean> {
 
 // ── GET /api/analytics/ga4 ───────────────────────────────────────────────────
 
+// ── GET /api/analytics/ga4/status — lightweight config check (no GA4 call) ──
+
+analyticsRouter.get('/ga4/status', authenticateSupabase, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ error: 'Unauthenticated' });
+    const adminOk = await isAdminUser(req.userId);
+    if (!adminOk) return res.status(403).json({ error: 'Admin access required' });
+
+    const method = detectAuthMethod();
+    const propertyId = config.ga4PropertyId;
+    const propertyIdLooksWrong = propertyId.startsWith('G-') || propertyId.startsWith('g-');
+
+    return res.json({
+      configured: method !== 'none' && !!propertyId && !propertyIdLooksWrong,
+      authMethod: method,
+      propertyId: propertyId || null,
+      issues: [
+        ...(!propertyId ? ['GA4_PROPERTY_ID is not set'] : []),
+        ...(propertyIdLooksWrong
+          ? [`GA4_PROPERTY_ID looks like a Measurement ID ("${propertyId}"). It must be the numeric Property ID from GA4 Admin → Property Settings, e.g. "123456789".`]
+          : []),
+        ...(method === 'none' ? ['No auth credentials found. Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2) or GA4_SERVICE_ACCOUNT_JSON (service account).'] : []),
+      ],
+      hints: {
+        propertyId: 'GA4 Admin (gear icon) → Property Settings → Property ID (top-right, numeric only)',
+        enableDataApi: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
+        generateToken: 'npx tsx apps/api/scripts/ga4-get-refresh-token.ts',
+      },
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message });
+  }
+});
+
+// ── GET /api/analytics/ga4 ───────────────────────────────────────────────────
+
 analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Unauthenticated' });
@@ -94,16 +130,29 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
     if (!config.ga4PropertyId) {
       return res.status(503).json({
         error: 'GA4 not configured',
-        hint: 'Set GA4_PROPERTY_ID plus either GA4_SERVICE_ACCOUNT_JSON (service account) or GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2).',
+        hint: 'Set GA4_PROPERTY_ID (numeric, from GA4 Admin → Property Settings) plus OAuth or service account credentials.',
         authMethod: 'none',
+        debugUrl: '/api/analytics/ga4/status',
+      });
+    }
+
+    if (config.ga4PropertyId.startsWith('G-') || config.ga4PropertyId.startsWith('g-')) {
+      console.error('[Analytics] GA4_PROPERTY_ID looks like a Measurement ID:', config.ga4PropertyId,
+        '— must be the numeric Property ID from GA4 Admin → Property Settings.');
+      return res.status(503).json({
+        error: 'GA4_PROPERTY_ID is set to a Measurement ID (G-... format)',
+        hint: 'The Data API requires the numeric Property ID, not the Measurement ID. Find it in GA4 Admin → Property Settings → Property ID (top-right, numbers only, e.g. 123456789).',
+        current: config.ga4PropertyId,
+        debugUrl: '/api/analytics/ga4/status',
       });
     }
 
     if (detectAuthMethod() === 'none') {
       return res.status(503).json({
-        error: 'GA4 not configured',
-        hint: 'Set either GA4_SERVICE_ACCOUNT_JSON (service account) or GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2).',
+        error: 'GA4 auth credentials not configured',
+        hint: 'Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (recommended) or GA4_SERVICE_ACCOUNT_JSON.',
         authMethod: 'none',
+        debugUrl: '/api/analytics/ga4/status',
       });
     }
 
@@ -318,7 +367,49 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
       dailyTrend,
     });
   } catch (err: any) {
-    console.error('[Analytics] GA4 error:', err?.message ?? err);
-    return res.status(500).json({ error: 'Failed to fetch GA4 data', detail: err?.message });
+    const msg: string = err?.message ?? String(err);
+    const code: number = err?.code ?? err?.status ?? 0;
+
+    // Surface actionable hints for the most common Google API errors
+    if (msg.includes('has not been used') || msg.includes('API_NOT_ENABLED') || code === 403) {
+      console.error('[Analytics] GA4 Data API not enabled in GCP project.',
+        'Enable it at: https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
+        'Full error:', msg);
+      return res.status(503).json({
+        error: 'Google Analytics Data API is not enabled in the GCP project',
+        hint: 'Enable it at https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com — make sure you are in the correct GCP project (the one that owns your OAuth client ID / service account).',
+        detail: msg,
+      });
+    }
+
+    if (msg.includes('invalid_grant') || msg.includes('invalid_client')) {
+      console.error('[Analytics] GA4 OAuth credentials are invalid or refresh token expired.', msg);
+      return res.status(503).json({
+        error: 'GA4 OAuth credentials invalid',
+        hint: 'Re-run: npx tsx apps/api/scripts/ga4-get-refresh-token.ts to generate a new refresh token, then update GA4_OAUTH_REFRESH_TOKEN in Railway.',
+        detail: msg,
+      });
+    }
+
+    if (msg.includes('PERMISSION_DENIED') || msg.includes('does not have sufficient permissions')) {
+      console.error('[Analytics] GA4 account does not have access to this property.', msg);
+      return res.status(503).json({
+        error: 'GA4 permission denied',
+        hint: 'The Google account used to generate the refresh token must have Viewer access to the GA4 property.',
+        detail: msg,
+      });
+    }
+
+    if (msg.includes('INVALID_ARGUMENT') || msg.includes('Property') && msg.includes('not found')) {
+      console.error('[Analytics] GA4_PROPERTY_ID may be wrong. Current value:', config.ga4PropertyId, msg);
+      return res.status(503).json({
+        error: 'GA4 property not found',
+        hint: `GA4_PROPERTY_ID "${config.ga4PropertyId}" is not valid. Find the numeric Property ID in GA4 Admin → Property Settings → Property ID (top-right).`,
+        detail: msg,
+      });
+    }
+
+    console.error('[Analytics] GA4 error:', msg);
+    return res.status(500).json({ error: 'Failed to fetch GA4 data', detail: msg });
   }
 });

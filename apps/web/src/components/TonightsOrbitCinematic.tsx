@@ -517,7 +517,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       {/* Cinematic Carousel Container - Properly sized to contain cards */}
       <div 
         ref={containerRef}
-        className="relative px-6 pt-8 pb-12"
+        className="relative px-6 pt-2 pb-12"
         style={{
           overflow: 'visible',
         }}

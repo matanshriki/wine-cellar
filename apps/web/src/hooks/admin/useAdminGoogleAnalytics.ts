@@ -83,7 +83,9 @@ export function useAdminGoogleAnalytics() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `HTTP ${res.status}`);
+        // Include the hint from the API in the error message so the UI can show it
+        const detail = [body.error, body.hint].filter(Boolean).join(' — ');
+        throw new Error(detail || `HTTP ${res.status}`);
       }
 
       return res.json() as Promise<GA4Data>;

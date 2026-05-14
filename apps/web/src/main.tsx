@@ -25,7 +25,7 @@ import { initializeDirection } from './i18n/config';
 import { registerServiceWorker } from './utils/registerServiceWorker';
 
 // Import analytics initialization
-import { initializeAnalytics } from './services/analytics';
+import { initializeAnalytics, registerAnalyticsDebug } from './services/analytics';
 
 // Import AI attribution capture (runs before consent — no data sent to GA here)
 import { captureAttribution } from './services/aiAttribution';
@@ -60,13 +60,17 @@ initPWAAnimationFixes();
 captureAttribution();
 
 /**
- * Initialize Google Analytics 4
- * Only runs if VITE_ANALYTICS_ENABLED=true, measurement ID is provided, AND user has given consent.
- * Internally calls sendAttributionToGA() once GA is ready.
- * Privacy-first: No PII is tracked.
- * Note: Analytics may initialize later after user logs in and accepts consent.
+ * Initialize Google Analytics 4.
+ * Auto-enabled in production builds when consent is given.
+ * In development, requires VITE_ANALYTICS_ENABLED=true.
  */
 initializeAnalytics();
+
+/**
+ * Register window.__sommiAnalyticsStatus() debug helper.
+ * Call it from the browser console to see exactly why events are/aren't firing.
+ */
+registerAnalyticsDebug();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
