@@ -84,7 +84,34 @@ async function isAdminUser(userId: string): Promise<boolean> {
 
 // ── GET /api/analytics/ga4 ───────────────────────────────────────────────────
 
-// ── GET /api/analytics/ga4/status — lightweight config check (no GA4 call) ──
+// ── GET /api/analytics/ga4/health — public config check, no credentials exposed ──
+// Visit this directly in a browser to verify Railway env vars are set correctly.
+
+analyticsRouter.get('/ga4/health', (_req, res) => {
+  const method = detectAuthMethod();
+  const propertyId = config.ga4PropertyId;
+  const propertyIdLooksWrong = !!propertyId && (propertyId.startsWith('G-') || propertyId.startsWith('g-'));
+
+  const issues: string[] = [];
+  if (!propertyId)        issues.push('GA4_PROPERTY_ID is not set');
+  if (propertyIdLooksWrong) issues.push(`GA4_PROPERTY_ID "${propertyId}" looks like a Measurement ID (G-... format). Use the numeric Property ID from GA4 Admin → Property Settings.`);
+  if (method === 'none')  issues.push('No GA4 auth credentials found. Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (or GA4_SERVICE_ACCOUNT_JSON).');
+
+  return res.json({
+    ok: issues.length === 0,
+    authMethod: method,
+    propertyIdSet: !!propertyId,
+    propertyIdFormat: propertyIdLooksWrong ? 'WRONG (G-... Measurement ID)' : propertyId ? 'ok (numeric)' : 'not set',
+    issues,
+    hints: {
+      propertyId: 'GA4 Admin (gear) → Property Settings → Property ID (top-right, numbers only, e.g. 123456789)',
+      enableDataApi: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
+      generateRefreshToken: 'npx tsx apps/api/scripts/ga4-get-refresh-token.ts',
+    },
+  });
+});
+
+// ── GET /api/analytics/ga4/status — admin-only, same check + redacted cred presence ──
 
 analyticsRouter.get('/ga4/status', authenticateSupabase, async (req: AuthRequest, res) => {
   try {
@@ -94,23 +121,30 @@ analyticsRouter.get('/ga4/status', authenticateSupabase, async (req: AuthRequest
 
     const method = detectAuthMethod();
     const propertyId = config.ga4PropertyId;
-    const propertyIdLooksWrong = propertyId.startsWith('G-') || propertyId.startsWith('g-');
+    const propertyIdLooksWrong = !!propertyId && (propertyId.startsWith('G-') || propertyId.startsWith('g-'));
+
+    const issues: string[] = [];
+    if (!propertyId)        issues.push('GA4_PROPERTY_ID is not set');
+    if (propertyIdLooksWrong) issues.push(`GA4_PROPERTY_ID "${propertyId}" looks like a Measurement ID. Use the numeric Property ID.`);
+    if (method === 'none')  issues.push('No auth credentials set.');
 
     return res.json({
-      configured: method !== 'none' && !!propertyId && !propertyIdLooksWrong,
+      ok: issues.length === 0,
       authMethod: method,
       propertyId: propertyId || null,
-      issues: [
-        ...(!propertyId ? ['GA4_PROPERTY_ID is not set'] : []),
-        ...(propertyIdLooksWrong
-          ? [`GA4_PROPERTY_ID looks like a Measurement ID ("${propertyId}"). It must be the numeric Property ID from GA4 Admin → Property Settings, e.g. "123456789".`]
-          : []),
-        ...(method === 'none' ? ['No auth credentials found. Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2) or GA4_SERVICE_ACCOUNT_JSON (service account).'] : []),
-      ],
+      propertyIdFormat: propertyIdLooksWrong ? 'WRONG (G-... Measurement ID)' : propertyId ? 'ok (numeric)' : 'not set',
+      credentialsPresent: {
+        GA4_PROPERTY_ID:           !!config.ga4PropertyId,
+        GA4_OAUTH_CLIENT_ID:       !!config.ga4OauthClientId,
+        GA4_OAUTH_CLIENT_SECRET:   !!config.ga4OauthClientSecret,
+        GA4_OAUTH_REFRESH_TOKEN:   !!config.ga4OauthRefreshToken,
+        GA4_SERVICE_ACCOUNT_JSON:  !!config.ga4ServiceAccountJson,
+      },
+      issues,
       hints: {
-        propertyId: 'GA4 Admin (gear icon) → Property Settings → Property ID (top-right, numeric only)',
+        propertyId: 'GA4 Admin (gear) → Property Settings → Property ID (top-right, numeric only)',
         enableDataApi: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
-        generateToken: 'npx tsx apps/api/scripts/ga4-get-refresh-token.ts',
+        generateRefreshToken: 'npx tsx apps/api/scripts/ga4-get-refresh-token.ts',
       },
     });
   } catch (err: any) {
