@@ -65,6 +65,13 @@ function buildClient(): BetaAnalyticsDataClient {
       clientSecret: config.ga4OauthClientSecret,
     });
     oauth2.setCredentials({ refresh_token: config.ga4OauthRefreshToken });
+
+    // google-gax ≥ 4 calls auth.getUniverseDomain() but older google-auth-library
+    // versions don't include it — polyfill so the gRPC stub creation doesn't crash.
+    if (typeof (oauth2 as any).getUniverseDomain !== 'function') {
+      (oauth2 as any).getUniverseDomain = () => Promise.resolve('googleapis.com');
+    }
+
     const client = new BetaAnalyticsDataClient({ auth: oauth2 } as any);
     (client as any).on?.('error', (e: Error) =>
       console.warn('[Analytics] GA4 client error (non-fatal):', e.message?.slice(0, 120)));
