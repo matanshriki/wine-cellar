@@ -131,6 +131,14 @@
       "success": "Profile completed!",
       "failed": "Failed to complete profile",
       "required": "You must complete your profile to use the app"
+    },
+    "billing": {
+      "title": "Subscription",
+      "currentPlan": "Current plan",
+      "free": "Free",
+      "upgradePlan": "Upgrade plan",
+      "manageBilling": "Manage billing",
+      "manageBillingLoading": "Loading…"
     }
   },
   "dashboard": {

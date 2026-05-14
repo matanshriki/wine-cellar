@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 // import { useTheme } from '../contexts/ThemeContext'; // Dark mode disabled
@@ -18,13 +19,18 @@ import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 import { AdminImageBackfill } from '../components/AdminImageBackfill';
 import { TasteProfileCard } from '../components/TasteProfileCard';
 import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
+import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { getPortalUrl } from '../lib/paddle';
+import { supabase } from '../lib/supabase';
 
 export function ProfilePage() {
   const { t } = useTranslation();
   const { user, profile: contextProfile } = useAuth();
+  const { monetizationEnabled, planKey, isFreshFromDB } = useMonetizationAccess();
   const [profile, setProfile] = useState(contextProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [formData, setFormData] = useState({
     display_name: contextProfile?.display_name || '',
     first_name: contextProfile?.first_name || '',
@@ -79,6 +85,20 @@ export function ProfilePage() {
       toast.error(error.message || t('profile.updateFailed'));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token ?? '';
+      const url = await getPortalUrl(token);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      toast.error(err?.message ?? t('sommelierCredits.toast.portalError'));
+    } finally {
+      setPortalLoading(false);
     }
   }
 
@@ -339,7 +359,54 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
-      
+
+      {/* Subscription */}
+      {monetizationEnabled && isFreshFromDB && (
+        <div className="card mt-6">
+          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{t('profile.billing.title')}</h2>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('profile.billing.currentPlan')}</span>
+            {planKey && planKey !== 'free' ? (
+              <span
+                className="rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wider"
+                style={
+                  planKey === 'premium'
+                    ? {
+                        background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(217,119,6,0.08))',
+                        color: '#F59E0B',
+                        border: '1px solid rgba(251,191,36,0.25)',
+                      }
+                    : {
+                        background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(109,40,217,0.08))',
+                        color: '#A78BFA',
+                        border: '1px solid rgba(167,139,250,0.25)',
+                      }
+                }
+              >
+                ✦ {planKey === 'premium' ? 'Premium' : 'Collector'}
+              </span>
+            ) : (
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('profile.billing.free')}
+              </span>
+            )}
+          </div>
+          {planKey && planKey !== 'free' ? (
+            <button
+              onClick={handleManageBilling}
+              disabled={portalLoading}
+              className="w-full btn btn-secondary text-sm"
+            >
+              {portalLoading ? t('profile.billing.manageBillingLoading') : t('profile.billing.manageBilling')}
+            </button>
+          ) : (
+            <Link to="/upgrade" className="w-full btn btn-primary text-sm text-center block">
+              {t('profile.billing.upgradePlan')}
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Admin Tools */}
       <AdminWineProfileBackfill />
       <AdminReadinessBackfill />

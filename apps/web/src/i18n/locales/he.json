@@ -131,6 +131,14 @@
       "success": "הפרופיל הושלם!",
       "failed": "השלמת הפרופיל נכשלה",
       "required": "עליך להשלים את הפרופיל שלך כדי להשתמש באפליקציה"
+    },
+    "billing": {
+      "title": "מנוי",
+      "currentPlan": "תוכנית נוכחית",
+      "free": "חינם",
+      "upgradePlan": "שדרג מנוי",
+      "manageBilling": "נהל חיוב",
+      "manageBillingLoading": "טוען…"
     }
   },
   "dashboard": {
