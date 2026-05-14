@@ -117,7 +117,7 @@ async function main() {
   console.log('\n  ', authUrl);
   console.log('\n──────────────────────────────────────────────────────────────────');
   console.log('2. After you approve, the browser will redirect to localhost:4242.');
-  console.log('   If it says "site can't be reached", copy the full URL from the');
+  console.log('   If it says "site can\'t be reached", copy the full URL from the');
   console.log('   address bar and paste it when prompted below.\n');
 
   // Try to capture the code automatically via the local redirect server
