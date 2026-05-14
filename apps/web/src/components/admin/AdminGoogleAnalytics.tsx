@@ -159,11 +159,11 @@ function BarList({
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>{item.sub}</span>
               )}
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-heading)', minWidth: '40px', textAlign: 'right' }}>
-                {item.value.toLocaleString()}
+                {(item.value ?? 0).toLocaleString()}
               </span>
-              {item.pct !== undefined && (
+              {item.pct != null && (
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', minWidth: '36px', textAlign: 'right' }}>
-                  {item.pct.toFixed(0)}%
+                  {(item.pct ?? 0).toFixed(0)}%
                 </span>
               )}
             </div>
@@ -254,7 +254,7 @@ function ColumnChart({
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
         <span style={{ fontSize: '0.63rem', color: 'var(--text-tertiary)' }}>{formatDate(data[0].date)}</span>
         <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-          peak {Math.max(...values).toLocaleString()} · total {values.reduce((a, b) => a + b, 0).toLocaleString()}
+          peak {Math.max(...values.map(v => v ?? 0), 0).toLocaleString()} · total {values.map(v => v ?? 0).reduce((a, b) => a + b, 0).toLocaleString()}
         </span>
         <span style={{ fontSize: '0.63rem', color: 'var(--text-tertiary)' }}>{formatDate(data[data.length - 1].date)}</span>
       </div>
@@ -579,25 +579,25 @@ export function AdminGoogleAnalytics() {
     label: s.channel,
     value: s.sessions,
     pct: totalSourceSessions > 0 ? (s.sessions / totalSourceSessions) * 100 : 0,
-    sub: `${s.users.toLocaleString()} users`,
+    sub: `${(s.users ?? 0).toLocaleString()} users`,
   }));
 
   const countryItems = data.countries.map(c => ({
     label: c.country,
     value: c.users,
-    sub: `${c.sessions.toLocaleString()} sessions`,
+    sub: `${(c.sessions ?? 0).toLocaleString()} sessions`,
   }));
 
   const pageItems = data.pages.map(p => ({
     label: p.path,
     value: p.views,
-    sub: `${p.users.toLocaleString()} users · ${formatDuration(p.avgDuration)}`,
+    sub: `${(p.users ?? 0).toLocaleString()} users · ${formatDuration(p.avgDuration ?? 0)}`,
   }));
 
   const landingItems = data.landingPages.map(p => ({
     label: p.path === '/' ? '/ (home)' : p.path,
     value: p.sessions,
-    sub: `${p.bounceRate.toFixed(0)}% bounce`,
+    sub: `${(p.bounceRate ?? 0).toFixed(0)}% bounce`,
   }));
 
   // Source/medium items — labelled and sorted, AI sources highlighted
@@ -605,7 +605,7 @@ export function AdminGoogleAnalytics() {
     label: labelSource(s.source, s.medium),
     value: s.sessions,
     pct: s.pct,
-    sub: `${s.users.toLocaleString()} users · ${s.newUsers.toLocaleString()} new`,
+    sub: `${(s.users ?? 0).toLocaleString()} users · ${(s.newUsers ?? 0).toLocaleString()} new`,
     isAI: !!getSourceMeta(s.source),
   }));
 
@@ -860,10 +860,10 @@ export function AdminGoogleAnalytics() {
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', position: 'relative', zIndex: 1, flexShrink: 0 }}>{item.sub}</span>
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-heading)', minWidth: 40, textAlign: 'right', position: 'relative', zIndex: 1 }}>
-                {item.value.toLocaleString()}
+                {(item.value ?? 0).toLocaleString()}
               </span>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', minWidth: 36, textAlign: 'right', position: 'relative', zIndex: 1 }}>
-                {item.pct.toFixed(0)}%
+                {(item.pct ?? 0).toFixed(0)}%
               </span>
             </div>
           ))}
