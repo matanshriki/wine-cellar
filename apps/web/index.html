@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     
     <!-- Favicons -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!-- favicon.ico: 16x16, 32x32, 48x48 — legacy browsers and Google Search discovery -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon" />
+    <!-- PNG favicons: Google Search requires ≥48×48; 96x96 is the preferred crawl target -->
+    <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
+    <link rel="icon" href="/favicon-48x48.png" type="image/png" sizes="48x48" />
+    <!-- High-res PNG for modern browser tabs and bookmarks -->
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
