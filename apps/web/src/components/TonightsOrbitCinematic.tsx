@@ -428,7 +428,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   };
 
   return (
-    <div className="luxury-card">
+    <div className="luxury-card isolate">
       {/* Premium Header */}
       <div 
         className="p-6 pb-8"
@@ -528,9 +528,12 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       >
         {/* Carousel Track */}
         <div 
-          className="relative flex items-center justify-center"
+          className="relative z-0 flex items-center justify-center"
           style={{
-            minHeight: '420px', // Tall enough to contain full wine card (~400px) + spacing
+            /* Cards are position:absolute — they do not stretch this box. Min height must
+               cover image (4:5 at max 280px wide ≈ 350px) + detail panel + tags (~200px+)
+               or painted content overlaps the footer and the Drink Window widget below. */
+            minHeight: 'clamp(560px, 58vh, 640px)',
             perspective: '1200px',
           }}
         >
@@ -942,7 +945,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       {/* Footer note — shown when cellar is small, all HOLD, or fewer than 3 slots */}
       {(topBottles.length < 3 || selection.allHold) && (
         <div
-          className="mx-6 mb-6 p-3 rounded-lg text-sm text-center"
+          className="relative z-10 mx-6 mb-6 mt-1 rounded-lg p-3 text-center text-sm"
           style={{
             background: 'var(--bg-surface-elevated)',
             color: 'var(--text-tertiary)',

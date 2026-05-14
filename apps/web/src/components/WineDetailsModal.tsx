@@ -503,7 +503,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.97, opacity: 0 }}
               transition={{ duration: 0.1, ease: 'easeOut' }}
-              className="luxury-card w-full flex flex-col"
+              className="luxury-card flex w-full min-w-0 flex-col overflow-x-hidden"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
@@ -515,7 +515,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               aria-modal="true"
               aria-labelledby="wine-details-title"
               style={{
-                maxWidth: 'min(42rem, 100%)',
+                maxWidth: 'min(42rem, calc(100vw - 1.5rem))',
                 maxHeight: 'calc(100dvh - 2rem)',
                 height: 'auto',
                 willChange: 'transform, opacity',
@@ -574,7 +574,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
               {/* Content - Scrollable */}
               <div 
-                className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 pb-20 md:pb-8 space-y-6 md:space-y-8 luxury-scrollbar"
+                className="luxury-scrollbar min-w-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-4 py-4 pb-20 sm:px-6 sm:py-6 md:space-y-8 md:px-8 md:pb-8"
                 style={{
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',
@@ -974,36 +974,38 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
                 {/* Keep / Reserved Section */}
                 {bottle.is_reserved && !isDemoBottle && (
-                  <div>
+                  <div className="min-w-0">
                     <h3
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
+                      className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-600, #a37700)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-600, #a37700)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                      <KeepBadge reservedFor={bottle.reserved_for} reservedDate={bottle.reserved_date} size="md" />
+                      <span className="min-w-0">
+                        <KeepBadge reservedFor={bottle.reserved_for} reservedDate={bottle.reserved_date} size="md" />
+                      </span>
                     </h3>
                     <div
-                      className="p-4 rounded-xl space-y-2 text-sm"
+                      className="min-w-0 space-y-2 rounded-xl p-4 text-sm break-words"
                       style={{
                         background: 'linear-gradient(135deg, rgba(212,175,55,0.07), rgba(180,140,30,0.10))',
                         border: '1px solid rgba(212,175,55,0.3)',
                       }}
                     >
                       {bottle.reserved_for && (
-                        <div className="flex items-center gap-2">
-                          <span style={{ color: 'var(--text-tertiary)' }}>🎉</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>
+                        <div className="flex min-w-0 items-start gap-2">
+                          <span className="flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>🎉</span>
+                          <span className="min-w-0 break-words" style={{ color: 'var(--text-secondary)' }}>
                             {t('cellar.bottle.keepReservedFor', { name: bottle.reserved_for })}
                           </span>
                         </div>
                       )}
                       {bottle.reserved_date && (
-                        <div className="flex items-center gap-2">
-                          <span style={{ color: 'var(--text-tertiary)' }}>📅</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>
+                        <div className="flex min-w-0 items-start gap-2">
+                          <span className="flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>📅</span>
+                          <span className="min-w-0 break-words" style={{ color: 'var(--text-secondary)' }}>
                             {t('cellar.bottle.keepDate', {
                               date: new Date(bottle.reserved_date).toLocaleDateString(i18n.language, {
                                 year: 'numeric', month: 'long', day: 'numeric',
@@ -1013,9 +1015,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         </div>
                       )}
                       {bottle.reserved_note && (
-                        <div className="flex items-start gap-2">
-                          <span style={{ color: 'var(--text-tertiary)' }}>📝</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>{bottle.reserved_note}</span>
+                        <div className="flex min-w-0 items-start gap-2">
+                          <span className="flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>📝</span>
+                          <span className="min-w-0 break-words" style={{ color: 'var(--text-secondary)' }}>{bottle.reserved_note}</span>
                         </div>
                       )}
                       <div className="pt-2 flex gap-2">

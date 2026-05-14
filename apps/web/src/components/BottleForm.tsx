@@ -593,12 +593,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
       }}
     >
       <div 
-        className="modal-luxury w-full max-h-mobile-modal"
+        className="modal-luxury w-full max-h-mobile-modal min-w-0"
         style={{
           maxWidth: 'min(90vw, 56rem)',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
+          overflowX: 'hidden',
+          overflowY: 'hidden',
         }}
       >
         {/* Header - Fixed at top */}
@@ -624,10 +625,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
         <form 
           id="bottle-form" 
           onSubmit={handleSubmit} 
-          className="p-4 sm:p-6 space-y-3 sm:space-y-4 luxury-scrollbar"
+          className="p-4 sm:p-6 space-y-3 sm:space-y-4 luxury-scrollbar min-w-0"
           style={{ 
             flex: '1 1 0%',
             overflowY: 'auto',
+            overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
             minHeight: 0,
           }}
@@ -760,7 +762,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="md:col-span-2">
               <label 
                 className="block text-sm font-medium mb-1"
@@ -1039,13 +1041,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             </div>
 
             {/* Keep / Reserve toggle */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 min-w-0">
               <div
                 role="button"
                 tabIndex={0}
                 onClick={() => setIsReserved(v => !v)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsReserved(v => !v); } }}
-                className="flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200"
+                className="flex min-w-0 items-center justify-between gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200"
                 style={{
                   background: isReserved
                     ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(180,140,30,0.12))'
@@ -1053,16 +1055,16 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   border: `1px solid ${isReserved ? 'rgba(212,175,55,0.4)' : 'var(--border-base)'}`,
                 }}
               >
-                <div className="flex items-center gap-2.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isReserved ? 'var(--gold-600, #a37700)' : 'var(--text-tertiary)'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isReserved ? 'var(--gold-600, #a37700)' : 'var(--text-tertiary)'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-medium" style={{ color: isReserved ? 'var(--gold-700, #92660a)' : 'var(--text-primary)' }}>
                       {t('bottleForm.keep.toggleLabel')}
                     </div>
-                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    <div className="text-xs mt-0.5 break-words" style={{ color: 'var(--text-tertiary)' }}>
                       {t('bottleForm.keep.toggleHint')}
                     </div>
                   </div>
@@ -1088,13 +1090,13 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               {/* Reserve detail fields (only when toggled on) */}
               {isReserved && (
                 <div
-                  className="mt-2 p-3 rounded-xl space-y-3"
+                  className="mt-2 min-w-0 space-y-3 overflow-x-hidden rounded-xl p-3"
                   style={{
                     background: 'linear-gradient(135deg, rgba(212,175,55,0.05), rgba(180,140,30,0.08))',
                     border: '1px solid rgba(212,175,55,0.25)',
                   }}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.reservedFor')}
                     </label>
@@ -1102,12 +1104,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       type="text"
                       value={reservedFor}
                       onChange={(e) => setReservedFor(e.target.value)}
-                      className="input-luxury w-full text-sm"
+                      className="input-luxury w-full min-w-0 max-w-full text-sm"
                       placeholder={t('bottleForm.keep.reservedForPlaceholder')}
                       maxLength={80}
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.date')}
                     </label>
@@ -1115,10 +1117,10 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       type="date"
                       value={reservedDate}
                       onChange={(e) => setReservedDate(e.target.value)}
-                      className="input-luxury w-full text-sm"
+                      className="input-luxury w-full min-w-0 max-w-full text-sm"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.note')}
                     </label>
@@ -1126,7 +1128,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       type="text"
                       value={reservedNote}
                       onChange={(e) => setReservedNote(e.target.value)}
-                      className="input-luxury w-full text-sm"
+                      className="input-luxury w-full min-w-0 max-w-full text-sm"
                       placeholder={t('bottleForm.keep.notePlaceholder')}
                       maxLength={200}
                     />

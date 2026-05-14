@@ -428,6 +428,18 @@
   cursor: not-allowed;
 }
 
+/* Native date/time controls use a wide intrinsic min-width; without this they
+   overflow narrow modals and grid cells (esp. mobile WebKit). */
+.input-luxury[type="date"],
+.input-luxury[type="datetime-local"],
+.input-luxury[type="time"],
+.input-luxury[type="month"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 /* ===== MODAL PRIMITIVE ===== */
 .modal-luxury {
   background: var(--bg-surface);
