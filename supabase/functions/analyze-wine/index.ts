@@ -110,7 +110,7 @@ serve(async (req) => {
     // system_background eligibility check below.
     const { data: bottleRow, error: bottleOwnerErr } = await supabaseAdmin
       .from('bottles')
-      .select('id, user_id, wine_id, created_at, readiness_label, analysis_summary')
+      .select('id, user_id, wine_id, created_at, readiness_label, analysis_summary, serving_guidance, serve_temp_c, decant_minutes')
       .eq('id', bottle_id)
       .single()
 
@@ -307,18 +307,30 @@ serve(async (req) => {
     }
 
     // Normalize serving guidance from AI response
-    const servingGuidance = normalizeServingGuidance(analysis.serving)
-    if (!servingGuidance) {
-      // AI didn't return a valid serving object — build fallback
-      console.warn('[Analyze Wine] serving object missing or invalid — using fallback for:', wineData.wine_name)
-      analysis.serving = buildFallbackServingGuidance(
-        wineData.color,
-        wineData.vintage,
-        currentYear,
-        analysis.readiness_label,
-      )
+    const normalizedServing = normalizeServingGuidance(analysis.serving)
+    if (normalizedServing) {
+      // AI returned valid serving — always use it
+      analysis.serving = normalizedServing
     } else {
-      analysis.serving = servingGuidance
+      // AI serving object was missing or failed validation.
+      // Prefer preserving existing good guidance over writing a generic fallback.
+      const existingServing = (bottleRow as any).serving_guidance as Record<string, unknown> | null
+      const existingConf = existingServing?.confidence
+      const existingIsGood = existingConf === 'high' || existingConf === 'medium'
+
+      if (existingIsGood) {
+        console.log('[Analyze Wine] AI serving invalid — preserved existing', existingConf,
+          '-confidence guidance; no overwrite for bottle:', bottle_id)
+        analysis.serving = existingServing as ServingGuidance
+      } else {
+        console.warn('[Analyze Wine] AI serving invalid, no good existing guidance — using fallback for:', wineData.wine_name)
+        analysis.serving = buildFallbackServingGuidance(
+          wineData.color,
+          wineData.vintage,
+          currentYear,
+          analysis.readiness_label,
+        )
+      }
     }
 
     const servingConf = analysis.serving?.confidence ?? 'low'

@@ -137,7 +137,35 @@
     "tonightsOrbit": {
       "title": "Tonight's Selection",
       "subtitle": "Perfect bottles for this evening",
-      "needMore": "Add more bottles to see personalized recommendations"
+      "needMore": "Add more bottles to see personalized recommendations",
+      "allHold": "Your wines are best kept for now — consider holding a little longer",
+      "analyzePrompt": "Analyze your cellar to unlock personalized picks",
+      "categories": {
+        "bestTonight": "Best to open tonight",
+        "crowdPleaser": "Safe crowd-pleaser",
+        "specialBottle": "Special bottle",
+        "bestAvailable": "Best available"
+      },
+      "reasons": {
+        "readyOpenTonight": "Ready to drink — open tonight",
+        "approachingPeak": "Approaching its peak — drink soon",
+        "bestAvailable": "Best available in your cellar",
+        "crowdFriendly": "Approachable and guest-friendly",
+        "prestigeBottle": "Prestige bottle — worth the occasion",
+        "matureAndReady": "Mature and ready at its best",
+        "highlyRated": "Highly rated — sure to impress",
+        "impressBottle": "A bottle worth a special evening"
+      },
+      "tags": {
+        "readyNow": "Ready now",
+        "inPeakWindow": "In peak window",
+        "holdWine": "Better to hold",
+        "guestFriendly": "Guest-friendly",
+        "specialBottle": "Special bottle",
+        "matureBottle": "Great maturity",
+        "needsDecant": "Decant {{min}} min",
+        "highRated": "High-rated"
+      }
     },
     "drinkWindow": {
       "title": "Drink Window",

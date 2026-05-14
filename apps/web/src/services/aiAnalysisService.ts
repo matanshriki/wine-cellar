@@ -184,7 +184,7 @@ function buildClientFallbackServing(
   if (readinessLabel === 'HOLD') {
     return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 60, decant_max: 120, open_before_minutes: 90, glassware: 'Large Bordeaux glass', short_instruction: 'Open 90 minutes before serving and decant at least 1 hour.', explanation: 'Young tannic red needs extended airing to soften its tannins.', confidence: 'medium', source_summary: 'Fallback for young tannic reds.' };
   }
-  return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 30, decant_max: 60, open_before_minutes: 45, glassware: 'Large red wine glass', short_instruction: 'Open 45 minutes before serving.', explanation: 'Red wines benefit from some aeration before serving.', confidence: 'low', source_summary: 'Generic fallback.' };
+  return { temp_min: 16, temp_max: 18, decanting: 'recommended', decant_min: 30, decant_max: 60, open_before_minutes: 45, glassware: 'Large red wine glass', short_instruction: 'Open 45 minutes before serving.', explanation: 'Red wines benefit from some aeration before serving.', confidence: 'low', source_summary: 'Generic fallback — AI serving guidance was unavailable; based on wine color only.' };
 }
 
 /**
@@ -320,8 +320,29 @@ export async function generateAIAnalysis(
 
     const raw = data.analysis as Record<string, unknown>;
     const barrel = parseBarrelFromAnalysisPayload(raw);
-    const servingGuidance = parseServingGuidanceFromPayload(raw) ??
-      buildClientFallbackServing(bottle.wine.color, bottle.wine.vintage, (data.analysis as AIAnalysis).readiness_label);
+    const parsedServing = parseServingGuidanceFromPayload(raw);
+
+    // If the AI serving object was missing/malformed on the client side, prefer existing
+    // good guidance over a generic client-side fallback.
+    let servingGuidance: ServingGuidance;
+    if (parsedServing) {
+      servingGuidance = parsedServing;
+    } else {
+      const existingServing = (bottle as any).serving_guidance as ServingGuidance | null;
+      const existingConf = existingServing?.confidence;
+      if (existingConf === 'high' || existingConf === 'medium') {
+        console.log('[AI Analysis] Client serving parse failed — preserved existing', existingConf,
+          '-confidence guidance for bottle:', bottle.id);
+        servingGuidance = existingServing!;
+      } else {
+        servingGuidance = buildClientFallbackServing(
+          bottle.wine.color,
+          bottle.wine.vintage,
+          (data.analysis as AIAnalysis).readiness_label,
+        );
+      }
+    }
+
     const analysis: AIAnalysis = {
       ...(data.analysis as AIAnalysis),
       ...barrel,
@@ -357,10 +378,25 @@ export async function generateAIAnalysis(
 
     // Fallback to deterministic analysis with language support
     const fallbackAnalysis = generateDeterministicAnalysis(bottle, language);
-    
+
+    // If the bottle already has good serving guidance from a prior successful analysis,
+    // preserve it rather than overwriting with the generic deterministic fallback.
+    // NOTE: bottle.serving_guidance is available here because generateAIAnalysis receives
+    // the full BottleWithWineInfo object. If callers pass a partial object without
+    // serving_guidance, this guard silently no-ops (existingServing is null/undefined).
+    const existingServing = (bottle as any).serving_guidance as ServingGuidance | null;
+    const existingConf = existingServing?.confidence;
+    if (existingConf === 'high' || existingConf === 'medium') {
+      console.log('[AI Analysis] Edge call failed — preserved existing', existingConf,
+        '-confidence serving guidance for bottle:', bottle.id);
+      fallbackAnalysis.serving_guidance = existingServing!;
+      fallbackAnalysis.serving_temp_c = existingServing!.temp_min;
+      fallbackAnalysis.decant_minutes = existingServing!.decant_min;
+    }
+
     // Store in database
     await storeAnalysis(bottle.id, fallbackAnalysis);
-    
+
     return {
       ...fallbackAnalysis,
       analyzed_at: new Date().toISOString(),

@@ -29,6 +29,7 @@ import { EveningQueuePlayer } from './EveningQueuePlayer';
 import * as eveningPlanService from '../services/eveningPlanService';
 import type { EveningPlan } from '../services/eveningPlanService';
 import { getLocalizedWineData } from '../utils/wineTranslations';
+import { selectTonightCategories, type CategorizedSlot, type SlotKey } from '../services/tonightsCategoryService';
 
 interface TonightsOrbitCinematicProps {
   bottles: BottleWithWineInfo[];
@@ -56,52 +57,39 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const [checkingForPlan, setCheckingForPlan] = useState(true);
   const [showQueuePlayer, setShowQueuePlayer] = useState(false);
 
+  // ─── Per-slot visual config ─────────────────────────────────────────────
+  const SLOT_CONFIG: Record<SlotKey, { bg: string; color: string; icon: string }> = {
+    bestTonight:  { bg: 'rgba(164, 77, 90, 0.12)',  color: 'var(--wine-700)',  icon: '🍷' },
+    crowdPleaser: { bg: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8',          icon: '👥' },
+    specialBottle:{ bg: 'rgba(212, 175, 55, 0.15)', color: 'var(--gold-700)',  icon: '⭐' },
+  };
+
+  // For HOLD bottles shown in bestTonight slot, the categoryKey becomes
+  // 'dashboard.tonightsOrbit.categories.bestAvailable' — use a neutral amber badge
+  const HOLD_BADGE_STYLE = { bg: 'rgba(245, 158, 11, 0.12)', color: '#92400e', icon: '⏳' };
+
   /**
-   * Smart Selection Logic - STABLE (no re-sorting on render)
-   * 
-   * CRITICAL FIX: Use useMemo to prevent re-sorting on every render
-   * Random seed is generated once when bottles array changes, not on every render
-   * This ensures carousel index mapping remains consistent
+   * Category-based selection — STABLE (useMemo, no randomness)
+   *
+   * Replaces the old single-score sort with three named slots:
+   *   bestTonight, crowdPleaser, specialBottle
+   * Each slot is picked deterministically from existing analysis fields.
+   * No AI calls, no DB queries, no mutations.
    */
-  const topBottles = useMemo(() => {
-    // Filter out opened (quantity=0) and reserved (Keep) bottles
-    const availableBottles = bottles.filter(bottle => bottle.quantity > 0 && !(bottle as any).is_reserved);
-    
-    // Generate a stable random seed based on bottle IDs
-    // This ensures consistent ordering across re-renders
-    const stableSeed = availableBottles
-      .map(b => b.id)
-      .join('-')
-      .split('')
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
-    const scored = availableBottles.map((bottle, index) => {
-      const analysis = bottle as any;
-      let score = 0;
+  const selection = useMemo(() => selectTonightCategories(bottles), [bottles]);
 
-      // Prioritize READY bottles
-      if (analysis.readiness_label === 'READY') {
-        score += 100;
-      } else if (analysis.readiness_label === 'PEAK_SOON') {
-        score += 50;
-      } else if (analysis.readiness_label === 'HOLD') {
-        score += 10;
-      }
+  // Flat ordered array of bottles for the carousel mechanics (unchanged)
+  const topBottles = useMemo(
+    () => selection.slots.map(s => s.bottle),
+    [selection.slots],
+  );
 
-      // Add quantity bonus
-      score += Math.min(bottle.quantity * 5, 25);
-      
-      // Add stable pseudo-random component (deterministic based on seed + index)
-      score += ((stableSeed + index * 17) % 100) / 10;
-
-      return { bottle, score };
-    });
-
-    return scored
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map(item => item.bottle);
-  }, [bottles]);
+  // Fast bottle-id → slot lookup for card rendering
+  const slotByBottleId = useMemo<Map<string, CategorizedSlot>>(() => {
+    const map = new Map<string, CategorizedSlot>();
+    for (const slot of selection.slots) map.set(slot.bottle.id, slot);
+    return map;
+  }, [selection.slots]);
 
   /**
    * CRITICAL FIX: Clamp activeIndex when topBottles changes
@@ -368,8 +356,25 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     return bottle.id || `${bottle.wine.wine_name}-${bottle.wine.vintage || 'nv'}-${bottle.wine.producer || 'unknown'}`;
   };
 
-  if (topBottles.length === 0) {
+  if (selection.noBottles) {
     return null;
+  }
+
+  if (selection.needsAnalysis) {
+    return (
+      <div className="luxury-card p-6 text-center">
+        <p className="text-2xl mb-3">🍾</p>
+        <h2
+          className="text-xl font-bold mb-2"
+          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+        >
+          {t('dashboard.tonightsOrbit.title', "Tonight's Selection")}
+        </h2>
+        <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          {t('dashboard.tonightsOrbit.analyzePrompt', 'Analyze your cellar to unlock personalized picks')}
+        </p>
+      </div>
+    );
   }
 
   /**
@@ -646,6 +651,28 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
 
                         {/* Removed ranking numbers - presenting as curated selection, not ranked list */}
 
+                        {/* Category badge — top-start overlay (RTL-aware) */}
+                        {(() => {
+                          const slotInfo = slotByBottleId.get(bottle.id);
+                          if (!slotInfo) return null;
+                          const isHoldBadge = slotInfo.categoryKey.endsWith('.bestAvailable');
+                          const cfg = isHoldBadge ? HOLD_BADGE_STYLE : SLOT_CONFIG[slotInfo.slot];
+                          return (
+                            <div
+                              className="absolute top-3 ltr:left-3 rtl:right-3 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
+                              style={{
+                                background: cfg.bg,
+                                color: cfg.color,
+                                backdropFilter: 'blur(8px)',
+                                border: `1px solid ${cfg.color}33`,
+                              }}
+                            >
+                              <span>{cfg.icon}</span>
+                              <span>{t(slotInfo.categoryKey) as string}</span>
+                            </div>
+                          );
+                        })()}
+
                         {/* AI Badge */}
                         {displayImage.isGenerated && (
                           <div 
@@ -678,29 +705,64 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
 
                   {/* Wine Details Panel */}
                   <div className="p-5" style={{ background: 'var(--bg-surface)' }}>
-                    {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
-                    <h3 
-                      className="text-lg font-bold mb-2 line-clamp-2 leading-tight"
-                      style={{ 
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-display)',
-                      }}
-                    >
-                      {lw.wine_name}
-                    </h3>
+                    {(() => {
+                      const lw = getLocalizedWineData(bottle.wine, i18n.language);
+                      const slotInfo = slotByBottleId.get(bottle.id);
+                      return (
+                        <>
+                          <h3
+                            className="text-lg font-bold mb-1 line-clamp-2 leading-tight"
+                            style={{
+                              color: 'var(--text-primary)',
+                              fontFamily: 'var(--font-display)',
+                            }}
+                          >
+                            {lw.wine_name}
+                          </h3>
 
-                    <p 
-                      className="text-sm mb-3"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {lw.producer}
-                      {bottle.wine.vintage && (
-                        <span className="font-semibold ms-2" style={{ color: 'var(--text-primary)' }}>
-                          {bottle.wine.vintage}
-                        </span>
-                      )}
-                    </p>
-                    </>); })()}
+                          <p
+                            className="text-sm mb-2"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {lw.producer}
+                            {bottle.wine.vintage && (
+                              <span className="font-semibold ms-2" style={{ color: 'var(--text-primary)' }}>
+                                {bottle.wine.vintage}
+                              </span>
+                            )}
+                          </p>
+
+                          {/* One-line reason */}
+                          {slotInfo && (
+                            <p
+                              className="text-xs mb-2 italic"
+                              style={{ color: 'var(--text-tertiary)' }}
+                            >
+                              {t(slotInfo.reasonKey)}
+                            </p>
+                          )}
+
+                          {/* Rationale tags */}
+                          {slotInfo && slotInfo.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {slotInfo.tags.map((tag, i) => (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 rounded text-xs font-medium"
+                                  style={{
+                                    background: 'var(--bg-surface-elevated)',
+                                    color: 'var(--text-secondary)',
+                                    border: '1px solid var(--border-subtle)',
+                                  }}
+                                >
+                                  {t(tag.key, tag.values as any) as string}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* Metadata Row */}
                     <div className="flex items-center gap-3 flex-wrap">
@@ -877,16 +939,18 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         )}
       </div>
 
-      {/* Show message if less than 3 bottles */}
-      {topBottles.length < 3 && (
-        <div 
+      {/* Footer note — shown when cellar is small, all HOLD, or fewer than 3 slots */}
+      {(topBottles.length < 3 || selection.allHold) && (
+        <div
           className="mx-6 mb-6 p-3 rounded-lg text-sm text-center"
           style={{
             background: 'var(--bg-surface-elevated)',
             color: 'var(--text-tertiary)',
           }}
         >
-          {t('dashboard.tonightsOrbit.needMore', 'Add more bottles to see personalized recommendations')}
+          {selection.allHold
+            ? t('dashboard.tonightsOrbit.allHold', 'Your wines are best kept for now — consider holding a little longer')
+            : t('dashboard.tonightsOrbit.needMore', 'Add more bottles to see personalized recommendations')}
         </div>
       )}
       

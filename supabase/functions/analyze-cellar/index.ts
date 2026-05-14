@@ -141,6 +141,9 @@ serve(async (req) => {
         analyzed_at,
         analysis_summary,
         readiness_label,
+        serving_guidance,
+        serve_temp_c,
+        decant_minutes,
         wine:wines(
           wine_name,
           producer,
@@ -301,17 +304,31 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
 
     const analysis = await generateAIAnalysis(wineInput, language);
 
-    // Normalize serving guidance; fall back if AI returned incomplete data
-    const servingGuidance: ServingGuidance = normalizeServingGuidance(analysis.serving) ??
-      buildFallbackServingGuidance(
-        bottle.wine.color,
-        bottle.wine.vintage,
-        new Date().getFullYear(),
-        analysis.readiness_label,
-      );
+    // Normalize serving guidance from AI response.
+    // If invalid/missing, prefer preserving existing good guidance over writing a generic fallback.
+    const normalizedServing = normalizeServingGuidance(analysis.serving);
+    let servingGuidance: ServingGuidance;
 
-    if (!analysis.serving) {
-      console.warn('[Analyze Cellar] serving object missing — using fallback for:', bottle.wine.wine_name);
+    if (normalizedServing) {
+      servingGuidance = normalizedServing;
+    } else {
+      const existingServing = bottle.serving_guidance as Record<string, unknown> | null;
+      const existingConf = existingServing?.confidence;
+      const existingIsGood = existingConf === 'high' || existingConf === 'medium';
+
+      if (existingIsGood) {
+        console.log('[Analyze Cellar] AI serving invalid — preserved existing', existingConf,
+          '-confidence guidance; no overwrite for:', bottle.wine.wine_name);
+        servingGuidance = existingServing as unknown as ServingGuidance;
+      } else {
+        console.warn('[Analyze Cellar] AI serving invalid, no good existing guidance — using fallback for:', bottle.wine.wine_name);
+        servingGuidance = buildFallbackServingGuidance(
+          bottle.wine.color,
+          bottle.wine.vintage,
+          new Date().getFullYear(),
+          analysis.readiness_label,
+        );
+      }
     }
 
     // Store results in database

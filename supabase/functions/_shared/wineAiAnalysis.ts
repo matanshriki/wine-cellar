@@ -501,6 +501,6 @@ export function buildFallbackServingGuidance(
     glassware: "Large red wine glass",
     short_instruction: "Open 45 minutes before serving.",
     explanation: "Red wines generally benefit from some aeration before serving.",
-    confidence: "low", source_summary: "Generic fallback — wine type or age unknown.",
+    confidence: "low", source_summary: "Generic fallback — AI serving guidance was unavailable; based on wine color only.",
   };
 }

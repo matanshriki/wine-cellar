@@ -137,7 +137,35 @@
     "tonightsOrbit": {
       "title": "הבחירה להערב",
       "subtitle": "בקבוקים מושלמים לערב זה",
-      "needMore": "הוסף עוד בקבוקים כדי לראות המלצות מותאמות אישית"
+      "needMore": "הוסף עוד בקבוקים כדי לראות המלצות מותאמות אישית",
+      "allHold": "היינות שלך עדיין לא מוכנים — כדאי לשמור עוד קצת",
+      "analyzePrompt": "נתח את המרתף שלך כדי לפתוח המלצות מותאמות אישית",
+      "categories": {
+        "bestTonight": "הכי טוב לפתוח הלילה",
+        "crowdPleaser": "בטוח ומרצה את כולם",
+        "specialBottle": "בקבוק מיוחד",
+        "bestAvailable": "הטוב ביותר הזמין"
+      },
+      "reasons": {
+        "readyOpenTonight": "מוכן לשתייה — פתח הלילה",
+        "approachingPeak": "מתקרב לשיאו — שתה בקרוב",
+        "bestAvailable": "הטוב ביותר הזמין במרתף שלך",
+        "crowdFriendly": "נגיש וידידותי לאורחים",
+        "prestigeBottle": "בקבוק יוקרה — שווה את האירוע",
+        "matureAndReady": "בוגר ומוכן בשיאו",
+        "highlyRated": "דירוג גבוה — בטוח להרשים",
+        "impressBottle": "בקבוק שווה לערב מיוחד"
+      },
+      "tags": {
+        "readyNow": "מוכן עכשיו",
+        "inPeakWindow": "בחלון השיא",
+        "holdWine": "עדיף להחזיק",
+        "guestFriendly": "ידידותי לאורחים",
+        "specialBottle": "בקבוק מיוחד",
+        "matureBottle": "הבשלה מצוינת",
+        "needsDecant": "דקנטציה {{min}} דק׳",
+        "highRated": "דירוג גבוה"
+      }
     },
     "drinkWindow": {
       "title": "חלון השתייה",
