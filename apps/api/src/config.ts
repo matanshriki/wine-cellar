@@ -67,16 +67,27 @@ export const config = {
   /**
    * Google Analytics 4 — Data API (server-side reporting for admin dashboard)
    *
-   * GA4_PROPERTY_ID   — numeric GA4 property ID (Admin → Property Settings → Property ID)
-   *                     e.g. "123456789"  (do NOT include the "properties/" prefix)
+   * GA4_PROPERTY_ID — numeric GA4 property ID (Admin → Property Settings → Property ID)
+   *                   e.g. "123456789"  (no "properties/" prefix)
    *
-   * GA4_SERVICE_ACCOUNT_JSON — full JSON of a GCP service account key that has been granted
-   *                            "Viewer" (or higher) on the GA4 property.
-   *                            Inline the entire JSON as a single-line string in Railway / .env.
-   *                            Alternatively set GOOGLE_APPLICATION_CREDENTIALS to a file path.
+   * AUTH — pick ONE of the two methods below:
+   *
+   * Method A – Service account (if your org allows it in GA4 UI):
+   *   GA4_SERVICE_ACCOUNT_JSON — full service-account key JSON as a single-line string.
+   *                              Grant the service account "Viewer" on the GA4 property.
+   *
+   * Method B – OAuth 2.0 refresh token (recommended if service accounts are blocked):
+   *   GA4_OAUTH_CLIENT_ID      — OAuth 2.0 Client ID from GCP Console (Desktop app type)
+   *   GA4_OAUTH_CLIENT_SECRET  — corresponding client secret
+   *   GA4_OAUTH_REFRESH_TOKEN  — long-lived refresh token for your Google account that has
+   *                              GA4 Viewer access. Generate once with:
+   *                              npx tsx apps/api/scripts/ga4-get-refresh-token.ts
    */
-  ga4PropertyId: process.env.GA4_PROPERTY_ID || '',
-  ga4ServiceAccountJson: process.env.GA4_SERVICE_ACCOUNT_JSON || '',
+  ga4PropertyId:          process.env.GA4_PROPERTY_ID || '',
+  ga4ServiceAccountJson:  process.env.GA4_SERVICE_ACCOUNT_JSON || '',
+  ga4OauthClientId:       process.env.GA4_OAUTH_CLIENT_ID || '',
+  ga4OauthClientSecret:   process.env.GA4_OAUTH_CLIENT_SECRET || '',
+  ga4OauthRefreshToken:   process.env.GA4_OAUTH_REFRESH_TOKEN || '',
 };
 
 // Log configuration on startup (without sensitive data)

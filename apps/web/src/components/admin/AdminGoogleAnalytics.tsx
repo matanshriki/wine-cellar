@@ -286,34 +286,164 @@ function formatDate(yyyymmdd: string): string {
   return `${parseInt(m)}/${parseInt(d)}`;
 }
 
-function Not_Configured() {
+function Code({ children }: { children: React.ReactNode }) {
+  return (
+    <code style={{
+      background: 'var(--bg-muted)',
+      padding: '1px 6px',
+      borderRadius: 4,
+      fontSize: '0.76rem',
+      fontFamily: 'monospace',
+      color: 'var(--text-primary)',
+    }}>
+      {children}
+    </code>
+  );
+}
+
+function StepBlock({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+      <div style={{
+        flexShrink: 0,
+        width: 22,
+        height: 22,
+        borderRadius: '50%',
+        background: 'var(--interactive-hover)',
+        border: '1px solid var(--border-medium)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.68rem',
+        fontWeight: 700,
+        color: 'var(--text-primary)',
+        marginTop: 2,
+      }}>
+        {n}
+      </div>
+      <div>
+        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '3px' }}>{title}</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function MethodCard({ badge, title, recommended, children }: {
+  badge: string;
+  title: string;
+  recommended?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div style={{
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border-medium)',
-      borderRadius: '14px',
-      padding: '32px 24px',
-      maxWidth: 540,
+      background: 'var(--bg-muted)',
+      border: `1px solid ${recommended ? 'var(--color-success, #22c55e)' : 'var(--border-medium)'}`,
+      borderRadius: '10px',
+      padding: '16px 18px',
+      marginBottom: '14px',
     }}>
-      <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>📊</div>
-      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <span style={{
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          background: recommended ? 'var(--color-success, #22c55e)' : 'var(--border-medium)',
+          color: recommended ? '#fff' : 'var(--text-secondary)',
+          padding: '2px 8px',
+          borderRadius: 20,
+        }}>
+          {badge}
+        </span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-heading)' }}>{title}</span>
+        {recommended && (
+          <span style={{ fontSize: '0.68rem', color: 'var(--color-success, #22c55e)', marginLeft: 'auto' }}>
+            ← recommended
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Not_Configured() {
+  return (
+    <div style={{ maxWidth: 580 }}>
+      <div style={{ fontSize: '1.6rem', marginBottom: '10px' }}>📊</div>
+      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '4px' }}>
         GA4 reporting not configured
       </h3>
-      <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '16px' }}>
-        To enable this tab, set two environment variables on the <strong>API server</strong>:
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '20px' }}>
+        Set <Code>GA4_PROPERTY_ID</Code> plus one auth method on the <strong>API server</strong> (Railway env vars).
+        Choose the method that works for your account:
       </p>
-      <ol style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 2, paddingLeft: '1.2em' }}>
-        <li>
-          <code style={{ background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 4, fontSize: '0.78rem' }}>GA4_PROPERTY_ID</code>
-          {' '}— numeric property ID from <em>GA4 Admin → Property Settings</em>
-        </li>
-        <li>
-          <code style={{ background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 4, fontSize: '0.78rem' }}>GA4_SERVICE_ACCOUNT_JSON</code>
-          {' '}— full service-account JSON (grant the account <em>Viewer</em> on the property)
-        </li>
-      </ol>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '14px', lineHeight: 1.6 }}>
-        See <code style={{ fontSize: '0.72rem' }}>apps/api/.env.example</code> for instructions.
+
+      {/* ── Method A: OAuth2 (recommended) ── */}
+      <MethodCard badge="Method A" title="OAuth 2.0 — your Google account" recommended>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '12px' }}>
+          Uses your own Google account which already has GA4 access.
+          No GA4 UI permission changes needed.
+        </p>
+        <StepBlock n={1} title="Create OAuth client ID in GCP">
+          <a
+            href="https://console.cloud.google.com/apis/credentials"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--color-wine, #9b2247)' }}
+          >
+            GCP Console → APIs &amp; Services → Credentials
+          </a>
+          {' → '}Create OAuth client ID → Application type: <strong>Desktop app</strong>.
+          Copy the Client ID and Client Secret.
+        </StepBlock>
+        <StepBlock n={2} title="Enable the GA4 Data API">
+          In the same GCP project, enable:{' '}
+          <a
+            href="https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--color-wine, #9b2247)' }}
+          >
+            Google Analytics Data API v1
+          </a>.
+        </StepBlock>
+        <StepBlock n={3} title="Generate your refresh token (run once, locally)">
+          <Code>npx tsx apps/api/scripts/ga4-get-refresh-token.ts</Code>
+          <br />
+          Follow the printed URL, sign in, paste the code → your refresh token is printed.
+        </StepBlock>
+        <StepBlock n={4} title="Set these 4 Railway env vars">
+          <Code>GA4_PROPERTY_ID</Code>{'  '}
+          <Code>GA4_OAUTH_CLIENT_ID</Code>{'  '}
+          <Code>GA4_OAUTH_CLIENT_SECRET</Code>{'  '}
+          <Code>GA4_OAUTH_REFRESH_TOKEN</Code>
+        </StepBlock>
+      </MethodCard>
+
+      {/* ── Method B: Service account ── */}
+      <MethodCard badge="Method B" title="Service account (if allowed by your org)">
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '12px' }}>
+          Some Google Workspace organizations block adding service account emails
+          in the GA4 UI. If you see "This email doesn't match a Google Account", use Method A instead.
+        </p>
+        <StepBlock n={1} title="Create a service account in GCP">
+          GCP Console → IAM → Service Accounts → Create → download JSON key.
+        </StepBlock>
+        <StepBlock n={2} title="Grant GA4 access">
+          GA4 Admin → Property Access Management → Add users → paste the{' '}
+          <Code>client_email</Code> from the JSON → role: <strong>Viewer</strong>.
+        </StepBlock>
+        <StepBlock n={3} title="Set these 2 Railway env vars">
+          <Code>GA4_PROPERTY_ID</Code>{'  '}
+          <Code>GA4_SERVICE_ACCOUNT_JSON</Code>{' '}(paste entire JSON as one line)
+        </StepBlock>
+      </MethodCard>
+
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+        Full instructions in <Code>apps/api/.env.example</Code>.
+        Property ID: GA4 Admin → Property Settings → Property ID (numeric, e.g. 123456789).
       </p>
     </div>
   );

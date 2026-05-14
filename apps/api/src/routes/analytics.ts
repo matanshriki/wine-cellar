@@ -1,19 +1,28 @@
 /**
  * /api/analytics/ga4  — Admin-only Google Analytics 4 Data API proxy.
  *
- * Fetches aggregated GA4 reporting data server-side (service account auth) so
- * that credentials never reach the browser.
+ * Fetches aggregated GA4 reporting data server-side so credentials never
+ * reach the browser.  Supports two auth methods (checked in order):
  *
- * Required env vars:
- *   GA4_PROPERTY_ID          — numeric GA4 property ID (e.g. "123456789")
- *   GA4_SERVICE_ACCOUNT_JSON — full service-account key JSON as a string, OR
- *   GOOGLE_APPLICATION_CREDENTIALS — path to the service-account JSON file
+ *   Method A — Service account (if your org allows adding it to GA4):
+ *     GA4_SERVICE_ACCOUNT_JSON  full service-account key JSON as a string
+ *
+ *   Method B — OAuth 2.0 refresh token (recommended; uses your own Google
+ *               account which already has GA4 access):
+ *     GA4_OAUTH_CLIENT_ID       OAuth 2.0 Desktop-app client ID
+ *     GA4_OAUTH_CLIENT_SECRET   corresponding client secret
+ *     GA4_OAUTH_REFRESH_TOKEN   long-lived refresh token (generate once with
+ *                               npx tsx apps/api/scripts/ga4-get-refresh-token.ts)
+ *
+ *   Both methods also require:
+ *     GA4_PROPERTY_ID  numeric GA4 property ID (e.g. "123456789")
  *
  * The calling user must be an admin (verified via Supabase `is_admin` RPC).
  */
 
 import { Router } from 'express';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { AuthRequest, authenticateSupabase } from '../middleware/auth.js';
@@ -22,8 +31,20 @@ export const analyticsRouter = Router();
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+type AuthMethod = 'service_account' | 'oauth2' | 'none';
+
+function detectAuthMethod(): AuthMethod {
+  if (config.ga4ServiceAccountJson) return 'service_account';
+  if (config.ga4OauthClientId && config.ga4OauthClientSecret && config.ga4OauthRefreshToken) {
+    return 'oauth2';
+  }
+  return 'none';
+}
+
 function buildClient(): BetaAnalyticsDataClient {
-  if (config.ga4ServiceAccountJson) {
+  const method = detectAuthMethod();
+
+  if (method === 'service_account') {
     let credentials: Record<string, unknown>;
     try {
       credentials = JSON.parse(config.ga4ServiceAccountJson);
@@ -32,8 +53,18 @@ function buildClient(): BetaAnalyticsDataClient {
     }
     return new BetaAnalyticsDataClient({ credentials });
   }
-  // Falls back to GOOGLE_APPLICATION_CREDENTIALS env var (file path)
-  return new BetaAnalyticsDataClient();
+
+  if (method === 'oauth2') {
+    const oauth2 = new OAuth2Client({
+      clientId:     config.ga4OauthClientId,
+      clientSecret: config.ga4OauthClientSecret,
+    });
+    oauth2.setCredentials({ refresh_token: config.ga4OauthRefreshToken });
+    // google-gax (used by @google-analytics/data) accepts an OAuth2Client as `auth`
+    return new BetaAnalyticsDataClient({ auth: oauth2 } as any);
+  }
+
+  throw new Error('GA4 not configured');
 }
 
 /** Extract a single string cell value from a GA4 RunReportResponse row */
@@ -63,7 +94,16 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
     if (!config.ga4PropertyId) {
       return res.status(503).json({
         error: 'GA4 not configured',
-        hint: 'Set GA4_PROPERTY_ID and GA4_SERVICE_ACCOUNT_JSON (or GOOGLE_APPLICATION_CREDENTIALS) on the server.',
+        hint: 'Set GA4_PROPERTY_ID plus either GA4_SERVICE_ACCOUNT_JSON (service account) or GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2).',
+        authMethod: 'none',
+      });
+    }
+
+    if (detectAuthMethod() === 'none') {
+      return res.status(503).json({
+        error: 'GA4 not configured',
+        hint: 'Set either GA4_SERVICE_ACCOUNT_JSON (service account) or GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (OAuth2).',
+        authMethod: 'none',
       });
     }
 
@@ -263,6 +303,7 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
 
     return res.json({
       propertyId: config.ga4PropertyId,
+      authMethod: detectAuthMethod(),
       fetchedAt: new Date().toISOString(),
       realtimeUsers,
       overview: {
