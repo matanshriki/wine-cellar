@@ -286,6 +286,8 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
       landingRes,
       realtimeRes,
       dailyRes,
+      sourceMediumRes,
+      acquisitionRes,
     ] = await Promise.allSettled([
 
       // 1. Overview KPIs — both date ranges in one request (dateRangeName dimension)
@@ -371,6 +373,26 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
         dimensions: [{ name: 'date' }],
         metrics: [{ name: 'sessions' }, { name: 'activeUsers' }, { name: 'screenPageViews' }],
         orderBys: [{ dimension: { dimensionName: 'date' }, desc: false }],
+      }),
+
+      // 9. Source / medium detail — identifies ChatGPT, Gemini, Perplexity etc.
+      ga.runReport({
+        property,
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
+        metrics: [{ name: 'sessions' }, { name: 'activeUsers' }, { name: 'newUsers' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 25,
+      }),
+
+      // 10. New-user acquisition — first touch source/medium
+      ga.runReport({
+        property,
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dimensions: [{ name: 'firstUserSource' }, { name: 'firstUserMedium' }],
+        metrics: [{ name: 'newUsers' }],
+        orderBys: [{ metric: { metricName: 'newUsers' }, desc: true }],
+        limit: 20,
       }),
     ]);
 
@@ -461,6 +483,28 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
       pageViews: met(row, 2),
     }));
 
+    // 9. Source / medium detail
+    const sourceMediumData = ok(sourceMediumRes);
+    const totalSMSessions = (sourceMediumData?.[0]?.rows ?? []).reduce((s: number, r: any) => s + met(r, 0), 0);
+    const sourcesDetail = (sourceMediumData?.[0]?.rows ?? []).map(row => ({
+      source: dim(row, 0),
+      medium: dim(row, 1),
+      sessions: met(row, 0),
+      users: met(row, 1),
+      newUsers: met(row, 2),
+      pct: totalSMSessions > 0 ? parseFloat(((met(row, 0) / totalSMSessions) * 100).toFixed(1)) : 0,
+    }));
+
+    // 10. New-user acquisition (first touch)
+    const acquisitionData = ok(acquisitionRes);
+    const totalAcqUsers = (acquisitionData?.[0]?.rows ?? []).reduce((s: number, r: any) => s + met(r, 0), 0);
+    const acquisition = (acquisitionData?.[0]?.rows ?? []).map(row => ({
+      source: dim(row, 0),
+      medium: dim(row, 1),
+      newUsers: met(row, 0),
+      pct: totalAcqUsers > 0 ? parseFloat(((met(row, 0) / totalAcqUsers) * 100).toFixed(1)) : 0,
+    }));
+
     return res.json({
       propertyId: config.ga4PropertyId,
       authMethod: detectAuthMethod(),
@@ -471,6 +515,8 @@ analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) 
         '30d': overviewByRange['30d'] ?? null,
       },
       sources,
+      sourcesDetail,
+      acquisition,
       countries,
       pages,
       devices,

@@ -53,6 +53,22 @@ export interface GA4DailyPoint {
   pageViews: number;
 }
 
+export interface GA4SourceDetail {
+  source: string;
+  medium: string;
+  sessions: number;
+  users: number;
+  newUsers: number;
+  pct: number;
+}
+
+export interface GA4AcquisitionRow {
+  source: string;
+  medium: string;
+  newUsers: number;
+  pct: number;
+}
+
 export interface GA4Data {
   propertyId: string;
   fetchedAt: string;
@@ -62,6 +78,8 @@ export interface GA4Data {
     '30d': GA4OverviewPeriod | null;
   };
   sources: GA4Source[];
+  sourcesDetail: GA4SourceDetail[];
+  acquisition: GA4AcquisitionRow[];
   countries: GA4Country[];
   pages: GA4Page[];
   devices: GA4Device[];

@@ -1,6 +1,44 @@
 import { useState } from 'react';
-import { useAdminGoogleAnalytics, useAdminGA4Realtime, GA4OverviewPeriod } from '../../hooks/admin/useAdminGoogleAnalytics';
+import {
+  useAdminGoogleAnalytics, useAdminGA4Realtime,
+  GA4OverviewPeriod, GA4SourceDetail, GA4AcquisitionRow,
+} from '../../hooks/admin/useAdminGoogleAnalytics';
 import { WineLoader } from '../WineLoader';
+
+// ── AI / chatbot source detection ────────────────────────────────────────────
+
+const AI_SOURCE_MAP: Record<string, { label: string; emoji: string; color: string }> = {
+  'chat.openai.com':        { label: 'ChatGPT',    emoji: '🤖', color: '#10a37f' },
+  'chatgpt.com':            { label: 'ChatGPT',    emoji: '🤖', color: '#10a37f' },
+  'gemini.google.com':      { label: 'Gemini',     emoji: '✨', color: '#4285f4' },
+  'bard.google.com':        { label: 'Gemini',     emoji: '✨', color: '#4285f4' },
+  'perplexity.ai':          { label: 'Perplexity', emoji: '🔍', color: '#20b2aa' },
+  'claude.ai':              { label: 'Claude',     emoji: '🧠', color: '#d97706' },
+  'copilot.microsoft.com':  { label: 'Copilot',    emoji: '🪟', color: '#0078d4' },
+  'bing.com':               { label: 'Bing/Copilot', emoji: '🪟', color: '#0078d4' },
+  'you.com':                { label: 'You.com',    emoji: '🔎', color: '#6366f1' },
+  'phind.com':              { label: 'Phind',      emoji: '🔎', color: '#8b5cf6' },
+  'poe.com':                { label: 'Poe',        emoji: '🤖', color: '#e879f9' },
+};
+
+function getSourceMeta(source: string): { label: string; emoji: string; color: string } | null {
+  const lower = source.toLowerCase();
+  return AI_SOURCE_MAP[lower] ?? null;
+}
+
+function labelSource(source: string, medium: string): string {
+  if (source === '(direct)' || source === 'direct') return 'Direct';
+  const ai = getSourceMeta(source);
+  if (ai) return `${ai.emoji} ${ai.label}`;
+  if (medium === 'organic') return `🔍 ${capitalise(source)}`;
+  if (medium === 'cpc' || medium === 'paid') return `💰 ${capitalise(source)} (paid)`;
+  if (medium === 'email') return `📧 ${capitalise(source)}`;
+  if (medium === 'social') return `📱 ${capitalise(source)}`;
+  if (medium === 'referral') return `🔗 ${source}`;
+  return capitalise(source);
+}
+
+function capitalise(s: string) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // ── tiny shared primitives ───────────────────────────────────────────────────
 
@@ -141,9 +179,9 @@ function BarList({
   );
 }
 
-// ── sparkline / trend chart (SVG) ────────────────────────────────────────────
+// ── column bar chart (SVG) ───────────────────────────────────────────────────
 
-function TrendChart({
+function ColumnChart({
   data,
   metric,
 }: {
@@ -155,46 +193,70 @@ function TrendChart({
   const values = data.map(d => d[metric]);
   const max = Math.max(...values, 1);
   const W = 600;
-  const H = 80;
-  const pad = 4;
+  const H = 100;
+  const padX = 2;
+  const padTop = 6;
+  const barGap = 2;
+  const n = values.length;
+  const barW = Math.max(2, (W - padX * 2 - barGap * (n - 1)) / n);
 
-  const points = values.map((v, i) => {
-    const x = pad + (i / (values.length - 1)) * (W - pad * 2);
-    const y = H - pad - ((v / max) * (H - pad * 2));
+  // Area + line for the trend overlay
+  const linePoints = values.map((v, i) => {
+    const x = padX + i * (barW + barGap) + barW / 2;
+    const y = padTop + (1 - v / max) * (H - padTop);
     return `${x},${y}`;
   });
+  const firstX = padX + barW / 2;
+  const lastX  = padX + (n - 1) * (barW + barGap) + barW / 2;
+  const area = `${firstX},${H} ${linePoints.join(' ')} ${lastX},${H}`;
 
-  const polyline = points.join(' ');
-  const area = `${pad},${H - pad} ${points.join(' ')} ${W - pad},${H - pad}`;
+  // Show one label every ~7 bars
+  const labelEvery = Math.max(1, Math.round(n / 5));
 
   return (
     <div style={{
       background: 'var(--bg-surface)',
       border: '1px solid var(--border-medium)',
       borderRadius: '12px',
-      padding: '14px 16px',
+      padding: '14px 16px 10px',
     }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 80, display: 'block' }} preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 110, display: 'block' }} preserveAspectRatio="none">
         <defs>
-          <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-wine, #9b2247)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--color-wine, #9b2247)" stopOpacity="0.03" />
+          <linearGradient id="colGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#9b2247" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#9b2247" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-        <polygon points={area} fill="url(#trendGrad)" />
-        <polyline points={polyline} fill="none" stroke="var(--color-wine, #9b2247)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Bars */}
+        {values.map((v, i) => {
+          const x  = padX + i * (barW + barGap);
+          const bh = ((v / max) * (H - padTop));
+          const y  = H - bh;
+          return (
+            <rect
+              key={i}
+              x={x} y={y} width={barW} height={bh}
+              fill="#9b2247" opacity={0.55} rx={1}
+            />
+          );
+        })}
+        {/* Area overlay */}
+        <polygon points={area} fill="url(#colGrad)" />
+        {/* Trend line */}
+        <polyline
+          points={linePoints.join(' ')}
+          fill="none" stroke="#9b2247" strokeWidth="1.8"
+          strokeLinejoin="round" strokeLinecap="round" opacity="0.85"
+        />
       </svg>
 
+      {/* Date labels */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
-          {formatDate(data[0].date)}
+        <span style={{ fontSize: '0.63rem', color: 'var(--text-tertiary)' }}>{formatDate(data[0].date)}</span>
+        <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          peak {Math.max(...values).toLocaleString()} · total {values.reduce((a, b) => a + b, 0).toLocaleString()}
         </span>
-        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-          peak: {Math.max(...values).toLocaleString()}
-        </span>
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
-          {formatDate(data[data.length - 1].date)}
-        </span>
+        <span style={{ fontSize: '0.63rem', color: 'var(--text-tertiary)' }}>{formatDate(data[data.length - 1].date)}</span>
       </div>
     </div>
   );
@@ -538,6 +600,26 @@ export function AdminGoogleAnalytics() {
     sub: `${p.bounceRate.toFixed(0)}% bounce`,
   }));
 
+  // Source/medium items — labelled and sorted, AI sources highlighted
+  const sourceMediumItems = (data.sourcesDetail ?? []).map(s => ({
+    label: labelSource(s.source, s.medium),
+    value: s.sessions,
+    pct: s.pct,
+    sub: `${s.users.toLocaleString()} users · ${s.newUsers.toLocaleString()} new`,
+    isAI: !!getSourceMeta(s.source),
+  }));
+
+  // New-user acquisition items
+  const acquisitionItems = (data.acquisition ?? []).map(a => ({
+    label: labelSource(a.source, a.medium),
+    value: a.newUsers,
+    pct: a.pct,
+    sub: `${a.medium}`,
+    isAI: !!getSourceMeta(a.source),
+  }));
+
+  const hasAiTraffic = sourceMediumItems.some(i => i.isAI);
+
   const fetchedLabel = data.fetchedAt
     ? `Last fetched ${new Date(data.fetchedAt).toLocaleTimeString()}`
     : undefined;
@@ -731,40 +813,92 @@ export function AdminGoogleAnalytics() {
           </button>
         ))}
       </div>
-      <TrendChart data={data.dailyTrend} metric={trendMetric} />
+      <ColumnChart data={data.dailyTrend} metric={trendMetric} />
 
-      {/* ── Two-column below ──────────────────────────────────────────────── */}
+      {/* ── Channels + Devices ───────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginTop: '4px' }}>
-
         <div>
           <SectionTitle>Traffic channels (30 days)</SectionTitle>
           <BarList items={sourceItems} valueLabel="Sessions" />
         </div>
-
         <div>
           <SectionTitle>Devices (30 days)</SectionTitle>
           <DeviceChart devices={data.devices} />
         </div>
-
       </div>
 
-      {/* ── Countries ────────────────────────────────────────────────────── */}
-      <SectionTitle>Top countries (30 days)</SectionTitle>
-      <BarList items={countryItems} valueLabel="Active users" />
+      {/* ── Source / medium detail (AI sources highlighted) ──────────────── */}
+      <SectionTitle>
+        Where users come from (30 days)
+        {hasAiTraffic && (
+          <span style={{ marginLeft: 8, fontSize: '0.65rem', color: '#10a37f', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+            🤖 AI traffic detected
+          </span>
+        )}
+      </SectionTitle>
+      {sourceMediumItems.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: '12px', overflow: 'hidden' }}>
+          {sourceMediumItems.slice(0, 15).map((item, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '9px 14px',
+              borderBottom: i < Math.min(sourceMediumItems.length, 15) - 1 ? '1px solid var(--border-subtle)' : 'none',
+              position: 'relative',
+              background: item.isAI ? 'rgba(16,163,127,0.04)' : 'transparent',
+            }}>
+              <div style={{
+                position: 'absolute', left: 0, top: 0, bottom: 0,
+                width: `${item.pct}%`,
+                background: item.isAI ? 'rgba(16,163,127,0.12)' : 'var(--interactive-hover)',
+                opacity: 0.5, transition: 'width 0.4s ease',
+              }} />
+              <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--text-primary)', position: 'relative', zIndex: 1 }}>
+                {item.label}
+                {item.isAI && <span style={{ marginLeft: 6, fontSize: '0.65rem', color: '#10a37f', fontWeight: 600 }}>AI</span>}
+              </span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', position: 'relative', zIndex: 1, flexShrink: 0 }}>{item.sub}</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-heading)', minWidth: 40, textAlign: 'right', position: 'relative', zIndex: 1 }}>
+                {item.value.toLocaleString()}
+              </span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', minWidth: 36, textAlign: 'right', position: 'relative', zIndex: 1 }}>
+                {item.pct.toFixed(0)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Acquisition + Countries ───────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginTop: '4px' }}>
+        <div>
+          <SectionTitle>New user acquisition — first touch (30 days)</SectionTitle>
+          {acquisitionItems.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <BarList
+              items={acquisitionItems.map(a => ({ label: a.label, value: a.newUsers, pct: a.pct, sub: a.sub }))}
+              valueLabel="New users"
+            />
+          )}
+        </div>
+        <div>
+          <SectionTitle>Top countries (30 days)</SectionTitle>
+          <BarList items={countryItems} valueLabel="Active users" />
+        </div>
+      </div>
 
       {/* ── Pages ────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginTop: '4px' }}>
-
         <div>
           <SectionTitle>Top pages (30 days)</SectionTitle>
           <BarList items={pageItems} valueLabel="Page views" />
         </div>
-
         <div>
           <SectionTitle>Top landing pages (30 days)</SectionTitle>
           <BarList items={landingItems} valueLabel="Sessions" />
         </div>
-
       </div>
 
       {/* footer note */}
