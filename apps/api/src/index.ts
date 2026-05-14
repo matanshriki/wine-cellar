@@ -113,8 +113,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Global safety net — surfaces the actual error in Railway logs before crashing
+// Global safety net — log errors but only exit on truly fatal non-GA4 errors
 process.on('unhandledRejection', (reason: unknown) => {
+  const msg = String(reason instanceof Error ? reason.message : reason);
+  // GA4 gRPC/OAuth errors are non-fatal — they're handled per-request
+  if (
+    msg.includes('google') || msg.includes('grpc') || msg.includes('analytics') ||
+    msg.includes('oauth') || msg.includes('PERMISSION') || msg.includes('invalid_grant')
+  ) {
+    console.warn('[Analytics] Suppressed non-fatal GA4 rejection:', msg.slice(0, 200));
+    return;
+  }
   console.error('[FATAL] Unhandled promise rejection:', reason);
   process.exit(1);
 });

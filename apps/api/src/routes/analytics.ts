@@ -52,7 +52,11 @@ function buildClient(): BetaAnalyticsDataClient {
     } catch {
       throw new Error('GA4_SERVICE_ACCOUNT_JSON is not valid JSON');
     }
-    return new BetaAnalyticsDataClient({ credentials });
+    const client = new BetaAnalyticsDataClient({ credentials });
+    // Suppress unhandled gRPC channel errors from escaping the request scope
+    (client as any).on?.('error', (e: Error) =>
+      console.warn('[Analytics] GA4 client error (non-fatal):', e.message?.slice(0, 120)));
+    return client;
   }
 
   if (method === 'oauth2') {
@@ -61,8 +65,10 @@ function buildClient(): BetaAnalyticsDataClient {
       clientSecret: config.ga4OauthClientSecret,
     });
     oauth2.setCredentials({ refresh_token: config.ga4OauthRefreshToken });
-    // google-gax (used by @google-analytics/data) accepts an OAuth2Client as `auth`
-    return new BetaAnalyticsDataClient({ auth: oauth2 } as any);
+    const client = new BetaAnalyticsDataClient({ auth: oauth2 } as any);
+    (client as any).on?.('error', (e: Error) =>
+      console.warn('[Analytics] GA4 client error (non-fatal):', e.message?.slice(0, 120)));
+    return client;
   }
 
   throw new Error('GA4 not configured');
