@@ -63,6 +63,20 @@ export const config = {
   metaConversionsApiAccessToken: process.env.META_CONVERSIONS_API_ACCESS_TOKEN || '',
   /** Optional — Events Manager → Test events → copy code */
   metaTestEventCode: process.env.META_TEST_EVENT_CODE || '',
+
+  /**
+   * Google Analytics 4 — Data API (server-side reporting for admin dashboard)
+   *
+   * GA4_PROPERTY_ID   — numeric GA4 property ID (Admin → Property Settings → Property ID)
+   *                     e.g. "123456789"  (do NOT include the "properties/" prefix)
+   *
+   * GA4_SERVICE_ACCOUNT_JSON — full JSON of a GCP service account key that has been granted
+   *                            "Viewer" (or higher) on the GA4 property.
+   *                            Inline the entire JSON as a single-line string in Railway / .env.
+   *                            Alternatively set GOOGLE_APPLICATION_CREDENTIALS to a file path.
+   */
+  ga4PropertyId: process.env.GA4_PROPERTY_ID || '',
+  ga4ServiceAccountJson: process.env.GA4_SERVICE_ACCOUNT_JSON || '',
 };
 
 // Log configuration on startup (without sensitive data)

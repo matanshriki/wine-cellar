@@ -14,6 +14,7 @@ import { agentRouter } from './routes/agent.js'; // Cellar Agent (localhost only
 import { eventsRouter } from './routes/events.js'; // Wine World Moments
 import { billingRouter } from './routes/billing.js'; // Paddle Billing
 import { metaRouter } from './routes/meta.js'; // Meta Conversions API relay
+import { analyticsRouter } from './routes/analytics.js'; // GA4 Data API (admin)
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/agent', agentRouter); // Cellar Agent (localhost only)
 app.use('/api/events', eventsRouter); // Wine World Moments
 app.use('/api/billing', billingRouter); // Paddle Billing (checkout-config, portal)
 app.use('/api/meta', metaRouter); // Meta CAPI (authenticated)
+app.use('/api/analytics', analyticsRouter); // GA4 Data API (admin-only)
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

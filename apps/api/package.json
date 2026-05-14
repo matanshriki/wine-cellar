@@ -15,6 +15,7 @@
     "db:generate": "prisma generate"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.0.0",
     "@prisma/client": "^5.8.0",
     "@supabase/supabase-js": "^2.90.1",
     "@types/passport": "^1.0.17",

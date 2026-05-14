@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { WineLoader } from '../components/WineLoader';
-import { AdminOverview }         from '../components/admin/AdminOverview';
-import { AdminUsers }            from '../components/admin/AdminUsers';
-import { AdminWineDataQuality }  from '../components/admin/AdminWineDataQuality';
-import { AdminEvents }           from '../components/admin/AdminEvents';
-import { AdminAiUsage }          from '../components/admin/AdminAiUsage';
-import { AdminInsights }         from '../components/admin/AdminInsights';
+import { AdminOverview }           from '../components/admin/AdminOverview';
+import { AdminUsers }              from '../components/admin/AdminUsers';
+import { AdminWineDataQuality }    from '../components/admin/AdminWineDataQuality';
+import { AdminEvents }             from '../components/admin/AdminEvents';
+import { AdminAiUsage }            from '../components/admin/AdminAiUsage';
+import { AdminInsights }           from '../components/admin/AdminInsights';
+import { AdminGoogleAnalytics }    from '../components/admin/AdminGoogleAnalytics';
 
-type Tab = 'overview' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights';
+type Tab = 'overview' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights' | 'traffic';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview',  label: 'Overview'   },
@@ -18,6 +19,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'events',    label: 'Events'     },
   { id: 'ai',        label: 'AI & Usage' },
   { id: 'insights',  label: 'Insights'   },
+  { id: 'traffic',   label: 'Traffic'    },
 ];
 
 export function AdminDashboardPage() {
@@ -172,6 +174,7 @@ export function AdminDashboardPage() {
         {activeTab === 'events'    && <AdminEvents />}
         {activeTab === 'ai'        && <AdminAiUsage />}
         {activeTab === 'insights'  && <AdminInsights />}
+        {activeTab === 'traffic'   && <AdminGoogleAnalytics />}
       </div>
     </div>
   );
