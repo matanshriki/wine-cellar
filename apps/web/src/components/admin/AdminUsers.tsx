@@ -45,7 +45,7 @@ export function AdminUsers() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-medium)' }}>
-              {['Email', 'Signed up', 'Last active', 'Bottles', 'Wines', 'AI calls (7d)', 'Events (7d)', 'Admin'].map(h => (
+              {['Email', 'Signed up', 'Last active', 'Source', 'Bottles', 'Wines', 'AI calls (7d)', 'Events (7d)', 'Admin'].map(h => (
                 <th key={h} style={{
                   padding: '10px 12px',
                   textAlign: 'left',
@@ -81,6 +81,22 @@ export function AdminUsers() {
                     ? formatDate(u.last_active_at)
                     : <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>not tracked yet</span>
                   }
+                </td>
+                <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                  {u.signup_source ? (
+                    <span style={{ display: 'inline-flex', flexDirection: 'column', gap: '1px' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                        {u.signup_source}
+                      </span>
+                      {u.signup_medium && u.signup_medium !== u.signup_source && (
+                        <span style={{ fontSize: '0.66rem', color: 'var(--text-tertiary)' }}>
+                          {u.signup_medium}{u.signup_campaign ? ` · ${u.signup_campaign}` : ''}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>—</span>
+                  )}
                 </td>
                 <td style={{ padding: '10px 12px', color: 'var(--text-primary)', textAlign: 'center' }}>
                   {u.bottle_count}

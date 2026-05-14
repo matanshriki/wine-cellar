@@ -20,6 +20,7 @@ import {
 } from '../utils/sessionPersistence';
 import { safeRemoveItem } from '../utils/safeLocalStorage';
 import { trackEvent } from '../lib/analytics/trackEvent';
+import { getStoredAttribution } from '../services/aiAttribution';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -224,6 +225,17 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         if (!timeoutCheckInterval && event === 'SIGNED_IN') {
           timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
           trackEvent({ event_name: 'login_completed', source: 'auth_state_change' });
+
+          // For Google OAuth sign-ups the signUp() function is never called;
+          // the first SIGNED_IN event IS the signup. Write attribution if not
+          // already stored (the .is('signup_source', null) guard in the helper
+          // makes this safe to call on every sign-in).
+          const isNewUser =
+            session.user.created_at &&
+            Date.now() - new Date(session.user.created_at).getTime() < 30_000;
+          if (isNewUser) {
+            persistSignupAttribution(session.user.id);
+          }
         }
       } else {
         // Clear session markers on sign out
@@ -256,6 +268,30 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  // ── Acquisition attribution helper ────────────────────────────────────────
+  // Fire-and-forget: write first-touch attribution to profiles at signup time.
+  // Fails silently — must never break the signup flow.
+  const persistSignupAttribution = (userId: string) => {
+    void (async () => {
+      try {
+        const { firstTouch } = getStoredAttribution();
+        if (!firstTouch) return;
+        await supabase
+          .from('profiles')
+          .update({
+            signup_source:   firstTouch.source   || null,
+            signup_medium:   firstTouch.medium   || null,
+            signup_campaign: firstTouch.campaign || null,
+          })
+          .eq('id', userId)
+          // Only write once — never overwrite existing attribution
+          .is('signup_source', null);
+      } catch {
+        // Intentionally silent
+      }
+    })();
+  };
+
   const signUp = async (email: string, password: string, displayName?: string): Promise<{ needsEmailConfirmation: boolean }> => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -278,9 +314,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     if (data.user && data.session) {
       setUser(data.user);
       setSession(data.session);
+      persistSignupAttribution(data.user.id);
       trackEvent({ event_name: 'user_signed_up', source: 'email' });
     } else if (data.user && !data.session) {
-      // Email confirmation required — user exists but is not yet active
+      // Email confirmation required — user exists but is not yet active.
+      // Still persist attribution; the profile row is created by the trigger.
+      persistSignupAttribution(data.user.id);
       trackEvent({ event_name: 'user_signed_up', source: 'email', metadata: { needs_confirmation: true } });
     }
 

@@ -9,6 +9,12 @@ export interface AdminUser {
   last_active_at: string | null;
   is_admin: boolean;
   preferred_language: string | null;
+  /** utm_source / referrer domain / "direct" at signup. null for pre-feature users. */
+  signup_source: string | null;
+  /** utm_medium / "ai" / "referral" / "organic" / "direct" at signup. */
+  signup_medium: string | null;
+  /** utm_campaign at signup, empty string when not set. */
+  signup_campaign: string | null;
   bottle_count: number;
   wine_count: number;
   ai_calls_total: number;

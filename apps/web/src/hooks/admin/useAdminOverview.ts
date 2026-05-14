@@ -24,6 +24,12 @@ export interface AdminOverviewMetrics {
   events_7d: number;
   /** Requires app_events data — 0 until trackEvent() instrumentation is active */
   event_active_users_7d: number;
+  /** Signup source breakdown, all time. Empty array for pre-feature deployments. */
+  acquisition_by_source: { source: string; medium: string; users: number }[];
+  /** Signup medium breakdown, all time. */
+  acquisition_by_medium: { medium: string; users: number }[];
+  /** New users in the last 7 days broken down by source. */
+  new_users_by_source_7d: { source: string; users: number }[];
 }
 
 export function useAdminOverview() {

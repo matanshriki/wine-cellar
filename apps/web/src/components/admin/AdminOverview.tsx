@@ -136,6 +136,140 @@ export function AdminOverview() {
         <StatCard label="Active users (events)" value={data.event_active_users_7d}
           note={data.event_active_users_7d === 0 ? 'Populates once trackEvent() fires' : undefined} />
       </div>
+
+      <SectionTitle>User acquisition (all time)</SectionTitle>
+      {(!data.acquisition_by_medium || data.acquisition_by_medium.every(r => r.medium === 'unknown')) ? (
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontStyle: 'italic', marginTop: 0 }}>
+          No attribution data yet — populates for users who sign up after this feature is deployed.
+        </p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+
+          {/* By medium */}
+          <div>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>
+              By channel
+            </p>
+            <div style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+            }}>
+              {data.acquisition_by_medium.map((row, i) => {
+                const total = data.acquisition_by_medium.reduce((s, r) => s + r.users, 0);
+                const pct = total > 0 ? Math.round((row.users / total) * 100) : 0;
+                return (
+                  <div key={row.medium} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '9px 14px',
+                    borderBottom: i < data.acquisition_by_medium.length - 1
+                      ? '1px solid var(--border-subtle)' : 'none',
+                    position: 'relative',
+                  }}>
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0,
+                      width: `${pct}%`,
+                      background: 'var(--interactive-hover)',
+                      opacity: 0.5,
+                    }} />
+                    <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--text-primary)', position: 'relative', zIndex: 1, textTransform: 'capitalize' }}>
+                      {row.medium}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-heading)', position: 'relative', zIndex: 1 }}>
+                      {row.users}
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', minWidth: 30, textAlign: 'right', position: 'relative', zIndex: 1 }}>
+                      {pct}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Top sources */}
+          <div>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>
+              Top sources
+            </p>
+            <div style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+            }}>
+              {data.acquisition_by_source.filter(r => r.source !== 'unknown').slice(0, 8).map((row, i, arr) => {
+                const total = data.acquisition_by_source.reduce((s, r) => s + r.users, 0);
+                const pct = total > 0 ? Math.round((row.users / total) * 100) : 0;
+                return (
+                  <div key={row.source + row.medium} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '9px 14px',
+                    borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                    position: 'relative',
+                  }}>
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0,
+                      width: `${pct}%`,
+                      background: 'var(--interactive-hover)',
+                      opacity: 0.5,
+                    }} />
+                    <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{row.source}</span>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--text-tertiary)', marginLeft: 6 }}>{row.medium}</span>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-heading)', position: 'relative', zIndex: 1 }}>
+                      {row.users}
+                    </span>
+                  </div>
+                );
+              })}
+              {data.acquisition_by_source.filter(r => r.source !== 'unknown').length === 0 && (
+                <div style={{ padding: '14px', fontSize: '0.78rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                  No source data yet
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* New users by source — last 7 days */}
+      {data.new_users_by_source_7d && data.new_users_by_source_7d.length > 0 &&
+        !data.new_users_by_source_7d.every(r => r.source === 'unknown') && (
+        <>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '14px 0 8px' }}>
+            New signups by source — last 7 days
+          </p>
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            maxWidth: 400,
+          }}>
+            {data.new_users_by_source_7d.map((row, i) => (
+              <div key={row.source} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '8px 14px',
+                borderBottom: i < data.new_users_by_source_7d.length - 1
+                  ? '1px solid var(--border-subtle)' : 'none',
+                fontSize: '0.8rem',
+              }}>
+                <span style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{row.source}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{row.users}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
