@@ -22,7 +22,7 @@
 
 import { Router } from 'express';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { OAuth2Client } from 'google-auth-library';
+import { GoogleAuth } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { AuthRequest, authenticateSupabase } from '../middleware/auth.js';
@@ -60,22 +60,19 @@ function buildClient(): BetaAnalyticsDataClient {
   }
 
   if (method === 'oauth2') {
-    const oauth2 = new OAuth2Client({
-      clientId:     config.ga4OauthClientId,
-      clientSecret: config.ga4OauthClientSecret,
+    // GoogleAuth with authorized_user credentials — the correct way to pass OAuth2
+    // refresh tokens to any google-gax-based client. GoogleAuth implements all the
+    // interfaces (getClient, getUniverseDomain, etc.) that google-gax requires.
+    const auth = new GoogleAuth({
+      credentials: {
+        type:          'authorized_user',
+        client_id:     config.ga4OauthClientId,
+        client_secret: config.ga4OauthClientSecret,
+        refresh_token: config.ga4OauthRefreshToken,
+      },
+      scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
     });
-    oauth2.setCredentials({ refresh_token: config.ga4OauthRefreshToken });
-
-    // google-gax ≥ 4 calls auth.getUniverseDomain() but older google-auth-library
-    // versions don't include it — polyfill so the gRPC stub creation doesn't crash.
-    if (typeof (oauth2 as any).getUniverseDomain !== 'function') {
-      (oauth2 as any).getUniverseDomain = () => Promise.resolve('googleapis.com');
-    }
-
-    const client = new BetaAnalyticsDataClient({ auth: oauth2 } as any);
-    (client as any).on?.('error', (e: Error) =>
-      console.warn('[Analytics] GA4 client error (non-fatal):', e.message?.slice(0, 120)));
-    return client;
+    return new BetaAnalyticsDataClient({ auth });
   }
 
   throw new Error('GA4 not configured');
