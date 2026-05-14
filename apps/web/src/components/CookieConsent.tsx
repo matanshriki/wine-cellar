@@ -43,13 +43,27 @@ export function CookieConsent() {
         .eq('id', user.id)
         .single();
 
-      // If consent hasn't been given/rejected yet (NULL), show banner
+        // If consent hasn't been given/rejected yet (NULL), show banner
       if (profile && profile.cookie_consent_given === null) {
         console.log('[CookieConsent] User has not given consent yet, showing banner');
         setShowBanner(true);
       } else {
         console.log('[CookieConsent] User consent status:', profile?.cookie_consent_given);
         setShowBanner(false);
+
+        // Sync DB consent → localStorage so analytics works on any device/browser.
+        // The banner won't show again (already answered), but without this sync
+        // hasAnalyticsConsent() would return false on a fresh session.
+        if (profile?.cookie_consent_given === true) {
+          // Sync to localStorage so hasAnalyticsConsent() returns true on this device
+          localStorage.setItem('cookie_consent', 'accepted');
+          localStorage.setItem('analytics_enabled', 'true');
+          // Activate GA4 for this session (safe to call multiple times — guarded internally)
+          initializeAnalytics();
+        } else if (profile?.cookie_consent_given === false) {
+          localStorage.setItem('cookie_consent', 'rejected');
+          localStorage.setItem('analytics_enabled', 'false');
+        }
       }
     } catch (error) {
       console.error('[CookieConsent] Error checking consent:', error);

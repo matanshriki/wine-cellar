@@ -34,10 +34,11 @@ export const analyticsRouter = Router();
 type AuthMethod = 'service_account' | 'oauth2' | 'none';
 
 function detectAuthMethod(): AuthMethod {
-  if (config.ga4ServiceAccountJson) return 'service_account';
+  // Prefer OAuth2 — works even when service-account emails are blocked by Google Workspace.
   if (config.ga4OauthClientId && config.ga4OauthClientSecret && config.ga4OauthRefreshToken) {
     return 'oauth2';
   }
+  if (config.ga4ServiceAccountJson) return 'service_account';
   return 'none';
 }
 
@@ -95,18 +96,26 @@ analyticsRouter.get('/ga4/health', (_req, res) => {
   const issues: string[] = [];
   if (!propertyId)        issues.push('GA4_PROPERTY_ID is not set');
   if (propertyIdLooksWrong) issues.push(`GA4_PROPERTY_ID "${propertyId}" looks like a Measurement ID (G-... format). Use the numeric Property ID from GA4 Admin → Property Settings.`);
-  if (method === 'none')  issues.push('No GA4 auth credentials found. Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (or GA4_SERVICE_ACCOUNT_JSON).');
+  if (method === 'none') {
+    const hasPartialOauth = config.ga4OauthClientId && config.ga4OauthClientSecret;
+    issues.push(
+      hasPartialOauth
+        ? 'GA4_OAUTH_CLIENT_ID and GA4_OAUTH_CLIENT_SECRET are set but GA4_OAUTH_REFRESH_TOKEN is missing. Run: npx tsx apps/api/scripts/ga4-get-refresh-token.ts'
+        : 'No GA4 auth credentials found. Set GA4_OAUTH_CLIENT_ID + GA4_OAUTH_CLIENT_SECRET + GA4_OAUTH_REFRESH_TOKEN (recommended) or GA4_SERVICE_ACCOUNT_JSON.',
+    );
+  }
 
   return res.json({
     ok: issues.length === 0,
     authMethod: method,
     propertyIdSet: !!propertyId,
     propertyIdFormat: propertyIdLooksWrong ? 'WRONG (G-... Measurement ID)' : propertyId ? 'ok (numeric)' : 'not set',
+    oauthPartiallyConfigured: !!(config.ga4OauthClientId && config.ga4OauthClientSecret && !config.ga4OauthRefreshToken),
     issues,
     hints: {
+      missingRefreshToken: 'Run locally: npx tsx apps/api/scripts/ga4-get-refresh-token.ts — then set GA4_OAUTH_REFRESH_TOKEN in Railway.',
       propertyId: 'GA4 Admin (gear) → Property Settings → Property ID (top-right, numbers only, e.g. 123456789)',
       enableDataApi: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
-      generateRefreshToken: 'npx tsx apps/api/scripts/ga4-get-refresh-token.ts',
     },
   });
 });
