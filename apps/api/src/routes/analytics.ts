@@ -161,6 +161,74 @@ analyticsRouter.get('/ga4/status', authenticateSupabase, async (req: AuthRequest
   }
 });
 
+// ── GET /api/analytics/ga4/realtime — lightweight live data, no quota-heavy reports ──
+
+analyticsRouter.get('/ga4/realtime', authenticateSupabase, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ error: 'Unauthenticated' });
+    const adminOk = await isAdminUser(req.userId);
+    if (!adminOk) return res.status(403).json({ error: 'Admin access required' });
+
+    if (!config.ga4PropertyId) return res.status(503).json({ error: 'GA4 not configured' });
+    if (detectAuthMethod() === 'none') return res.status(503).json({ error: 'GA4 not configured' });
+
+    const property = `properties/${config.ga4PropertyId}`;
+    const ga = buildClient();
+
+    const [totalRes, countryRes, deviceRes, pageRes] = await Promise.allSettled([
+      ga.runRealtimeReport({ property, metrics: [{ name: 'activeUsers' }] }),
+      ga.runRealtimeReport({
+        property,
+        dimensions: [{ name: 'country' }],
+        metrics: [{ name: 'activeUsers' }],
+        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+        limit: 10,
+      }),
+      ga.runRealtimeReport({
+        property,
+        dimensions: [{ name: 'deviceCategory' }],
+        metrics: [{ name: 'activeUsers' }],
+      }),
+      ga.runRealtimeReport({
+        property,
+        dimensions: [{ name: 'unifiedScreenName' }],
+        metrics: [{ name: 'activeUsers' }],
+        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+        limit: 8,
+      }),
+    ]);
+
+    function ok<T>(r: PromiseSettledResult<T>): T | null {
+      return r.status === 'fulfilled' ? r.value : null;
+    }
+
+    const totalData = ok(totalRes);
+    const activeUsers = Number(totalData?.[0]?.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+
+    const byCountry = (ok(countryRes)?.[0]?.rows ?? []).map(row => ({
+      country: dim(row, 0),
+      users: met(row, 0),
+    }));
+
+    const totalDeviceUsers = (ok(deviceRes)?.[0]?.rows ?? []).reduce((s: number, r: any) => s + met(r, 0), 0);
+    const byDevice = (ok(deviceRes)?.[0]?.rows ?? []).map(row => ({
+      device: dim(row, 0),
+      users: met(row, 0),
+      pct: totalDeviceUsers > 0 ? parseFloat(((met(row, 0) / totalDeviceUsers) * 100).toFixed(1)) : 0,
+    }));
+
+    const byPage = (ok(pageRes)?.[0]?.rows ?? []).map(row => ({
+      page: dim(row, 0),
+      users: met(row, 0),
+    }));
+
+    return res.json({ activeUsers, byCountry, byDevice, byPage, fetchedAt: new Date().toISOString() });
+  } catch (err: any) {
+    console.error('[Analytics] Realtime error:', err?.message);
+    return res.status(500).json({ error: 'Failed to fetch realtime data', detail: err?.message });
+  }
+});
+
 // ── GET /api/analytics/ga4 ───────────────────────────────────────────────────
 
 analyticsRouter.get('/ga4', authenticateSupabase, async (req: AuthRequest, res) => {

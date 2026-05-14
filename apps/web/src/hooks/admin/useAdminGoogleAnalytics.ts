@@ -83,14 +83,48 @@ export function useAdminGoogleAnalytics() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        // Include the hint from the API in the error message so the UI can show it
         const detail = [body.error, body.hint].filter(Boolean).join(' — ');
         throw new Error(detail || `HTTP ${res.status}`);
       }
 
       return res.json() as Promise<GA4Data>;
     },
-    staleTime: 5 * 60_000,  // cache 5 min — GA4 quota is limited
+    staleTime: 5 * 60_000,
     retry: 1,
+  });
+}
+
+// ── Realtime data — auto-refreshes every 30 seconds ─────────────────────────
+
+export interface GA4RealtimeData {
+  activeUsers: number;
+  byCountry: { country: string; users: number }[];
+  byDevice: { device: string; users: number; pct: number }[];
+  byPage: { page: string; users: number }[];
+  fetchedAt: string;
+}
+
+export function useAdminGA4Realtime() {
+  return useQuery<GA4RealtimeData>({
+    queryKey: ['admin', 'ga4', 'realtime'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/analytics/ga4/realtime`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+
+      return res.json() as Promise<GA4RealtimeData>;
+    },
+    staleTime: 0,             // always refetch — realtime data is never stale
+    refetchInterval: 30_000,  // auto-refresh every 30 seconds
+    retry: false,             // don't retry on error — silently skip bad realtime calls
   });
 }

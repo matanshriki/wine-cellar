@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAdminGoogleAnalytics, GA4OverviewPeriod } from '../../hooks/admin/useAdminGoogleAnalytics';
+import { useAdminGoogleAnalytics, useAdminGA4Realtime, GA4OverviewPeriod } from '../../hooks/admin/useAdminGoogleAnalytics';
 import { WineLoader } from '../WineLoader';
 
 // ── tiny shared primitives ───────────────────────────────────────────────────
@@ -202,12 +202,6 @@ function TrendChart({
 
 // ── device doughnut (CSS-based) ──────────────────────────────────────────────
 
-const DEVICE_COLORS: Record<string, string> = {
-  mobile:  '#e07b6e',
-  desktop: '#60a5fa',
-  tablet:  '#a78bfa',
-};
-
 function DeviceChart({ devices }: { devices: { device: string; pct: number }[] }) {
   if (devices.length === 0) return <EmptyState />;
   return (
@@ -255,21 +249,30 @@ function DeviceChart({ devices }: { devices: { device: string; pct: number }[] }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function EmptyState() {
+function EmptyState({ message }: { message?: string } = {}) {
   return (
     <div style={{
       background: 'var(--bg-surface)',
       border: '1px solid var(--border-medium)',
       borderRadius: '12px',
-      padding: '24px',
+      padding: '20px 24px',
       textAlign: 'center',
       color: 'var(--text-tertiary)',
       fontSize: '0.8rem',
+      lineHeight: 1.6,
     }}>
-      No data available
+      {message ?? 'No data yet — GA4 processes reports with a ~24 h delay. Check back tomorrow.'}
     </div>
   );
 }
+
+// ── live realtime panel ───────────────────────────────────────────────────────
+
+const DEVICE_COLORS: Record<string, string> = {
+  mobile:  '#e07b6e',
+  desktop: '#60a5fa',
+  tablet:  '#a78bfa',
+};
 
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0s';
@@ -456,6 +459,7 @@ type TrendMetric = 'sessions' | 'users' | 'pageViews';
 
 export function AdminGoogleAnalytics() {
   const { data, isLoading, error } = useAdminGoogleAnalytics();
+  const { data: rt, dataUpdatedAt: rtUpdatedAt } = useAdminGA4Realtime();
   const [period, setPeriod] = useState<Period>('7d');
   const [trendMetric, setTrendMetric] = useState<TrendMetric>('sessions');
 
@@ -538,59 +542,118 @@ export function AdminGoogleAnalytics() {
     ? `Last fetched ${new Date(data.fetchedAt).toLocaleTimeString()}`
     : undefined;
 
+  const rtTime = rtUpdatedAt ? new Date(rtUpdatedAt).toLocaleTimeString() : null;
+
   return (
     <div>
-      {/* ── Header strip ─────────────────────────────────────────────────── */}
+      {/* ── Live right now panel (auto-refreshes every 30 s) ─────────────── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
-        marginBottom: '4px',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-medium)',
+        borderRadius: '14px',
+        padding: '16px 18px',
+        marginBottom: '20px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Realtime pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: rt && (rt.byCountry.length > 0 || rt.byDevice.length > 0) ? '14px' : '0' }}>
+          {/* Pulsing dot + count */}
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'var(--color-success-light, rgba(34,197,94,0.1))',
-            border: '1px solid var(--color-success, #22c55e)',
-            borderRadius: '20px',
-            padding: '4px 12px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            color: 'var(--color-success, #22c55e)',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e',
+            borderRadius: '20px', padding: '4px 12px',
+            fontSize: '0.78rem', fontWeight: 700, color: '#22c55e',
           }}>
-            <span style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: 'var(--color-success, #22c55e)',
-              animation: 'pulse 2s infinite',
-            }} />
-            {data.realtimeUsers} active now
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+            {rt?.activeUsers ?? '—'} active now
           </div>
-
-          {fetchedLabel && (
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>{fetchedLabel}</span>
+          {rtTime && (
+            <span style={{ fontSize: '0.66rem', color: 'var(--text-tertiary)' }}>
+              Updated {rtTime} · refreshes every 30 s
+            </span>
           )}
         </div>
 
-        {/* Period toggle */}
+        {/* Realtime breakdown — country + device side by side */}
+        {rt && (rt.byCountry.length > 0 || rt.byDevice.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+
+            {/* Countries right now */}
+            {rt.byCountry.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.66rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                  Active users by country
+                </div>
+                {rt.byCountry.slice(0, 6).map(c => (
+                  <div key={c.country} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{c.country}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-heading)' }}>{c.users}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Devices right now */}
+            {rt.byDevice.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.66rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                  Active users by device
+                </div>
+                {rt.byDevice.map(d => {
+                  const color = DEVICE_COLORS[d.device.toLowerCase()] ?? 'var(--text-tertiary)';
+                  return (
+                    <div key={d.device} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--text-primary)', textTransform: 'capitalize' }}>{d.device}</span>
+                      <div style={{ width: 80, height: 6, background: 'var(--bg-muted)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${d.pct}%`, background: color, borderRadius: 3 }} />
+                      </div>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-heading)', minWidth: 32, textAlign: 'right' }}>{d.pct.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Active pages right now */}
+            {rt.byPage.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.66rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+                  Active pages
+                </div>
+                {rt.byPage.slice(0, 5).map(p => (
+                  <div key={p.page} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{p.page}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-heading)', flexShrink: 0 }}>{p.users}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* Zero-state inside realtime panel */}
+        {rt && rt.activeUsers === 0 && (
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', margin: '8px 0 0', fontStyle: 'italic' }}>
+            No active users at the moment — this updates every 30 seconds.
+          </p>
+        )}
+      </div>
+
+      {/* ── Period toggle ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
+        {fetchedLabel && (
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>{fetchedLabel}</span>
+        )}
         <div style={{ display: 'flex', gap: '2px', background: 'var(--bg-muted)', borderRadius: 8, padding: 2 }}>
           {(['7d', '30d'] as Period[]).map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               style={{
-                padding: '4px 14px',
-                borderRadius: 6,
-                border: 'none',
+                padding: '4px 14px', borderRadius: 6, border: 'none',
                 background: period === p ? 'var(--bg-surface)' : 'transparent',
                 color: period === p ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                fontWeight: period === p ? 600 : 400,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
+                fontWeight: period === p ? 600 : 400, fontSize: '0.78rem', cursor: 'pointer',
                 boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               }}
             >
@@ -647,6 +710,7 @@ export function AdminGoogleAnalytics() {
 
       {/* ── Session trend ─────────────────────────────────────────────────── */}
       <SectionTitle>30-day trend</SectionTitle>
+
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
         {(['sessions', 'users', 'pageViews'] as TrendMetric[]).map(m => (
           <button
