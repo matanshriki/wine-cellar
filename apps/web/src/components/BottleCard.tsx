@@ -200,6 +200,24 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                   : '🍷 Past Peak'}
               </span>
             )}
+            {/* Kosher chip — high-confidence verified only.
+                Medium-confidence ("Likely Kosher") is intentionally omitted
+                from the card because a small chip cannot convey the nuance.
+                The full details modal shows the softer "Likely Kosher" wording. */}
+            {(bottle.wine as any).is_kosher === true &&
+              (bottle.wine as any).kosher_confidence === 'high' && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{
+                  background: 'rgba(34,197,94,0.13)',
+                  color: 'rgb(21,128,61)',
+                  border: '1px solid rgba(34,197,94,0.35)',
+                }}
+                title={t('kosher.chipTitle')}
+              >
+                {t('kosher.chipLabel')}
+              </span>
+            )}
           </div>
 
           <h3 

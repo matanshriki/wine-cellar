@@ -222,6 +222,7 @@
       "ready": "מוכן לשתייה",
       "aging": "צריך יישון",
       "analyzed": "נותח",
+      "kosher": "כשר",
       "pastPeak": "עבר את השיא",
       "clear": "נקה הכל"
     },
@@ -440,6 +441,18 @@
   "wineDetails": {
     "country": "מדינה",
     "regionalWineStyle": "סגנון יין אזורי"
+  },
+  "kosher": {
+    "sectionHeading": "כשרות",
+    "verified": "✓ כשר",
+    "likelyKosher": "ככל הנראה כשר",
+    "notKosher": "לא כשר",
+    "kosherForPassover": "כשר לפסח",
+    "mevushal": "מבושל",
+    "certifiedBy": "הכשר:",
+    "source": "מקור:",
+    "chipLabel": "✡️ כשר",
+    "chipTitle": "מאושר כשר"
   },
   "bottleForm": {
     "addTitle": "הוסף בקבוק",

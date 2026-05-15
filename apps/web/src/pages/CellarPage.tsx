@@ -68,6 +68,18 @@ const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
 // Wine World Moments — always enabled; service queries Supabase directly
 const ENABLE_WINE_EVENTS = true;
 
+/** `activeFilters` token for Cellar Kosher filter (Phase 2C) */
+const CELLAR_KOSHER_FILTER_KEY = 'kosher';
+
+type WineKosherFields = { is_kosher?: boolean | null; kosher_confidence?: string | null };
+
+/** Verified + likely Kosher (high/med); excludes unknown/low/false */
+function wineMatchesCellarKosherFilter(wine: WineKosherFields | null | undefined): boolean {
+  if (!wine) return false;
+  const c = wine.kosher_confidence;
+  return wine.is_kosher === true && (c === 'high' || c === 'med');
+}
+
 export function CellarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -961,6 +973,12 @@ export function CellarPage() {
     return bottlesInCellar.reduce((sum, bottle) => sum + bottle.quantity, 0);
   }, [bottlesInCellar]);
 
+  /** Show Kosher chip only when the cellar has at least one verified or likely Kosher wine */
+  const cellarHasKosherFilterableWines = useMemo(
+    () => bottlesInCellar.some((b) => wineMatchesCellarKosherFilter(b.wine)),
+    [bottlesInCellar],
+  );
+
   // Calculate unanalyzed bottles count (only for bottles in cellar)
   const unanalyzedCount = useMemo(() => bottlesInCellar.filter(bottle => {
     const b = bottle as any;
@@ -1088,6 +1106,8 @@ export function CellarPage() {
           switch (filter) {
             case 'analyzed':
               return bottle.readiness_status && bottle.readiness_status !== 'Unknown';
+            case CELLAR_KOSHER_FILTER_KEY:
+              return wineMatchesCellarKosherFilter(bottle.wine);
             default:
               return true;
           }
@@ -1543,6 +1563,30 @@ export function CellarPage() {
             >
               🔍 {t('cellar.filters.analyzed')}
             </button>
+
+            {cellarHasKosherFilterableWines && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleFilter(CELLAR_KOSHER_FILTER_KEY);
+                }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
+                style={{
+                  backgroundColor: activeFilters.includes(CELLAR_KOSHER_FILTER_KEY)
+                    ? 'var(--wine-500)'
+                    : 'var(--bg-surface)',
+                  color: activeFilters.includes(CELLAR_KOSHER_FILTER_KEY) ? 'white' : 'var(--text-secondary)',
+                  border: `2px solid ${
+                    activeFilters.includes(CELLAR_KOSHER_FILTER_KEY) ? 'var(--wine-500)' : 'var(--border-medium)'
+                  }`,
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+              >
+                {t('cellar.filters.kosher')}
+              </button>
+            )}
 
             {/* Feedback iteration (dev only) - "Past Peak" filter */}
             <button

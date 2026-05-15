@@ -12,6 +12,7 @@ import {
   planWineMetadataEnrichment,
 } from '@wine/wine-enrichment';
 import { triggerFoodPairingGeneration } from './foodPairingService';
+import { triggerKosherDetection } from './kosherService';
 import { storeBottleAnalysisFromEdgeResponse } from './aiAnalysisService';
 import i18n from '../i18n/config';
 
@@ -373,6 +374,11 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   // Skipped automatically if that language is already cached on the wine row.
   // trigger_source='system_background' → edge function logs 0 credits (first-time generation only).
   triggerFoodPairingGeneration(newBottle, i18n.language ?? 'en', 'system_background');
+
+  // Fire-and-forget: detect Kosher status for this wine.
+  // Skipped automatically when the wine already has reliable (med/high confidence) Kosher data.
+  // Never blocks bottle creation — errors are swallowed inside the service.
+  triggerKosherDetection(newBottle, 'system_background');
 
   return newBottle;
 }

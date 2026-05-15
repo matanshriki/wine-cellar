@@ -222,6 +222,7 @@
       "ready": "Ready to drink",
       "aging": "Needs aging",
       "analyzed": "Analyzed",
+      "kosher": "Kosher",
       "pastPeak": "Past Peak",
       "clear": "Clear all"
     },
@@ -441,6 +442,18 @@
   "wineDetails": {
     "country": "Country",
     "regionalWineStyle": "Regional Wine Style"
+  },
+  "kosher": {
+    "sectionHeading": "Kosher",
+    "verified": "✓ Kosher",
+    "likelyKosher": "Likely Kosher",
+    "notKosher": "Not Kosher",
+    "kosherForPassover": "Kosher for Passover",
+    "mevushal": "Mevushal",
+    "certifiedBy": "Certified by:",
+    "source": "Source:",
+    "chipLabel": "✡️ Kosher",
+    "chipTitle": "Kosher certified"
   },
   "bottleForm": {
     "addTitle": "Add Bottle",

@@ -29,6 +29,164 @@ import { recordShownInsight } from '../services/insightCache';
 import { readCachedFoodPairing, getFoodPairingFallback, triggerFoodPairingGeneration } from '../services/foodPairingService';
 import type { FoodPairing } from '../services/foodPairingService';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { readKosherInfo } from '../services/kosherService';
+
+// ─── Kosher Status Section ────────────────────────────────────────────────────
+
+function KosherStatusSection({ wine }: { wine: Record<string, unknown> }) {
+  const { t } = useTranslation();
+  const kosher = readKosherInfo(wine);
+
+  // Visibility rules (evaluated top-to-bottom; first match wins):
+  //   null              → nothing
+  //   true  + high      → verified Kosher badge
+  //   true  + med       → softer "Likely Kosher" badge
+  //   true  + low/null  → nothing (not reliable enough to surface)
+  //   false + high/med  → "Not Kosher" (genuinely confirmed)
+  //   false + low/null  → nothing (absence of evidence ≠ evidence of absence)
+
+  if (kosher.is_kosher === null) return null;
+  if (kosher.is_kosher === true && (kosher.kosher_confidence === 'low' || kosher.kosher_confidence === null)) return null;
+  if (kosher.is_kosher === false && (kosher.kosher_confidence === 'low' || kosher.kosher_confidence === null)) return null;
+
+  // At this point either:
+  //   is_kosher=true  with confidence high|med
+  //   is_kosher=false with confidence high|med
+  const isVerified = kosher.is_kosher === true && kosher.kosher_confidence === 'high';
+  const isLikely   = kosher.is_kosher === true && kosher.kosher_confidence === 'med';
+  const isNotKosher = kosher.is_kosher === false;
+
+  return (
+    <div>
+      <h3
+        className="text-sm font-semibold mb-3 flex items-center gap-2"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        <span>✡️</span>
+        <span>{t('kosher.sectionHeading')}</span>
+      </h3>
+
+      <div
+        className="rounded-xl p-4 space-y-3"
+        style={{
+          background: isVerified
+            ? 'linear-gradient(135deg, rgba(34,197,94,0.07), rgba(21,128,61,0.10))'
+            : isLikely
+            ? 'linear-gradient(135deg, rgba(34,197,94,0.04), rgba(21,128,61,0.06))'
+            : 'var(--bg-muted)',
+          border: isVerified
+            ? '1px solid rgba(34,197,94,0.25)'
+            : isLikely
+            ? '1px solid rgba(34,197,94,0.15)'
+            : '1px solid var(--border-subtle)',
+        }}
+      >
+        {/* Primary status badge */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isVerified && (
+            <span
+              className="text-xs px-3 py-1 rounded-full font-semibold"
+              style={{
+                background: 'rgba(34,197,94,0.15)',
+                color: 'rgb(21,128,61)',
+                border: '1px solid rgba(34,197,94,0.4)',
+              }}
+            >
+              {t('kosher.verified')}
+            </span>
+          )}
+
+          {isLikely && (
+            <span
+              className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{
+                background: 'rgba(34,197,94,0.08)',
+                color: 'rgb(22,101,52)',
+                border: '1px solid rgba(34,197,94,0.2)',
+              }}
+            >
+              {t('kosher.likelyKosher')}
+            </span>
+          )}
+
+          {isNotKosher && (
+            <span
+              className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{
+                background: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-base)',
+              }}
+            >
+              {t('kosher.notKosher')}
+            </span>
+          )}
+
+          {/* Sub-badges: only show alongside a positive (true) status */}
+          {kosher.is_kosher && kosher.kosher_for_passover && (
+            <span
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{
+                background: 'rgba(234,179,8,0.12)',
+                color: 'rgb(133,100,0)',
+                border: '1px solid rgba(234,179,8,0.3)',
+              }}
+            >
+              {t('kosher.kosherForPassover')}
+            </span>
+          )}
+
+          {kosher.is_kosher && kosher.mevushal && (
+            <span
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{
+                background: 'rgba(99,102,241,0.10)',
+                color: 'rgb(67,56,202)',
+                border: '1px solid rgba(99,102,241,0.25)',
+              }}
+            >
+              {t('kosher.mevushal')}
+            </span>
+          )}
+        </div>
+
+        {/* Certification body */}
+        {kosher.is_kosher && kosher.kosher_certification && (
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {t('kosher.certifiedBy')} <span className="font-medium">{kosher.kosher_certification}</span>
+          </p>
+        )}
+
+        {/* Source */}
+        {kosher.is_kosher && kosher.kosher_source_name && (
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {t('kosher.source')}{' '}
+            {kosher.kosher_source_url ? (
+              <a
+                href={kosher.kosher_source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {kosher.kosher_source_name}
+              </a>
+            ) : (
+              <span>{kosher.kosher_source_name}</span>
+            )}
+          </p>
+        )}
+
+        {/* Notes */}
+        {kosher.kosher_notes && (
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {kosher.kosher_notes}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Food Pairing Section ─────────────────────────────────────────────────────
 
@@ -970,6 +1128,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 {/* Food Pairing — always shown */}
                 {!isDemoBottle && (
                   <FoodPairingSection wine={wine} bottle={displayBottle} />
+                )}
+
+                {/* Kosher Status */}
+                {!isDemoBottle && (
+                  <KosherStatusSection wine={wine} />
                 )}
 
                 {/* Keep / Reserved Section */}

@@ -132,6 +132,18 @@ export interface Database {
           food_pairing: FoodPairing | null
           food_pairing_updated_at: string | null
           food_pairing_confidence: string | null
+          /** Kosher certification fields — null = not yet determined */
+          is_kosher: boolean | null
+          kosher_for_passover: boolean | null
+          mevushal: boolean | null
+          kosher_certification: string | null
+          kosher_confidence: 'low' | 'med' | 'high' | null
+          kosher_source_url: string | null
+          kosher_source_name: string | null
+          kosher_notes: string | null
+          kosher_updated_at: string | null
+          /** How Kosher status was derived — used by Phase 2 backfill targeting */
+          kosher_enrichment_method: 'rule' | 'ai' | 'perplexity' | 'manual' | null
           created_at: string
           updated_at: string
         }
@@ -155,6 +167,16 @@ export interface Database {
           food_pairing?: FoodPairing | null
           food_pairing_updated_at?: string | null
           food_pairing_confidence?: string | null
+          is_kosher?: boolean | null
+          kosher_for_passover?: boolean | null
+          mevushal?: boolean | null
+          kosher_certification?: string | null
+          kosher_confidence?: 'low' | 'med' | 'high' | null
+          kosher_source_url?: string | null
+          kosher_source_name?: string | null
+          kosher_notes?: string | null
+          kosher_updated_at?: string | null
+          kosher_enrichment_method?: 'rule' | 'ai' | 'perplexity' | 'manual' | null
           created_at?: string
           updated_at?: string
         }
@@ -178,6 +200,16 @@ export interface Database {
           food_pairing?: FoodPairing | null
           food_pairing_updated_at?: string | null
           food_pairing_confidence?: string | null
+          is_kosher?: boolean | null
+          kosher_for_passover?: boolean | null
+          mevushal?: boolean | null
+          kosher_certification?: string | null
+          kosher_confidence?: 'low' | 'med' | 'high' | null
+          kosher_source_url?: string | null
+          kosher_source_name?: string | null
+          kosher_notes?: string | null
+          kosher_updated_at?: string | null
+          kosher_enrichment_method?: 'rule' | 'ai' | 'perplexity' | 'manual' | null
           created_at?: string
           updated_at?: string
         }
