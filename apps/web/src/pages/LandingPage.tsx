@@ -2,9 +2,9 @@
  * Public marketing home — indexable by Google & cited by AI tools (with llms.txt).
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
  *
- * Video framing: file demos use a 9:16 stage with `object-fit: contain` so end cards
- * and on-screen text are not cropped. Narrow letterboxing uses the same dark shell
- * as the frame. Bars baked into the source file need a re-export, not CSS-only fixes.
+ * Video framing: file demos use a 9:16 stage with `object-fit: cover` so the picture
+ * fills the phone “screen” edge-to-edge. Important end-card text should stay inside
+ * the safe area in the source export; `contain` avoids crop but shrinks the video.
  */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
@@ -230,7 +230,7 @@ function LandingFileDemoVideo({
     <div ref={containerRef} className="absolute inset-0 bg-[#0c0a0b]">
       <video
         ref={videoRef}
-        className="absolute inset-0 z-0 h-full w-full object-contain object-center"
+        className="absolute inset-0 z-0 h-full w-full object-cover object-center"
         controls
         muted
         autoPlay={inView}
@@ -296,7 +296,7 @@ function LandingDemoStage({
         />
       </div>
     ) : (
-      <div className="relative aspect-[9/16] w-full max-h-[min(78vh,640px)] overflow-hidden rounded-[1.35rem] bg-[#0c0a0b]">
+      <div className="relative aspect-[9/16] w-full max-h-[min(82svh,680px)] sm:max-h-[min(78vh,640px)] overflow-hidden rounded-[1.35rem] bg-[#0c0a0b]">
         <LandingFileDemoVideo
           key={demo.src}
           src={demo.src}
@@ -313,7 +313,7 @@ function LandingDemoStage({
     );
 
   return (
-    <div className="mx-auto w-full max-w-[300px] sm:max-w-[320px]">
+    <div className="mx-auto w-full max-w-[min(360px,calc(100vw-1rem))] sm:max-w-[320px]">
       <div
         className="rounded-[2.25rem] p-[10px] sm:p-3 shadow-2xl border border-white/10"
         style={{
