@@ -19,7 +19,6 @@
     "demoCaption": "Browse your bottles, drink windows, and Sommi's recommendations—scoped to what you own.",
     "demoAutoplayHint": "Plays muted when this section is in view (browser autoplay rules). Use the player to add sound.",
     "demoTapToPlay": "Tap to start (muted on first play)",
-    "demoVideoAssetNote": "Still seeing black bars inside the frame? Your file may include baked-in letterboxing—re-export cropped to 9:16 without matte.",
     "proofChipsAria": "Product highlights",
     "proofChip_vivino": "Vivino import",
     "proofChip_label": "Label scan",

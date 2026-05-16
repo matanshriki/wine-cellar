@@ -2,11 +2,9 @@
  * Public marketing home — indexable by Google & cited by AI tools (with llms.txt).
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
  *
- * Video framing: the previous layout used `object-contain` inside a 16:9 box, which
- * letterboxes many phone-shaped exports. We use a 9:16 stage with `object-fit: cover`
- * for file demos. If black bars remain *inside* the picture after that, they are
- * baked into the source file — re-export cropped to 9:16 without matte (see i18n
- * `landing.demoVideoAssetNote`).
+ * Video framing: file demos use a 9:16 stage with `object-fit: contain` so end cards
+ * and on-screen text are not cropped. Narrow letterboxing uses the same dark shell
+ * as the frame. Bars baked into the source file need a re-export, not CSS-only fixes.
  */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
@@ -232,7 +230,7 @@ function LandingFileDemoVideo({
     <div ref={containerRef} className="absolute inset-0 bg-[#0c0a0b]">
       <video
         ref={videoRef}
-        className="absolute inset-0 z-0 h-full w-full object-cover object-center"
+        className="absolute inset-0 z-0 h-full w-full object-contain object-center"
         controls
         muted
         autoPlay={inView}
@@ -285,8 +283,6 @@ function LandingDemoStage({
   demoPoster?: string;
   demoTitle: string;
 }) {
-  const { t } = useTranslation();
-
   const inner =
     demo.kind === 'iframe' ? (
       <div className="relative aspect-video w-full overflow-hidden rounded-[1.35rem] bg-black">
@@ -332,12 +328,6 @@ function LandingDemoStage({
         </div>
         {inner}
       </div>
-      <p
-        className="mt-4 text-center text-xs leading-relaxed px-2"
-        style={{ color: 'rgba(245,240,232,0.55)' }}
-      >
-        {t('landing.demoVideoAssetNote')}
-      </p>
     </div>
   );
 }
