@@ -87,7 +87,7 @@ export const AdminEnrichPage: React.FC = () => {
 
   // ── Admin: missing analysis_data locale slices (no user credits) ─────────────
   const [localeBfLang, setLocaleBfLang] = useState<'he' | 'en'>('he');
-  const [localeBfLimit, setLocaleBfLimit] = useState(25);
+  const [localeBfLimit, setLocaleBfLimit] = useState(5);
   const [localeBfDryRun, setLocaleBfDryRun] = useState(true);
   const [localeBfAfter, setLocaleBfAfter] = useState<string>('');
   const [localeBfRunning, setLocaleBfRunning] = useState(false);
@@ -1937,7 +1937,9 @@ VALUES ('${user?.id}');`}
       <p style={{ color: '#666', marginBottom: '1rem' }}>
         Fills only <code>bottles.analysis_data.en</code> or <code>.he</code> for bottles that already have analysis
         elsewhere but are missing that locale slice. Does <strong>not</strong> charge user credits, does{' '}
-        <strong>not</strong> update legacy flat columns. Requires an <code>admins</code> row, migration{' '}
+        <strong>not</strong> update legacy flat columns. Each Edge run processes at most <strong>5</strong> bottles
+        (OpenAI round-trips) to stay under Supabase compute limits — use <strong>next_after</strong> and re-run until{' '}
+        <code>has_more</code> is false. Requires an <code>admins</code> row, migration{' '}
         <code>20260517_admin_pick_bottles_missing_analysis_locale.sql</code>, and deployed Edge{' '}
         <code>admin-backfill-analysis-locales</code>.
       </p>
@@ -1963,13 +1965,13 @@ VALUES ('${user?.id}');`}
           </select>
         </label>
         <label>
-          <div style={{ fontSize: '0.75rem', color: '#666' }}>Limit (max 50)</div>
+          <div style={{ fontSize: '0.75rem', color: '#666' }}>Per run (max 5)</div>
           <input
             type="number"
             min={1}
-            max={50}
+            max={5}
             value={localeBfLimit}
-            onChange={(e) => setLocaleBfLimit(Math.min(50, Math.max(1, Number(e.target.value) || 25)))}
+            onChange={(e) => setLocaleBfLimit(Math.min(5, Math.max(1, Number(e.target.value) || 5)))}
             disabled={localeBfRunning}
             style={{ width: '5rem' }}
           />

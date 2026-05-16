@@ -10,7 +10,7 @@
  * POST JSON:
  * {
  *   "target_language": "he" | "en",
- *   "limit": 25,           // default 10, max 50 per invocation
+ *   "limit": 5,            // default 5, max 5 per invocation (Edge CPU/time — use `after` for more)
  *   "dry_run": true,
  *   "after": "<uuid>" | null   // resume: last bottle_id from previous response next_after
  * }
@@ -40,8 +40,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? ''
 
-const DEFAULT_LIMIT = 10
-const MAX_LIMIT = 50
+/** Keep small: each bottle = one OpenAI round-trip; Supabase Edge hits WORKER_RESOURCE_LIMIT if too many per invocation. */
+const DEFAULT_LIMIT = 5
+const MAX_LIMIT = 5
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -102,8 +103,11 @@ serve(async (req) => {
 
   const targetLang = normalizeAnalysisDataLang(body.target_language ?? 'he')
   const dryRun = body.dry_run === true
-  const limit = Math.min(MAX_LIMIT, Math.max(1, body.limit ?? DEFAULT_LIMIT))
+  const requestedRaw = body.limit ?? DEFAULT_LIMIT
+  const requested = Math.max(1, typeof requestedRaw === 'number' ? requestedRaw : Number(requestedRaw) || DEFAULT_LIMIT)
+  const limit = Math.min(MAX_LIMIT, requested)
   const afterUuid = body.after && typeof body.after === 'string' ? body.after : null
+  const limitCapped = requested > MAX_LIMIT
 
   const { data: pickRows, error: pickErr } = await admin.rpc('admin_pick_bottles_missing_analysis_locale', {
     p_target: targetLang,
@@ -124,11 +128,21 @@ serve(async (req) => {
   const has_more = bottleIds.length >= limit
   const next_after = bottleIds.length > 0 ? bottleIds[bottleIds.length - 1] : null
 
+  const meta = {
+    limit_requested: requested,
+    limit_applied: limit,
+    limit_capped: limitCapped,
+    compute_note:
+      `Supabase Edge limits CPU/time per invocation — at most ${MAX_LIMIT} OpenAI analyses per request. ` +
+      'If has_more is true, call again with after=next_after (the admin UI fills this automatically).',
+  }
+
   if (bottleIds.length === 0) {
     return json({
       success: true,
       dry_run: dryRun,
       target_language: targetLang,
+      ...meta,
       processed_count: 0,
       skipped_count: 0,
       failed_count: 0,
@@ -145,6 +159,7 @@ serve(async (req) => {
       success: true,
       dry_run: true,
       target_language: targetLang,
+      ...meta,
       processed_count: 0,
       skipped_count: 0,
       failed_count: 0,
@@ -303,6 +318,7 @@ serve(async (req) => {
     success: true,
     dry_run: false,
     target_language: targetLang,
+    ...meta,
     processed_count,
     skipped_count,
     failed_count,
