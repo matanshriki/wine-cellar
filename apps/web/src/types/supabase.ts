@@ -233,6 +233,7 @@ export interface Database {
           decant_minutes: number | null
           analysis_notes: string | null
           analyzed_at: string | null
+          analysis_data: Json | null
           tags: Json | null
           image_url: string | null
           notes: string | null
@@ -262,6 +263,7 @@ export interface Database {
           decant_minutes?: number | null
           analysis_notes?: string | null
           analyzed_at?: string | null
+          analysis_data?: Json | null
           tags?: Json | null
           image_url?: string | null
           notes?: string | null
@@ -291,6 +293,7 @@ export interface Database {
           decant_minutes?: number | null
           analysis_notes?: string | null
           analyzed_at?: string | null
+          analysis_data?: Json | null
           tags?: Json | null
           image_url?: string | null
           notes?: string | null

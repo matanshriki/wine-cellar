@@ -21,6 +21,7 @@ import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
 import { getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import type { AIAnalysis } from '../services/aiAnalysisService';
+import { getLocalizedAnalysis } from '../services/aiAnalysisService';
 import type { TasteProfile } from '../types/supabase';
 import * as tasteProfileService from '../services/tasteProfileService';
 import { getBottleInsight } from '../services/insightService';
@@ -28,7 +29,6 @@ import { SommiInsightPill } from './SommiInsightPill';
 import { recordShownInsight } from '../services/insightCache';
 import { readCachedFoodPairing, getFoodPairingFallback, triggerFoodPairingGeneration } from '../services/foodPairingService';
 import type { FoodPairing } from '../services/foodPairingService';
-import type { BottleWithWineInfo } from '../services/bottleService';
 import { readKosherInfo } from '../services/kosherService';
 
 // ─── Kosher Status Section ────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ function KosherStatusSection({ wine }: { wine: Record<string, unknown> }) {
             </span>
           )}
 
-          {kosher.is_kosher && kosher.mevushal && (
+          {kosher.is_kosher && kosher.mevushal === true && (
             <span
               className="text-xs px-2.5 py-1 rounded-full font-medium"
               style={{
@@ -148,9 +148,30 @@ function KosherStatusSection({ wine }: { wine: Record<string, unknown> }) {
               {t('kosher.mevushal')}
             </span>
           )}
+
+          {kosher.is_kosher && kosher.mevushal === false && (
+            <span
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{
+                background: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-base)',
+              }}
+            >
+              {t('kosher.nonMevushal')}
+            </span>
+          )}
         </div>
 
-        {/* Certification body */}
+        {kosher.kosher_confidence &&
+          (kosher.kosher_confidence === 'low' ||
+            kosher.kosher_confidence === 'med' ||
+            kosher.kosher_confidence === 'high') &&
+          (isVerified || isLikely || isNotKosher) && (
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {t(`kosher.confidence.${kosher.kosher_confidence}`)}
+          </p>
+        )}
         {kosher.is_kosher && kosher.kosher_certification && (
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             {t('kosher.certifiedBy')} <span className="font-medium">{kosher.kosher_certification}</span>
@@ -533,6 +554,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     if (bottle.id.startsWith('demo-')) { setUserCanGenerateAI(false); return; }
     labelArtService.isLabelArtEnabledForUser().then(setUserCanGenerateAI);
   }, [isOpen, bottle?.id]);
+
+  const localizedAnalysis = useMemo(() => {
+    if (!bottle) return null;
+    return getLocalizedAnalysis(bottle as unknown as Record<string, unknown>, i18n.language ?? 'en');
+  }, [bottle, i18n.language]);
 
   // Don't render anything if no bottle is available
   if (!bottle) return null;
@@ -920,7 +946,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     {wine.rating && (
                       <div className="flex-shrink-0">
                         <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                          Vivino Rating
+                          {t('wineDetails.vivinoRating')}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--wine-500)' }}>
@@ -1065,7 +1091,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                 )}
 
                 {/* AI Analysis - Full Sommelier Notes */}
-                {(bottle as any).analysis_summary && (bottle as any).readiness_label && (
+                {localizedAnalysis && (displayBottle as any).readiness_label && (
                   <div>
                     <h3 
                       className="text-sm font-semibold mb-3 flex items-center gap-2"
@@ -1076,30 +1102,60 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                     </h3>
                     <SommelierNotes
                       analysis={{
-                        analysis_summary: (bottle as any).analysis_summary,
-                        analysis_reasons: (bottle as any).analysis_reasons || [],
-                        readiness_label: (bottle as any).readiness_label,
-                        serving_temp_c: (bottle as any).serving_guidance?.temp_min ?? bottle.serve_temp_c ?? null,
-                        decant_minutes: (bottle as any).serving_guidance?.decant_min ?? bottle.decant_minutes ?? 0,
-                        serving_guidance: servingGuidanceFromRefresh ?? (bottle as any).serving_guidance ?? null,
-                        drink_window_start: (bottle as any).drink_window_start,
-                        drink_window_end: (bottle as any).drink_window_end,
-                        confidence: (bottle as any).confidence || 'MEDIUM',
-                        assumptions: (bottle as any).assumptions,
-                        analyzed_at: (bottle as any).analyzed_at || new Date().toISOString(),
+                        analysis_summary: localizedAnalysis.analysis_summary,
+                        analysis_reasons: localizedAnalysis.analysis_reasons,
+                        readiness_label: (displayBottle as any).readiness_label,
+                        serving_temp_c:
+                          servingGuidanceFromRefresh?.temp_min
+                          ?? localizedAnalysis.serving_guidance?.temp_min
+                          ?? displayBottle.serve_temp_c
+                          ?? null,
+                        decant_minutes:
+                          servingGuidanceFromRefresh?.decant_min
+                          ?? localizedAnalysis.serving_guidance?.decant_min
+                          ?? displayBottle.decant_minutes
+                          ?? 0,
+                        serving_guidance:
+                          servingGuidanceFromRefresh
+                          ?? localizedAnalysis.serving_guidance
+                          ?? ((displayBottle as any).serving_guidance ?? null),
+                        drink_window_start: (displayBottle as any).drink_window_start,
+                        drink_window_end: (displayBottle as any).drink_window_end,
+                        confidence: (displayBottle as any).confidence || 'MEDIUM',
+                        assumptions: localizedAnalysis.assumptions ?? (displayBottle as any).assumptions,
+                        analyzed_at: (displayBottle as any).analyzed_at || new Date().toISOString(),
                         barrel_aging_note:
                           barrelFromRefresh !== null
                             ? barrelFromRefresh.note
-                            : (bottle.wine.barrel_aging_note ?? null),
+                            : (displayBottle.wine.barrel_aging_note ?? null),
                         barrel_aging_months_est:
                           barrelFromRefresh !== null
                             ? barrelFromRefresh.months
-                            : (bottle.wine.barrel_aging_months_est ?? null),
-                        barrel_aging_metadata: (bottle.wine as any).barrel_aging_metadata ?? null,
+                            : (displayBottle.wine.barrel_aging_months_est ?? null),
+                        barrel_aging_metadata: (displayBottle.wine as any).barrel_aging_metadata ?? null,
                       }}
                       onRefresh={handleRefreshAnalysis}
                       isRefreshing={isRefreshing}
                     />
+                    {localizedAnalysis.showsMissingLanguageCta && !isDemoBottle && handleRefreshAnalysis && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => void handleRefreshAnalysis()}
+                          disabled={isRefreshing}
+                          className="text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+                          style={{
+                            background: 'var(--bg-muted)',
+                            border: '1px solid var(--border-base)',
+                            color: 'var(--wine-600)',
+                          }}
+                        >
+                          {i18n.language.startsWith('he')
+                            ? t('wineDetails.analysis.generateInHebrew')
+                            : t('wineDetails.analysis.generateInEnglish')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

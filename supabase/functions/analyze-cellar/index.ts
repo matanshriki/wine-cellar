@@ -22,6 +22,11 @@ import {
   type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
+import {
+  buildAnalysisDataSlice,
+  mergeAnalysisDataJson,
+  normalizeAnalysisDataLang,
+} from '../_shared/bottleAnalysisData.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -142,6 +147,7 @@ serve(async (req) => {
         analysis_summary,
         readiness_label,
         serving_guidance,
+        analysis_data,
         serve_temp_c,
         decant_minutes,
         wine:wines(
@@ -276,6 +282,7 @@ serve(async (req) => {
  * Analyze a single bottle
  */
 async function analyzeBottle(bottle: any, supabase: any, language: string): Promise<BottleStatus> {
+  const analysisLangKey = normalizeAnalysisDataLang(language)
   try {
     const enrichmentLog = {
       hasWineProfile: !!bottle.wine.wine_profile,
@@ -331,6 +338,18 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
       }
     }
 
+    const analysisDataSlice = buildAnalysisDataSlice({
+      analysis_summary: analysis.analysis_summary,
+      analysis_reasons: analysis.analysis_reasons,
+      assumptions: analysis.assumptions ?? null,
+      serving_guidance: servingGuidance as unknown as Record<string, unknown>,
+    })
+    const mergedAnalysisData = mergeAnalysisDataJson(
+      bottle.analysis_data as Record<string, unknown> | null | undefined,
+      analysisLangKey,
+      analysisDataSlice,
+    )
+
     // Store results in database
     const updateData = {
       analysis_summary: analysis.analysis_summary,
@@ -347,6 +366,7 @@ async function analyzeBottle(bottle: any, supabase: any, language: string): Prom
       confidence: analysis.confidence,
       assumptions: analysis.assumptions,
       analyzed_at: new Date().toISOString(),
+      analysis_data: mergedAnalysisData,
     };
 
     const { error: updateError } = await supabase

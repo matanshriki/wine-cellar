@@ -11,6 +11,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n/config';
 import {
   isInsufficientCreditsError,
   throwIfInsufficientCreditsFromFunctionsInvokeError,
@@ -18,6 +19,18 @@ import {
 } from '../lib/insufficientCredits';
 import type { BottleWithWineInfo } from './bottleService';
 import * as drinkWindowService from './drinkWindowService';
+import {
+  buildAnalysisDataSlice,
+  firstValidAnalysisLangKey,
+  isValidLangSlice,
+  mergeAnalysisDataJson,
+  normalizeAnalysisDataLang,
+  type AnalysisDataLangKey,
+  type AnalysisDataLangSlice,
+} from '../utils/bottleAnalysisData';
+
+export type { AnalysisDataLangKey } from '../utils/bottleAnalysisData';
+export { normalizeAnalysisDataLang };
 
 /** Structured serving guidance stored on bottles.serving_guidance */
 export interface ServingGuidance {
@@ -108,7 +121,7 @@ function parseBarrelFromAnalysisPayload(a: Record<string, unknown>): {
  * Parse and validate serving guidance from the AI analysis payload.
  * Returns null if the payload is missing or malformed.
  */
-function parseServingGuidanceFromPayload(a: Record<string, unknown>): ServingGuidance | null {
+export function parseServingGuidanceFromPayload(a: Record<string, unknown>): ServingGuidance | null {
   const s = a.serving;
   if (!s || typeof s !== 'object') return null;
   const sg = s as Record<string, unknown>;
@@ -148,6 +161,110 @@ function parseServingGuidanceFromPayload(a: Record<string, unknown>): ServingGui
   };
 }
 
+function looksLikeHebrewScript(text: string): boolean {
+  return /[\u0590-\u05FF]/.test(text);
+}
+
+/** Resolved prose + serving for the Wine Page from `analysis_data` with safe fallbacks. */
+export interface LocalizedAnalysisView {
+  analysis_summary: string;
+  analysis_reasons: string[];
+  serving_guidance: ServingGuidance | null;
+  assumptions: string | null;
+  /** Language bucket the displayed prose came from (best-effort for legacy-only). */
+  contentLanguage: AnalysisDataLangKey;
+  /** User may run analyze-wine to fill `analysis_data[requested]` without silent credit charges on language switch. */
+  showsMissingLanguageCta: boolean;
+}
+
+/**
+ * Centralized resolver for localized AI analysis text.
+ * Order: requested locale → en → he → any valid slice in analysis_data → legacy flat columns.
+ */
+export function getLocalizedAnalysis(
+  bottle: Record<string, unknown>,
+  requestedUiLang: string,
+): LocalizedAnalysisView | null {
+  const readiness = bottle.readiness_label;
+  if (!readiness || typeof readiness !== 'string') return null;
+
+  const requested = normalizeAnalysisDataLang(requestedUiLang);
+  const ad = bottle.analysis_data as Record<string, unknown> | null | undefined;
+
+  let summary: string;
+  let reasons: string[];
+  let serving: ServingGuidance | null;
+  let assumptions: string | null;
+  let contentLanguage: AnalysisDataLangKey;
+
+  const fromSlice = (slice: AnalysisDataLangSlice, lang: AnalysisDataLangKey) => {
+    summary = slice.summary;
+    reasons = slice.reasons;
+    const sgRaw = slice.serving_guidance;
+    const parsed = sgRaw && typeof sgRaw === 'object'
+      ? parseServingGuidanceFromPayload({ serving: sgRaw as Record<string, unknown> })
+      : null;
+    const bottleServing = bottle.serving_guidance as ServingGuidance | null | undefined;
+    serving = parsed ?? bottleServing ?? null;
+    if (slice.assumptions === null || slice.assumptions === undefined) {
+      assumptions = null;
+    } else {
+      assumptions = typeof slice.assumptions === 'string' ? slice.assumptions : String(slice.assumptions);
+    }
+    contentLanguage = lang;
+  };
+
+  if (ad && isValidLangSlice(ad[requested])) {
+    fromSlice(ad[requested], requested);
+  } else if (ad && isValidLangSlice(ad.en)) {
+    fromSlice(ad.en, 'en');
+  } else if (ad && isValidLangSlice(ad.he)) {
+    fromSlice(ad.he, 'he');
+  } else {
+    const anyKey = firstValidAnalysisLangKey(ad, ['en', 'he']);
+    if (anyKey && ad && isValidLangSlice(ad[anyKey])) {
+      fromSlice(ad[anyKey], anyKey);
+    } else if (typeof bottle.analysis_summary === 'string' && bottle.analysis_summary.trim()) {
+      summary = bottle.analysis_summary;
+      reasons = Array.isArray(bottle.analysis_reasons)
+        ? (bottle.analysis_reasons as unknown[]).map(String)
+        : [];
+      serving = (bottle.serving_guidance as ServingGuidance | null) ?? null;
+      assumptions = typeof bottle.assumptions === 'string' ? bottle.assumptions : null;
+      contentLanguage = looksLikeHebrewScript(summary) ? 'he' : 'en';
+    } else {
+      return null;
+    }
+  }
+
+  const hasRequestedSlice = !!(ad && isValidLangSlice(ad[requested]));
+  let showsMissingLanguageCta = false;
+  if (!hasRequestedSlice && summary.trim()) {
+    if (requested === 'he') {
+      showsMissingLanguageCta = true;
+    } else {
+      showsMissingLanguageCta = isValidLangSlice(ad?.he) || looksLikeHebrewScript(summary);
+    }
+  } else if (
+    requested === 'en' &&
+    hasRequestedSlice &&
+    summary.trim() &&
+    looksLikeHebrewScript(summary)
+  ) {
+    // Hebrew prose mis-keyed as `analysis_data.en` (e.g. legacy backfill) still satisfies
+    // `hasRequestedSlice` — offer English regeneration so EN UI is not stuck without a CTA.
+    showsMissingLanguageCta = true;
+  }
+
+  return {
+    analysis_summary: summary,
+    analysis_reasons: reasons,
+    serving_guidance: serving,
+    assumptions,
+    contentLanguage,
+    showsMissingLanguageCta,
+  };
+}
 /**
  * Build a client-side fallback serving guidance object based on wine color and vintage.
  * Mirrors the edge function buildFallbackServingGuidance logic.
@@ -235,30 +352,32 @@ export async function getBottleAnalysis(bottleId: string): Promise<AIAnalysis | 
     return null;
   }
 
-  if (!data.analysis_summary || !data.readiness_label) {
-    return null;
-  }
-
-  const wine = (data as {
+  const row = data as unknown as Record<string, unknown> & {
     wine?: {
       barrel_aging_note?: string | null;
       barrel_aging_months_est?: number | null;
       barrel_aging_metadata?: BarrelAgingMetadata | null;
-    }
-  }).wine;
+    };
+  };
+
+  if (!row.analysis_summary || !row.readiness_label) {
+    return null;
+  }
+
+  const wine = row.wine;
 
   return {
-    analysis_summary: data.analysis_summary,
-    analysis_reasons: data.analysis_reasons || [],
-    readiness_label: data.readiness_label as 'READY' | 'HOLD' | 'PEAK_SOON',
-    serving_temp_c: data.serve_temp_c,
-    decant_minutes: data.decant_minutes,
-    serving_guidance: (data as any).serving_guidance ?? null,
-    drink_window_start: data.drink_window_start,
-    drink_window_end: data.drink_window_end,
-    confidence: data.confidence as 'LOW' | 'MEDIUM' | 'HIGH',
-    assumptions: data.assumptions,
-    analyzed_at: data.analyzed_at || data.updated_at,
+    analysis_summary: row.analysis_summary as string,
+    analysis_reasons: (row.analysis_reasons as string[]) || [],
+    readiness_label: row.readiness_label as 'READY' | 'HOLD' | 'PEAK_SOON',
+    serving_temp_c: row.serve_temp_c as number,
+    decant_minutes: row.decant_minutes as number,
+    serving_guidance: row.serving_guidance as ServingGuidance | null,
+    drink_window_start: row.drink_window_start as number | null,
+    drink_window_end: row.drink_window_end as number | null,
+    confidence: row.confidence as 'LOW' | 'MEDIUM' | 'HIGH',
+    assumptions: row.assumptions as string | null,
+    analyzed_at: (row.analyzed_at as string) || (row.updated_at as string),
     barrel_aging_note: wine?.barrel_aging_note ?? null,
     barrel_aging_months_est: wine?.barrel_aging_months_est ?? null,
     barrel_aging_metadata: wine?.barrel_aging_metadata ?? null,
@@ -282,6 +401,8 @@ export async function generateAIAnalysis(
     throw new Error('Not authenticated');
   }
 
+  const langNorm = normalizeAnalysisDataLang(language);
+
   // Try AI analysis first
   try {
     const wineData = {
@@ -294,7 +415,7 @@ export async function generateAIAnalysis(
       grapes: bottle.wine.grapes,
       color: bottle.wine.color,
       notes: bottle.notes,
-      language: language,
+      language: langNorm,
     };
 
     const { data, error } = await supabase.functions.invoke('analyze-wine', {
@@ -350,7 +471,7 @@ export async function generateAIAnalysis(
     };
 
     // Store in database
-    await storeAnalysis(bottle.id, analysis);
+    await storeAnalysis(bottle.id, analysis, langNorm);
 
     // Mirror barrel fields on wines from the client too (covers edge update failures / RLS / cache lag).
     if (bottle.wine_id) {
@@ -359,7 +480,7 @@ export async function generateAIAnalysis(
         .update({
           barrel_aging_note: analysis.barrel_aging_note ?? null,
           barrel_aging_months_est: analysis.barrel_aging_months_est ?? null,
-        })
+        } as never)
         .eq('id', bottle.wine_id);
       if (wineErr) {
         console.warn('[AI Analysis] Client wines barrel update failed:', wineErr.message);
@@ -395,7 +516,7 @@ export async function generateAIAnalysis(
     }
 
     // Store in database
-    await storeAnalysis(bottle.id, fallbackAnalysis);
+    await storeAnalysis(bottle.id, fallbackAnalysis, langNorm);
 
     return {
       ...fallbackAnalysis,
@@ -453,9 +574,36 @@ function generateDeterministicAnalysis(bottle: BottleWithWineInfo, language: str
 }
 
 /**
- * Store analysis in database
+ * Store analysis in database (legacy columns + merged `analysis_data` locale slice).
  */
-async function storeAnalysis(bottleId: string, analysis: AIAnalysis): Promise<void> {
+async function storeAnalysis(
+  bottleId: string,
+  analysis: AIAnalysis,
+  language: string,
+): Promise<void> {
+  const langKey = normalizeAnalysisDataLang(language);
+
+  const { data: existingRow } = await supabase
+    .from('bottles')
+    .select('analysis_data')
+    .eq('id', bottleId)
+    .single();
+
+  const existingPayload = existingRow as { analysis_data?: unknown } | null | undefined;
+  const rawAd = existingPayload?.analysis_data;
+  const existing =
+    rawAd && typeof rawAd === 'object' && !Array.isArray(rawAd)
+      ? (rawAd as Record<string, unknown>)
+      : null;
+  const servingRecord = (analysis.serving_guidance ?? null) as unknown as Record<string, unknown>;
+  const slice = buildAnalysisDataSlice({
+    analysis_summary: analysis.analysis_summary,
+    analysis_reasons: analysis.analysis_reasons,
+    assumptions: analysis.assumptions ?? null,
+    serving_guidance: servingRecord && typeof servingRecord === 'object' ? servingRecord : {},
+  });
+  const mergedAnalysisData = mergeAnalysisDataJson(existing, langKey, slice);
+
   const analysisData: Record<string, unknown> = {
     readiness_status: mapReadinessLabelToStatus(analysis.readiness_label),
     readiness_score: mapReadinessToScore(analysis.readiness_label),
@@ -471,13 +619,13 @@ async function storeAnalysis(bottleId: string, analysis: AIAnalysis): Promise<vo
     confidence: analysis.confidence,
     assumptions: analysis.assumptions,
     analyzed_at: new Date().toISOString(),
+    analysis_data: mergedAnalysisData,
   };
 
-  // Update the bottle with analysis data
-  // @ts-ignore - Supabase type inference issue with update
+  // Update the bottle with analysis data (bottles table has more columns than Database typings)
   const { error: updateError } = await supabase
     .from('bottles')
-    .update(analysisData)
+    .update(analysisData as never)
     .eq('id', bottleId);
 
   if (updateError) {
@@ -500,6 +648,7 @@ async function storeAnalysis(bottleId: string, analysis: AIAnalysis): Promise<vo
 export async function storeBottleAnalysisFromEdgeResponse(
   bottleId: string,
   rawAnalysis: Record<string, unknown>,
+  language: string = 'he',
 ): Promise<void> {
   const barrel = parseBarrelFromAnalysisPayload(rawAnalysis);
   // The edge function always populates `serving` (AI or fallback), so prefer that.
@@ -541,7 +690,7 @@ export async function storeBottleAnalysisFromEdgeResponse(
     ...barrel,
   };
 
-  await storeAnalysis(bottleId, analysis);
+  await storeAnalysis(bottleId, analysis, language);
 }
 
 
@@ -555,7 +704,7 @@ export async function getOrGenerateAnalysis(bottle: BottleWithWineInfo): Promise
   }
 
   // Otherwise, generate new analysis
-  return generateAIAnalysis(bottle);
+  return generateAIAnalysis(bottle, i18n.language ?? 'en');
 }
 
 /**
@@ -630,7 +779,7 @@ export async function analyzeCellarBulk(
         limit,
         pageSize: 50,
         offset: 0,
-        language: 'en',
+        language: normalizeAnalysisDataLang(i18n.language ?? 'en'),
       },
     });
 
@@ -720,13 +869,14 @@ export async function validateDrinkWindowConsistency(
   
   // Format issues for UI
   const formattedIssues = result.issues.map(issue => {
+    const list = bottles as unknown as Array<Record<string, unknown>>;
     // Find the bottles
-    const older = bottles.find(b => (b.wine as any).vintage === issue.olderVintage);
-    const younger = bottles.find(b => (b.wine as any).vintage === issue.youngerVintage);
-    
+    const older = list.find(b => (b.wine as { vintage?: number })?.vintage === issue.olderVintage);
+    const younger = list.find(b => (b.wine as { vintage?: number })?.vintage === issue.youngerVintage);
+
     return {
-      wine: (older?.wine as any)?.wine_name || 'Unknown',
-      producer: (older?.wine as any)?.producer || 'Unknown',
+      wine: (older?.wine as { wine_name?: string })?.wine_name || 'Unknown',
+      producer: (older?.wine as { producer?: string })?.producer || 'Unknown',
       olderVintage: issue.olderVintage,
       youngerVintage: issue.youngerVintage,
       issue: issue.issue,
@@ -777,7 +927,7 @@ export async function analyzeCellarInBatches(
   const maxBottles = options.maxBottles || 1000; // Safety limit
   const onProgress = options.onProgress;
   const abortSignal = options.abortSignal;
-  const language = options.language?.startsWith('he') ? 'he' : 'en';
+  const language = normalizeAnalysisDataLang(options.language ?? i18n.language ?? 'en');
 
   const startTime = Date.now();
 

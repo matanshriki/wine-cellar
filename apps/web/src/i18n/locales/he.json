@@ -440,7 +440,12 @@
   },
   "wineDetails": {
     "country": "מדינה",
-    "regionalWineStyle": "סגנון יין אזורי"
+    "regionalWineStyle": "סגנון יין אזורי",
+    "vivinoRating": "דירוג Vivino",
+    "analysis": {
+      "generateInHebrew": "הצג ניתוח בעברית",
+      "generateInEnglish": "צור ניתוח באנגלית"
+    }
   },
   "kosher": {
     "sectionHeading": "כשרות",
@@ -449,10 +454,16 @@
     "notKosher": "לא כשר",
     "kosherForPassover": "כשר לפסח",
     "mevushal": "מבושל",
+    "nonMevushal": "לא מבושל",
     "certifiedBy": "הכשר:",
     "source": "מקור:",
     "chipLabel": "✡️ כשר",
-    "chipTitle": "מאושר כשר"
+    "chipTitle": "מאושר כשר",
+    "confidence": {
+      "low": "ביטחון נמוך",
+      "med": "ביטחון בינוני",
+      "high": "ביטחון גבוה"
+    }
   },
   "bottleForm": {
     "addTitle": "הוסף בקבוק",

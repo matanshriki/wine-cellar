@@ -20,6 +20,7 @@ import * as aiAnalysisService from '../services/aiAnalysisService';
 import * as drinkWindowService from '../services/drinkWindowService';
 import { toast } from '../lib/toast';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
+import i18n from '../i18n/config';
 
 export function DrinkWindowDebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +87,7 @@ export function DrinkWindowDebugPanel() {
       toast.info(`Recomputing ${groupBottles.length} bottle(s)...`);
       
       for (const bottle of groupBottles) {
-        await aiAnalysisService.generateAIAnalysis(bottle);
+        await aiAnalysisService.generateAIAnalysis(bottle, i18n.language ?? 'en');
       }
       
       toast.success('✅ Recomputation complete!');

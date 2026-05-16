@@ -441,7 +441,12 @@
   },
   "wineDetails": {
     "country": "Country",
-    "regionalWineStyle": "Regional Wine Style"
+    "regionalWineStyle": "Regional Wine Style",
+    "vivinoRating": "Vivino Rating",
+    "analysis": {
+      "generateInHebrew": "Show analysis in Hebrew",
+      "generateInEnglish": "Generate analysis in English"
+    }
   },
   "kosher": {
     "sectionHeading": "Kosher",
@@ -450,10 +455,16 @@
     "notKosher": "Not Kosher",
     "kosherForPassover": "Kosher for Passover",
     "mevushal": "Mevushal",
+    "nonMevushal": "Non-mevushal",
     "certifiedBy": "Certified by:",
     "source": "Source:",
     "chipLabel": "✡️ Kosher",
-    "chipTitle": "Kosher certified"
+    "chipTitle": "Kosher certified",
+    "confidence": {
+      "low": "Low confidence",
+      "med": "Medium confidence",
+      "high": "High confidence"
+    }
   },
   "bottleForm": {
     "addTitle": "Add Bottle",

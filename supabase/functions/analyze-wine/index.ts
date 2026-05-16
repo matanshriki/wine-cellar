@@ -4,16 +4,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import {
-  buildWineAnalysisSystemPrompt,
-  buildWineAnalysisUserPrompt,
-  normalizeBarrelFields,
-  normalizeServingGuidance,
-  buildFallbackServingGuidance,
-  type WineAnalysisInput,
-  type ServingGuidance,
   type BarrelAgingMetadata,
+  type ServingGuidance,
 } from '../_shared/wineAiAnalysis.ts'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
+import {
+  buildAnalysisDataSlice,
+  mergeAnalysisDataJson,
+  normalizeAnalysisDataLang,
+} from '../_shared/bottleAnalysisData.ts'
+import { generateWineAnalysisWithOpenAi, type WineDataForAnalysis } from '../_shared/wineAnalysisGenerationOpenAi.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,16 +21,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-interface WineData {
-  wine_name: string
-  producer?: string
-  vintage?: number
-  region?: string
-  country?: string
-  appellation?: string
-  grapes?: string[]
-  color: string
-  notes?: string
+interface WineData extends WineDataForAnalysis {
   language?: string // 'en' or 'he'
 }
 
@@ -57,6 +48,32 @@ interface AnalysisResult {
     country?: string
     appellation?: string
     grapes?: string[]
+  }
+}
+
+function mapReadinessLabel(label: string): string {
+  switch (label) {
+    case 'READY':
+      return 'InWindow'
+    case 'PEAK_SOON':
+      return 'Approaching'
+    case 'HOLD':
+      return 'TooYoung'
+    default:
+      return 'Unknown'
+  }
+}
+
+function mapReadinessScore(label: string): number {
+  switch (label) {
+    case 'READY':
+      return 90
+    case 'PEAK_SOON':
+      return 75
+    case 'HOLD':
+      return 60
+    default:
+      return 50
   }
 }
 
@@ -110,7 +127,9 @@ serve(async (req) => {
     // system_background eligibility check below.
     const { data: bottleRow, error: bottleOwnerErr } = await supabaseAdmin
       .from('bottles')
-      .select('id, user_id, wine_id, created_at, readiness_label, analysis_summary, serving_guidance, serve_temp_c, decant_minutes')
+      .select(
+        'id, user_id, wine_id, created_at, readiness_label, analysis_summary, serving_guidance, serve_temp_c, decant_minutes, analysis_data',
+      )
       .eq('id', bottle_id)
       .single()
 
@@ -144,6 +163,7 @@ serve(async (req) => {
 
     const wineData = wine_data as WineData
     const language = wineData.language || 'en'
+    const analysisLangKey = normalizeAnalysisDataLang(language)
 
     // ── Enrich wine data from DB ───────────────────────────────────────────────
     // Load additional fields (wine_profile, regional_wine_style, rating, vivino_wine_id)
@@ -237,110 +257,66 @@ serve(async (req) => {
     console.log('[Analyze Wine] Generating analysis in language:', language, 'for wine:', wineData.wine_name)
     console.log('[Analyze Wine] Enrichment fields:', JSON.stringify(enrichmentLog))
 
-    const currentYear = new Date().getFullYear()
-    const systemPrompt = buildWineAnalysisSystemPrompt('single', language)
-    const userPrompt = buildWineAnalysisUserPrompt(
-      {
-        wine_name: wineData.wine_name,
-        producer: wineData.producer,
-        vintage: wineData.vintage,
-        region: wineData.region,
-        country: wineData.country,
-        appellation: wineData.appellation,
-        grapes: wineData.grapes,
-        color: wineData.color,
-        notes: wineData.notes,
-        // Enrichment fields from the wines row (undefined when not available)
-        regional_wine_style: wineEnrichment.regional_wine_style ?? undefined,
-        wine_profile: wineEnrichment.wine_profile as WineAnalysisInput['wine_profile'] ?? undefined,
-        rating: wineEnrichment.rating ?? undefined,
-        vivino_wine_id: wineEnrichment.vivino_wine_id ?? undefined,
-      },
-      currentYear,
-      language,
-      'single',
-    )
-
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text()
-      console.error('[Analyze Wine] OpenAI API error:', errorData)
+    let analysis: AnalysisResult
+    let openaiUsage: { prompt_tokens: number | null; completion_tokens: number | null }
+    try {
+      const gen = await generateWineAnalysisWithOpenAi({
+        openaiApiKey,
+        wineData,
+        wineEnrichment,
+        language,
+        existingServingForFallback: (bottleRow as { serving_guidance?: Record<string, unknown> | null })
+          .serving_guidance,
+        mode: 'single',
+      })
+      analysis = gen.analysis as AnalysisResult
+      openaiUsage = gen.usage
+    } catch (openAiErr: unknown) {
+      const msg = openAiErr instanceof Error ? openAiErr.message : String(openAiErr)
       await logCreditUsage(supabaseAdmin, {
         userId: user.id,
         actionType: creditActionType,
         creditsRequired: creditCost,
         requestStatus: 'failed',
         modelName: 'gpt-4o-mini',
-        metadata: { openai_status: openaiResponse.status, trigger_source: trigger_source ?? 'user' },
+        metadata: { error: msg.slice(0, 500), trigger_source: trigger_source ?? 'user' },
       })
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
-    }
-
-    const openaiData = await openaiResponse.json()
-    const content = openaiData.choices[0]?.message?.content
-
-    if (!content) {
-      throw new Error('No response from OpenAI')
-    }
-
-    const rawAnalysis = JSON.parse(content) as Record<string, unknown>
-    const analysis: AnalysisResult = normalizeBarrelFields(rawAnalysis) as AnalysisResult
-
-    if (!analysis.analysis_summary || !analysis.analysis_reasons || !analysis.readiness_label) {
-      throw new Error('Invalid response structure from ChatGPT')
-    }
-
-    // Normalize serving guidance from AI response
-    const normalizedServing = normalizeServingGuidance(analysis.serving)
-    if (normalizedServing) {
-      // AI returned valid serving — always use it
-      analysis.serving = normalizedServing
-    } else {
-      // AI serving object was missing or failed validation.
-      // Prefer preserving existing good guidance over writing a generic fallback.
-      const existingServing = (bottleRow as any).serving_guidance as Record<string, unknown> | null
-      const existingConf = existingServing?.confidence
-      const existingIsGood = existingConf === 'high' || existingConf === 'medium'
-
-      if (existingIsGood) {
-        console.log('[Analyze Wine] AI serving invalid — preserved existing', existingConf,
-          '-confidence guidance; no overwrite for bottle:', bottle_id)
-        analysis.serving = existingServing as ServingGuidance
-      } else {
-        console.warn('[Analyze Wine] AI serving invalid, no good existing guidance — using fallback for:', wineData.wine_name)
-        analysis.serving = buildFallbackServingGuidance(
-          wineData.color,
-          wineData.vintage,
-          currentYear,
-          analysis.readiness_label,
-        )
-      }
+      throw openAiErr
     }
 
     const servingConf = analysis.serving?.confidence ?? 'low'
     console.log('[Analyze Wine] Serving guidance confidence:', servingConf, '| Readiness:', analysis.readiness_label)
 
-    // Persist bottle-level fields (serving_guidance + scalar compat fields)
+    const analysisDataSlice = buildAnalysisDataSlice({
+      analysis_summary: analysis.analysis_summary,
+      analysis_reasons: analysis.analysis_reasons,
+      assumptions: analysis.assumptions ?? null,
+      serving_guidance: analysis.serving as unknown as Record<string, unknown>,
+    })
+    const mergedAnalysisData = mergeAnalysisDataJson(
+      bottleRow.analysis_data as Record<string, unknown> | null | undefined,
+      analysisLangKey,
+      analysisDataSlice,
+    )
+
+    // Persist bottle-level fields (serving_guidance + scalar compat fields + per-locale analysis_data)
     const bottlePatch: Record<string, unknown> = {
+      analysis_summary: analysis.analysis_summary,
+      analysis_reasons: analysis.analysis_reasons,
+      readiness_label: analysis.readiness_label,
+      readiness_status: mapReadinessLabel(analysis.readiness_label),
+      readiness_score: mapReadinessScore(analysis.readiness_label),
+      readiness_version: 2,
       serve_temp_c: analysis.serving.temp_min,
       decant_minutes: analysis.serving.decant_min,
       serving_guidance: analysis.serving,
+      drink_window_start: analysis.drink_window_start ?? null,
+      drink_window_end: analysis.drink_window_end ?? null,
+      confidence: analysis.confidence,
+      assumptions: analysis.assumptions ?? null,
+      analyzed_at: new Date().toISOString(),
+      analysis_notes: analysis.analysis_summary,
+      analysis_data: mergedAnalysisData,
     }
 
     const { error: bottleErr } = await supabaseAdmin
@@ -390,8 +366,8 @@ serve(async (req) => {
       creditsRequired: creditCost,
       requestStatus: 'success',
       modelName: 'gpt-4o-mini',
-      inputTokens: openaiData.usage?.prompt_tokens ?? null,
-      outputTokens: openaiData.usage?.completion_tokens ?? null,
+      inputTokens: openaiUsage.prompt_tokens,
+      outputTokens: openaiUsage.completion_tokens,
       metadata: {
         language,
         trigger_source: trigger_source ?? 'user',

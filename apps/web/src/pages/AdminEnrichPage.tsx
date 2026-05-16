@@ -85,6 +85,15 @@ export const AdminEnrichPage: React.FC = () => {
   const [modernQueueLog, setModernQueueLog] = useState<string[]>([]);
   const [modernQueueTotals, setModernQueueTotals] = useState({ processed: 0, skipped: 0, failed: 0, pages: 0 });
 
+  // ── Admin: missing analysis_data locale slices (no user credits) ─────────────
+  const [localeBfLang, setLocaleBfLang] = useState<'he' | 'en'>('he');
+  const [localeBfLimit, setLocaleBfLimit] = useState(25);
+  const [localeBfDryRun, setLocaleBfDryRun] = useState(true);
+  const [localeBfAfter, setLocaleBfAfter] = useState<string>('');
+  const [localeBfRunning, setLocaleBfRunning] = useState(false);
+  const [localeBfLog, setLocaleBfLog] = useState<string[]>([]);
+  const [localeBfLast, setLocaleBfLast] = useState<Record<string, unknown> | null>(null);
+
   // ── AI food pairing (wines.food_pairing backfill) ───────────────────────────
   const [fpRunning, setFpRunning] = useState(false);
   const [fpDone, setFpDone] = useState(false);
@@ -751,6 +760,84 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${message}`);
     } finally {
       setModernQueueRunning(false);
+    }
+  };
+
+  /** One batch: fill missing `bottles.analysis_data.he` or `.en` only (Edge, no user credits). */
+  const runLocaleAnalysisBackfillOnce = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session ?? contextSession;
+    if (!session) {
+      alert('Session expired — please refresh the page.');
+      return;
+    }
+
+    if (!localeBfDryRun) {
+      const ok = confirm(
+        `Run locale analysis backfill?\n\n` +
+          `Target: analysis_data.${localeBfLang}\n` +
+          `Limit: ${localeBfLimit} bottles\n` +
+          `Uses OpenAI (platform cost only). Does NOT charge user credits.\n` +
+          `Only updates analysis_data — legacy columns unchanged.\n\nContinue?`,
+      );
+      if (!ok) return;
+    }
+
+    setLocaleBfRunning(true);
+    setLocaleBfLog((prev) => [
+      ...prev,
+      `[${new Date().toLocaleTimeString()}] Calling admin-backfill-analysis-locales (dry_run=${localeBfDryRun})…`,
+    ]);
+
+    try {
+      const afterTrim = localeBfAfter.trim();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-backfill-analysis-locales`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            target_language: localeBfLang,
+            limit: localeBfLimit,
+            dry_run: localeBfDryRun,
+            after: afterTrim || null,
+          }),
+        },
+      );
+
+      const raw = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        throw new Error(`HTTP ${res.status}: ${raw.slice(0, 300)}`);
+      }
+
+      if (!res.ok) {
+        throw new Error((data.error as string) || `HTTP ${res.status}: ${raw.slice(0, 300)}`);
+      }
+
+      setLocaleBfLast(data);
+      const line =
+        `[${new Date().toLocaleTimeString()}] ` +
+        `candidates=${data.candidate_count ?? '?'} processed=${data.processed_count ?? 0} ` +
+        `skipped=${data.skipped_count ?? 0} failed=${data.failed_count ?? 0} has_more=${String(data.has_more)} ` +
+        `next_after=${data.next_after ?? 'null'}`;
+      setLocaleBfLog((prev) => [...prev, line]);
+
+      if (typeof data.next_after === 'string' && data.next_after) {
+        setLocaleBfAfter(data.next_after);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setLocaleBfLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ❌ ${message}`]);
+      alert(`Error: ${message}`);
+    } finally {
+      setLocaleBfRunning(false);
     }
   };
 
@@ -1842,6 +1929,163 @@ VALUES ('${user?.id}');`}
           <li>Deploy <code>backfill-analysis</code> after pulling this code.</li>
         </ul>
       </div>
+
+      {/* ── Missing analysis_data locale (admin, no user credits) ───────────── */}
+      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+
+      <h1>🌐 Missing localized analysis (analysis_data)</h1>
+      <p style={{ color: '#666', marginBottom: '1rem' }}>
+        Fills only <code>bottles.analysis_data.en</code> or <code>.he</code> for bottles that already have analysis
+        elsewhere but are missing that locale slice. Does <strong>not</strong> charge user credits, does{' '}
+        <strong>not</strong> update legacy flat columns. Requires an <code>admins</code> row, migration{' '}
+        <code>20260517_admin_pick_bottles_missing_analysis_locale.sql</code>, and deployed Edge{' '}
+        <code>admin-backfill-analysis-locales</code>.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          alignItems: 'flex-end',
+          marginBottom: '1rem',
+        }}
+      >
+        <label>
+          <div style={{ fontSize: '0.75rem', color: '#666' }}>Target locale</div>
+          <select
+            value={localeBfLang}
+            onChange={(e) => setLocaleBfLang(e.target.value as 'he' | 'en')}
+            disabled={localeBfRunning}
+          >
+            <option value="he">analysis_data.he</option>
+            <option value="en">analysis_data.en</option>
+          </select>
+        </label>
+        <label>
+          <div style={{ fontSize: '0.75rem', color: '#666' }}>Limit (max 50)</div>
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={localeBfLimit}
+            onChange={(e) => setLocaleBfLimit(Math.min(50, Math.max(1, Number(e.target.value) || 25)))}
+            disabled={localeBfRunning}
+            style={{ width: '5rem' }}
+          />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <input
+            type="checkbox"
+            checked={localeBfDryRun}
+            onChange={(e) => setLocaleBfDryRun(e.target.checked)}
+            disabled={localeBfRunning}
+          />
+          <span>Dry run (no OpenAI / no DB writes)</span>
+        </label>
+        <label style={{ flex: '1 1 220px' }}>
+          <div style={{ fontSize: '0.75rem', color: '#666' }}>Resume cursor (next_after UUID, optional)</div>
+          <input
+            type="text"
+            value={localeBfAfter}
+            onChange={(e) => setLocaleBfAfter(e.target.value)}
+            placeholder="Leave empty to start from beginning"
+            disabled={localeBfRunning}
+            style={{ width: '100%' }}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void runLocaleAnalysisBackfillOnce()}
+          disabled={localeBfRunning || isAdmin !== true}
+          style={{
+            padding: '0.6rem 1rem',
+            backgroundColor: localeBfRunning ? '#6c757d' : '#198754',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: localeBfRunning ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {localeBfRunning ? 'Running…' : localeBfDryRun ? 'Preview batch (dry run)' : 'Run one batch'}
+        </button>
+      </div>
+
+      <pre
+        style={{
+          backgroundColor: '#1e1e1e',
+          color: '#d4d4d4',
+          padding: '1rem',
+          borderRadius: '8px',
+          fontSize: '0.72rem',
+          overflowX: 'auto',
+          marginBottom: '1rem',
+        }}
+      >{`-- Count missing Hebrew slice (SQL editor)
+SELECT count(*) AS missing_he
+FROM public.bottles b
+WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%') AND b.readiness_label IS NOT NULL
+  AND (
+    (b.analysis_summary IS NOT NULL AND trim(b.analysis_summary) <> '')
+    OR (b.analysis_data IS NOT NULL AND (
+      (b.analysis_data ? 'en' AND length(trim(b.analysis_data->'en'->>'summary')) > 0)
+      OR (b.analysis_data ? 'he' AND length(trim(b.analysis_data->'he'->>'summary')) > 0)
+    ))
+  )
+  AND (
+    b.analysis_data IS NULL OR NOT (b.analysis_data ? 'he')
+    OR length(trim(coalesce(b.analysis_data->'he'->>'summary', ''))) = 0
+  );
+
+-- Count missing English: repeat the last AND block with 'en' instead of 'he'.
+
+-- Fully localized (both summaries non-empty):
+SELECT count(*) AS fully_localized
+FROM public.bottles b
+WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
+  AND b.analysis_data IS NOT NULL
+  AND b.analysis_data ? 'en' AND length(trim(b.analysis_data->'en'->>'summary')) > 0
+  AND b.analysis_data ? 'he' AND length(trim(b.analysis_data->'he'->>'summary')) > 0;`}
+      </pre>
+
+      {localeBfLog.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>Locale backfill log</h4>
+          <pre
+            style={{
+              backgroundColor: '#1e1e1e',
+              color: '#d4d4d4',
+              padding: '1rem',
+              borderRadius: '8px',
+              fontSize: '0.75rem',
+              maxHeight: '240px',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {localeBfLog.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      {localeBfLast && (
+        <details style={{ marginBottom: '2rem' }}>
+          <summary style={{ cursor: 'pointer' }}>Last response (JSON)</summary>
+          <pre
+            style={{
+              backgroundColor: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '6px',
+              fontSize: '0.7rem',
+              overflowX: 'auto',
+              maxHeight: '320px',
+              overflowY: 'auto',
+            }}
+          >
+            {JSON.stringify(localeBfLast, null, 2)}
+          </pre>
+        </details>
+      )}
 
       {/* ── Food pairing backfill (wines.food_pairing) ─────────────────────── */}
       <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
