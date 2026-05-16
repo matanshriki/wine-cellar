@@ -8,6 +8,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Public landing: in-page anchor clears sticky marketing nav */
+#sommi-demo {
+  scroll-margin-top: 5.75rem;
+}
+
 /**
  * Base Layer
  * 

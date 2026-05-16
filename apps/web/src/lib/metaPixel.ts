@@ -145,10 +145,15 @@ export async function trackPageView(): Promise<void> {
 }
 
 /** Custom — primary landing CTA (e.g. “Start”) */
-export async function trackCTAButtonClick(params?: { placement?: string }): Promise<void> {
+export async function trackCTAButtonClick(params?: {
+  placement?: string;
+  /** e.g. start_free | watch_demo — forwarded to Meta for funnel diagnostics */
+  cta?: string;
+}): Promise<void> {
   await withFbq((fbq) => {
     fbq('trackCustom', 'CTAButtonClick', {
       ...(params?.placement ? { placement: params.placement } : {}),
+      ...(params?.cta ? { cta: params.cta } : {}),
     });
     devLog('trackCustom CTAButtonClick', params);
   });

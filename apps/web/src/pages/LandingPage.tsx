@@ -1,10 +1,17 @@
 /**
  * Public marketing home — indexable by Google & cited by AI tools (with llms.txt).
  * Logged-in users are redirected to /cellar from App.tsx before this mounts.
+ *
+ * Video framing: the previous layout used `object-contain` inside a 16:9 box, which
+ * letterboxes many phone-shaped exports. We use a 9:16 stage with `object-fit: cover`
+ * for file demos. If black bars remain *inside* the picture after that, they are
+ * baked into the source file — re-export cropped to 9:16 without matte (see i18n
+ * `landing.demoVideoAssetNote`).
  */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { Wine, CalendarClock, UtensilsCrossed, ShieldCheck, Upload, Sparkles } from 'lucide-react';
 import { trackCTAButtonClick } from '../lib/metaPixel';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation, Trans } from 'react-i18next';
@@ -18,8 +25,9 @@ import {
   landingFaqSchema,
 } from '../lib/seoSchemas';
 import { resolveLandingDemoVideo } from '../lib/landingDemoVideo';
+import type { LandingDemoResolved } from '../lib/landingDemoVideo';
 
-const WHY_KEYS = [1, 2, 3, 4, 5] as const;
+const PROOF_CHIP_KEYS = ['vivino', 'label', 'windows', 'pwa', 'private'] as const;
 
 /** Map legacy env paths to the current bundled landing demo asset. */
 function normalizeLandingDemoVideoUrl(raw: string): string {
@@ -42,16 +50,22 @@ function videoSourceType(src: string): string | undefined {
 }
 
 const ctaPrimaryClass =
-  'inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold text-white shadow-lg';
+  'inline-flex justify-center items-center min-h-[48px] px-7 sm:px-8 py-3.5 rounded-full text-base font-semibold text-white shadow-lg transition-[transform,box-shadow] duration-150 ease-out motion-safe:hover:-translate-y-px motion-safe:hover:shadow-xl';
 const ctaPrimaryStyle: CSSProperties = {
-  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+  background: 'linear-gradient(135deg, #8b2741, #6b1f2f)',
+  boxShadow: '0 12px 32px rgba(107, 31, 47, 0.28)',
 };
-const ctaSecondaryClass =
-  'inline-flex justify-center px-8 py-3.5 rounded-full text-base font-semibold border';
-const ctaSecondaryStyle: CSSProperties = {
-  borderColor: 'var(--border-default)',
-  color: 'var(--text-primary)',
-  background: 'var(--bg-surface)',
+const ctaGhostClass =
+  'inline-flex justify-center items-center min-h-[48px] px-7 sm:px-8 py-3.5 rounded-full text-base font-semibold border transition-[transform,background-color,border-color] duration-150 ease-out motion-safe:hover:-translate-y-px';
+const ctaGhostOnDark: CSSProperties = {
+  borderColor: 'rgba(255,255,255,0.22)',
+  color: '#f5f0e8',
+  background: 'rgba(255,255,255,0.06)',
+};
+const ctaGhostOnLight: CSSProperties = {
+  borderColor: 'rgba(74, 23, 34, 0.18)',
+  color: '#2d1810',
+  background: 'rgba(255,255,255,0.75)',
 };
 
 /**
@@ -215,15 +229,15 @@ function LandingFileDemoVideo({
   }, [src]);
 
   return (
-    <div ref={containerRef} className="absolute inset-0">
+    <div ref={containerRef} className="absolute inset-0 bg-[#0c0a0b]">
       <video
         ref={videoRef}
-        className="absolute inset-0 z-0 h-full w-full object-contain bg-black/5"
+        className="absolute inset-0 z-0 h-full w-full object-cover object-center"
         controls
         muted
         autoPlay={inView}
         playsInline
-        preload="auto"
+        preload="metadata"
         poster={poster}
         onError={onError}
         onPlaying={() => setShowTapToPlay(false)}
@@ -247,7 +261,7 @@ function LandingFileDemoVideo({
             type="button"
             onClick={handleUserStart}
             className="pointer-events-auto min-h-[44px] min-w-[44px] rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg sm:text-base"
-            style={{ background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' }}
+            style={{ background: 'linear-gradient(135deg, #a63552, #6b1f2f)' }}
             aria-label={t('landing.demoTapToPlay')}
           >
             {t('landing.demoTapToPlay')}
@@ -258,27 +272,72 @@ function LandingFileDemoVideo({
   );
 }
 
-function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' }) {
+function trackDemoAnchorClick(placement: string) {
+  void trackCTAButtonClick({ placement, cta: 'watch_demo' });
+}
+
+function LandingDemoStage({
+  demo,
+  demoPoster,
+  demoTitle,
+}: {
+  demo: LandingDemoResolved;
+  demoPoster?: string;
+  demoTitle: string;
+}) {
   const { t } = useTranslation();
-  const row =
-    variant === 'hero'
-      ? 'flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sm:justify-start items-stretch sm:items-center w-full'
-      : 'flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center w-full max-w-xl mx-auto';
+
+  const inner =
+    demo.kind === 'iframe' ? (
+      <div className="relative aspect-video w-full overflow-hidden rounded-[1.35rem] bg-black">
+        <iframe
+          src={demo.src}
+          title={demoTitle}
+          className="absolute inset-0 h-full w-full border-0"
+          allow={demo.allow}
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      </div>
+    ) : (
+      <div className="relative aspect-[9/16] w-full max-h-[min(78vh,640px)] overflow-hidden rounded-[1.35rem] bg-[#0c0a0b]">
+        <LandingFileDemoVideo
+          key={demo.src}
+          src={demo.src}
+          poster={demoPoster}
+          onError={() => {
+            console.error(
+              '[Landing demo] Video failed to load:',
+              demo.src,
+              '— If this is /videos/…, the file must exist under apps/web/public/videos and be deployed. A missing file returns the SPA HTML and playback never starts.',
+            );
+          }}
+        />
+      </div>
+    );
+
   return (
-    <div className={row}>
-      <Link
-        to="/login"
-        className={ctaPrimaryClass}
-        style={ctaPrimaryStyle}
-        onClick={() => {
-          void trackCTAButtonClick({ placement: variant === 'hero' ? 'hero' : 'center' });
+    <div className="mx-auto w-full max-w-[300px] sm:max-w-[320px]">
+      <div
+        className="rounded-[2.25rem] p-[10px] sm:p-3 shadow-2xl border border-white/10"
+        style={{
+          background:
+            'linear-gradient(165deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 42%, rgba(0,0,0,0.25) 100%), linear-gradient(180deg, #2a2426 0%, #120f10 100%)',
+          boxShadow: '0 28px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset',
         }}
       >
-        {t('landing.ctaOpen')}
-      </Link>
-      <Link to="/about" className={ctaSecondaryClass} style={ctaSecondaryStyle}>
-        {t('landing.ctaAbout')}
-      </Link>
+        {/* “Dynamic island” hint */}
+        <div className="flex justify-center pb-2">
+          <div className="h-5 w-[4.25rem] rounded-full bg-black/55 ring-1 ring-white/10" aria-hidden />
+        </div>
+        {inner}
+      </div>
+      <p
+        className="mt-4 text-center text-xs leading-relaxed px-2"
+        style={{ color: 'rgba(245,240,232,0.55)' }}
+      >
+        {t('landing.demoVideoAssetNote')}
+      </p>
     </div>
   );
 }
@@ -286,10 +345,8 @@ function LandingCtaPair({ variant = 'center' }: { variant?: 'hero' | 'center' })
 export function LandingPage() {
   const { t, i18n } = useTranslation();
 
-  /** Bundled default; override with VITE_LANDING_DEMO_VIDEO_URL (YouTube/Vimeo or another file path). */
   const demoUrl = normalizeLandingDemoVideoUrl(
-    import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim() ||
-      '/videos/sommi-ai-smarter.mp4',
+    import.meta.env.VITE_LANDING_DEMO_VIDEO_URL?.trim() || '/videos/sommi-ai-smarter.mp4',
   );
   const demoPoster = import.meta.env.VITE_LANDING_DEMO_VIDEO_POSTER?.trim();
   const demo = useMemo(() => resolveLandingDemoVideo(demoUrl), [demoUrl]);
@@ -304,6 +361,15 @@ export function LandingPage() {
     ],
     [t, i18n.language],
   );
+
+  const heroSurface: CSSProperties = {
+    background:
+      'radial-gradient(ellipse 90% 60% at 50% -20%, rgba(139, 39, 65, 0.22), transparent 55%), linear-gradient(180deg, #141011 0%, #0e0c0d 55%, #121010 100%)',
+  };
+
+  const stoneSectionBg: CSSProperties = {
+    background: 'linear-gradient(180deg, #f3eee6 0%, #ebe4d9 100%)',
+  };
 
   return (
     <>
@@ -320,165 +386,347 @@ export function LandingPage() {
         <meta name="keywords" content={t('landing.metaKeywords')} />
       </Helmet>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-28 md:py-16">
-        <article>
-          <header className="mb-12 text-center sm:text-start">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-4"
-              style={{ color: 'var(--wine-500)' }}
-            >
-              {t('landing.eyebrow')}
-            </p>
-            <h1
-              className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight mb-6"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
-            >
-              {t('landing.heroTitle')}
-            </h1>
-            <p className="text-lg sm:text-xl leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>
-              {t('landing.heroSubtitle')}
-            </p>
-            <LandingCtaPair variant="hero" />
-          </header>
+      <main className="pb-28 md:pb-0" aria-labelledby="landing-hero-heading">
+        {/* --- Premium hero (full-bleed dark) --- */}
+        <section className="relative overflow-hidden border-b border-white/5" style={heroSurface}>
+          <div className="absolute inset-0 pointer-events-none opacity-[0.07] bg-[url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22 opacity=%220.35%22/%3E%3C/svg%3E')] mix-blend-overlay" aria-hidden />
 
-          {demo && (
-            <section className="mb-14" aria-labelledby="landing-demo-heading">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14 pb-10 sm:pb-16">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="min-w-0">
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-[0.22em] mb-3 sm:mb-4"
+                  style={{ color: '#c9a227' }}
+                >
+                  {t('landing.eyebrow')}
+                </p>
+                <h1
+                  id="landing-hero-heading"
+                  className="text-[1.875rem] sm:text-5xl lg:text-[3.25rem] font-semibold tracking-tight leading-[1.08] mb-3 sm:mb-5"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    color: '#f7f1e8',
+                    fontWeight: 650,
+                  }}
+                >
+                  {t('landing.heroTitle')}
+                </h1>
+                <p
+                  className="text-base sm:text-xl leading-snug sm:leading-relaxed mb-6 sm:mb-8 max-w-prose mx-auto"
+                  style={{ color: 'rgba(245, 240, 232, 0.78)' }}
+                >
+                  {t('landing.heroSubtitle')}
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center sm:justify-center mb-6 sm:mb-8">
+                  <Link
+                    to="/login"
+                    className={ctaPrimaryClass}
+                    style={ctaPrimaryStyle}
+                    onClick={() => {
+                      void trackCTAButtonClick({ placement: 'hero', cta: 'start_free' });
+                    }}
+                  >
+                    {t('landing.ctaStartFree')}
+                  </Link>
+                  <a
+                    href="#sommi-demo"
+                    className={ctaGhostClass}
+                    style={ctaGhostOnDark}
+                    onClick={() => trackDemoAnchorClick('hero')}
+                  >
+                    {t('landing.ctaWatchDemo')}
+                  </a>
+                </div>
+
+                <ul
+                  className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 sm:gap-x-2 sm:gap-y-2.5 list-none p-0 m-0"
+                  aria-label={t('landing.proofChipsAria')}
+                >
+                  {PROOF_CHIP_KEYS.map((key) => (
+                    <li
+                      key={key}
+                      className="inline-flex items-center rounded-full border px-3 py-1 text-xs sm:px-3.5 sm:py-1.5 sm:text-sm"
+                      style={{
+                        borderColor: 'rgba(255,255,255,0.14)',
+                        color: 'rgba(245, 240, 232, 0.88)',
+                        background: 'rgba(255,255,255,0.05)',
+                      }}
+                    >
+                      {t(`landing.proofChip_${key}`)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --- Proof strip (warm stone) --- */}
+        <section
+          className="border-b py-8 sm:py-10"
+          style={{ ...stoneSectionBg, borderColor: 'rgba(74, 23, 34, 0.08)' }}
+          aria-label={t('landing.proofStripAria')}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center sm:text-start">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex flex-col sm:flex-row sm:items-start gap-3 justify-center sm:justify-start">
+                  <ShieldCheck
+                    className="mx-auto sm:mx-0 h-8 w-8 shrink-0 opacity-90"
+                    style={{ color: '#6b1f2f' }}
+                    aria-hidden
+                  />
+                  <p className="text-sm sm:text-[0.9375rem] leading-relaxed" style={{ color: '#3d3530' }}>
+                    {t(`landing.proofStrip_${n}`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {!demo ? <div id="sommi-demo" className="sr-only" aria-hidden /> : null}
+
+        {demo ? (
+          <section
+            id="sommi-demo"
+            className="scroll-mt-[5.75rem] border-b border-white/5 py-14 sm:py-20"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 50% at 50% 100%, rgba(139, 39, 65, 0.12), transparent 55%), linear-gradient(180deg, #121010 0%, #0e0c0d 100%)',
+            }}
+            aria-labelledby="landing-demo-heading"
+          >
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <h2
                 id="landing-demo-heading"
-                className="text-2xl font-bold mb-2 text-center sm:text-start"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
+                className="text-2xl sm:text-3xl font-semibold mb-2 text-center sm:text-start"
+                style={{ fontFamily: 'var(--font-display)', color: '#f7f1e8' }}
               >
                 {t('landing.demoTitle')}
               </h2>
               <p
-                className="text-sm sm:text-base mb-2 text-center sm:text-start leading-relaxed"
-                style={{ color: 'var(--text-secondary)' }}
+                className="text-sm sm:text-base mb-2 text-center sm:text-start leading-relaxed max-w-2xl"
+                style={{ color: 'rgba(245, 240, 232, 0.72)' }}
               >
                 {t('landing.demoCaption')}
               </p>
               <p
-                className="text-xs sm:text-sm mb-4 text-center sm:text-start leading-relaxed"
-                style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}
+                className="text-xs sm:text-sm mb-10 text-center sm:text-start leading-relaxed max-w-2xl"
+                style={{ color: 'rgba(245, 240, 232, 0.5)' }}
               >
                 {t('landing.demoAutoplayHint')}
               </p>
-              <div
-                className="relative w-full aspect-video overflow-hidden rounded-2xl border shadow-lg"
-                style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}
-              >
-                {demo.kind === 'iframe' ? (
-                  <iframe
-                    src={demo.src}
-                    title={t('landing.demoTitle')}
-                    className="absolute inset-0 h-full w-full border-0"
-                    allow={demo.allow}
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                ) : (
-                  <LandingFileDemoVideo
-                    key={demo.src}
-                    src={demo.src}
-                    poster={demoPoster}
-                    onError={() => {
-                      console.error(
-                        '[Landing demo] Video failed to load:',
-                        demo.src,
-                        '— If this is /videos/…, the file must exist under apps/web/public/videos and be deployed. A missing file returns the SPA HTML and playback never starts.',
-                      );
-                    }}
-                  />
-                )}
+              <div className="flex justify-center">
+                <LandingDemoStage demo={demo} demoPoster={demoPoster} demoTitle={t('landing.demoTitle')} />
               </div>
-            </section>
-          )}
+            </div>
+          </section>
+        ) : null}
 
-          <section className="mb-14" aria-labelledby="why-sommi">
-            <h2 id="why-sommi" className="text-2xl font-bold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.whyTitle')}
+        {/* --- Feature cards --- */}
+        <section
+          className="py-14 sm:py-20 border-b"
+          style={{ ...stoneSectionBg, borderColor: 'rgba(74, 23, 34, 0.08)' }}
+          aria-labelledby="landing-features-heading"
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2
+              id="landing-features-heading"
+              className="text-2xl sm:text-3xl font-semibold mb-3 text-center sm:text-start"
+              style={{ fontFamily: 'var(--font-display)', color: '#2d1810' }}
+            >
+              {t('landing.featuresSectionTitle')}
             </h2>
-            <ul className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              {WHY_KEYS.map(n => (
-                <li key={n}>
-                  <strong style={{ color: 'var(--text-primary)' }}>{t(`landing.why${n}Lead`)}</strong>{' '}
-                  {t(`landing.why${n}Body`)}
-                </li>
+            <p
+              className="text-center sm:text-start mb-10 max-w-2xl text-base leading-relaxed"
+              style={{ color: '#5c534c' }}
+            >
+              {t('landing.featuresSectionSubtitle')}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+              {(
+                [
+                  { k: 'open', Icon: Wine },
+                  { k: 'when', Icon: CalendarClock },
+                  { k: 'pair', Icon: UtensilsCrossed },
+                ] as const
+              ).map(({ k, Icon }) => (
+                <div
+                  key={k}
+                  className="rounded-2xl border p-6 sm:p-7 transition-[transform,box-shadow,border-color] duration-150 ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-lg"
+                  style={{
+                    borderColor: 'rgba(74, 23, 34, 0.12)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,252,248,0.72) 100%)',
+                    boxShadow: '0 8px 32px rgba(45, 24, 16, 0.06)',
+                  }}
+                >
+                  <div
+                    className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl"
+                    style={{
+                      background: 'rgba(107, 31, 47, 0.08)',
+                      color: '#6b1f2f',
+                    }}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </div>
+                  <h3
+                    className="text-lg font-semibold mb-2"
+                    style={{ fontFamily: 'var(--font-display)', color: '#2d1810' }}
+                  >
+                    {t(`landing.feature_${k}_title`)}
+                  </h3>
+                  <p className="text-sm sm:text-base leading-relaxed" style={{ color: '#5c534c' }}>
+                    {t(`landing.feature_${k}_body`)}
+                  </p>
+                </div>
               ))}
-            </ul>
-          </section>
+            </div>
+          </div>
+        </section>
 
-          <section className="mb-14" aria-labelledby="who-for">
-            <h2 id="who-for" className="text-2xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.whoTitle')}
-            </h2>
-            <p className="leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              <Trans
-                i18nKey="landing.whoBody"
-                components={{ em1: <em />, em2: <em />, em3: <em /> }}
-              />
-            </p>
-          </section>
-
-          <section className="mb-14 pt-4 border-t text-center" style={{ borderColor: 'var(--border-subtle)' }} aria-labelledby="landing-cta-mid">
-            <p
-              id="landing-cta-mid"
-              className="text-base sm:text-lg font-medium mb-5 leading-snug"
-              style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
+        {/* --- Privacy --- */}
+        <section
+          className="py-12 sm:py-16 border-b"
+          style={{ background: '#e8e2d8', borderColor: 'rgba(74, 23, 34, 0.08)' }}
+        >
+          <div className="max-w-3xl mx-auto px-4 sm:px-6">
+            <div
+              className="rounded-2xl border p-6 sm:p-8"
+              style={{
+                borderColor: 'rgba(74, 23, 34, 0.12)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(247,241,232,0.35) 100%)',
+              }}
             >
-              {t('landing.ctaMidPrompt')}
-            </p>
-            <LandingCtaPair />
-          </section>
+              <h2
+                className="text-xl sm:text-2xl font-semibold mb-3 flex items-center gap-2"
+                style={{ fontFamily: 'var(--font-display)', color: '#2d1810' }}
+              >
+                <ShieldCheck className="h-6 w-6 shrink-0" style={{ color: '#6b1f2f' }} aria-hidden />
+                {t('landing.privacyTitle')}
+              </h2>
+              <p className="leading-relaxed text-sm sm:text-base" style={{ color: '#4a423b' }}>
+                <Trans
+                  i18nKey="landing.privacyBody"
+                  components={{
+                    privacyLink: (
+                      <Link to="/privacy" className="underline font-medium" style={{ color: '#8b2741' }} />
+                    ),
+                    termsLink: <Link to="/terms" className="underline font-medium" style={{ color: '#8b2741' }} />,
+                  }}
+                />
+              </p>
+            </div>
+          </div>
+        </section>
 
-          <section className="mb-10 rounded-2xl p-6 sm:p-8 border" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface-2)' }}>
-            <h2 className="text-xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('landing.privacyTitle')}
+        {/* --- How it works --- */}
+        <section
+          className="py-14 sm:py-20"
+          style={{ background: '#f7f1e8' }}
+          aria-labelledby="landing-how-heading"
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2
+              id="landing-how-heading"
+              className="text-2xl sm:text-3xl font-semibold mb-10 text-center sm:text-start"
+              style={{ fontFamily: 'var(--font-display)', color: '#2d1810' }}
+            >
+              {t('landing.howTitle')}
             </h2>
-            <p className="leading-relaxed text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-              <Trans
-                i18nKey="landing.privacyBody"
-                components={{
-                  privacyLink: (
-                    <Link to="/privacy" className="underline font-medium" style={{ color: 'var(--wine-600)' }} />
-                  ),
-                  termsLink: (
-                    <Link to="/terms" className="underline font-medium" style={{ color: 'var(--wine-600)' }} />
-                  ),
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10" role="list">
+              {(
+                [
+                  { step: 1, Icon: Upload },
+                  { step: 2, Icon: Sparkles },
+                  { step: 3, Icon: Wine },
+                ] as const
+              ).map(({ step, Icon }) => (
+                <div
+                  key={step}
+                  role="listitem"
+                  className="relative flex flex-col items-center text-center md:items-start md:text-start"
+                >
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #a63552, #6b1f2f)' }}
+                    aria-hidden
+                  >
+                    <Icon className="h-6 w-6 text-white" strokeWidth={2} />
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#8b2741' }}>
+                    {t('landing.howStepLabel', { step })}
+                  </p>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#2d1810' }}>
+                    {t(`landing.how${step}Title`)}
+                  </h3>
+                  <p className="text-sm sm:text-base leading-relaxed max-w-sm" style={{ color: '#5c534c' }}>
+                    {t(`landing.how${step}Body`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* --- FAQ teaser (low on page) --- */}
+        <section className="py-10 border-t" style={{ borderColor: 'rgba(74, 23, 34, 0.08)', background: '#f0ebe3' }}>
+          <div className="max-w-3xl mx-auto px-4 text-center">
+            <p className="text-sm sm:text-base" style={{ color: '#5c534c' }}>
+              {t('landing.faqTeaser')}{' '}
+              <Link to="/about" className="underline font-medium" style={{ color: '#8b2741' }}>
+                {t('landing.faqLinkLabel')}
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
+
+        {/* --- Final CTA --- */}
+        <section
+          className="py-14 sm:py-16 border-t"
+          style={{
+            borderColor: 'rgba(74, 23, 34, 0.1)',
+            background: 'linear-gradient(180deg, #ebe4d9 0%, #e3dcd2 100%)',
+          }}
+          aria-labelledby="landing-final-cta"
+        >
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <p
+              id="landing-final-cta"
+              className="text-xl sm:text-2xl font-semibold mb-3"
+              style={{ fontFamily: 'var(--font-display)', color: '#2d1810' }}
+            >
+              {t('landing.ctaFinalHeadline')}
+            </p>
+            <p className="text-base mb-8 leading-relaxed" style={{ color: '#5c534c' }}>
+              {t('landing.ctaFinalSub')}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center">
+              <Link
+                to="/login"
+                className={ctaPrimaryClass}
+                style={ctaPrimaryStyle}
+                onClick={() => {
+                  void trackCTAButtonClick({ placement: 'final', cta: 'start_free' });
                 }}
-              />
-            </p>
-          </section>
-
-          <section
-            className="mb-10 rounded-2xl border p-6 sm:p-8 text-center"
-            style={{
-              borderColor: 'var(--border-subtle)',
-              background: 'linear-gradient(180deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%)',
-              boxShadow: 'var(--shadow-card, 0 4px 24px rgba(0,0,0,0.06))',
-            }}
-            aria-labelledby="landing-cta-bottom"
-          >
-            <p
-              id="landing-cta-bottom"
-              className="text-base sm:text-lg font-medium mb-5 leading-snug"
-              style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-            >
-              {t('landing.ctaBottomPrompt')}
-            </p>
-            <LandingCtaPair />
-          </section>
-
-          <p className="text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            {t('landing.faqTeaser')}{' '}
-            <Link to="/about" className="underline font-medium" style={{ color: 'var(--wine-600)' }}>
-              {t('landing.faqLinkLabel')}
-            </Link>
-            .
-          </p>
-        </article>
+              >
+                {t('landing.ctaStartFree')}
+              </Link>
+              <a
+                href="#sommi-demo"
+                className={ctaGhostClass}
+                style={ctaGhostOnLight}
+                onClick={() => trackDemoAnchorClick('final')}
+              >
+                {t('landing.ctaWatchDemo')}
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Mobile-only sticky CTA — desktop uses repeated in-page CTAs */}
       <aside
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t px-4 pt-3"
         style={{
@@ -496,10 +744,10 @@ export function LandingPage() {
           className="flex w-full items-center justify-center rounded-full py-3.5 text-base font-semibold text-white shadow-lg active:opacity-95"
           style={ctaPrimaryStyle}
           onClick={() => {
-            void trackCTAButtonClick({ placement: 'sticky' });
+            void trackCTAButtonClick({ placement: 'sticky', cta: 'start_free' });
           }}
         >
-          {t('landing.ctaOpen')}
+          {t('landing.ctaStartFree')}
         </Link>
       </aside>
     </>
