@@ -8,11 +8,13 @@
  *   - Deploy admin-backfill-analysis-locales Edge function
  *
  * Env (required):
- *   SUPABASE_ACCESS_TOKEN A valid JWT for an admin user (same as logged-in app session)
+ *   SUPABASE_ACCESS_TOKEN — the **user session** JWT (GoTrue), NOT the anon key and NOT `sb_publishable_…`.
+ *     In Local Storage, open `sb-…-auth-token` → JSON → field **`access_token`** (usually starts with `eyJ`).
+ *     Decoded payload should show `"role":"authenticated"`. Keys with `"role":"anon"` are the wrong value.
  *
  * Env (optional if missing — loaded from apps/web/.env next to repo root):
  *   SUPABASE_URL / VITE_SUPABASE_URL
- *   SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY
+ *   SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY  (this goes in the `apikey` header only)
  *
  * Optional env:
  *   TARGET_LANGUAGE   he | en   (default: he)
@@ -20,9 +22,8 @@
  *   SLEEP_MS          pause between calls (default: 800)
  *   MAX_ROUNDS        safety stop (default: 2000)
  *   DRY_RUN           if "1" or "true", only preview first batch and exit
- *
- * Get SUPABASE_ACCESS_TOKEN from the browser (while logged in as admin):
- *   DevTools → Application → Local Storage → key like sb-<ref>-auth-token → JSON → access_token
+ *   ALLOW_INSECURE_TLS=1  If fetch fails with SELF_SIGNED_CERT_IN_CHAIN (corporate proxy), sets
+ *     NODE_TLS_REJECT_UNAUTHORIZED=0 for this process only (no extra Node modules). Insecure.
  *
  * Usage:
  *   export SUPABASE_ACCESS_TOKEN="eyJ..."
@@ -87,6 +88,64 @@ needEnv('SUPABASE_URL', url)
 needEnv('SUPABASE_ANON_KEY', anon)
 needEnv('SUPABASE_ACCESS_TOKEN', token)
 
+/** Reject obvious wrong tokens (publishable key, anon JWT in Authorization, etc.). */
+function assertUserAccessToken(accessToken, anonKey) {
+  const t = accessToken.trim()
+  if (t.startsWith('sb_publishable_') || t.startsWith('sb_secret_') || t.startsWith('sb_')) {
+    console.error(
+      '\nSUPABASE_ACCESS_TOKEN looks like a Supabase **sb_…** API key.\n' +
+        'You need the **user session** JWT from Local Storage → sb-…-auth-token → JSON → **access_token** (eyJ…).\n',
+    )
+    process.exit(1)
+  }
+  if (anonKey && t === anonKey.trim()) {
+    console.error(
+      '\nSUPABASE_ACCESS_TOKEN must not be the same as the anon key.\n' +
+        'Use **access_token** from the logged-in admin session (eyJ…, role "authenticated").\n',
+    )
+    process.exit(1)
+  }
+  const parts = t.split('.')
+  if (parts.length !== 3) {
+    console.error('\nSUPABASE_ACCESS_TOKEN should be a JWT with three dot-separated segments (eyJ…).\n')
+    process.exit(1)
+  }
+  let payload = null
+  try {
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    while (b64.length % 4) b64 += '='
+    payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'))
+  } catch {
+    /* ignore */
+  }
+  if (payload?.role === 'anon') {
+    console.error(
+      '\nThis JWT has role "anon" — that is the **publishable/anon key**, not your login session.\n' +
+        'Copy **access_token** from sb-…-auth-token while you are logged into the **web app** as an admin.\n',
+    )
+    process.exit(1)
+  }
+  if (payload?.role === 'service_role') {
+    console.error(
+      '\nDo not use the service_role key as Bearer; this script expects an **admin user** JWT for auth.getUser().\n',
+    )
+    process.exit(1)
+  }
+}
+
+assertUserAccessToken(token, anon)
+
+const allowInsecureTls = ['1', 'true', 'yes'].includes(
+  String(process.env.ALLOW_INSECURE_TLS || '').toLowerCase(),
+)
+
+if (allowInsecureTls) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  console.warn(
+    '\n⚠️  ALLOW_INSECURE_TLS=1 — NODE_TLS_REJECT_UNAUTHORIZED=0 for this process (TLS verification off).\n',
+  )
+}
+
 const endpoint = `${url}/functions/v1/admin-backfill-analysis-locales`
 
 async function sleep(ms) {
@@ -101,15 +160,29 @@ async function oneRound(after) {
     ...(after ? { after } : {}),
   }
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      apikey: anon,
-    },
-    body: JSON.stringify(body),
-  })
+  let res
+  try {
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: anon,
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    const code = err?.cause?.code ?? err?.code
+    const msg = err?.message ?? String(err)
+    if (code === 'SELF_SIGNED_CERT_IN_CHAIN' || msg.includes('SELF_SIGNED_CERT')) {
+      throw new Error(
+        `TLS error (${msg}). Try:\n` +
+          `  ALLOW_INSECURE_TLS=1 SUPABASE_ACCESS_TOKEN='…' node scripts/admin-backfill-analysis-locales-loop.mjs\n` +
+          '(Only on trusted networks; your proxy is intercepting HTTPS.)',
+      )
+    }
+    throw err
+  }
 
   const text = await res.text()
   let data
