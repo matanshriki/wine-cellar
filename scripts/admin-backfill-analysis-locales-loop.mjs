@@ -10,11 +10,12 @@
  * Env (required):
  *   SUPABASE_ACCESS_TOKEN — the **user session** JWT (GoTrue), NOT the anon key and NOT `sb_publishable_…`.
  *     In Local Storage, open `sb-…-auth-token` → JSON → field **`access_token`** (usually starts with `eyJ`).
+ *     Must be the **full** string (three dot-separated parts). Optional `Bearer ` prefix and extra whitespace are OK.
  *     Decoded payload should show `"role":"authenticated"`. Keys with `"role":"anon"` are the wrong value.
- *
- * Env (optional if missing — loaded from apps/web/.env next to repo root):
- *   SUPABASE_URL / VITE_SUPABASE_URL
- *   SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY  (this goes in the `apikey` header only)
+ * Env (optional if missing — loaded from files, without overriding existing shell env):
+ *   apps/web/.env then repo-root .env — for SUPABASE_URL / VITE_SUPABASE_URL,
+ *   SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY (apikey header only), and optionally
+ *   SUPABASE_ACCESS_TOKEN (repo-root .env is gitignored — handy so you do not pass the JWT on the CLI).
  *
  * Optional env:
  *   TARGET_LANGUAGE   he | en   (default: he)
@@ -24,6 +25,9 @@
  *   DRY_RUN           if "1" or "true", only preview first batch and exit
  *   ALLOW_INSECURE_TLS=1  If fetch fails with SELF_SIGNED_CERT_IN_CHAIN (corporate proxy), sets
  *     NODE_TLS_REJECT_UNAUTHORIZED=0 for this process only (no extra Node modules). Insecure.
+ *     Node will print a warning about that — it is expected.
+ *   FETCH_TIMEOUT_MS  Per-request timeout in ms (default: 180000). If the first call “hangs”, lower
+ *     your network/proxy issues or raise this for very slow Edge cold starts.
  *
  * Usage:
  *   export SUPABASE_ACCESS_TOKEN="eyJ..."
@@ -59,8 +63,9 @@ function loadEnvFile(filePath) {
   }
 }
 
-// apps/web/.env → VITE_SUPABASE_* for local runs
+// apps/web/.env → VITE_SUPABASE_*; repo .env → optional secrets (e.g. token)
 loadEnvFile(resolve(__dirname, '../apps/web/.env'))
+loadEnvFile(resolve(__dirname, '../.env'))
 if (!process.env.SUPABASE_URL && process.env.VITE_SUPABASE_URL) {
   process.env.SUPABASE_URL = process.env.VITE_SUPABASE_URL
 }
@@ -68,14 +73,25 @@ if (!process.env.SUPABASE_ANON_KEY && process.env.VITE_SUPABASE_ANON_KEY) {
   process.env.SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 }
 
+/** Strip Bearer prefix, whitespace/newlines — JWT must stay one compact string. */
+function normalizeSupabaseAccessToken(raw) {
+  if (raw == null) return ''
+  let t = String(raw).trim()
+  const m = t.match(/^bearer\s+/i)
+  if (m) t = t.slice(m[0].length).trim()
+  t = t.replace(/\s+/g, '')
+  return t
+}
+
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '')
 const anon = process.env.SUPABASE_ANON_KEY
-const token = process.env.SUPABASE_ACCESS_TOKEN
+const token = normalizeSupabaseAccessToken(process.env.SUPABASE_ACCESS_TOKEN)
 const target = (process.env.TARGET_LANGUAGE || 'he').toLowerCase().startsWith('he') ? 'he' : 'en'
 const batch = Math.min(5, Math.max(1, Number(process.env.BATCH || 5) || 5))
 const sleepMs = Math.max(0, Number(process.env.SLEEP_MS || 800) || 0)
 const maxRounds = Math.max(1, Number(process.env.MAX_ROUNDS || 2000) || 2000)
 const dryRun = ['1', 'true', 'yes'].includes(String(process.env.DRY_RUN || '').toLowerCase())
+const fetchTimeoutMs = Math.max(10_000, Number(process.env.FETCH_TIMEOUT_MS || 180_000) || 180_000)
 
 function needEnv(name, val) {
   if (!val) {
@@ -86,7 +102,21 @@ function needEnv(name, val) {
 
 needEnv('SUPABASE_URL', url)
 needEnv('SUPABASE_ANON_KEY', anon)
-needEnv('SUPABASE_ACCESS_TOKEN', token)
+if (!token) {
+  console.error(`Missing env: SUPABASE_ACCESS_TOKEN
+
+Set it for this process, or add to repo-root .env (gitignored), or apps/web/.env:
+
+  export SUPABASE_ACCESS_TOKEN='eyJ...'   # full JWT from sb-…-auth-token → access_token
+  node scripts/admin-backfill-analysis-locales-loop.mjs
+
+Or one line:
+  SUPABASE_ACCESS_TOKEN='eyJ...' node scripts/admin-backfill-analysis-locales-loop.mjs
+
+If you use "Run" in the IDE, env vars from your shell are not applied — use the integrated terminal, or put the line in .env at the repo root.
+`)
+  process.exit(1)
+}
 
 /** Reject obvious wrong tokens (publishable key, anon JWT in Authorization, etc.). */
 function assertUserAccessToken(accessToken, anonKey) {
@@ -107,7 +137,15 @@ function assertUserAccessToken(accessToken, anonKey) {
   }
   const parts = t.split('.')
   if (parts.length !== 3) {
-    console.error('\nSUPABASE_ACCESS_TOKEN should be a JWT with three dot-separated segments (eyJ…).\n')
+    console.error(
+      '\nSUPABASE_ACCESS_TOKEN must be a **full** JWT: header.payload.signature (exactly two dots, three segments).\n' +
+        `After cleanup this value has **${parts.length}** segment(s) and **${t.length}** characters.\n\n` +
+        'Common mistakes:\n' +
+        '  • Pasting only the first line or a truncated DevTools preview (missing `.signature` at the end).\n' +
+        '  • Using **refresh_token** instead of **access_token** from the sb-…-auth-token JSON.\n' +
+        '  • A `#` or comment in .env cutting the line short — put the JWT in **quotes** or on one line with no `#` after it.\n\n' +
+        'Copy the full **access_token** string from Application → Local Storage → sb-…-auth-token (parse JSON → access_token).\n',
+    )
     process.exit(1)
   }
   let payload = null
@@ -142,7 +180,8 @@ const allowInsecureTls = ['1', 'true', 'yes'].includes(
 if (allowInsecureTls) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   console.warn(
-    '\n⚠️  ALLOW_INSECURE_TLS=1 — NODE_TLS_REJECT_UNAUTHORIZED=0 for this process (TLS verification off).\n',
+    '\n⚠️  ALLOW_INSECURE_TLS=1 — NODE_TLS_REJECT_UNAUTHORIZED=0 for this process (TLS verification off).\n' +
+      '    Node may print a follow-up warning about insecure TLS; that is expected.\n',
   )
 }
 
@@ -152,7 +191,17 @@ async function sleep(ms) {
   if (ms > 0) await new Promise((r) => setTimeout(r, ms))
 }
 
-async function oneRound(after) {
+/** AbortController + timer (works on Node 18 without relying on AbortSignal.timeout). */
+function fetchAbortAfter(ms) {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), ms)
+  return {
+    signal: controller.signal,
+    cancel: () => clearTimeout(id),
+  }
+}
+
+async function oneRound(roundIndex, after) {
   const body = {
     target_language: target,
     limit: batch,
@@ -160,28 +209,46 @@ async function oneRound(after) {
     ...(after ? { after } : {}),
   }
 
+  const cursorHint = after != null ? ` after=${String(after).slice(0, 12)}…` : ''
+  console.log(
+    `[${roundIndex}] POST admin-backfill-analysis-locales (${fetchTimeoutMs}ms timeout)${cursorHint}`,
+  )
+
   let res
+  const { signal, cancel } = fetchAbortAfter(fetchTimeoutMs)
   try {
-    res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        apikey: anon,
-      },
-      body: JSON.stringify(body),
-    })
-  } catch (err) {
-    const code = err?.cause?.code ?? err?.code
-    const msg = err?.message ?? String(err)
-    if (code === 'SELF_SIGNED_CERT_IN_CHAIN' || msg.includes('SELF_SIGNED_CERT')) {
-      throw new Error(
-        `TLS error (${msg}). Try:\n` +
-          `  ALLOW_INSECURE_TLS=1 SUPABASE_ACCESS_TOKEN='…' node scripts/admin-backfill-analysis-locales-loop.mjs\n` +
-          '(Only on trusted networks; your proxy is intercepting HTTPS.)',
-      )
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          apikey: anon,
+        },
+        body: JSON.stringify(body),
+        signal,
+      })
+    } catch (err) {
+      const name = err?.name ?? ''
+      if (name === 'AbortError') {
+        throw new Error(
+          `Request timed out after ${fetchTimeoutMs}ms. The Edge call never completed — often a corporate ` +
+            `proxy/VPN/firewall blocking or stalling HTTPS to *.supabase.co. Try another network, or increase FETCH_TIMEOUT_MS.`,
+        )
+      }
+      const code = err?.cause?.code ?? err?.code
+      const msg = err?.message ?? String(err)
+      if (code === 'SELF_SIGNED_CERT_IN_CHAIN' || msg.includes('SELF_SIGNED_CERT')) {
+        throw new Error(
+          `TLS error (${msg}). Try:\n` +
+            `  ALLOW_INSECURE_TLS=1 SUPABASE_ACCESS_TOKEN='…' node scripts/admin-backfill-analysis-locales-loop.mjs\n` +
+            '(Only on trusted networks; your proxy is intercepting HTTPS.)',
+        )
+      }
+      throw err
     }
-    throw err
+  } finally {
+    cancel()
   }
 
   const text = await res.text()
@@ -206,11 +273,13 @@ let totalFailed = 0
 let rounds = 0
 
 console.log(`Endpoint: ${endpoint}`)
-console.log(`Target: analysis_data.${target}, batch=${batch}, dry_run=${dryRun}, sleep_ms=${sleepMs}`)
+console.log(
+  `Target: analysis_data.${target}, batch=${batch}, dry_run=${dryRun}, sleep_ms=${sleepMs}, fetch_timeout_ms=${fetchTimeoutMs}`,
+)
 
 while (rounds < maxRounds) {
   rounds++
-  const data = await oneRound(after)
+  const data = await oneRound(rounds, after)
 
   const p = data.processed_count ?? 0
   const s = data.skipped_count ?? 0

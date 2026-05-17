@@ -104,6 +104,18 @@ export const AdminEnrichPage: React.FC = () => {
   const [fpLog, setFpLog] = useState<string[]>([]);
   const fpAbortRef = React.useRef(false);
 
+  // ── Kosher Perplexity backfill (Edge: backfill-kosher-status) ──────────────
+  const kosherBfAbortRef = React.useRef(false);
+  const [kosherBfRunning, setKosherBfRunning] = useState(false);
+  const [kosherBfBatch, setKosherBfBatch] = useState(10);
+  const [kosherBfDryRun, setKosherBfDryRun] = useState(true);
+  const [kosherBfLoop, setKosherBfLoop] = useState(false);
+  const [kosherBfForceRefresh, setKosherBfForceRefresh] = useState(false);
+  const [kosherBfPauseMs, setKosherBfPauseMs] = useState(500);
+  const [kosherBfLog, setKosherBfLog] = useState<string[]>([]);
+  const [kosherBfLast, setKosherBfLast] = useState<Record<string, unknown> | null>(null);
+  const [kosherBfError, setKosherBfError] = useState<string | null>(null);
+
   // ── Rule-based wine metadata (internal, no Vivino) ─────────────────────────
   const [rulesDryRun, setRulesDryRun] = useState(true);
   const [rulesFilter, setRulesFilter] = useState<'candidates' | 'missing_grapes' | 'suspicious'>('candidates');
@@ -838,6 +850,149 @@ export const AdminEnrichPage: React.FC = () => {
       alert(`Error: ${message}`);
     } finally {
       setLocaleBfRunning(false);
+    }
+  };
+
+  const callKosherBackfillOnce = async (
+    token: string,
+    body: { limit: number; dry_run: boolean; force_refresh: boolean },
+  ): Promise<Record<string, unknown>> => {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-kosher-status`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+    const raw = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      throw new Error(`HTTP ${res.status}: ${raw.slice(0, 400)}`);
+    }
+    if (!res.ok) {
+      throw new Error((data.error as string) || `HTTP ${res.status}: ${raw.slice(0, 300)}`);
+    }
+    if (data.success === false) {
+      throw new Error((data.error as string) || 'Unknown error');
+    }
+    return data;
+  };
+
+  const stopKosherBackfill = () => {
+    kosherBfAbortRef.current = true;
+  };
+
+  const runKosherBackfill = async () => {
+    if (!user) {
+      alert('You must be logged in');
+      return;
+    }
+
+    const limit = Math.min(10, Math.max(1, Math.round(Number(kosherBfBatch)) || 10));
+    const dry = kosherBfDryRun;
+    if (
+      !dry &&
+      !confirm(
+        'This calls Perplexity (paid) for eligible wines, subject to the server daily cap.\n\n' +
+          (kosherBfLoop
+            ? `"Loop until idle" repeats batches until 3 rounds in a row process nothing, or the daily cap is hit. Batch size: ${limit}.`
+            : `Single batch: up to ${limit} wines.`) +
+          (kosherBfForceRefresh ? '\n\nForce refresh is ON (re-runs where the pipeline allows).' : '') +
+          '\n\nContinue?',
+      )
+    ) {
+      return;
+    }
+
+    kosherBfAbortRef.current = false;
+    setKosherBfRunning(true);
+    setKosherBfError(null);
+    setKosherBfLog([
+      `[${new Date().toLocaleTimeString()}] Kosher backfill — dry_run=${dry}, limit=${limit}, loop=${kosherBfLoop}, force_refresh=${!dry && kosherBfForceRefresh}`,
+    ]);
+
+    const maxRounds = 500;
+    const zeroStop = 3;
+
+    try {
+      let round = 0;
+      let zeros = 0;
+      let total = 0;
+
+      while (!kosherBfAbortRef.current && round < maxRounds) {
+        round++;
+        const token = await getFreshToken();
+        const data = await callKosherBackfillOnce(token, {
+          limit,
+          dry_run: dry,
+          force_refresh: !dry && kosherBfForceRefresh,
+        });
+        setKosherBfLast(data);
+
+        const proc = typeof data.processed_count === 'number' ? data.processed_count : 0;
+        const sk = typeof data.skipped_count === 'number' ? data.skipped_count : 0;
+        const hit = data.daily_limit_hit === true;
+        const du = (data.daily_usage as { used?: number; limit?: number } | undefined) ?? {};
+        total += proc;
+
+        const ts = new Date().toLocaleTimeString();
+        const line =
+          `[${ts}] round ${round} processed=${proc} skipped=${sk} daily_limit_hit=${hit} daily_used=${du.used ?? '?'}/${du.limit ?? '?'}`;
+        setKosherBfLog((prev) => [...prev, line]);
+
+        if (hit) {
+          setKosherBfLog((prev) => [
+            ...prev,
+            '[Stopped: daily Perplexity limit (adjust KOSHER_PERPLEXITY_DAILY_LIMIT in Supabase secrets if needed).]',
+          ]);
+          break;
+        }
+        if (!kosherBfLoop) break;
+
+        if (proc === 0) {
+          zeros++;
+          if (zeros >= zeroStop) {
+            setKosherBfLog((prev) => [
+              ...prev,
+              '[Stopped: 3 rounds in a row with 0 processed (no eligible candidates left).]',
+            ]);
+            break;
+          }
+        } else {
+          zeros = 0;
+        }
+
+        await new Promise((r) => setTimeout(r, kosherBfPauseMs));
+      }
+
+      if (round >= maxRounds && kosherBfLoop) {
+        setKosherBfLog((prev) => [
+          ...prev,
+          `[${new Date().toLocaleTimeString()}] Stopped: max rounds (${maxRounds}) safety limit.`,
+        ]);
+      }
+      if (kosherBfAbortRef.current) {
+        setKosherBfLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] Aborted by user.`]);
+      }
+
+      setKosherBfLog((prev) => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] Done. Total processed this session: ${total}.`,
+      ]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setKosherBfError(msg);
+      setKosherBfLog((prev) => [...prev, `❌ ${msg}`]);
+      alert(`Error: ${msg}`);
+    } finally {
+      setKosherBfRunning(false);
     }
   };
 
@@ -2085,6 +2240,168 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
             }}
           >
             {JSON.stringify(localeBfLast, null, 2)}
+          </pre>
+        </details>
+      )}
+
+      {/* ── Kosher enrichment backfill (Perplexity, wines) ─────────────────── */}
+      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+
+      <h1>✡️ Kosher enrichment backfill</h1>
+      <p style={{ color: '#666', marginBottom: '1rem' }}>
+        Calls the <code>backfill-kosher-status</code> Edge Function with your admin session (no extra secret in the browser).
+        Only wines that pass the server&apos;s trigger rules are candidates; each real run is capped by{' '}
+        <code>KOSHER_PERPLEXITY_DAILY_LIMIT</code> on the project.
+      </p>
+
+      <div
+        style={{
+          backgroundColor: '#f8fff4',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          border: '1px solid #c3e6cb',
+        }}
+      >
+        <h3 style={{ marginTop: 0 }}>Run backfill</h3>
+        <p style={{ fontSize: '0.9rem', color: '#444', marginBottom: '1rem' }}>
+          Batch <strong>limit</strong> is clamped to 1–10 per request (server max). Use <strong>dry run</strong> to see what would run without
+          calling Perplexity or writing kosher fields.
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <label style={{ fontSize: '0.9rem' }}>
+            <strong>Wines per batch (limit)</strong>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={kosherBfBatch}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (Number.isNaN(n)) setKosherBfBatch(10);
+                else setKosherBfBatch(Math.min(10, Math.max(1, n)));
+              }}
+              disabled={kosherBfRunning}
+              style={{ display: 'block', marginTop: '0.35rem', width: '5rem', padding: '0.35rem' }}
+            />
+          </label>
+          <label style={{ fontSize: '0.9rem' }}>
+            <strong>Pause between batches (ms)</strong>
+            <input
+              type="number"
+              min={0}
+              max={60000}
+              step={100}
+              value={kosherBfPauseMs}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (Number.isNaN(n)) setKosherBfPauseMs(500);
+                else setKosherBfPauseMs(Math.min(60000, Math.max(0, n)));
+              }}
+              disabled={kosherBfRunning}
+              style={{ display: 'block', marginTop: '0.35rem', width: '6rem', padding: '0.35rem' }}
+            />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={kosherBfDryRun}
+              onChange={(e) => setKosherBfDryRun(e.target.checked)}
+              disabled={kosherBfRunning}
+            />
+            Dry run
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={kosherBfLoop}
+              onChange={(e) => setKosherBfLoop(e.target.checked)}
+              disabled={kosherBfRunning}
+            />
+            Loop until idle (or daily cap)
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={kosherBfForceRefresh}
+              onChange={(e) => setKosherBfForceRefresh(e.target.checked)}
+              disabled={kosherBfRunning || kosherBfDryRun}
+            />
+            Force refresh (live only)
+          </label>
+        </div>
+        {kosherBfError && (
+          <p style={{ color: '#c0392b', fontSize: '0.9rem', marginBottom: '0.75rem' }}>{kosherBfError}</p>
+        )}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => void runKosherBackfill()}
+            disabled={kosherBfRunning || isAdmin !== true}
+            style={{
+              padding: '0.6rem 1rem',
+              backgroundColor: kosherBfRunning ? '#6c757d' : '#198754',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: kosherBfRunning ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {kosherBfRunning ? 'Running…' : kosherBfDryRun ? 'Run (dry run)' : kosherBfLoop ? 'Run loop (live)' : 'Run one batch (live)'}
+          </button>
+          <button
+            type="button"
+            onClick={stopKosherBackfill}
+            disabled={!kosherBfRunning}
+            style={{
+              padding: '0.6rem 1rem',
+              backgroundColor: kosherBfRunning ? '#dc3545' : '#adb5bd',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: kosherBfRunning ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Stop
+          </button>
+        </div>
+      </div>
+
+      {kosherBfLog.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>Kosher backfill log</h4>
+          <pre
+            style={{
+              backgroundColor: '#1e1e1e',
+              color: '#d4d4d4',
+              padding: '1rem',
+              borderRadius: '8px',
+              fontSize: '0.75rem',
+              maxHeight: '240px',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {kosherBfLog.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      {kosherBfLast && (
+        <details style={{ marginBottom: '2rem' }}>
+          <summary style={{ cursor: 'pointer' }}>Last kosher backfill response (JSON)</summary>
+          <pre
+            style={{
+              backgroundColor: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '6px',
+              fontSize: '0.7rem',
+              overflowX: 'auto',
+              maxHeight: '320px',
+              overflowY: 'auto',
+            }}
+          >
+            {JSON.stringify(kosherBfLast, null, 2)}
           </pre>
         </details>
       )}
