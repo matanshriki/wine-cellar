@@ -51,7 +51,14 @@ const CONVERSATIONAL_AGING_HE =
  * e.g. "Tell me more about this wine", "Why did you recommend this?"
  */
 const CONVERSATIONAL_INFO_EN =
-  /\b(tell\s+me\s+more(\s+about\s+(this|the\s+wine))?|more\s+about\s+this(\s+wine)?|what\s+does\s+(it|this)\s+taste\s+like|tasting\s+notes(\s+for\s+this)?|why\s+(did\s+you|this\s+wine|recommend\s+this)|explain\s+(this\s+choice|why\s+this|the\s+recommendation)|describe\s+(this\s+wine|it\s+to\s+me)|what\s+are\s+the\s+(flavors?|aromas?|notes?|characteristics)|what\s+makes\s+this\s+(wine\s+)?special|tell\s+me\s+about\s+this\s+wine)\b/i;
+  /\b(tell\s+me\s+more(\s+about\s+(this|the\s+wine))?|more\s+about\s+this(\s+wine)?|what\s+does\s+(it|this)\s+taste\s+like|tasting\s+notes(\s+for\s+this)?|why\s+(did\s+you|this\s+wine|recommend\s+this)|explain\s+(this\s+choice|why\s+this|the\s+recommendation)|describe\s+(this\s+wine|it\s+to\s+me)|what\s+are\s+the\s+(flavors?|aromas?|notes?|characteristics)|what\s+makes\s+this\s+(wine\s+)?special|tell\s+me\s+about\s+this\s+wine|is\s+(it|this\s+wine)\s+kosher|kosher\?)\b/i;
+
+/**
+ * Hebrew info / attribute questions about the currently-shown wine.
+ * Covers kosher, serve temp, region, grapes, tasting notes, pairing, etc.
+ */
+const CONVERSATIONAL_INFO_HE =
+  /(הוא\s+כשר|היא\s+כשרה|זה\s+כשר|האם\s+(זה|הוא|היא|היין|הבקבוק)\s+כשר|כשר\?|למה\s+(המלצת|בחרת|בחרת\s+ב)|תספר\s+לי\s+עוד|עוד\s+על\s+(היין|הבקבוק|זה)|מה\s+(הטעמים|הארומות|הטעם|הניחוח)\s+(של\s+)?(היין|זה|הבקבוק)|מה\s+המאפיינים|ממה\s+עשוי|איזה\s+ענבים|מה\s+הענבים|מאיזה\s+אזור|איפה\s+היין|מאיזה\s+יקב|מה\s+הציון|מה\s+הדירוג|מה\s+הטמפרטורה|כמה\s+זמן\s+(להאוורר|לאוורר|להשהות))/u;
 
 /**
  * Signals that unambiguously mean "give me a NEW recommendation" — used to block
@@ -162,17 +169,23 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
   }
 
   // Explicit info / explain questions about the current wine — always conversational
-  if (CONVERSATIONAL_INFO_EN.test(lower)) {
+  if (CONVERSATIONAL_INFO_EN.test(lower) || CONVERSATIONAL_INFO_HE.test(t)) {
     return 'conversational';
   }
 
   // Short follow-up question when an anchor bottle exists AND user isn't asking for a new pick
   if (ctx?.lastRecommendationBottleId) {
     const isShortFollowUp = t.length <= 160;
-    const startsLikeFollowUpQuestion =
+    const startsLikeFollowUpQuestionEN =
       /^(is\s+(it|this)|would\s+(it|this)|should\s+i|how\s+(long|much|is|old|many|does|good)|when\s+(did|was|should|to|can|will)|what\s+(is|are|does|would|food|pairs?)|why\s+(is|did|was|would|this)|can\s+(i|it|this)|could\s+(i|it)|will\s+it|does\s+it|how\s+does\s+it)/i.test(
         t.trim()
       );
+    // Hebrew follow-up starters: "הוא X?", "האם X?", "זה X?", "מה X?", "איך X?", etc.
+    const startsLikeFollowUpQuestionHE =
+      /^(הוא\s|היא\s|זה\s|האם\s|מה\s|איך\s|למה\s|כמה\s|מתי\s|עם\s|איזה\s|כשר\?|כשרה\?)/u.test(
+        t.trim()
+      );
+    const startsLikeFollowUpQuestion = startsLikeFollowUpQuestionEN || startsLikeFollowUpQuestionHE;
     if (isShortFollowUp && startsLikeFollowUpQuestion && !NEW_RECOMMENDATION_SIGNALS.test(lower)) {
       return 'conversational';
     }
