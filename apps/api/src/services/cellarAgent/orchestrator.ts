@@ -236,7 +236,7 @@ async function runOrchestratedRecommendation(params: {
     anchorBottleId,
   } = params;
 
-  const conversationHistory = sliceHistoryForChat(history, 8);
+  const conversationHistory = sliceHistoryForChat(history, 20);
   const messageLen = message.length;
   const historyLen = conversationHistory.length;
   const userMessageLower = message.toLowerCase();
@@ -592,6 +592,13 @@ function formatBottleForConversation(bottle: CellarBottleInput): string {
     if (bottle.pastOpeningsAvgRating) parts.push(`Avg rating: ${bottle.pastOpeningsAvgRating}/5`);
   }
   if (bottle.pastNotesSummary) parts.push(`Tasting notes: ${bottle.pastNotesSummary}`);
+  if (bottle.isKosher !== undefined && bottle.isKosher !== null) {
+    const conf = bottle.kosherConfidence ? ` (confidence: ${bottle.kosherConfidence})` : '';
+    parts.push(`Kosher: ${bottle.isKosher ? 'yes' : 'no'}${conf}`);
+  } else if (bottle.isKosher === null || bottle.isKosher === undefined) {
+    // Only emit if we explicitly know it's unknown (field present but null)
+    if ('isKosher' in bottle) parts.push('Kosher: unknown (not yet enriched)');
+  }
   return parts.join('\n') || 'No detailed information available for this wine.';
 }
 
@@ -806,7 +813,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             language,
           });
 
-          const conversationHistory = sliceHistoryForChat(history, 8);
+          const conversationHistory = sliceHistoryForChat(history, 20);
 
           const response = await openai.chat.completions.create({
             model: config.openaiModel,
@@ -878,7 +885,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             language,
           });
 
-          const conversationHistory = sliceHistoryForChat(history, 8);
+          const conversationHistory = sliceHistoryForChat(history, 20);
 
           const response = await openai.chat.completions.create({
             model: config.openaiModel,

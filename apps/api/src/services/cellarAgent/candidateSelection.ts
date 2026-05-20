@@ -58,6 +58,9 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     // Hebrew alternatives so the LLM can match Hebrew user queries to bottles
     ...(b.producerHe && { producerHe: b.producerHe }),
     ...(b.wineNameHe && { wineNameHe: b.wineNameHe }),
+    // Kosher status — always forward even when null so the LLM knows it's unknown
+    ...(b.isKosher !== undefined && { isKosher: b.isKosher }),
+    ...(b.kosherConfidence != null && { kosherConfidence: b.kosherConfidence }),
   };
 }
 

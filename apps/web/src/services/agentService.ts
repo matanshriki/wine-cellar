@@ -278,6 +278,10 @@ function buildCellarContext(
         // Vivino data for additional context
         vivinoRating: b.wine.vivino_rating,
 
+        // Kosher status from DB enrichment pipeline (null = not yet enriched)
+        ...((b.wine as any).is_kosher !== undefined && { isKosher: (b.wine as any).is_kosher as boolean | null }),
+        ...((b.wine as any).kosher_confidence != null && { kosherConfidence: (b.wine as any).kosher_confidence as string }),
+
         ...historyFields,
       };
     }),

@@ -71,7 +71,7 @@ Provide a JSON response with:
 Respond ONLY with valid JSON.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: config.openaiModel,
       messages: [
         {
           role: 'system',
@@ -324,7 +324,7 @@ Return a JSON array with this exact structure:
 Return ONLY the JSON array, no markdown or other text.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // Upgraded from gpt-3.5-turbo for better reasoning
+      model: config.openaiModel,
       messages: [
         {
           role: 'system',

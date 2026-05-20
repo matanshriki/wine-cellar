@@ -55,6 +55,13 @@ export interface CellarBottleInput {
    */
   isReserved?: boolean;
   reservedFor?: string;
+  /**
+   * Kosher status from the wines table (DB-sourced, enriched by our pipeline).
+   * null = not known / not enriched yet.
+   */
+  isKosher?: boolean | null;
+  /** Confidence tier: 'high' | 'med' | 'low' */
+  kosherConfidence?: string | null;
 }
 
 /** Deterministic extraction output used for shortlisting and prompt context. */
@@ -93,6 +100,9 @@ export interface CompactCellarBottle {
   /** Hebrew name alternatives — helps the LLM match Hebrew user queries */
   producerHe?: string;
   wineNameHe?: string;
+  /** Kosher status from DB enrichment pipeline. null = unknown. */
+  isKosher?: boolean | null;
+  kosherConfidence?: string | null;
 }
 
 export interface CellarContextBuildResult {

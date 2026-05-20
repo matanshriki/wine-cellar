@@ -26,7 +26,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || defaultJwtSecret,
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
-  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-5',
   nodeEnv,
   
   // Google OAuth (optional)
