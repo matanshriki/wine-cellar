@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import { type AuthRequest } from '../middleware/auth.js';
 import { config } from '../config.js';
+import { Sentry, isSentryInitialized } from '../lib/sentry.js';
 import OpenAI from 'openai';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
@@ -250,6 +251,20 @@ agentRouter.post(
           hasActionContext: !!actionContext,
         })
       );
+
+      if (isSentryInitialized()) {
+        Sentry.addBreadcrumb({
+          message: 'agent.session_started',
+          category: 'ai',
+          data: {
+            user_id: req.userId,
+            cellar_size: cellarContext.bottles.length,
+            language: typeof language === 'string' ? language : 'en',
+            provider: 'openai',
+          },
+          level: 'info',
+        });
+      }
 
       const userSupabase = createUserSupabase(req);
 

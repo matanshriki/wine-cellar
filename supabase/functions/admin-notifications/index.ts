@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { withSentry } from '../_shared/sentry.ts';
 import { purchaseEmailFromPaddle, signupEmailHtml, type ProfileRecord } from '../_shared/adminEmail/formatters.ts';
 import { resendFromMisconfigurationMessage } from '../_shared/adminEmail/resendFromValidation.ts';
 import { logResendFailure, sendResendEmail } from '../_shared/adminEmail/resendSend.ts';
@@ -27,7 +28,7 @@ function verifyWebhookSecret(req: Request, secret: string): boolean {
   return ok === 0;
 }
 
-serve(async (req) => {
+serve(withSentry('admin-notifications', async (req) => {
   if (req.method !== 'POST') {
     return jsonResponse({ ok: false, error: 'Method not allowed' }, 405);
   }
@@ -166,4 +167,4 @@ serve(async (req) => {
     console.error('[admin-notifications] Unhandled:', msg);
     return jsonResponse({ ok: false, error: 'Internal error' }, 500);
   }
-});
+}));

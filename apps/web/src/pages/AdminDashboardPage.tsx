@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { WineLoader } from '../components/WineLoader';
+import { captureAppError } from '../lib/monitoring';
+import { isSentryInitialized } from '../lib/sentry';
 import { AdminOverview }           from '../components/admin/AdminOverview';
 import { AdminUsers }              from '../components/admin/AdminUsers';
 import { AdminWineDataQuality }    from '../components/admin/AdminWineDataQuality';
@@ -10,17 +12,66 @@ import { AdminAiUsage }            from '../components/admin/AdminAiUsage';
 import { AdminInsights }           from '../components/admin/AdminInsights';
 import { AdminGoogleAnalytics }    from '../components/admin/AdminGoogleAnalytics';
 
-type Tab = 'overview' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights' | 'traffic';
+type Tab = 'overview' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights' | 'traffic' | 'monitoring';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'overview',  label: 'Overview'   },
-  { id: 'users',     label: 'Users'      },
-  { id: 'wine-data', label: 'Wine Data'  },
-  { id: 'events',    label: 'Events'     },
-  { id: 'ai',        label: 'AI & Usage' },
-  { id: 'insights',  label: 'Insights'   },
-  { id: 'traffic',   label: 'Traffic'    },
+  { id: 'overview',   label: 'Overview'   },
+  { id: 'users',      label: 'Users'      },
+  { id: 'wine-data',  label: 'Wine Data'  },
+  { id: 'events',     label: 'Events'     },
+  { id: 'ai',         label: 'AI & Usage' },
+  { id: 'insights',   label: 'Insights'   },
+  { id: 'traffic',    label: 'Traffic'    },
+  { id: 'monitoring', label: 'Monitoring' },
 ];
+
+function AdminMonitoringPanel() {
+  const [sent, setSent] = useState(false);
+  const active = isSentryInitialized();
+
+  const handleTestError = () => {
+    captureAppError(new Error('Sentry Test Error — Sommi Admin'), {
+      test: true,
+      triggered_by: 'admin_dashboard',
+      timestamp: new Date().toISOString(),
+    });
+    setSent(true);
+    setTimeout(() => setSent(false), 4000);
+  };
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: 8 }}>
+        Sentry Monitoring
+      </h2>
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
+        Status: <strong style={{ color: active ? '#22c55e' : '#ef4444' }}>{active ? 'Active' : 'Not configured (no VITE_SENTRY_DSN)'}</strong>
+      </p>
+      <button
+        onClick={handleTestError}
+        disabled={!active || sent}
+        style={{
+          padding: '8px 20px',
+          borderRadius: 8,
+          border: '1px solid var(--border-medium)',
+          background: sent ? 'var(--bg-muted)' : 'var(--interactive-hover)',
+          color: 'var(--text-primary)',
+          fontWeight: 600,
+          fontSize: '0.85rem',
+          cursor: active && !sent ? 'pointer' : 'not-allowed',
+          opacity: active ? 1 : 0.5,
+          transition: 'all 0.15s',
+        }}
+      >
+        {sent ? 'Test error sent — check Sentry' : 'Send test error to Sentry'}
+      </button>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 12, lineHeight: 1.5 }}>
+        Admin-only. Sends a tagged test exception to verify Sentry ingestion and source maps.
+        Check the Sentry dashboard for a new issue in ~30s.
+      </p>
+    </div>
+  );
+}
 
 export function AdminDashboardPage() {
   const { user } = useAuth();
@@ -168,13 +219,14 @@ export function AdminDashboardPage() {
 
       {/* Tab content */}
       <div>
-        {activeTab === 'overview'  && <AdminOverview />}
-        {activeTab === 'users'     && <AdminUsers />}
-        {activeTab === 'wine-data' && <AdminWineDataQuality />}
-        {activeTab === 'events'    && <AdminEvents />}
-        {activeTab === 'ai'        && <AdminAiUsage />}
-        {activeTab === 'insights'  && <AdminInsights />}
-        {activeTab === 'traffic'   && <AdminGoogleAnalytics />}
+        {activeTab === 'overview'    && <AdminOverview />}
+        {activeTab === 'users'       && <AdminUsers />}
+        {activeTab === 'wine-data'   && <AdminWineDataQuality />}
+        {activeTab === 'events'      && <AdminEvents />}
+        {activeTab === 'ai'          && <AdminAiUsage />}
+        {activeTab === 'insights'    && <AdminInsights />}
+        {activeTab === 'traffic'     && <AdminGoogleAnalytics />}
+        {activeTab === 'monitoring'  && <AdminMonitoringPanel />}
       </div>
     </div>
   );

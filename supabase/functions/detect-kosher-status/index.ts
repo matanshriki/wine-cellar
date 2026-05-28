@@ -37,6 +37,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { withSentry, setSentryWineContext } from '../_shared/sentry.ts'
 import {
   detectKosherByProducerRule,
   shouldSkipKosherEnrichment,
@@ -170,7 +171,7 @@ function parseAiKosherResponse(raw: string): KosherResult | null {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
-serve(async (req) => {
+serve(withSentry('detect-kosher-status', async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -210,6 +211,8 @@ serve(async (req) => {
     }
 
     const { wine_id, wine_data, trigger_source, force_refresh } = await req.json()
+
+    setSentryWineContext({ user_id: user.id, wine_id, operation: 'detect_kosher', provider: 'openai' })
 
     if (!wine_id || !wine_data) {
       return new Response(
@@ -519,7 +522,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
     )
   }
-})
+}))
 
 // ── Persistence helper ────────────────────────────────────────────────────────
 

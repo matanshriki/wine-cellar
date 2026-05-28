@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
+import { withSentry, setSentryWineContext } from '../_shared/sentry.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,7 @@ interface ParsedWineData {
   alcohol: { value: number | null; confidence: 'low' | 'medium' | 'high' } | null;
 }
 
-serve(async (req) => {
+serve(withSentry('parse-label-image', async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -102,6 +103,7 @@ serve(async (req) => {
     }
 
     console.log('[Parse Label] ✅ User authenticated:', user.id);
+    setSentryWineContext({ user_id: user.id, operation: 'parse_label_image', provider: 'openai' });
 
     // Parse request body
     let requestBody;
@@ -590,5 +592,5 @@ Return JSON in this exact format:
       }
     );
   }
-});
+}));
 

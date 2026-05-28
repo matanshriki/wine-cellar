@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { withSentry, setSentryWineContext } from '../_shared/sentry.ts'
 import {
   type BarrelAgingMetadata,
   type ServingGuidance,
@@ -77,7 +78,7 @@ function mapReadinessScore(label: string): number {
   }
 }
 
-serve(async (req) => {
+serve(withSentry('analyze-wine', async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -164,6 +165,16 @@ serve(async (req) => {
     const wineData = wine_data as WineData
     const language = wineData.language || 'en'
     const analysisLangKey = normalizeAnalysisDataLang(language)
+
+    // Set safe Sentry context after auth + ownership are verified
+    setSentryWineContext({
+      user_id: user.id,
+      bottle_id,
+      wine_id: resolvedWineId ?? undefined,
+      language,
+      operation: 'analyze_wine',
+      provider: 'openai',
+    })
 
     // ── Enrich wine data from DB ───────────────────────────────────────────────
     // Load additional fields (wine_profile, regional_wine_style, rating, vivino_wine_id)
@@ -397,4 +408,4 @@ serve(async (req) => {
       }
     )
   }
-})
+}))

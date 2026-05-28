@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Component, lazy, Suspense, type ReactNode, type ErrorInfo } from 'react';
+import * as Sentry from '@sentry/react';
+import { captureAppError } from './lib/monitoring';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAnalyticsUser } from './hooks/useAnalyticsUser';
@@ -48,6 +50,9 @@ function PageLoader() {
     </div>
   );
 }
+
+// Wrap Routes for Sentry React Router v6 navigation breadcrumbs
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +120,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
+    captureAppError(error, {
+      componentStack: info.componentStack?.slice(0, 1000) ?? undefined,
+      boundary: 'AppErrorBoundary',
+    });
   }
 
   handleReset = () => {
@@ -275,7 +284,7 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
       <ScrollToTop />
       <CookieConsent />
-      <Routes>
+      <SentryRoutes>
       <Route
         path="/login"
         element={user ? <Navigate to="/cellar" replace /> : <LoginPage />}
@@ -441,7 +450,7 @@ function AppRoutes() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </SentryRoutes>
     </Suspense>
   );
 }

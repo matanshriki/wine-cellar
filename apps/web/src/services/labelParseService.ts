@@ -9,6 +9,7 @@ import {
   InsufficientCreditsError,
   isInsufficientCreditsError,
 } from '../lib/insufficientCredits';
+import { addMonitoringBreadcrumb, captureAppError } from '../lib/monitoring';
 
 export interface ParsedWineField<T> {
   value: T;
@@ -62,6 +63,8 @@ export async function parseLabelImage(
 
     if (!session) throw new Error('Authentication required. Please log out and log in again.');
 
+    addMonitoringBreadcrumb('scan.started', 'ai', { provider: 'openai' });
+
     const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-label-image`;
 
     const response = await fetch(functionUrl, {
@@ -102,6 +105,11 @@ export async function parseLabelImage(
     if (isInsufficientCreditsError(error)) {
       throw error;
     }
+    addMonitoringBreadcrumb('scan.failed', 'ai', {
+      error: (error?.message ?? String(error)).slice(0, 200),
+      provider: 'openai',
+    });
+    captureAppError(error, { flow: 'parseLabelImage' });
     console.error('[LabelParseService] Error:', error.message);
     return {
       success: false,

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -60,8 +61,42 @@ function injectServiceWorkerPrecache() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), injectServiceWorkerPrecache()],
+// Only upload source maps when SENTRY_AUTH_TOKEN is present (CI / Vercel builds)
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+const sentryOrg = process.env.SENTRY_ORG;
+const sentryProject = process.env.SENTRY_PROJECT;
+const sentryPluginEnabled = !!(sentryAuthToken && sentryOrg && sentryProject);
+
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+
+  const plugins = [
+    react(),
+    injectServiceWorkerPrecache(),
+    // Upload source maps to Sentry after production builds only
+    ...(sentryPluginEnabled && isProduction
+      ? [
+          sentryVitePlugin({
+            org: sentryOrg,
+            project: sentryProject,
+            authToken: sentryAuthToken,
+            sourcemaps: {
+              // Delete local source map files after upload so they are not
+              // shipped to users or included in the Vercel deployment.
+              filesToDeleteAfterUpload: ['./dist/**/*.map'],
+            },
+            telemetry: false,
+          }),
+        ]
+      : []),
+  ];
+
+  return {
+  plugins,
+  build: {
+    // Generate source maps for production builds (uploaded to Sentry, then deleted)
+    sourcemap: isProduction && sentryPluginEnabled ? true : false,
+  },
   resolve: {
     alias: {
       '@wine/wine-enrichment': path.resolve(
@@ -79,5 +114,6 @@ export default defineConfig({
       },
     },
   },
+  };
 });
 

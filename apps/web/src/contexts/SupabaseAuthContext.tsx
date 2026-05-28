@@ -21,6 +21,7 @@ import {
 import { safeRemoveItem } from '../utils/safeLocalStorage';
 import { trackEvent } from '../lib/analytics/trackEvent';
 import { getStoredAttribution } from '../services/aiAttribution';
+import { setMonitoringUser, clearMonitoringUser } from '../lib/monitoring';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -121,8 +122,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Set loading false BEFORE profile load
-      
+
       if (session?.user) {
+        setMonitoringUser({ id: session.user.id });
+
         // Check if session has timed out (client-side enforcement)
         const timeoutCheck = checkSessionTimeout();
         if (timeoutCheck.expired) {
@@ -198,12 +201,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
-      
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Set loading false BEFORE profile load
-      
+
       if (session?.user) {
+        setMonitoringUser({ id: session.user.id });
+
         // Mark session as active on any auth change
         markSessionActive();
         
@@ -238,6 +243,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           }
         }
       } else {
+        clearMonitoringUser();
+
         // Clear session markers on sign out
         if (event === 'SIGNED_OUT') {
           clearSessionMarkers();

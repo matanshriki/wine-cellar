@@ -17,6 +17,7 @@
   "dependencies": {
     "@google-analytics/data": "^6.0.0",
     "@prisma/client": "^5.8.0",
+    "@sentry/node": "^10.53.1",
     "@supabase/supabase-js": "^2.90.1",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",

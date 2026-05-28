@@ -17,6 +17,7 @@ import {
   throwIfInsufficientCreditsFromFunctionsInvokeError,
   throwIfInsufficientCreditsInDataPayload,
 } from '../lib/insufficientCredits';
+import { addMonitoringBreadcrumb, captureAppError } from '../lib/monitoring';
 import type { BottleWithWineInfo } from './bottleService';
 import * as drinkWindowService from './drinkWindowService';
 import {
@@ -405,6 +406,13 @@ export async function generateAIAnalysis(
 
   // Try AI analysis first
   try {
+    addMonitoringBreadcrumb('wine.analysis_started', 'ai', {
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id ?? undefined,
+      language: langNorm,
+      provider: 'openai',
+    });
+
     const wineData = {
       wine_name: bottle.wine.wine_name,
       producer: bottle.wine.producer,
@@ -487,6 +495,14 @@ export async function generateAIAnalysis(
       }
     }
 
+    addMonitoringBreadcrumb('wine.analysis_completed', 'ai', {
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id ?? undefined,
+      language: langNorm,
+      readiness_label: analysis.readiness_label,
+      provider: 'openai',
+    });
+
     return {
       ...analysis,
       analyzed_at: new Date().toISOString(),
@@ -495,6 +511,15 @@ export async function generateAIAnalysis(
     if (isInsufficientCreditsError(error)) {
       throw error;
     }
+    const errMsg = error instanceof Error ? error.message : String(error);
+    addMonitoringBreadcrumb('wine.analysis_failed', 'ai', {
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id ?? undefined,
+      language: langNorm,
+      error: errMsg.slice(0, 200),
+      provider: 'openai',
+    });
+    captureAppError(error, { bottle_id: bottle.id, language: langNorm, flow: 'generateAIAnalysis' });
     console.warn('AI analysis failed, using deterministic fallback:', error);
 
     // Fallback to deterministic analysis with language support

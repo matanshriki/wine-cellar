@@ -17,6 +17,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders } from "../_shared/cors.ts";
+import { withSentry, setSentryWineContext } from "../_shared/sentry.ts";
 
 const SUPABASE_URL        = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -27,7 +28,7 @@ const VIVINO_IMAGE_PREFIX = "vivino";
 // Delay between Vivino scrape calls to avoid rate-limiting
 const SCRAPE_DELAY_MS = 2000;
 
-Deno.serve(async (req) => {
+Deno.serve(withSentry("batch-enrich-images", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -68,6 +69,7 @@ Deno.serve(async (req) => {
     const offset    = Math.max(0, parseInt(body.offset    ?? "0",  10) || 0);
     const batchSize = Math.min(15, Math.max(1, parseInt(body.batchSize ?? "10", 10) || 10));
 
+    setSentryWineContext({ user_id: user.id, operation: 'batch_enrich_images' });
     console.log(`[BatchEnrichImages] offset=${offset} batchSize=${batchSize}`);
 
     // ── Fetch wines that need images ──────────────────────────────────────────
@@ -246,4 +248,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

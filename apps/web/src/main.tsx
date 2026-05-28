@@ -1,12 +1,17 @@
 /**
  * Application Entry Point
- * 
+ *
  * Initializes:
+ * - Sentry error monitoring (must be first, before any other code)
  * - i18n (internationalization) with language detection and RTL support
  * - React app with strict mode for better development experience
  * - Service Worker for PWA support and session persistence
  * - Global styles
  */
+
+// Sentry must be initialized before any React code to capture early errors
+import { initSentry } from './lib/sentry';
+initSentry();
 
 // App version for deployment verification
 const APP_VERSION = '2.1.0-smart-scan-unified';

@@ -18,6 +18,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 import { type AuthRequest, authenticateSupabase } from '../middleware/auth.js';
 import { sendMetaCapiEvent, valueCurrencyFromPaddlePayload } from '../lib/metaConversionsApi.js';
+import { Sentry, isSentryInitialized } from '../lib/sentry.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = SupabaseClient<any, any, any>;
@@ -234,6 +235,15 @@ billingRouter.post(
 
       console.log(`[Paddle Webhook] ${eventType} (${eventId})`);
 
+      if (isSentryInitialized()) {
+        Sentry.addBreadcrumb({
+          message: 'billing.webhook_received',
+          category: 'billing',
+          data: { event_type: eventType, event_id: eventId },
+          level: 'info',
+        });
+      }
+
       const supabase = getServiceClient();
       if (!supabase) {
         console.error('[Paddle Webhook] Service client unavailable — missing service role key');
@@ -268,6 +278,13 @@ billingRouter.post(
         console.log(`[Paddle Webhook] handlePaddleEvent completed for ${eventType}`);
       } catch (err: any) {
         console.error(`[Paddle Webhook] Handler error for ${eventType}:`, err.message);
+        if (isSentryInitialized()) {
+          Sentry.withScope((scope) => {
+            scope.setTag('event_type', eventType);
+            scope.setTag('event_id', eventId);
+            Sentry.captureException(err);
+          });
+        }
         // Still store the event for debugging; return 200 so Paddle doesn't retry
       }
 

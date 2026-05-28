@@ -2,6 +2,12 @@ import OpenAI from 'openai';
 import { config } from '../config.js';
 import { Bottle, BottleAnalysis } from '@prisma/client';
 import { parseJsonFromModelContent } from '../utils/safeJson.js';
+import { Sentry, isSentryInitialized } from '../lib/sentry.js';
+
+function addAiBreadcrumb(message: string, data?: Record<string, unknown>) {
+  if (!isSentryInitialized()) return;
+  Sentry.addBreadcrumb({ message, category: 'ai', data, level: 'info' });
+}
 
 const openai = config.openaiApiKey
   ? new OpenAI({ apiKey: config.openaiApiKey })
@@ -70,6 +76,8 @@ Provide a JSON response with:
 
 Respond ONLY with valid JSON.`;
 
+    addAiBreadcrumb('ai.analysis_started', { provider: 'openai', model: config.openaiModel });
+
     const response = await openai.chat.completions.create({
       model: config.openaiModel,
       messages: [
@@ -110,6 +118,7 @@ Respond ONLY with valid JSON.`;
     const optNum = (v: unknown): number | undefined =>
       typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 
+    addAiBreadcrumb('ai.analysis_completed', { provider: 'openai', model: config.openaiModel });
     return {
       readinessStatus,
       drinkFromYear: optNum(parsed.drinkFromYear),
@@ -123,6 +132,11 @@ Respond ONLY with valid JSON.`;
       aiGenerated: true,
     };
   } catch (error) {
+    addAiBreadcrumb('ai.analysis_failed', {
+      provider: 'openai',
+      model: config.openaiModel,
+      error: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200),
+    });
     console.error('AI analysis failed, using fallback:', error);
     return fallbackAnalysis(bottle);
   }

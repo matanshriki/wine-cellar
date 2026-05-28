@@ -58,6 +58,7 @@ import { useFeatureFlag } from '../contexts/FeatureFlagsContext'; // Feature fla
 // Onboarding v1 – production: Onboarding utilities and demo data
 import * as onboardingUtils from '../utils/onboarding';
 import { DEMO_BOTTLES } from '../data/demoCellar';
+import { addMonitoringBreadcrumb } from '../lib/monitoring';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
@@ -299,6 +300,7 @@ export function CellarPage() {
   });
 
   useEffect(() => {
+    addMonitoringBreadcrumb('cellar.loaded', 'navigation');
     loadBottles(true); // Initial load with reset=true
     
     // Clear any stale form drafts on mount (prevent crashes from old data)

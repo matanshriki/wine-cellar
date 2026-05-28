@@ -11,6 +11,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { withSentry, setSentryWineContext } from '../_shared/sentry.ts';
 import {
   buildWineAnalysisSystemPrompt,
   buildWineAnalysisUserPrompt,
@@ -68,7 +69,7 @@ function corsResponse(body: any, status = 200) {
   );
 }
 
-serve(async (req) => {
+serve(withSentry('analyze-cellar', async (req) => {
   // CORS headers
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -104,6 +105,7 @@ serve(async (req) => {
     }
 
     console.log('[Analyze Cellar] User authenticated:', user.id);
+    setSentryWineContext({ user_id: user.id, operation: 'analyze_cellar', provider: 'openai' });
 
     // ── Credit pre-flight check ──────────────────────────────────────────────
     // cellar_analysis = 10 credits per bulk operation call.
@@ -276,7 +278,7 @@ serve(async (req) => {
       error: error.message || 'Internal server error' 
     }, 500);
   }
-});
+}));
 
 /**
  * Analyze a single bottle

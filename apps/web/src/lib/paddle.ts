@@ -14,6 +14,7 @@ import {
   trackInitiateCheckout,
   trackPurchase,
 } from './metaPixel';
+import { addMonitoringBreadcrumb } from './monitoring';
 
 const CLIENT_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
 const DEFAULT_ENVIRONMENT = (import.meta.env.VITE_PADDLE_ENVIRONMENT ?? 'production') as
@@ -79,6 +80,12 @@ export async function openCheckout(
     onClose?: () => void;
   },
 ): Promise<void> {
+  addMonitoringBreadcrumb('checkout.started', 'billing', {
+    plan: params.plan ?? undefined,
+    period: params.period ?? undefined,
+    // topup intentionally omitted — treat as payment detail
+  });
+
   const metaEventId = generateMetaEventId();
 
   const search = new URLSearchParams(

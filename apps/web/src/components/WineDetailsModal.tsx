@@ -18,6 +18,7 @@ import { SommelierNotes } from './SommelierNotes';
 import { KeepBadge } from './KeepBadge';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
+import { addMonitoringBreadcrumb } from '../lib/monitoring';
 import { getCurrencyCode, convertCurrency, formatCurrency } from '../utils/currency';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import type { AIAnalysis } from '../services/aiAnalysisService';
@@ -456,6 +457,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
   // Load taste profile once when the modal opens (cached after first load)
   useEffect(() => {
     if (!isOpen || !bottle) return;
+    addMonitoringBreadcrumb('bottle.modal_opened', 'ui', {
+      bottle_id: bottle.id,
+      wine_id: bottle.wine_id ?? undefined,
+    });
     tasteProfileService.getMyTasteProfile().then(setTasteProfile).catch(() => null);
   }, [isOpen]);
 

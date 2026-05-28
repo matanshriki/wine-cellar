@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, ArrowRight, Zap } from 'lucide-react';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { trackEvent } from '../services/analytics';
+import { addMonitoringBreadcrumb } from '../lib/monitoring';
 
 // ── Wine glass SVG (inline, no extra dep) ────────────────────────────────────
 
@@ -106,6 +107,7 @@ export function NoCreditsModal({
   useEffect(() => {
     if (!visible) return;
     trackEvent('no_credits_modal_opened', { context, plan_key: planKey });
+    addMonitoringBreadcrumb('credits.modal_opened', 'ui', { context });
   }, [visible, context, planKey]);
 
   // Keyboard close

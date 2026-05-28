@@ -1,3 +1,7 @@
+// Sentry must be initialized first, before any other imports
+import { initSentry, Sentry, setupSentryExpressErrorHandler } from './lib/sentry.js';
+initSentry();
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -107,8 +111,12 @@ if (!ga4PropId || ga4Method === 'none' || ga4PropIdWrong) {
   console.log(`[Analytics] GA4 configured: property=${ga4PropId} auth=${ga4Method}`);
 }
 
-// Error handling
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Sentry error handler — must be registered after all routes, before custom error handlers.
+// In @sentry/node v8 this uses setupExpressErrorHandler(app) under the hood.
+setupSentryExpressErrorHandler(app);
+
+// Final JSON error response (after Sentry has captured the error)
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
@@ -125,10 +133,12 @@ process.on('unhandledRejection', (reason: unknown) => {
     return;
   }
   console.error('[FATAL] Unhandled promise rejection:', reason);
+  Sentry.captureException(reason instanceof Error ? reason : new Error(msg));
   process.exit(1);
 });
 process.on('uncaughtException', (err: Error) => {
   console.error('[FATAL] Uncaught exception:', err);
+  Sentry.captureException(err);
   process.exit(1);
 });
 

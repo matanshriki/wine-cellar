@@ -130,6 +130,10 @@ i18n
  * @param saveToDatabase - Whether to save to database (default: true)
  */
 export const changeLanguage = async (languageCode: LanguageCode, saveToDatabase: boolean = true) => {
+  // Lazy import to avoid circular dependency (monitoring → sentry → i18n)
+  const { addMonitoringBreadcrumb } = await import('../lib/monitoring');
+  addMonitoringBreadcrumb('i18n.language_changed', 'user', { language: languageCode });
+
   // Change i18n language (also saves to localStorage)
   await i18n.changeLanguage(languageCode);
   
