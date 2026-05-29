@@ -120,10 +120,14 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
-    captureAppError(error, {
-      componentStack: info.componentStack?.slice(0, 1000) ?? undefined,
-      boundary: 'AppErrorBoundary',
-    });
+    // Chunk load errors are expected after deploys and self-heal via auto-reload.
+    // Don't flood Sentry with known-handled noise.
+    if (!isChunkLoadError(error)) {
+      captureAppError(error, {
+        componentStack: info.componentStack?.slice(0, 1000) ?? undefined,
+        boundary: 'AppErrorBoundary',
+      });
+    }
   }
 
   handleReset = () => {
