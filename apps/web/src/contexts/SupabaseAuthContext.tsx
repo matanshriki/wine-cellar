@@ -22,6 +22,7 @@ import { safeRemoveItem } from '../utils/safeLocalStorage';
 import { trackEvent } from '../lib/analytics/trackEvent';
 import { getStoredAttribution } from '../services/aiAttribution';
 import { setMonitoringUser, clearMonitoringUser } from '../lib/monitoring';
+import { isAbortError } from '../utils/connectivityErrors';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -200,6 +201,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      try {
       console.log('Auth state changed:', event);
 
       setSession(session);
@@ -260,6 +262,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         if (timeoutCheckInterval) {
           clearInterval(timeoutCheckInterval);
           timeoutCheckInterval = null;
+        }
+      }
+      } catch (err) {
+        if (!isAbortError(err)) {
+          console.warn('[Auth] onAuthStateChange handler error (non-fatal):', err);
         }
       }
     });

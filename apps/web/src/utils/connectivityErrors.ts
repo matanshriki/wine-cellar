@@ -1,4 +1,28 @@
 /**
+ * Returns true when a fetch or async operation was intentionally aborted
+ * (navigation away, component unmount, iOS Safari tab backgrounding, etc.).
+ * These are benign and should not be reported to Sentry or shown to users.
+ */
+export function isAbortError(error: unknown): boolean {
+  if (error == null) return false;
+
+  if (typeof DOMException !== 'undefined' && error instanceof DOMException) {
+    return error.name === 'AbortError' || error.code === 20;
+  }
+
+  if (error instanceof Error) {
+    if (error.name === 'AbortError') return true;
+    if (/operation was aborted/i.test(error.message)) return true;
+  }
+
+  if (typeof error === 'object' && error !== null && 'name' in error) {
+    return (error as { name?: string }).name === 'AbortError';
+  }
+
+  return false;
+}
+
+/**
  * Detects errors that usually mean the device has no usable network path
  * (offline, airplane mode, ERR_INTERNET_DISCONNECTED, etc.).
  *

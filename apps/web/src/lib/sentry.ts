@@ -16,6 +16,8 @@
  */
 
 import * as Sentry from '@sentry/react';
+import type { ErrorEvent } from '@sentry/react';
+import { isAbortError } from '../utils/connectivityErrors';
 import { scrubEvent, scrubBreadcrumb } from './sentryPrivacy';
 
 const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
@@ -24,6 +26,25 @@ const release = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'unk
 const isProduction = environment === 'production';
 
 let _initialized = false;
+
+/** Benign browser aborts (iOS Safari backgrounding, SPA navigation, etc.) */
+function isAbortSentryEvent(event: ErrorEvent): boolean {
+  const exceptions = event.exception ?? [];
+  for (const ex of exceptions) {
+    if (ex.type === 'AbortError') return true;
+    if (ex.value && /operation was aborted/i.test(ex.value)) return true;
+  }
+  return false;
+}
+
+function registerAbortRejectionHandler(): void {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('unhandledrejection', (event) => {
+    if (isAbortError(event.reason)) {
+      event.preventDefault();
+    }
+  });
+}
 
 export function initSentry(): void {
   if (!dsn) return;
@@ -50,8 +71,18 @@ export function initSentry(): void {
       }),
     ],
 
+    // Expected noise: aborted fetches when users navigate away or iOS backgrounds the tab
+    ignoreErrors: [
+      'AbortError',
+      /^AbortError:/,
+      /The operation was aborted/i,
+    ],
+
     // Privacy scrubber — runs before every event is sent
     beforeSend(event) {
+      if (isAbortSentryEvent(event) || isAbortError(event.originalException)) {
+        return null;
+      }
       return scrubEvent(event);
     },
 
@@ -65,6 +96,7 @@ export function initSentry(): void {
     enabled: !!dsn,
   });
 
+  registerAbortRejectionHandler();
   _initialized = true;
 }
 

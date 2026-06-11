@@ -61,7 +61,7 @@ import { DEMO_BOTTLES } from '../data/demoCellar';
 import { addMonitoringBreadcrumb } from '../lib/monitoring';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
+import { isAbortError, isConnectivityFetchFailure } from '../utils/connectivityErrors';
 
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
@@ -329,6 +329,7 @@ export function CellarPage() {
 
     // Listen for smart scan completion from global AddBottleSheet (mobile FAB)
     const handleSmartScanComplete = async (e: CustomEvent) => {
+      try {
       const { mode, imageUrl, imagePath, imageBucket, singleBottle, multipleBottles, detectedCount } = e.detail;
       
       if (mode === 'single') {
@@ -382,6 +383,10 @@ export function CellarPage() {
         // Unknown/fallback - open form
         setEditingBottle(null);
         setShowForm(true);
+      }
+      } catch (error) {
+        if (isAbortError(error)) return;
+        console.error('[CellarPage] Smart scan complete handler error:', error);
       }
     };
 
@@ -607,6 +612,7 @@ export function CellarPage() {
 
       setHasMore(data.length === PAGE_SIZE);
     } catch (error: any) {
+      if (isAbortError(error)) return;
       console.error('[CellarPage] Error loading bottles:', error);
       const msg = String(error?.message || '');
       const isAuthFailure =
