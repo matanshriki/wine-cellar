@@ -10,6 +10,24 @@
  *   - webhook uses Paddle HMAC-SHA256 signature verification; never uses an auth token.
  *   - Service-role Supabase client is used for all DB mutations (bypasses RLS).
  *   - Price IDs are resolved server-side only; the browser never decides which price to charge.
+ *
+ * Credit renewal flow:
+ *   - subscription.renewed  — canonical renewal event; resets credit_balance to plan allowance.
+ *   - transaction.completed (origin: subscription_recurring) — safety-net fallback.
+ *   - bonus_credits (top-up purchases) are never touched by renewal events.
+ *
+ * Idempotency:
+ *   - Every event is recorded in paddle_events with a UNIQUE constraint on event_id.
+ *   - processed_successfully = TRUE → event fully handled; future duplicates are skipped.
+ *   - processed_successfully = FALSE → event received but userId unresolvable; retries allowed.
+ *
+ * userId resolution (fixes the renewal bug):
+ *   1. Try event.data.custom_data.userId  (present on initial checkout events)
+ *   2. Fall back to DB lookup by paddle_subscription_id → user_ai_credits.user_id
+ *      (works for recurring renewals where Paddle does not resend custom_data)
+ *   3. Fall back to DB lookup by paddle_customer_id → user_ai_credits.user_id
+ *   4. If all three fail, record the event as processed_successfully = FALSE and
+ *      log an error so the repair script can backfill.
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -30,12 +48,12 @@ const META_EVENT_ID_RE =
 
 // ── Paddle price ID → plan metadata map ──────────────────────────────────────
 
-interface PlanMeta {
+export interface PlanMeta {
   planKey: string;
   monthlyCredits: number;
 }
 
-function getPlanMeta(priceId: string): PlanMeta | null {
+export function getPlanMeta(priceId: string): PlanMeta | null {
   if (!priceId) return null;
   const entries: Array<[string, PlanMeta]> = [
     [config.paddlePricePremiumMonthly,   { planKey: 'premium',   monthlyCredits: 150 }],
@@ -51,7 +69,7 @@ interface TopUpMeta {
   bonusCredits: number;
 }
 
-function getTopUpMeta(priceId: string): TopUpMeta | null {
+export function getTopUpMeta(priceId: string): TopUpMeta | null {
   const map: Record<string, TopUpMeta> = {
     [config.paddlePriceTopup50]:  { bonusCredits: 50  },
     [config.paddlePriceTopup150]: { bonusCredits: 150 },
@@ -123,6 +141,95 @@ function verifyPaddleSignature(
   } catch {
     return false;
   }
+}
+
+// ── userId resolution ─────────────────────────────────────────────────────────
+
+/**
+ * Looks up the internal user_id for a Paddle subscription or customer.
+ *
+ * This is the fallback for recurring renewal events where Paddle does not
+ * include the original checkout custom_data (userId) in the event payload.
+ * The mapping was stored during subscription.created / subscription.activated.
+ *
+ * Exported for unit testing.
+ */
+export async function lookupUserByPaddleIds(
+  supabase: AnySupabase,
+  paddleSubscriptionId: string | null | undefined,
+  paddleCustomerId: string | null | undefined,
+): Promise<string | null> {
+  if (paddleSubscriptionId) {
+    const { data, error } = await supabase
+      .from('user_ai_credits')
+      .select('user_id')
+      .eq('paddle_subscription_id', paddleSubscriptionId)
+      .maybeSingle();
+    if (error) {
+      console.error('[Paddle] DB lookup by subscription_id failed:', error.message);
+    } else if (data?.user_id) {
+      return data.user_id as string;
+    }
+  }
+
+  if (paddleCustomerId) {
+    const { data, error } = await supabase
+      .from('user_ai_credits')
+      .select('user_id')
+      .eq('paddle_customer_id', paddleCustomerId)
+      .maybeSingle();
+    if (error) {
+      console.error('[Paddle] DB lookup by customer_id failed:', error.message);
+    } else if (data?.user_id) {
+      return data.user_id as string;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolves the Supabase user_id for a Paddle event.
+ *
+ * Priority:
+ *   1. custom_data.userId  (present when the checkout set it directly)
+ *   2. DB lookup by paddle_subscription_id  (works for recurring renewals)
+ *   3. DB lookup by paddle_customer_id  (last resort)
+ *
+ * Returns null only when the subscription was never provisioned in our
+ * system (genuine orphan event or unrelated test event).
+ */
+async function resolveEventUserId(
+  supabase: AnySupabase,
+  eventType: string,
+  data: Record<string, unknown>,
+): Promise<{ userId: string | null; resolvedVia: 'custom_data' | 'db_subscription' | 'db_customer' | 'none' }> {
+  // 1. Try custom_data first (cheapest path; present on initial checkout events)
+  const customData = paddleCustomData(data);
+  const customDataUserId = customData['userId'] ?? null;
+  if (customDataUserId) {
+    return { userId: customDataUserId, resolvedVia: 'custom_data' };
+  }
+
+  // 2. Extract Paddle IDs from the event for DB lookup.
+  //    subscription events: data.id is the subscription ID
+  //    transaction events:  data.subscription_id is the subscription ID
+  const isSubscriptionEvent = eventType.startsWith('subscription.');
+  const paddleSubId = isSubscriptionEvent
+    ? (data?.id as string | null | undefined)
+    : (data?.subscription_id as string | null | undefined);
+  const paddleCustId = data?.customer_id as string | null | undefined;
+
+  // 3. DB fallback (handles recurring renewals with no custom_data)
+  if (paddleSubId || paddleCustId) {
+    const userId = await lookupUserByPaddleIds(supabase, paddleSubId, paddleCustId);
+    if (userId) {
+      const via = paddleSubId ? 'db_subscription' : 'db_customer';
+      return { userId, resolvedVia: via as 'db_subscription' | 'db_customer' };
+    }
+  }
+
+  return { userId: null, resolvedVia: 'none' };
 }
 
 // ── 1. GET /api/billing/checkout-config ──────────────────────────────────────
@@ -233,7 +340,7 @@ billingRouter.post(
       const eventId: string = event.event_id;
       const eventType: string = event.event_type;
 
-      console.log(`[Paddle Webhook] ${eventType} (${eventId})`);
+      console.log(`[Paddle Webhook] Received event_type=${eventType} event_id=${eventId}`);
 
       if (isSentryInitialized()) {
         Sentry.addBreadcrumb({
@@ -250,34 +357,55 @@ billingRouter.post(
         return res.status(500).json({ error: 'Service unavailable' });
       }
 
-      // 2. Idempotency check — skip if already processed
+      // 2. Idempotency check — skip only if the event was previously handled successfully.
+      //    Events with processed_successfully = FALSE are allowed to be re-processed
+      //    (they were recorded but no credits were granted due to unresolvable userId).
       const { data: existing, error: idempotencyErr } = await supabase
         .from('paddle_events')
-        .select('id')
+        .select('id, processed_successfully')
         .eq('event_id', eventId)
         .maybeSingle();
 
       if (idempotencyErr) {
-        // Table may not exist yet — log and continue (don't abort; still grant credits)
+        // Table may not exist yet — log and continue
         console.error('[Paddle Webhook] paddle_events table error (migration may be missing):', idempotencyErr.message);
       }
 
-      if (existing) {
-        console.log(`[Paddle Webhook] Already processed ${eventId} — skipping`);
-        return res.json({ ok: true, duplicate: true });
+      if (existing?.processed_successfully === true) {
+        console.log(`[Paddle Webhook] event_id=${eventId} already successfully processed — skipping (duplicate)`);
+        return res.json({ ok: true, duplicate: true, processed_successfully: true });
       }
 
-      // 3. Resolve user_id from custom_data
-      const customData: Record<string, string> = event.data?.custom_data ?? {};
-      const userId: string | null = customData['userId'] ?? null;
-      console.log(`[Paddle Webhook] userId from custom_data: ${userId ?? 'NULL — credits cannot be granted!'}`);
+      // 3. Resolve userId: try custom_data first, fall back to DB lookup.
+      //    This fixes the recurring renewal bug where Paddle does not resend
+      //    custom_data in subscription.renewed events.
+      const { userId, resolvedVia } = await resolveEventUserId(supabase, eventType, event.data ?? {});
+
+      if (userId) {
+        if (resolvedVia !== 'custom_data') {
+          console.log(
+            `[Paddle Webhook] event_id=${eventId} event_type=${eventType}: ` +
+            `userId=${userId} resolved via ${resolvedVia} (custom_data was absent)`,
+          );
+        } else {
+          console.log(`[Paddle Webhook] event_id=${eventId} event_type=${eventType}: userId=${userId} (from custom_data)`);
+        }
+      } else {
+        console.warn(
+          `[Paddle Webhook] event_id=${eventId} event_type=${eventType}: ` +
+          `userId could not be resolved from custom_data or DB — credits cannot be granted`,
+        );
+      }
 
       // 4. Process event
+      let processedSuccessfully = false;
       try {
-        await handlePaddleEvent(supabase, eventType, event.data, userId);
-        console.log(`[Paddle Webhook] handlePaddleEvent completed for ${eventType}`);
+        processedSuccessfully = await handlePaddleEvent(supabase, eventType, eventId, event.data, userId);
+        if (processedSuccessfully) {
+          console.log(`[Paddle Webhook] event_id=${eventId} event_type=${eventType}: handler completed successfully`);
+        }
       } catch (err: any) {
-        console.error(`[Paddle Webhook] Handler error for ${eventType}:`, err.message);
+        console.error(`[Paddle Webhook] Handler error for event_type=${eventType} event_id=${eventId}:`, err.message);
         if (isSentryInitialized()) {
           Sentry.withScope((scope) => {
             scope.setTag('event_type', eventType);
@@ -285,21 +413,39 @@ billingRouter.post(
             Sentry.captureException(err);
           });
         }
-        // Still store the event for debugging; return 200 so Paddle doesn't retry
+        // Still record the event for debugging; return 200 so Paddle doesn't retry
       }
 
       // 5. Persist event for audit + idempotency
-      const { error: insertErr } = await supabase.from('paddle_events').insert({
-        event_id:  eventId,
-        event_type: eventType,
-        user_id:   userId ?? null,
-        payload:   event,
-      });
-      if (insertErr) {
-        console.error('[Paddle Webhook] Failed to persist event (paddle_events table may be missing):', insertErr.message);
+      //    If the event already exists (processed_successfully = FALSE from a prior attempt),
+      //    update it in-place. Otherwise insert a new row.
+      if (existing) {
+        // Re-processing attempt: update the existing row
+        const { error: updateErr } = await supabase
+          .from('paddle_events')
+          .update({
+            user_id: userId ?? null,
+            processed_successfully: processedSuccessfully,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('event_id', eventId);
+        if (updateErr) {
+          console.error('[Paddle Webhook] Failed to update paddle_events:', updateErr.message);
+        }
+      } else {
+        const { error: insertErr } = await supabase.from('paddle_events').insert({
+          event_id:               eventId,
+          event_type:             eventType,
+          user_id:                userId ?? null,
+          payload:                event,
+          processed_successfully: processedSuccessfully,
+        });
+        if (insertErr) {
+          console.error('[Paddle Webhook] Failed to insert into paddle_events:', insertErr.message);
+        }
       }
 
-      return res.json({ ok: true });
+      return res.json({ ok: true, processed_successfully: processedSuccessfully });
     } catch (err: any) {
       console.error('[Paddle Webhook] Unhandled error:', err);
       return res.status(500).json({ error: 'Internal server error' });
@@ -394,12 +540,27 @@ function paddleCustomData(data: unknown): Record<string, string> {
 
 // ── Event handler ─────────────────────────────────────────────────────────────
 
-async function handlePaddleEvent(
+/**
+ * Dispatches a verified Paddle event to the appropriate credit-granting logic.
+ *
+ * Returns TRUE when the event resulted in a meaningful action (credits granted,
+ * subscription state updated), FALSE when the event was intentionally ignored
+ * (unknown price, non-subscription transaction origin, etc.).
+ *
+ * For subscription renewal events (subscription.renewed, transaction.completed
+ * with origin subscription_recurring), credit_balance is SET to the plan's
+ * monthly allowance — unused credits from the previous cycle are discarded.
+ * bonus_credits (purchased top-ups) are never affected by renewal events.
+ *
+ * Exported for unit testing.
+ */
+export async function handlePaddleEvent(
   supabase: AnySupabase,
   eventType: string,
+  eventId: string,
   data: any,
   userId: string | null,
-) {
+): Promise<boolean> {
   const customData = paddleCustomData(data);
 
   switch (eventType) {
@@ -407,8 +568,8 @@ async function handlePaddleEvent(
     case 'subscription.created':
     case 'subscription.activated': {
       if (!userId) {
-        console.warn(`[Paddle] ${eventType}: no userId in custom_data — cannot provision`);
-        return;
+        console.warn(`[Paddle] ${eventType} event_id=${eventId}: userId unresolvable — cannot provision`);
+        return false;
       }
       const priceId         = data?.items?.[0]?.price?.id;
       const subscriptionId  = data?.id;
@@ -418,11 +579,15 @@ async function handlePaddleEvent(
 
       const plan = getPlanMeta(priceId);
       if (!plan) {
-        console.warn(`[Paddle] ${eventType}: unknown price ${priceId}`);
-        return;
+        console.warn(`[Paddle] ${eventType} event_id=${eventId}: unknown price_id=${priceId}`);
+        return false;
       }
 
-      console.log(`[Paddle] Provisioning ${plan.planKey} for user ${userId}`);
+      console.log(
+        `[Paddle] ${eventType} event_id=${eventId} subscription_id=${subscriptionId} ` +
+        `user_id=${userId} plan=${plan.planKey} allowance=${plan.monthlyCredits}`,
+      );
+
       await supabase.rpc('paddle_grant_credits', {
         p_user_id:                userId,
         p_plan_key:               plan.planKey,
@@ -434,16 +599,24 @@ async function handlePaddleEvent(
         p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: subscriptionId,
       });
+
+      console.log(
+        `[Paddle] ${eventType} event_id=${eventId} user_id=${userId}: ` +
+        `credit_balance SET to ${plan.monthlyCredits} (new subscription)`,
+      );
+
       await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
-      break;
+      return true;
     }
 
-    // ── Subscription renewed (Paddle v2: fires on every successful recurring charge) ──
-    // This is the canonical renewal event. Always grant fresh credits here.
+    // ── Subscription renewed ─────────────────────────────────────────────────
+    // This is the canonical monthly renewal event in Paddle Billing v2.
+    // credit_balance is RESET (SET) to the plan allowance — not added.
+    // bonus_credits (purchased top-ups) are untouched.
     case 'subscription.renewed': {
       if (!userId) {
-        console.warn('[Paddle] subscription.renewed: no userId in custom_data — cannot provision');
-        return;
+        console.warn(`[Paddle] subscription.renewed event_id=${eventId}: userId unresolvable — cannot reset credits`);
+        return false;
       }
       const priceId        = data?.items?.[0]?.price?.id;
       const subscriptionId = data?.id;
@@ -453,12 +626,26 @@ async function handlePaddleEvent(
 
       const plan = getPlanMeta(priceId);
       if (!plan) {
-        console.warn(`[Paddle] subscription.renewed: unknown price ${priceId}`);
-        return;
+        console.warn(`[Paddle] subscription.renewed event_id=${eventId}: unknown price_id=${priceId}`);
+        return false;
       }
 
-      console.log(`[Paddle] Renewal — granting ${plan.monthlyCredits} credits (${plan.planKey}) to user ${userId}`);
-      await supabase.rpc('paddle_grant_credits', {
+      // Fetch current balance before reset for structured logging
+      const { data: prevRow } = await supabase
+        .from('user_ai_credits')
+        .select('credit_balance, bonus_credits, monthly_limit')
+        .eq('user_id', userId)
+        .maybeSingle();
+      const prevBalance    = prevRow?.credit_balance ?? null;
+      const bonusCredits   = prevRow?.bonus_credits ?? 0;
+
+      console.log(
+        `[Paddle] subscription.renewed event_id=${eventId} subscription_id=${subscriptionId} ` +
+        `user_id=${userId} plan=${plan.planKey} allowance=${plan.monthlyCredits} ` +
+        `prev_subscription_credits=${prevBalance ?? 'unknown'} bonus_credits=${bonusCredits}`,
+      );
+
+      const { error: rpcErr } = await supabase.rpc('paddle_grant_credits', {
         p_user_id:                userId,
         p_plan_key:               plan.planKey,
         p_credits_to_set:         plan.monthlyCredits,
@@ -469,7 +656,22 @@ async function handlePaddleEvent(
         p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: subscriptionId,
       });
-      break;
+
+      if (rpcErr) {
+        console.error(
+          `[Paddle] subscription.renewed event_id=${eventId} user_id=${userId}: paddle_grant_credits failed:`,
+          rpcErr.message,
+        );
+        throw rpcErr;
+      }
+
+      console.log(
+        `[Paddle] subscription.renewed event_id=${eventId} user_id=${userId}: ` +
+        `credit_balance RESET ${prevBalance ?? '?'} → ${plan.monthlyCredits} ` +
+        `(bonus_credits unchanged: ${bonusCredits})`,
+      );
+
+      return true;
     }
 
     // ── Subscription updated (plan change, payment method, address, etc.) ─────
@@ -477,7 +679,7 @@ async function handlePaddleEvent(
     // period end moved forward). This prevents unnecessary credit resets when a
     // user updates their card mid-cycle or when Paddle fires administrative updates.
     case 'subscription.updated': {
-      if (!userId) return;
+      if (!userId) return false;
       const priceId        = data?.items?.[0]?.price?.id;
       const subscriptionId = data?.id;
       const customerId     = data?.customer_id;
@@ -487,22 +689,25 @@ async function handlePaddleEvent(
 
       // Cancelled status on subscription.updated — downgrade to free immediately
       if (status === 'cancelled' || status === 'canceled') {
-        console.log(`[Paddle] subscription.updated status=${status} for ${userId} — cancelling`);
+        console.log(
+          `[Paddle] subscription.updated event_id=${eventId} status=${status} ` +
+          `user_id=${userId} — cancelling subscription`,
+        );
         await supabase.rpc('paddle_cancel_subscription', { p_user_id: userId });
-        return;
+        return true;
       }
 
       const plan = getPlanMeta(priceId);
       if (!plan) {
-        console.warn(`[Paddle] subscription.updated: unknown price ${priceId}`);
-        return;
+        console.warn(`[Paddle] subscription.updated event_id=${eventId}: unknown price_id=${priceId}`);
+        return false;
       }
 
       // Only reset credits if the billing period has advanced since what we stored.
       // Compare the incoming period_end with the DB value; skip if unchanged.
       const { data: existing } = await supabase
         .from('user_ai_credits')
-        .select('billing_period_end, current_period_end')
+        .select('billing_period_end, current_period_end, credit_balance, bonus_credits')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -515,13 +720,16 @@ async function handlePaddleEvent(
         (storedEndDate === null || incomingEnd > storedEndDate);
 
       if (!periodAdvanced) {
-        // Paddle fired subscription.updated for a non-renewal change (e.g. payment method,
-        // address update, quantity change). Update plan metadata without touching credit_balance.
-        console.log(`[Paddle] subscription.updated (no period advance) for ${userId} — updating metadata only`);
+        // Administrative update (card change, address, plan metadata) — update
+        // plan metadata without touching credit_balance.
+        console.log(
+          `[Paddle] subscription.updated event_id=${eventId} user_id=${userId} ` +
+          `— no period advance (administrative update); updating metadata only`,
+        );
         await supabase.rpc('paddle_grant_credits', {
           p_user_id:                userId,
           p_plan_key:               plan.planKey,
-          p_credits_to_set:         0, // 0 = don't touch credit_balance
+          p_credits_to_set:         0,  // 0 = don't touch credit_balance
           p_bonus_credits_to_add:   0,
           p_billing_period_end:     periodEnd,
           p_billing_period_start:   periodStart,
@@ -529,12 +737,20 @@ async function handlePaddleEvent(
           p_paddle_customer_id:     customerId,
           p_paddle_subscription_id: subscriptionId,
         });
-        return;
+        return true;
       }
 
-      // Period advanced — this is effectively a renewal processed via subscription.updated
-      // (e.g. if subscription.renewed was not sent). Grant fresh credits.
-      console.log(`[Paddle] subscription.updated (period advanced) — renewing ${plan.planKey} credits for ${userId}`);
+      // Period advanced — effective renewal via subscription.updated (rare fallback
+      // for cases where subscription.renewed was not delivered). Grant fresh credits.
+      const prevBalance  = existing?.credit_balance ?? null;
+      const bonusCredits = existing?.bonus_credits ?? 0;
+
+      console.log(
+        `[Paddle] subscription.updated event_id=${eventId} user_id=${userId} plan=${plan.planKey} ` +
+        `— period advanced; resetting credits. allowance=${plan.monthlyCredits} ` +
+        `prev_subscription_credits=${prevBalance ?? 'unknown'} bonus_credits=${bonusCredits}`,
+      );
+
       await supabase.rpc('paddle_grant_credits', {
         p_user_id:                userId,
         p_plan_key:               plan.planKey,
@@ -546,20 +762,29 @@ async function handlePaddleEvent(
         p_paddle_customer_id:     customerId,
         p_paddle_subscription_id: subscriptionId,
       });
-      break;
+
+      console.log(
+        `[Paddle] subscription.updated event_id=${eventId} user_id=${userId}: ` +
+        `credit_balance RESET ${prevBalance ?? '?'} → ${plan.monthlyCredits} ` +
+        `(bonus_credits unchanged: ${bonusCredits})`,
+      );
+
+      return true;
     }
 
     // ── Subscription cancelled ─────────────────────────────────────────────
     case 'subscription.canceled': {
-      if (!userId) return;
-      console.log(`[Paddle] Cancelling subscription for user ${userId}`);
+      if (!userId) return false;
+      console.log(
+        `[Paddle] subscription.canceled event_id=${eventId} user_id=${userId} — cancelling subscription`,
+      );
       await supabase.rpc('paddle_cancel_subscription', { p_user_id: userId });
-      break;
+      return true;
     }
 
     // ── Transaction completed ──────────────────────────────────────────────
     case 'transaction.completed': {
-      if (!userId) return;
+      if (!userId) return false;
 
       const originType     = data?.origin ?? '';
       const priceId        = data?.items?.[0]?.price?.id;
@@ -569,45 +794,82 @@ async function handlePaddleEvent(
       // ── Subscription renewal safety net ──────────────────────────────────
       // subscription.renewed is the canonical renewal event (handled above).
       // transaction.completed (origin: subscription_recurring) fires for the
-      // same payment and is used here as a fallback: if subscription.renewed
-      // was already processed (idempotency check above catches duplicate
-      // event_ids), this path is a no-op. If subscription.renewed never fired
-      // (rare Paddle routing edge case), this path ensures credits are granted.
+      // same payment. If subscription.renewed was already processed (its own
+      // event_id is in paddle_events), this path is still reached because
+      // transaction.completed has a different event_id. Both call
+      // paddle_grant_credits with p_credits_to_set = plan.monthlyCredits,
+      // which is a SET operation — calling it twice is idempotent.
       if (originType === 'subscription_recurring') {
         const plan = getPlanMeta(priceId);
         if (!plan) {
-          console.warn(`[Paddle] transaction.completed(subscription_recurring): unknown price ${priceId} — skipping`);
-          return;
+          console.warn(
+            `[Paddle] transaction.completed(subscription_recurring) event_id=${eventId}: ` +
+            `unknown price_id=${priceId} — skipping`,
+          );
+          return false;
         }
-        console.log(`[Paddle] transaction.completed(subscription_recurring) — safety-net renewal for user ${userId}`);
+
+        // Fetch current balance for structured logging
+        const { data: prevRow } = await supabase
+          .from('user_ai_credits')
+          .select('credit_balance, bonus_credits')
+          .eq('user_id', userId)
+          .maybeSingle();
+        const prevBalance  = prevRow?.credit_balance ?? null;
+        const bonusCredits = prevRow?.bonus_credits ?? 0;
+
+        console.log(
+          `[Paddle] transaction.completed(subscription_recurring) event_id=${eventId} ` +
+          `subscription_id=${subscriptionId} user_id=${userId} plan=${plan.planKey} ` +
+          `allowance=${plan.monthlyCredits} prev_subscription_credits=${prevBalance ?? 'unknown'} ` +
+          `bonus_credits=${bonusCredits} — safety-net renewal credit reset`,
+        );
+
         await supabase.rpc('paddle_grant_credits', {
           p_user_id:                userId,
           p_plan_key:               plan.planKey,
           p_credits_to_set:         plan.monthlyCredits,
           p_bonus_credits_to_add:   0,
-          p_billing_period_end:     null, // period dates come from subscription events
+          p_billing_period_end:     null,  // period dates come from subscription events
           p_billing_period_start:   null,
           p_billing_status:         'active',
           p_paddle_customer_id:     customerId,
           p_paddle_subscription_id: subscriptionId,
         });
-        return;
+
+        console.log(
+          `[Paddle] transaction.completed event_id=${eventId} user_id=${userId}: ` +
+          `credit_balance RESET ${prevBalance ?? '?'} → ${plan.monthlyCredits} ` +
+          `(bonus_credits unchanged: ${bonusCredits})`,
+        );
+
+        return true;
       }
 
       // ── Subscription initial charge — credits already granted by subscription.activated ──
       if (originType === 'subscription_create') {
-        console.log(`[Paddle] transaction.completed(subscription_create) for ${userId} — credits already handled by subscription.activated`);
-        return;
+        console.log(
+          `[Paddle] transaction.completed(subscription_create) event_id=${eventId} user_id=${userId} ` +
+          `— credits already handled by subscription.activated`,
+        );
+        return true;
       }
 
       // ── One-time top-up ───────────────────────────────────────────────────
       const topUp = getTopUpMeta(priceId);
       if (!topUp) {
-        console.warn(`[Paddle] transaction.completed: unknown price ${priceId} (origin: ${originType})`);
-        return;
+        console.warn(
+          `[Paddle] transaction.completed event_id=${eventId}: unknown price_id=${priceId} ` +
+          `(origin: ${originType}) — skipping`,
+        );
+        return false;
       }
 
-      console.log(`[Paddle] Adding ${topUp.bonusCredits} bonus credits for user ${userId}`);
+      console.log(
+        `[Paddle] transaction.completed (top-up) event_id=${eventId} user_id=${userId} ` +
+        `bonus_credits_to_add=${topUp.bonusCredits}`,
+      );
+
       const { error: rpcErr } = await supabase.rpc('paddle_grant_credits', {
         p_user_id:                userId,
         p_plan_key:               'topup',
@@ -620,15 +882,21 @@ async function handlePaddleEvent(
         p_paddle_subscription_id: null,
       });
       if (rpcErr) {
-        console.error('[Paddle] paddle_grant_credits RPC failed:', rpcErr.message);
+        console.error(`[Paddle] paddle_grant_credits (top-up) event_id=${eventId} failed:`, rpcErr.message);
         throw rpcErr;
       }
-      console.log(`[Paddle] Successfully granted ${topUp.bonusCredits} credits to user ${userId}`);
+
+      console.log(
+        `[Paddle] transaction.completed (top-up) event_id=${eventId} user_id=${userId}: ` +
+        `bonus_credits +${topUp.bonusCredits} (subscription credits untouched)`,
+      );
+
       await trySendMetaPurchaseFromPaddleWebhook(supabase, userId, data, customData);
-      break;
+      return true;
     }
 
     default:
-      console.log(`[Paddle] Unhandled event type: ${eventType}`);
+      console.log(`[Paddle] Unhandled event_type=${eventType} event_id=${eventId}`);
+      return false;
   }
 }
