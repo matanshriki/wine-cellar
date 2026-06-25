@@ -19,8 +19,9 @@
  *   SENTRY_RELEASE     — Optional release tag
  */
 
-// Sentry Deno SDK via npm specifier (supported by Supabase Edge Functions)
-import * as Sentry from 'npm:@sentry/deno'
+// Sentry Deno SDK via npm specifier (supported by Supabase Edge Functions).
+// Pinned to v7 to avoid silent breaks from future major-version API changes.
+import * as Sentry from 'npm:@sentry/deno@7'
 
 // Fields that must never appear in Sentry events
 const REDACTED_FIELDS = new Set([
@@ -103,6 +104,11 @@ function ensureInit(functionName: string): boolean {
 /**
  * Wrap a Supabase Edge Function handler with Sentry error monitoring.
  *
+ * Sentry initialisation is fully defensive: if the SDK fails to load or
+ * Sentry.init() throws for any reason (bad DSN, version incompatibility,
+ * network issue during cold-start), the wrapper logs a warning and continues
+ * without monitoring rather than crashing the function.
+ *
  * @param functionName  Name of the edge function (used as a Sentry tag)
  * @param handler       The actual request handler
  */
@@ -111,17 +117,28 @@ export function withSentry(
   handler: (req: Request) => Promise<Response>,
 ): (req: Request) => Promise<Response> {
   return async (req: Request): Promise<Response> => {
-    const sentryActive = ensureInit(functionName)
+    // ensureInit must never throw — a Sentry failure must not crash the function.
+    let sentryActive = false
+    try {
+      sentryActive = ensureInit(functionName)
+    } catch (initErr: unknown) {
+      const msg = initErr instanceof Error ? initErr.message : String(initErr)
+      console.warn(`[${functionName}] Sentry init failed (monitoring disabled): ${msg}`)
+    }
 
     try {
       return await handler(req)
     } catch (err: unknown) {
       if (sentryActive) {
-        Sentry.captureException(err)
-        // Flush with a short timeout so we don't add significant latency to error responses
-        await Sentry.flush(2000)
+        try {
+          Sentry.captureException(err)
+          // Flush with a short timeout so we don't add significant latency to error responses
+          await Sentry.flush(2000)
+        } catch {
+          // Sentry reporting failure must not mask the original error
+        }
       }
-      // Re-throw so the caller's outer try/catch can return its own error response
+      // Re-throw so the handler's own outer try/catch can return its own error response
       throw err
     }
   }

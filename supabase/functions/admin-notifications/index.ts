@@ -75,14 +75,13 @@ serve(withSentry('admin-notifications', async (req) => {
     return jsonResponse({ ok: false, error: 'Missing record' }, 400);
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')?.trim();
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim();
-  const supabase =
-    supabaseUrl && serviceKey
-      ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
-      : null;
-
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')?.trim();
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim();
+    const supabase =
+      supabaseUrl && serviceKey
+        ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+        : null;
     if (table === 'profiles') {
       const p = record as unknown as ProfileRecord;
       let provider: string | null = null;
