@@ -35,10 +35,10 @@ function parseStats(raw: unknown): ScanSummaryJson | null {
   const distinct_users = Number(o.distinct_users) || 0;
   const first_scan_at = o.first_scan_at == null ? null : String(o.first_scan_at);
   const last_scan_at = o.last_scan_at == null ? null : String(o.last_scan_at);
-  const topRaw = o.top_users;
+
   const top_users: Array<{ user_id: string; scans: number }> = [];
-  if (Array.isArray(topRaw)) {
-    for (const row of topRaw) {
+  if (Array.isArray(o.top_users)) {
+    for (const row of o.top_users) {
       if (row && typeof row === 'object') {
         const r = row as Record<string, unknown>;
         if (typeof r.user_id === 'string') {
@@ -48,7 +48,21 @@ function parseStats(raw: unknown): ScanSummaryJson | null {
       }
     }
   }
-  return { scan_count, distinct_users, first_scan_at, last_scan_at, top_users };
+
+  const by_source: Array<{ source: string; count: number }> = [];
+  if (Array.isArray(o.by_source)) {
+    for (const row of o.by_source) {
+      if (row && typeof row === 'object') {
+        const r = row as Record<string, unknown>;
+        if (typeof r.source === 'string') {
+          const count = typeof r.count === 'number' ? r.count : Number(r.count);
+          if (!Number.isNaN(count)) by_source.push({ source: r.source, count });
+        }
+      }
+    }
+  }
+
+  return { scan_count, distinct_users, first_scan_at, last_scan_at, top_users, by_source };
 }
 
 serve(async (req) => {

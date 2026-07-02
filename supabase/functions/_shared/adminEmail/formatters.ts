@@ -122,14 +122,24 @@ export interface ScanSummaryJson {
   first_scan_at: string | null;
   last_scan_at: string | null;
   top_users: Array<{ user_id: string; scans: number }>;
+  /** Breakdown by entry_source (manual, ai_scan, vivino, csv_import). Added in 20260702 migration. */
+  by_source?: Array<{ source: string; count: number }>;
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  ai_scan:    'AI scan (camera)',
+  manual:     'Manual',
+  csv_import: 'CSV import',
+  vivino:     'Vivino',
+};
+
 export function dailyScanSubject(total: number): string {
-  return `Daily bottle scans summary - ${total} scans`;
+  return `Daily bottle additions - ${total} bottles added`;
 }
 
 export function dailyScanEmailHtml(stats: ScanSummaryJson, windowLabel: string): { subject: string; html: string } {
   const subject = dailyScanSubject(stats.scan_count);
+
   const topRows =
     stats.top_users?.length > 0
       ? stats.top_users
@@ -140,21 +150,31 @@ export function dailyScanEmailHtml(stats: ScanSummaryJson, windowLabel: string):
           .join('')
       : '<tr><td colspan="3" style="padding:8px;color:#71717a;">No per-user breakdown</td></tr>';
 
+  const bySourceSection =
+    stats.by_source && stats.by_source.length > 0
+      ? `<p style="margin:20px 0 8px;font-weight:600;">By entry type</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e4e4e7;border-radius:6px;font-size:14px;">
+      <thead><tr style="background:#fafafa;"><th style="text-align:left;padding:8px;">Type</th><th style="text-align:right;padding:8px;">Bottles</th></tr></thead>
+      <tbody>${stats.by_source.map((s) => `<tr><td style="padding:6px 8px;">${escapeHtml(SOURCE_LABELS[s.source] ?? s.source)}</td><td style="padding:6px 8px;text-align:right;">${s.count}</td></tr>`).join('')}</tbody>
+    </table>`
+      : '';
+
   const inner = `
     <p style="margin:0 0 12px;">Window: <strong>${escapeHtml(windowLabel)}</strong></p>
     ${kvTable([
-      { label: 'Total bottle scans', value: String(stats.scan_count) },
+      { label: 'Total bottles added', value: String(stats.scan_count) },
       { label: 'Distinct users', value: String(stats.distinct_users) },
-      { label: 'First scan (UTC)', value: stats.first_scan_at ?? '—' },
-      { label: 'Last scan (UTC)', value: stats.last_scan_at ?? '—' },
+      { label: 'First addition (UTC)', value: stats.first_scan_at ?? '—' },
+      { label: 'Last addition (UTC)', value: stats.last_scan_at ?? '—' },
     ])}
-    <p style="margin:20px 0 8px;font-weight:600;">Top users by scan count</p>
+    ${bySourceSection}
+    <p style="margin:20px 0 8px;font-weight:600;">Top users by bottles added</p>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e4e4e7;border-radius:6px;font-size:14px;">
-      <thead><tr style="background:#fafafa;"><th style="text-align:left;padding:8px;width:32px;">#</th><th style="text-align:left;padding:8px;">user_id</th><th style="text-align:right;padding:8px;">Scans</th></tr></thead>
+      <thead><tr style="background:#fafafa;"><th style="text-align:left;padding:8px;width:32px;">#</th><th style="text-align:left;padding:8px;">user_id</th><th style="text-align:right;padding:8px;">Bottles</th></tr></thead>
       <tbody>${topRows}</tbody>
     </table>
-    <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Scans are bottles created in the window where the wine was added via camera (<code>entry_source = ai_scan</code>) or an image path is present on the bottle or wine.</p>
+    <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Counts all bottles created in the window regardless of how they were added (manual, camera scan, CSV, Vivino).</p>
   `;
 
-  return { subject, html: adminEmailShell('Daily bottle scans', inner) };
+  return { subject, html: adminEmailShell('Daily bottle additions', inner) };
 }
