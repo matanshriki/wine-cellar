@@ -29,7 +29,9 @@ let _initialized = false;
 
 /** Benign browser aborts (iOS Safari backgrounding, SPA navigation, etc.) */
 function isAbortSentryEvent(event: ErrorEvent): boolean {
-  const exceptions = event.exception ?? [];
+  // event.exception is { values?: Exception[] } in Sentry SDK v8+, NOT an array.
+  // Iterating over the wrapper object directly throws TypeError; must use .values.
+  const exceptions = event.exception?.values ?? [];
   for (const ex of exceptions) {
     if (ex.type === 'AbortError') return true;
     if (ex.value && /operation was aborted/i.test(ex.value)) return true;
