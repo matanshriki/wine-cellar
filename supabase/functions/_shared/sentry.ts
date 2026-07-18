@@ -19,9 +19,9 @@
  *   SENTRY_RELEASE     — Optional release tag
  */
 
-// Sentry Deno SDK via npm specifier (supported by Supabase Edge Functions).
-// Pinned to v7 to avoid silent breaks from future major-version API changes.
-import * as Sentry from 'npm:@sentry/deno@7'
+// @sentry/deno is a Deno-native package — it lives on JSR, not npm.
+// Using npm:@sentry/deno fails with ERR_MODULE_NOT_FOUND on Supabase Edge Runtime.
+import * as Sentry from 'jsr:@sentry/deno'
 
 // Fields that must never appear in Sentry events
 const REDACTED_FIELDS = new Set([
