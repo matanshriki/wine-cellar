@@ -137,43 +137,41 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
   };
 
   // Generate a unique short ID (retry if collision)
-  let shareId: string;
+  let shareId = '';
   let attempts = 0;
   const maxAttempts = 5;
+  let insertError: { message?: string } | null = null;
 
   while (attempts < maxAttempts) {
-    shareId = generateShareId(7); // 7 characters
-    
-    // Check if ID already exists
-    const { data: existing } = await supabase
+    shareId = generateShareId(7);
+
+    const { error } = await supabase
       .from('shared_cellars')
-      .select('id')
-      .eq('id', shareId)
-      .single();
-    
-    if (!existing) {
-      break; // ID is unique, use it
+      .insert({
+        id: shareId,
+        user_id: user.id,
+        share_data: shareData,
+      });
+
+    if (!error) {
+      insertError = null;
+      break;
     }
-    
-    attempts++;
-  }
 
-  if (attempts === maxAttempts) {
-    throw new Error('Failed to generate unique share ID');
-  }
+    // Unique violation → retry; other errors fail
+    const errCode = (error as { code?: string }).code;
+    if (errCode === '23505') {
+      attempts++;
+      insertError = error;
+      continue;
+    }
 
-  // Store share data in database
-  const { error: insertError } = await supabase
-    .from('shared_cellars')
-    .insert({
-      id: shareId!,
-      user_id: user.id,
-      share_data: shareData,
-    });
-
-  if (insertError) {
-    console.error('[shareService] Failed to store share data:', insertError);
+    console.error('[shareService] Failed to store share data:', error);
     throw new Error('Failed to create share link');
+  }
+
+  if (attempts === maxAttempts || insertError) {
+    throw new Error('Failed to generate unique share ID');
   }
 
   // Generate short share URL
@@ -194,18 +192,15 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
 }
 
 /**
- * Fetch shared cellar data by share ID
+ * Fetch shared cellar data by share ID (via SECURITY DEFINER RPC — no anon table SELECT)
  */
 export async function getSharedCellar(shareId: string): Promise<ShareData | null> {
   try {
     console.log('[shareService] Fetching shared cellar:', shareId);
 
-    // Fetch from database
-    const { data, error } = await supabase
-      .from('shared_cellars')
-      .select('share_data, expires_at, view_count')
-      .eq('id', shareId)
-      .single();
+    const { data, error } = await supabase.rpc('get_shared_cellar_public', {
+      p_share_id: shareId,
+    });
 
     if (error) {
       console.error('[shareService] Failed to fetch shared cellar:', error);
@@ -213,28 +208,18 @@ export async function getSharedCellar(shareId: string): Promise<ShareData | null
     }
 
     if (!data) {
-      console.error('[shareService] Shared cellar not found');
+      console.error('[shareService] Shared cellar not found or expired');
       return null;
     }
 
-    // Check if expired
-    if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      console.warn('[shareService] Shared cellar expired');
-      return null;
-    }
-
-    // Increment view count (fire and forget, don't wait)
-    supabase
-      .from('shared_cellars')
-      .update({ view_count: (data.view_count || 0) + 1 })
-      .eq('id', shareId)
-      .then(() => console.log('[shareService] View count incremented'))
-      .catch((err) => console.warn('[shareService] Failed to increment view count:', err));
-
-    const shareData = data.share_data as ShareData;
+    const payload = data as {
+      share_data: ShareData;
+      view_count?: number;
+    };
+    const shareData = payload.share_data;
     
     // Validate data structure
-    if (!shareData.userId || !shareData.userName || !Array.isArray(shareData.bottles)) {
+    if (!shareData?.userId || !shareData?.userName || !Array.isArray(shareData.bottles)) {
       console.error('[shareService] Invalid share data structure');
       return null;
     }
@@ -242,7 +227,7 @@ export async function getSharedCellar(shareId: string): Promise<ShareData | null
     console.log('[shareService] Successfully fetched shared cellar:', {
       userName: shareData.userName,
       bottleCount: shareData.bottles.length,
-      viewCount: data.view_count || 0,
+      viewCount: payload.view_count || 0,
     });
 
     return shareData;
@@ -250,6 +235,20 @@ export async function getSharedCellar(shareId: string): Promise<ShareData | null
     console.error('[shareService] Failed to get shared cellar:', error);
     return null;
   }
+}
+
+/**
+ * Owner revoke of a share link
+ */
+export async function revokeSharedCellar(shareId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('revoke_shared_cellar', {
+    p_share_id: shareId,
+  });
+  if (error) {
+    console.error('[shareService] Failed to revoke share:', error);
+    return false;
+  }
+  return Boolean(data);
 }
 
 /**

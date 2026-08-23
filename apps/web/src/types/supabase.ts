@@ -313,6 +313,7 @@ export interface Database {
           bottle_id: string
           wine_id: string
           opened_at: string
+          opened_quantity?: number
           occasion: string | null
           meal_type: string | null
           user_rating: number | null
@@ -321,6 +322,9 @@ export interface Database {
           vibe: string | null
           notes: string | null
           created_at: string
+          status?: 'active' | 'undone'
+          undone_at?: string | null
+          idempotency_key?: string | null
         }
         Insert: {
           id?: string
@@ -328,6 +332,7 @@ export interface Database {
           bottle_id: string
           wine_id: string
           opened_at?: string
+          opened_quantity?: number
           occasion?: string | null
           meal_type?: string | null
           user_rating?: number | null
@@ -336,6 +341,9 @@ export interface Database {
           vibe?: string | null
           notes?: string | null
           created_at?: string
+          status?: 'active' | 'undone'
+          undone_at?: string | null
+          idempotency_key?: string | null
         }
         Update: {
           id?: string
@@ -343,6 +351,7 @@ export interface Database {
           bottle_id?: string
           wine_id?: string
           opened_at?: string
+          opened_quantity?: number
           occasion?: string | null
           meal_type?: string | null
           user_rating?: number | null
@@ -351,6 +360,9 @@ export interface Database {
           vibe?: string | null
           notes?: string | null
           created_at?: string
+          status?: 'active' | 'undone'
+          undone_at?: string | null
+          idempotency_key?: string | null
         }
       }
       evening_plans: {
@@ -648,6 +660,35 @@ export interface Database {
           p_request_status?: string
         }
         Returns: Json
+      }
+      open_bottles: {
+        Args: {
+          p_bottle_id: string
+          p_opened_quantity: number
+          p_idempotency_key?: string | null
+          p_occasion?: string | null
+          p_meal_type?: string | null
+          p_vibe?: string | null
+          p_user_rating?: number | null
+          p_tasting_notes?: string | null
+          p_meal_notes?: string | null
+        }
+        Returns: Database['public']['Tables']['consumption_history']['Row']
+      }
+      undo_consumption: {
+        Args: {
+          p_history_id: string
+          p_idempotency_key?: string | null
+        }
+        Returns: Database['public']['Tables']['consumption_history']['Row']
+      }
+      get_shared_cellar_public: {
+        Args: { p_share_id: string }
+        Returns: Json
+      }
+      revoke_shared_cellar: {
+        Args: { p_share_id: string }
+        Returns: boolean
       }
     }
     Enums: {

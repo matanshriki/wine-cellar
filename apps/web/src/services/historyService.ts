@@ -9,7 +9,6 @@ import type { Database } from '../types/supabase';
 import * as tasteProfileService from './tasteProfileService';
 
 type ConsumptionHistory = Database['public']['Tables']['consumption_history']['Row'];
-type ConsumptionHistoryInsert = Database['public']['Tables']['consumption_history']['Insert'];
 
 export interface ConsumptionHistoryWithDetails extends ConsumptionHistory {
   bottle: {
@@ -48,6 +47,7 @@ export async function listHistory(): Promise<ConsumptionHistoryWithDetails[]> {
       )
     `)
     .eq('user_id', user.id)
+    .eq('status', 'active')
     .order('opened_at', { ascending: false });
 
   if (error) {
@@ -70,6 +70,7 @@ export interface MarkBottleOpenedInput {
   user_rating?: number;
   tasting_notes?: string;
   meal_notes?: string;
+  idempotency_key?: string;
 }
 
 export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<ConsumptionHistory> {
@@ -85,66 +86,30 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
     throw new Error('Opened count must be at least 1');
   }
 
-  // First, get the bottle to get wine_id and check quantity
-  const { data: bottle, error: bottleError } = await supabase
-    .from('bottles')
-    .select('id, wine_id, quantity')
-    .eq('id', input.bottle_id)
-    .eq('user_id', user.id)
-    .single() as any;
+  const idempotencyKey = input.idempotency_key ?? crypto.randomUUID();
 
-  if (bottleError || !bottle) {
-    console.error('Error fetching bottle:', bottleError);
-    throw new Error('Bottle not found');
-  }
+  const { data: history, error } = await supabase.rpc('open_bottles', {
+    p_bottle_id: input.bottle_id,
+    p_opened_quantity: openedCount,
+    p_idempotency_key: idempotencyKey,
+    p_occasion: input.occasion ?? null,
+    p_meal_type: input.meal_type ?? null,
+    p_vibe: input.vibe ?? null,
+    p_user_rating: input.user_rating ?? null,
+    p_tasting_notes: input.tasting_notes ?? null,
+    p_meal_notes: input.meal_notes ?? null,
+  });
 
-  if (bottle.quantity <= 0) {
-    throw new Error('No bottles left to open');
-  }
-
-  if (openedCount > bottle.quantity) {
-    throw new Error(`Cannot open ${openedCount} bottles - only ${bottle.quantity} available`);
-  }
-
-  // Create consumption history entry with opened_quantity
-  const historyData: ConsumptionHistoryInsert = {
-    user_id: user.id,
-    bottle_id: input.bottle_id,
-    wine_id: bottle.wine_id,
-    opened_quantity: openedCount,
-    occasion: input.occasion || null,
-    meal_type: input.meal_type || null,
-    vibe: input.vibe || null,
-    user_rating: input.user_rating || null,
-    tasting_notes: input.tasting_notes || null,
-    meal_notes: input.meal_notes || null,
-  };
-
-  const { data: history, error: historyError } = await supabase
-    .from('consumption_history')
-    .insert(historyData as any)
-    .select()
-    .single();
-
-  if (historyError) {
-    console.error('Error creating consumption history:', historyError);
+  if (error || !history) {
+    console.error('Error opening bottles:', error);
+    const msg = error?.message ?? '';
+    if (msg.includes('insufficient_quantity')) {
+      throw new Error('Cannot open that many bottles — not enough quantity');
+    }
+    if (msg.includes('not_found')) {
+      throw new Error('Bottle not found');
+    }
     throw new Error('Failed to record consumption');
-  }
-
-  // Decrement bottle quantity by opened_count
-  const newQuantity = bottle.quantity - openedCount;
-  // @ts-ignore - Supabase type inference issue
-  const { error: updateError } = await supabase
-    .from('bottles')
-    .update({ quantity: newQuantity })
-    .eq('id', input.bottle_id)
-    .eq('user_id', user.id);
-
-  if (updateError) {
-    console.error('Error decrementing bottle quantity:', updateError);
-    // Note: History entry was created but quantity wasn't decremented
-    // In production, this should be a transaction
-    throw new Error('Failed to update bottle quantity');
   }
 
   // Trigger taste profile recompute if a rating was provided
@@ -154,7 +119,7 @@ export async function markBottleOpened(input: MarkBottleOpenedInput): Promise<Co
     });
   }
 
-  return history;
+  return history as ConsumptionHistory;
 }
 
 /**
@@ -225,8 +190,11 @@ export async function getConsumptionStats(): Promise<ConsumptionStats> {
   // Get all history with wine details
   const history = await listHistory();
 
-  // Calculate stats
-  const totalOpens = history.length;
+  // Calculate stats (active events only; weight by opened_quantity)
+  const totalOpens = history.reduce(
+    (sum, h) => sum + (Number((h as { opened_quantity?: number }).opened_quantity) || 1),
+    0
+  );
 
   // Postgres numeric columns may arrive as strings — coerce so reduce() never string-concatenates.
   const ratingsCount = history.filter((h) => Number(h.user_rating) > 0).length;
@@ -291,8 +259,7 @@ export async function getConsumptionStats(): Promise<ConsumptionStats> {
 }
 
 /**
- * Undo marking a bottle as opened (send back to cellar)
- * Deletes consumption history entry and increments bottle quantity back by 1
+ * Undo marking a bottle as opened (soft-undo + restore opened_quantity)
  */
 export async function undoBottleOpened(historyId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -301,56 +268,20 @@ export async function undoBottleOpened(historyId: string): Promise<void> {
     throw new Error('Not authenticated');
   }
 
-  // First, get the history entry to get bottle_id
-  const { data: history, error: historyFetchError } = await supabase
-    .from('consumption_history')
-    .select('bottle_id')
-    .eq('id', historyId)
-    .eq('user_id', user.id)
-    .single();
+  const { error } = await supabase.rpc('undo_consumption', {
+    p_history_id: historyId,
+  });
 
-  if (historyFetchError || !history) {
-    console.error('Error fetching history entry:', historyFetchError);
-    throw new Error('History entry not found');
-  }
-
-  // Get the bottle to check if it still exists
-  const { data: bottle, error: bottleError } = await supabase
-    .from('bottles')
-    .select('id, quantity')
-    .eq('id', history.bottle_id)
-    .eq('user_id', user.id)
-    .single() as any;
-
-  if (bottleError || !bottle) {
-    console.error('Error fetching bottle:', bottleError);
-    throw new Error('Bottle not found - it may have been deleted');
-  }
-
-  // Delete consumption history entry
-  const { error: deleteError } = await supabase
-    .from('consumption_history')
-    .delete()
-    .eq('id', historyId)
-    .eq('user_id', user.id);
-
-  if (deleteError) {
-    console.error('Error deleting consumption history:', deleteError);
-    throw new Error('Failed to remove from history');
-  }
-
-  // Increment bottle quantity back by 1
-  const { error: updateError } = await supabase
-    .from('bottles')
-    .update({ quantity: bottle.quantity + 1 })
-    .eq('id', history.bottle_id)
-    .eq('user_id', user.id);
-
-  if (updateError) {
-    console.error('Error incrementing bottle quantity:', updateError);
-    // Note: History entry was deleted but quantity wasn't incremented
-    // In production, this should be a transaction
-    throw new Error('Failed to update bottle quantity');
+  if (error) {
+    console.error('Error undoing consumption:', error);
+    const msg = error.message ?? '';
+    if (msg.includes('bottle_missing')) {
+      throw new Error('Bottle not found - it may have been deleted');
+    }
+    if (msg.includes('not_found')) {
+      throw new Error('History entry not found');
+    }
+    throw new Error('Failed to undo consumption');
   }
 }
 
@@ -395,9 +326,10 @@ export async function fetchWineHistoryInsightsForWineIds(
     const { data, error } = await supabase
       .from('consumption_history')
       .select('wine_id, user_rating, tasting_notes, meal_notes, notes, opened_at')
-      .eq('user_id', user.id)
-      .in('wine_id', chunk)
-      .order('opened_at', { ascending: false });
+    .eq('user_id', user.id)
+    .in('wine_id', chunk)
+    .eq('status', 'active')
+    .order('opened_at', { ascending: false });
 
     if (error) {
       console.warn('[HistoryService] fetchWineHistoryInsightsForWineIds:', error.message);
@@ -496,6 +428,7 @@ export async function fetchWeeklyActivity(daysBack = 7): Promise<WeeklyActivityE
       )
     `)
     .eq('user_id', user.id)
+    .eq('status', 'active')
     .gte('opened_at', since.toISOString())
     .order('opened_at', { ascending: false }) as any;
 

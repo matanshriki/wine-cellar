@@ -17,11 +17,9 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { buildCorsHeaders } from '../_shared/corsAllowlist.ts';
+import { requireUser } from '../_shared/requireUser.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const CONFIDENCE_THRESHOLD = 0.5;
 
@@ -376,15 +374,48 @@ function scoreWineryCandidate(candidate: WineCandidate, input: WineInput): numbe
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const auth = await requireUser(req);
+    if (!auth.ok) {
+      return new Response(auth.response.body, {
+        status: auth.response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const rl = checkRateLimit(`search-vivino:${auth.userId}`, 30, 60 * 60 * 1000);
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'rate_limited', match: null, candidates: [] }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Retry-After': String(rl.retryAfterSec),
+          },
+        }
+      );
+    }
+
     const input: WineInput = await req.json();
 
     if (!input.wine_name && !input.producer) {
       throw new Error('At least wine_name or producer is required');
+    }
+
+    // Cap string inputs
+    for (const key of ['producer', 'wine_name', 'region', 'grape'] as const) {
+      const v = input[key];
+      if (typeof v === 'string' && v.length > 200) {
+        input[key] = v.slice(0, 200);
+      }
     }
 
     console.log('[Search Vivino Wine] Input:', JSON.stringify(input));

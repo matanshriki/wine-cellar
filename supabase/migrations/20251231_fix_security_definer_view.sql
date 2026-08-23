@@ -26,7 +26,6 @@ SELECT
   b.notes,
   b.image_url,
   b.tags,
-  b.opened_at,
   b.created_at,
   b.updated_at,
   -- Wine information

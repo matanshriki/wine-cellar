@@ -10,23 +10,43 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { buildCorsHeaders } from '../_shared/corsAllowlist.ts';
+import { requireUser } from '../_shared/requireUser.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const auth = await requireUser(req);
+    if (!auth.ok) {
+      return new Response(auth.response.body, {
+        status: auth.response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const rl = checkRateLimit(`fetch-vivino:${auth.userId}`, 60, 60 * 60 * 1000);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ success: false, error: 'rate_limited' }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': String(rl.retryAfterSec),
+        },
+      });
+    }
+
     const { wine_id } = await req.json();
 
-    if (!wine_id) {
-      throw new Error('wine_id is required');
+    if (!wine_id || !/^\d{4,10}$/.test(String(wine_id))) {
+      throw new Error('wine_id is required (numeric)');
     }
 
     console.log('[Fetch Vivino Data] Fetching wine ID:', wine_id);
@@ -35,17 +55,25 @@ serve(async (req) => {
     let url = `https://www.vivino.com/w/${wine_id}`;
     console.log('[Fetch Vivino Data] Fetching:', url);
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.vivino.com/',
-        'Cache-Control': 'no-cache',
-      },
-      redirect: 'follow', // Follow redirects
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://www.vivino.com/',
+          'Cache-Control': 'no-cache',
+        },
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       throw new Error(`Vivino returned ${response.status}`);
@@ -57,7 +85,10 @@ serve(async (req) => {
       console.log('[Fetch Vivino Data] 🔄 Redirected to:', finalUrl);
     }
 
-    const html = await response.text();
+    let html = await response.text();
+    if (html.length > 2_000_000) {
+      html = html.slice(0, 2_000_000);
+    }
     console.log('[Fetch Vivino Data] ✅ Got HTML, length:', html.length);
 
     // Extract data from HTML

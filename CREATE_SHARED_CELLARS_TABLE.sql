@@ -1,56 +1,46 @@
 -- Create shared_cellars table for short, reliable share links
--- Run this in Supabase SQL Editor
+-- Prefer applying supabase/migrations/20260823_phase0_batch3_4_view_and_shares.sql
+-- for lockdown (no world-readable SELECT; public access via get_shared_cellar_public).
 
 CREATE TABLE IF NOT EXISTS shared_cellars (
-  id TEXT PRIMARY KEY, -- Short ID like 'xK9mP2'
+  id TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  share_data JSONB NOT NULL, -- Stores bottles, stats, userName, etc.
+  share_data JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'), -- Auto-expire after 30 days
-  view_count INTEGER DEFAULT 0, -- Track how many times link was viewed
-  
+  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
+  view_count INTEGER DEFAULT 0,
+  revoked_at TIMESTAMPTZ NULL,
   CONSTRAINT shared_cellars_id_length CHECK (char_length(id) >= 6 AND char_length(id) <= 10)
 );
 
--- Index for fast lookups by share ID
 CREATE INDEX IF NOT EXISTS idx_shared_cellars_id ON shared_cellars(id);
-
--- Index for user's shared cellars
 CREATE INDEX IF NOT EXISTS idx_shared_cellars_user_id ON shared_cellars(user_id);
-
--- Index for cleanup of expired shares
 CREATE INDEX IF NOT EXISTS idx_shared_cellars_expires_at ON shared_cellars(expires_at);
 
--- Enable Row Level Security
 ALTER TABLE shared_cellars ENABLE ROW LEVEL SECURITY;
 
--- Policy: Anyone can view shared cellars (public read)
-CREATE POLICY "Anyone can view shared cellars"
-  ON shared_cellars
-  FOR SELECT
-  USING (true);
+DROP POLICY IF EXISTS "Anyone can view shared cellars" ON shared_cellars;
 
--- Policy: Users can create their own shared cellars
+DROP POLICY IF EXISTS "Users can view their own shared cellars" ON shared_cellars;
+CREATE POLICY "Users can view their own shared cellars"
+  ON shared_cellars FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own shared cellars" ON shared_cellars;
 CREATE POLICY "Users can create their own shared cellars"
-  ON shared_cellars
-  FOR INSERT
+  ON shared_cellars FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
--- Policy: Users can delete their own shared cellars
+DROP POLICY IF EXISTS "Users can delete their own shared cellars" ON shared_cellars;
 CREATE POLICY "Users can delete their own shared cellars"
-  ON shared_cellars
-  FOR DELETE
+  ON shared_cellars FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 
--- Policy: Users can update their own shared cellars
+DROP POLICY IF EXISTS "Users can update their own shared cellars" ON shared_cellars;
 CREATE POLICY "Users can update their own shared cellars"
-  ON shared_cellars
-  FOR UPDATE
-  USING (auth.uid() = user_id);
+  ON shared_cellars FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
-COMMENT ON TABLE shared_cellars IS 'Stores shared cellar data with short IDs for reliable sharing';
-COMMENT ON COLUMN shared_cellars.id IS 'Short, URL-safe share ID (6-10 chars)';
-COMMENT ON COLUMN shared_cellars.share_data IS 'JSON object containing bottles, stats, userName, avatarUrl, sortBy, sortDir';
-COMMENT ON COLUMN shared_cellars.expires_at IS 'Automatic expiration date (default 30 days)';
-COMMENT ON COLUMN shared_cellars.view_count IS 'Number of times this share link was viewed';
-
+REVOKE ALL ON TABLE public.shared_cellars FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.shared_cellars TO authenticated;
