@@ -162,13 +162,14 @@ describe('rating callers preserve overrides by default (E)', () => {
     expect(src).not.toMatch(/recomputeMyTasteProfile\(\s*\{\s*preserveOverrides\s*:\s*false/);
   });
 
-  it('resetTasteProfile explicitly opts out of preservation', () => {
+  it('resetTasteProfile clears overrides only (preserves explicit via RPC)', () => {
     const src = readFileSync(resolve(__dirname, './tasteProfileService.ts'), 'utf8');
     expect(src).toMatch(
-      /export async function resetTasteProfile[\s\S]*?recomputeMyTasteProfile\(\s*\{\s*preserveOverrides:\s*false\s*\}\s*\)/
+      /export async function resetTasteProfile[\s\S]*?clear_overrides/
     );
     expect(src).toMatch(
       /preserveOverrides = options\.preserveOverrides !== false/
     );
+    expect(src).toMatch(/apply_taste_profile_patch/);
   });
 });

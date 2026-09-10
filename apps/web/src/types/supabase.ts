@@ -48,6 +48,17 @@ export interface TasteProfile {
   overrides?: {
     vector?: Partial<TasteProfileVector>;
   };
+  /** Phase 2A canonical conversational preferences (optional; v2). */
+  explicit?: {
+    regions_liked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    regions_disliked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    grapes_liked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    grapes_disliked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    styles_liked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    styles_disliked?: Array<{ id: string; confidence: number; label_en?: string; label_he?: string }>;
+    body?: { value: 'light' | 'medium' | 'full'; confidence: number } | null;
+    updated_at?: string;
+  };
   confidence: 'low' | 'med' | 'high';
   data_points: {
     rated_count: number;

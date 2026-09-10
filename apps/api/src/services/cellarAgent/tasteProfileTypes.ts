@@ -24,12 +24,42 @@ export interface TasteProfilePreferences {
   grapes: Record<string, number>;
 }
 
-/** Normalized structured profile used for scoring (version 1 only). */
+/** Normalized structured profile used for scoring (version 1–2). */
+export interface ExplicitPreferenceValue {
+  id: string;
+  confidence: number;
+  updated_at?: string;
+  source?: string;
+  evidence_event_ids?: string[];
+  label_en?: string;
+  label_he?: string;
+}
+
+export interface ExplicitBodyPreference {
+  value: 'light' | 'medium' | 'full';
+  confidence: number;
+  updated_at?: string;
+  source?: string;
+  evidence_event_ids?: string[];
+}
+
+export interface ExplicitTastePreferences {
+  regions_liked: ExplicitPreferenceValue[];
+  regions_disliked: ExplicitPreferenceValue[];
+  grapes_liked: ExplicitPreferenceValue[];
+  grapes_disliked: ExplicitPreferenceValue[];
+  styles_liked: ExplicitPreferenceValue[];
+  styles_disliked: ExplicitPreferenceValue[];
+  body: ExplicitBodyPreference | null;
+  updated_at?: string;
+}
+
 export interface StructuredTasteProfile {
   version: number;
   vector: TasteProfileVector;
   preferences: TasteProfilePreferences;
   overrides?: { vector?: Partial<TasteProfileVector> };
+  explicit?: ExplicitTastePreferences;
   confidence: TasteConfidence;
   data_points: { rated_count: number; last_rated_at: string | null };
 }
@@ -106,6 +136,7 @@ const DEFAULT_VECTOR: TasteProfileVector = {
 /**
  * Parse unknown JSON into a structured profile.
  * Returns null for missing/unsupported/unusable payloads (never throws).
+ * Accepts document versions 1 and 2; rejects unknown future versions (>2).
  */
 export function parseStructuredTasteProfile(raw: unknown): StructuredTasteProfile | null {
   if (raw == null) return null;
@@ -113,8 +144,8 @@ export function parseStructuredTasteProfile(raw: unknown): StructuredTasteProfil
 
   const o = raw as Record<string, unknown>;
   const version = asNumber(o.version);
-  // Only version 1 is supported for scoring; unknown/missing version → degrade
-  if (version !== null && version !== 1) return null;
+  if (version !== null && version > 2) return null;
+  if (version !== null && version < 1) return null;
   if (version === null && o.vector == null && o.preferences == null) return null;
 
   const vector = parseVector(o.vector, DEFAULT_VECTOR);
@@ -139,6 +170,9 @@ export function parseStructuredTasteProfile(raw: unknown): StructuredTasteProfil
     if (ovVector) overrides = { vector: ovVector };
   }
 
+  const explicit = parseExplicit(o.explicit);
+  const resolvedVersion = explicit ? Math.max(version ?? 1, 2) : version ?? 1;
+
   const confRaw = typeof o.confidence === 'string' ? o.confidence : 'low';
   const confidence: TasteConfidence =
     confRaw === 'high' || confRaw === 'med' || confRaw === 'low' ? confRaw : 'low';
@@ -154,13 +188,72 @@ export function parseStructuredTasteProfile(raw: unknown): StructuredTasteProfil
   }
 
   return {
-    version: 1,
+    version: resolvedVersion,
     vector,
     preferences,
     ...(overrides ? { overrides } : {}),
+    ...(explicit ? { explicit } : {}),
     confidence,
     data_points: { rated_count, last_rated_at },
   };
+}
+
+function parseExplicitTermList(raw: unknown): ExplicitPreferenceValue[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ExplicitPreferenceValue[] = [];
+  for (const item of raw.slice(0, 20)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === 'string' ? o.id.toLowerCase().trim() : '';
+    if (!id || id.length > 64) continue;
+    const confidence = clamp01(asNumber(o.confidence) ?? 0.5);
+    out.push({
+      id,
+      confidence,
+      updated_at: typeof o.updated_at === 'string' ? o.updated_at : undefined,
+      source: typeof o.source === 'string' ? o.source : undefined,
+      label_en: typeof o.label_en === 'string' ? o.label_en : undefined,
+      label_he: typeof o.label_he === 'string' ? o.label_he : undefined,
+    });
+  }
+  return out;
+}
+
+function parseExplicit(raw: unknown): ExplicitTastePreferences | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  let body: ExplicitBodyPreference | null = null;
+  if (o.body && typeof o.body === 'object' && !Array.isArray(o.body)) {
+    const b = o.body as Record<string, unknown>;
+    const value = typeof b.value === 'string' ? b.value.toLowerCase() : '';
+    if (value === 'light' || value === 'medium' || value === 'full') {
+      body = {
+        value,
+        confidence: clamp01(asNumber(b.confidence) ?? 0.5),
+        updated_at: typeof b.updated_at === 'string' ? b.updated_at : undefined,
+        source: typeof b.source === 'string' ? b.source : undefined,
+      };
+    }
+  }
+  const explicit: ExplicitTastePreferences = {
+    regions_liked: parseExplicitTermList(o.regions_liked),
+    regions_disliked: parseExplicitTermList(o.regions_disliked),
+    grapes_liked: parseExplicitTermList(o.grapes_liked),
+    grapes_disliked: parseExplicitTermList(o.grapes_disliked),
+    styles_liked: parseExplicitTermList(o.styles_liked),
+    styles_disliked: parseExplicitTermList(o.styles_disliked),
+    body,
+    updated_at: typeof o.updated_at === 'string' ? o.updated_at : undefined,
+  };
+  const any =
+    explicit.regions_liked.length +
+      explicit.regions_disliked.length +
+      explicit.grapes_liked.length +
+      explicit.grapes_disliked.length +
+      explicit.styles_liked.length +
+      explicit.styles_disliked.length >
+      0 || explicit.body != null;
+  return any ? explicit : undefined;
 }
 
 /**

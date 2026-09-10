@@ -11,7 +11,6 @@ import type { TasteProfile, TasteProfileVector, TasteProfilePreferences } from '
 import * as wineProfileService from './wineProfileService';
 import type { WineProfile } from './wineProfileService';
 import {
-  attachPreservedOverrides,
   type RecomputeTasteProfileOptions,
 } from './tasteProfileOverrides';
 import { mergeCalibrationOverrideVector } from './tasteProfileCalibration';
@@ -294,18 +293,27 @@ function getConfidence(ratedCount: number): 'low' | 'med' | 'high' {
  * Save taste profile to the authenticated user's profiles row.
  * Returns the persisted taste_profile JSON. Throws on PostgREST error or
  * zero-row update (e.g. RLS miss) so callers cannot treat a no-op as success.
+ *
+ * @deprecated Prefer applyTasteProfilePatch for layer updates (Phase 2A).
+ * Kept for rare bootstrap paths that must create a full document when the
+ * patch RPC is unavailable; active recompute/calibrate/reset use the RPC.
  */
 export async function saveTasteProfile(
   userId: string,
   profile: TasteProfile
 ): Promise<TasteProfile> {
+  const version = typeof profile.version === 'number' ? profile.version : PROFILE_VERSION;
+  if (version > 2) {
+    throw new Error('Unsupported taste profile version');
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     // @ts-expect-error - taste_profile columns added via migration but not yet in generated types
     .update({
       taste_profile: profile,
       taste_profile_updated_at: new Date().toISOString(),
-      taste_profile_version: PROFILE_VERSION,
+      taste_profile_version: version,
     })
     .eq('id', userId)
     .select('taste_profile')
@@ -328,6 +336,37 @@ export async function saveTasteProfile(
   }
 
   return saved;
+}
+
+type TasteProfilePatchAction = 'recompute_inferred' | 'set_overrides' | 'clear_overrides';
+
+/**
+ * Atomic taste_profile layer patch via SECURITY INVOKER RPC.
+ * Preserves sibling fields from the locked DB row (explicit/overrides/inferred).
+ */
+export async function applyTasteProfilePatch(
+  action: TasteProfilePatchAction,
+  payload: Record<string, unknown> = {}
+): Promise<TasteProfile> {
+  const { data, error } = await supabase.rpc('apply_taste_profile_patch', {
+    p_action: action,
+    p_payload: payload,
+  });
+
+  if (error) {
+    console.error(
+      '[TasteProfileService] apply_taste_profile_patch failed:',
+      error.code ?? error.message
+    );
+    throw new Error('Failed to update taste profile');
+  }
+
+  if (!data || typeof data !== 'object') {
+    console.error('[TasteProfileService] apply_taste_profile_patch returned empty payload');
+    throw new Error('Failed to update taste profile');
+  }
+
+  return data as TasteProfile;
 }
 
 /**
@@ -355,7 +394,9 @@ export async function getMyTasteProfile(): Promise<TasteProfile | null> {
 
 /**
  * Recompute and save taste profile for current user.
+ * Uses atomic recompute_inferred RPC so concurrent explicit writes are preserved.
  * Defaults to preserving calibration overrides (safe for rating-triggered callers).
+ * When preserveOverrides=false, clears overrides first then recomputes inferred.
  */
 export async function recomputeMyTasteProfile(
   options: RecomputeTasteProfileOptions = {}
@@ -368,20 +409,32 @@ export async function recomputeMyTasteProfile(
     throw new Error('Not authenticated');
   }
 
-  const previousProfile = preserveOverrides ? await getMyTasteProfile() : null;
   const computed = await computeTasteProfile(user.id);
   
   if (!computed) {
+    if (!preserveOverrides) {
+      // Reset path with no ratings: still clear overrides only
+      return applyTasteProfilePatch('clear_overrides', {});
+    }
     return null;
   }
 
-  const profile = attachPreservedOverrides(computed, previousProfile, preserveOverrides);
-  return saveTasteProfile(user.id, profile);
+  if (!preserveOverrides) {
+    await applyTasteProfilePatch('clear_overrides', {});
+  }
+
+  return applyTasteProfilePatch('recompute_inferred', {
+    vector: computed.vector,
+    preferences: computed.preferences,
+    confidence: computed.confidence,
+    data_points: computed.data_points,
+  });
 }
 
 /**
  * Apply manual calibration overrides to taste profile.
  * `overrides` are raw slider targets stored under taste_profile.overrides.vector.
+ * Merges with existing override keys client-side, then atomically replaces overrides.vector.
  */
 export async function applyCalibration(
   overrides: Partial<TasteProfileVector>
@@ -398,43 +451,34 @@ export async function applyCalibration(
     overrides
   );
 
-  if (!currentProfile) {
-    const baseProfile: TasteProfile = {
-      version: PROFILE_VERSION,
-      vector: { body: 0.5, tannin: 0.5, acidity: 0.5, oak: 0.5, sweetness: 0.2, power: 0.5 },
-      preferences: {
-        reds_bias: 0,
-        whites_bias: 0,
-        sparkling_bias: 0,
-        style_tags: {},
-        regions: {},
-        grapes: {},
-      },
-      overrides: { vector: { ...mergedVector } },
-      confidence: 'low',
-      data_points: { rated_count: 0, last_rated_at: null },
-    };
+  return applyTasteProfilePatch('set_overrides', {
+    vector: mergedVector,
+  });
+}
 
-    return saveTasteProfile(user.id, baseProfile);
+/**
+ * Reset taste profile calibration.
+ * DECIDED Phase 2A: clears overrides only; preserves explicit; optionally recomputes inferred.
+ */
+export async function resetTasteProfile(): Promise<TasteProfile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('Not authenticated');
   }
 
-  const updatedProfile: TasteProfile = {
-    version: currentProfile.version,
-    vector: { ...currentProfile.vector },
-    preferences: {
-      ...currentProfile.preferences,
-      style_tags: { ...currentProfile.preferences.style_tags },
-      regions: { ...currentProfile.preferences.regions },
-      grapes: { ...currentProfile.preferences.grapes },
-    },
-    overrides: {
-      vector: mergedVector,
-    },
-    confidence: currentProfile.confidence,
-    data_points: { ...currentProfile.data_points },
-  };
+  await applyTasteProfilePatch('clear_overrides', {});
 
-  return saveTasteProfile(user.id, updatedProfile);
+  const computed = await computeTasteProfile(user.id);
+  if (!computed) {
+    return getMyTasteProfile();
+  }
+
+  return applyTasteProfilePatch('recompute_inferred', {
+    vector: computed.vector,
+    preferences: computed.preferences,
+    confidence: computed.confidence,
+    data_points: computed.data_points,
+  });
 }
 
 /**
@@ -606,14 +650,6 @@ export function getTopGrapes(profile: TasteProfile, limit = 3): string[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([grape]) => grape);
-}
-
-/**
- * Reset taste profile (relearn from ratings).
- * Explicitly discards calibration overrides — do not preserve them on recompute.
- */
-export async function resetTasteProfile(): Promise<TasteProfile | null> {
-  return recomputeMyTasteProfile({ preserveOverrides: false });
 }
 
 /**

@@ -14,12 +14,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const mockGetUser = vi.fn();
-const mockMaybeSingle = vi.fn();
-const mockSelect = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
-const mockEq = vi.fn(() => ({ select: mockSelect }));
-const mockUpdate = vi.fn(() => ({ eq: mockEq }));
+const mockRpc = vi.fn();
 const mockFrom = vi.fn(() => ({
-  update: mockUpdate,
   select: vi.fn(() => ({
     eq: vi.fn(() => ({
       single: vi.fn(),
@@ -31,6 +27,7 @@ vi.mock('../lib/supabase', () => ({
   supabase: {
     auth: { getUser: mockGetUser },
     from: mockFrom,
+    rpc: mockRpc,
   },
 }));
 
@@ -107,22 +104,15 @@ describe('calibration slider semantics (raw overrides)', () => {
   });
 });
 
-describe('applyCalibration / saveTasteProfile persistence', () => {
+describe('applyCalibration / apply_taste_profile_patch persistence', () => {
   beforeEach(() => {
     vi.resetModules();
     mockGetUser.mockReset();
-    mockMaybeSingle.mockReset();
-    mockSelect.mockClear();
-    mockEq.mockClear();
-    mockUpdate.mockClear();
+    mockRpc.mockReset();
     mockFrom.mockClear();
 
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-    mockSelect.mockImplementation(() => ({ maybeSingle: mockMaybeSingle }));
-    mockEq.mockImplementation(() => ({ select: mockSelect }));
-    mockUpdate.mockImplementation(() => ({ eq: mockEq }));
     mockFrom.mockImplementation(() => ({
-      update: mockUpdate,
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           single: vi.fn(async () => ({
@@ -136,7 +126,7 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
 
   let storedProfile: TasteProfile | null = null;
 
-  it('A/B/C: slider values reach applyCalibration and persist overrides.vector', async () => {
+  it('A/B/C: slider values reach applyCalibration and persist overrides.vector via RPC', async () => {
     storedProfile = baseProfile();
     delete storedProfile.overrides;
 
@@ -153,31 +143,28 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
       overrides: { vector: { ...sliderValues } },
     };
 
-    mockMaybeSingle.mockResolvedValue({
-      data: { taste_profile: persisted },
+    mockRpc.mockResolvedValue({
+      data: persisted,
       error: null,
     });
 
     const { applyCalibration } = await import('./tasteProfileService');
     const result = await applyCalibration(sliderValues);
 
-    expect(mockFrom).toHaveBeenCalledWith('profiles');
-    expect(mockUpdate).toHaveBeenCalled();
-    const updateCalls = mockUpdate.mock.calls as unknown as Array<
-      [{ taste_profile: TasteProfile }]
-    >;
-    const updatePayload = updateCalls[0]![0];
-    expect(updatePayload.taste_profile.overrides?.vector).toEqual(sliderValues);
-    expect(mockEq).toHaveBeenCalledWith('id', 'user-1');
+    expect(mockRpc).toHaveBeenCalledWith('apply_taste_profile_patch', {
+      p_action: 'set_overrides',
+      p_payload: { vector: sliderValues },
+    });
     expect(result?.overrides?.vector).toEqual(sliderValues);
   });
 
-  it('C: successful save returns the persisted updated profile from Supabase', async () => {
+  it('C: successful save returns the persisted updated profile from RPC', async () => {
     storedProfile = baseProfile({ vector: { body: 0.3 } });
     const persisted = baseProfile({ vector: { body: 0.88, tannin: 0.44 } });
+    persisted.overrides = { vector: { body: 0.88, tannin: 0.44 } };
 
-    mockMaybeSingle.mockResolvedValue({
-      data: { taste_profile: persisted },
+    mockRpc.mockResolvedValue({
+      data: persisted,
       error: null,
     });
 
@@ -187,26 +174,26 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
     expect(result).not.toBe(storedProfile);
   });
 
-  it('I: Supabase error does not produce a success result', async () => {
+  it('I: Supabase RPC error does not produce a success result', async () => {
     storedProfile = baseProfile();
-    mockMaybeSingle.mockResolvedValue({
+    mockRpc.mockResolvedValue({
       data: null,
       error: { code: '42501', message: 'permission denied' },
     });
 
     const { applyCalibration } = await import('./tasteProfileService');
-    await expect(applyCalibration({ body: 0.9 })).rejects.toThrow('Failed to save taste profile');
+    await expect(applyCalibration({ body: 0.9 })).rejects.toThrow('Failed to update taste profile');
   });
 
-  it('J: zero updated rows do not produce a false success', async () => {
+  it('J: empty RPC payload does not produce a false success', async () => {
     storedProfile = baseProfile();
-    mockMaybeSingle.mockResolvedValue({
+    mockRpc.mockResolvedValue({
       data: null,
       error: null,
     });
 
     const { applyCalibration } = await import('./tasteProfileService');
-    await expect(applyCalibration({ body: 0.9 })).rejects.toThrow('Failed to save taste profile');
+    await expect(applyCalibration({ body: 0.9 })).rejects.toThrow('Failed to update taste profile');
   });
 
   it('K: refetch after save sees saved calibration (ordering)', async () => {
@@ -214,8 +201,9 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
     delete storedProfile.overrides;
 
     const saved = baseProfile({ vector: { body: 0.91, oak: 0.12 } });
-    mockMaybeSingle.mockResolvedValue({
-      data: { taste_profile: saved },
+    saved.overrides = { vector: { body: 0.91, oak: 0.12 } };
+    mockRpc.mockResolvedValue({
+      data: saved,
       error: null,
     });
 
@@ -224,7 +212,6 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
 
     // Simulate subsequent getMyTasteProfile / page refresh reading DB
     mockFrom.mockImplementation(() => ({
-      update: mockUpdate,
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           single: vi.fn(async () => ({

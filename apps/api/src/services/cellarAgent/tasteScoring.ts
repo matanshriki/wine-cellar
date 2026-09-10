@@ -1,8 +1,10 @@
 /**
- * Taste-profile shortlist scoring (Phase 1 read-path unification).
+ * Taste-profile shortlist scoring (Phase 1 + Phase 2A explicit).
  *
- * Soft ranking only — never a hard filter. Agent memory remains active;
- * when both cover the same dimension, memory wins (no naïve double bonus).
+ * Soft ranking only — never a hard filter.
+ * Precedence: request > canonical explicit > agent memory (uncovered dims) >
+ *             calibration override > rating-derived > generic signals.
+ * Anti-double-count: once a dimension is claimed by a higher source, lower sources skip it.
  */
 
 import type { CellarBottleInput, ExtractedConstraints } from './types.js';
@@ -10,6 +12,7 @@ import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 import {
   getEffectiveTasteVector,
   hasVectorOverride,
+  type ExplicitPreferenceValue,
   type StructuredTasteProfile,
   type TasteConfidence,
 } from './tasteProfileTypes.js';
@@ -20,6 +23,8 @@ export const TASTE_SHORTLIST_SCORING_VERSION = 'taste_shortlist_v1';
 /**
  * Kill-switch: set TASTE_SHORTLIST_SCORING=0 to disable structured taste boosts
  * (agent memory + existing heuristics unchanged). Default: enabled.
+ * Does NOT gate reading of canonical explicit when enabled — that is always part of
+ * structured scoring when a profile is present. CANONICAL_TASTE_WRITES is write-only.
  */
 export function isTasteShortlistScoringEnabled(): boolean {
   const v = (process.env.TASTE_SHORTLIST_SCORING || '1').trim().toLowerCase();
@@ -50,6 +55,15 @@ export const AGENT_MEMORY_WEIGHTS = {
   body: 5,
   avoidHeavy: -6,
   avoidAcid: -4,
+} as const;
+
+/** Named explicit preference weights (Phase 2A) — bounded, slightly above memory. */
+export const EXPLICIT_PREFERENCE_WEIGHTS = {
+  region: 9,
+  grape: 9,
+  body: 6,
+  regionNeg: -5,
+  grapeNeg: -5,
 } as const;
 
 export type PreferenceDimension = 'region' | 'grape' | 'body' | 'color';
@@ -118,6 +132,9 @@ export function detectRequestBodyPreference(userMessageLower: string): 'light' |
   ) {
     return 'full';
   }
+  // Hebrew request markers (parity with Phase 1 detect; session "הערב" handled upstream)
+  if (/יין\s+קל|גוף\s+קל|משהו\s+קל/.test(t)) return 'light';
+  if (/גוף\s+מלא|יין\s+כבד|משהו\s+כבד/.test(t)) return 'full';
   return null;
 }
 
@@ -139,19 +156,37 @@ function topAffinityEntries(
     .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
 }
 
+function termMatchesBlob(id: string, blob: string): boolean {
+  const needle = id.toLowerCase().replace(/_/g, ' ').trim();
+  if (needle.length < 3) return false;
+  return blob.includes(needle) || blob.includes(needle.replace(/\s+/g, ''));
+}
+
+function dislikedWins(
+  liked: ExplicitPreferenceValue[],
+  disliked: ExplicitPreferenceValue[]
+): { liked: ExplicitPreferenceValue[]; disliked: ExplicitPreferenceValue[] } {
+  const dislikeIds = new Set(disliked.map((d) => d.id.toLowerCase()));
+  return {
+    liked: liked.filter((l) => !dislikeIds.has(l.id.toLowerCase())),
+    disliked,
+  };
+}
+
 export interface PreferenceScoreResult {
   score: number;
   features: string[];
   /** Dimensions already claimed by agent memory (for observability). */
   memoryClaimed: PreferenceDimension[];
+  /** Dimensions claimed by canonical explicit. */
+  explicitClaimed: PreferenceDimension[];
   /** Taste feature keys that actually moved the score. */
   tasteSignalKeys: string[];
 }
 
 /**
  * Apply agent memory + structured taste with explicit precedence:
- * request constraints (handled elsewhere) > agent memory dimension > taste override/inferred.
- * Overlapping region/grape: memory match blocks taste bonus for that dimension (not summed).
+ * request > explicit > memory (uncovered) > taste override/inferred.
  */
 export function applyPreferenceScores(
   bottle: CellarBottleInput,
@@ -162,60 +197,145 @@ export function applyPreferenceScores(
   let score = 0;
   const tasteSignalKeys: string[] = [];
   const memoryClaimed: PreferenceDimension[] = [];
+  const explicitClaimed: PreferenceDimension[] = [];
 
   const hay = bottleSearchBlob(bottle);
   const region = (bottle.region || '').toLowerCase();
   const gs = grapeString(bottle);
-  const color = (bottle.color || '').toLowerCase();
+  const requestBody = tasteCtx?.requestBodyPreference ?? null;
+  const profile = tasteCtx?.tasteProfile ?? null;
+  const explicit = profile?.explicit;
 
-  // ── Agent memory (existing behavior) ──────────────────────────────────────
-  let memoryRegionHit = false;
-  let memoryGrapeHit = false;
-  /** True when memory declares a valid bodyPreference for this whole request. */
+  let regionClaimed = false;
+  let grapeClaimed = false;
+  let bodyClaimed = !!requestBody;
+
+  // ── Canonical explicit (Phase 2A) ──────────────────────────────────────────
+  if (isTasteShortlistScoringEnabled() && explicit) {
+    const regions = dislikedWins(explicit.regions_liked || [], explicit.regions_disliked || []);
+    const grapes = dislikedWins(explicit.grapes_liked || [], explicit.grapes_disliked || []);
+
+    for (const item of regions.liked) {
+      if (termMatchesBlob(item.id, region) || termMatchesBlob(item.id, hay)) {
+        score += EXPLICIT_PREFERENCE_WEIGHTS.region;
+        features.push(`explicit_region:${item.id}`);
+        features.push('explicit_preference_region');
+        regionClaimed = true;
+        explicitClaimed.push('region');
+        break;
+      }
+    }
+    if (!regionClaimed) {
+      for (const item of regions.disliked) {
+        if (termMatchesBlob(item.id, region) || termMatchesBlob(item.id, hay)) {
+          score += EXPLICIT_PREFERENCE_WEIGHTS.regionNeg;
+          features.push(`explicit_region_neg:${item.id}`);
+          features.push('explicit_preference_region');
+          regionClaimed = true;
+          explicitClaimed.push('region');
+          break;
+        }
+      }
+    }
+
+    for (const item of grapes.liked) {
+      if (termMatchesBlob(item.id, gs) || termMatchesBlob(item.id, hay)) {
+        score += EXPLICIT_PREFERENCE_WEIGHTS.grape;
+        features.push(`explicit_grape:${item.id}`);
+        features.push('explicit_preference_grape');
+        grapeClaimed = true;
+        explicitClaimed.push('grape');
+        break;
+      }
+    }
+    if (!grapeClaimed) {
+      for (const item of grapes.disliked) {
+        if (termMatchesBlob(item.id, gs) || termMatchesBlob(item.id, hay)) {
+          score += EXPLICIT_PREFERENCE_WEIGHTS.grapeNeg;
+          features.push(`explicit_grape_neg:${item.id}`);
+          features.push('explicit_preference_grape');
+          grapeClaimed = true;
+          explicitClaimed.push('grape');
+          break;
+        }
+      }
+    }
+
+    // Explicit body owns the entire body dimension when set (and request did not claim it).
+    if (!requestBody && explicit.body) {
+      const bv = explicit.body.value;
+      bodyClaimed = true;
+      explicitClaimed.push('body');
+      if (bv === 'light' && LIGHT_GRAPE_RE.test(gs)) {
+        score += EXPLICIT_PREFERENCE_WEIGHTS.body;
+        features.push('explicit_body:light');
+        features.push('body_source:explicit');
+      } else if (bv === 'full' && FULL_GRAPE_RE.test(gs)) {
+        score += EXPLICIT_PREFERENCE_WEIGHTS.body;
+        features.push('explicit_body:full');
+        features.push('body_source:explicit');
+      } else if (bv === 'medium') {
+        features.push('explicit_body:medium');
+        features.push('body_source:explicit_owns_dimension');
+      } else {
+        features.push('body_source:explicit_owns_dimension');
+      }
+    }
+  }
+
+  // ── Agent memory (only uncovered dimensions) ───────────────────────────────
   const memoryBodyPreference = resolveMemoryBodyPreference(memory);
   const memoryOwnsBodyDimension = memoryBodyPreference !== null;
-  /** Explicit current-message body ask outranks memory and taste for this dimension. */
-  const requestBody = tasteCtx?.requestBodyPreference ?? null;
 
   if (memory) {
-    for (const r of memory.favoriteRegions || []) {
-      const rl = r.toLowerCase();
-      if (rl.length >= 3 && (region.includes(rl) || hay.includes(rl))) {
-        score += AGENT_MEMORY_WEIGHTS.region;
-        features.push(`mem_region:${rl}`);
-        features.push('agent_memory_region');
-        memoryRegionHit = true;
-        memoryClaimed.push('region');
-        break;
+    if (!regionClaimed) {
+      for (const r of memory.favoriteRegions || []) {
+        const rl = r.toLowerCase();
+        if (rl.length >= 3 && (region.includes(rl) || hay.includes(rl))) {
+          score += AGENT_MEMORY_WEIGHTS.region;
+          features.push(`mem_region:${rl}`);
+          features.push('agent_memory_region');
+          regionClaimed = true;
+          memoryClaimed.push('region');
+          break;
+        }
       }
     }
-    for (const g of memory.favoriteGrapes || []) {
-      const gl = g.toLowerCase();
-      if (gl.length >= 3 && gs.includes(gl)) {
-        score += AGENT_MEMORY_WEIGHTS.grape;
-        features.push(`mem_grape:${gl}`);
-        features.push('agent_memory_grape');
-        memoryGrapeHit = true;
-        memoryClaimed.push('grape');
-        break;
+    if (!grapeClaimed) {
+      for (const g of memory.favoriteGrapes || []) {
+        const gl = g.toLowerCase();
+        if (gl.length >= 3 && gs.includes(gl)) {
+          score += AGENT_MEMORY_WEIGHTS.grape;
+          features.push(`mem_grape:${gl}`);
+          features.push('agent_memory_grape');
+          grapeClaimed = true;
+          memoryClaimed.push('grape');
+          break;
+        }
       }
     }
 
-    // Memory body bonuses only when the current message did not claim the body dimension.
-    if (!requestBody && memoryBodyPreference === 'light' && LIGHT_GRAPE_RE.test(gs)) {
+    if (!bodyClaimed && !requestBody && memoryBodyPreference === 'light' && LIGHT_GRAPE_RE.test(gs)) {
       score += AGENT_MEMORY_WEIGHTS.body;
       features.push('mem_body:light');
       features.push('agent_memory_body');
       features.push('body_source:agent_memory');
+      bodyClaimed = true;
       if (!memoryClaimed.includes('body')) memoryClaimed.push('body');
-    } else if (!requestBody && memoryBodyPreference === 'full' && FULL_GRAPE_RE.test(gs)) {
+    } else if (
+      !bodyClaimed &&
+      !requestBody &&
+      memoryBodyPreference === 'full' &&
+      FULL_GRAPE_RE.test(gs)
+    ) {
       score += AGENT_MEMORY_WEIGHTS.body;
       features.push('mem_body:full');
       features.push('agent_memory_body');
       features.push('body_source:agent_memory');
+      bodyClaimed = true;
       if (!memoryClaimed.includes('body')) memoryClaimed.push('body');
-    } else if (!requestBody && memoryOwnsBodyDimension) {
-      // Dimension owned even when this bottle does not match the memory proxy.
+    } else if (!bodyClaimed && !requestBody && memoryOwnsBodyDimension) {
+      bodyClaimed = true;
       if (!memoryClaimed.includes('body')) memoryClaimed.push('body');
       features.push('body_source:agent_memory_owns_dimension');
     }
@@ -234,20 +354,14 @@ export function applyPreferenceScores(
   }
 
   // ── Structured taste profile (soft; skipped when disabled / absent) ───────
-  if (
-    !isTasteShortlistScoringEnabled() ||
-    !tasteCtx?.tasteProfile ||
-    !tasteCtx.tasteProfile
-  ) {
-    return { score, features, memoryClaimed, tasteSignalKeys };
+  if (!isTasteShortlistScoringEnabled() || !profile) {
+    return { score, features, memoryClaimed, explicitClaimed, tasteSignalKeys };
   }
 
-  const profile = tasteCtx.tasteProfile;
   const scale = confidenceScale(profile.confidence);
   const W = TASTE_SHORTLIST_WEIGHTS;
 
-  // Region affinities — skip if memory already claimed region
-  if (!memoryRegionHit) {
+  if (!regionClaimed) {
     for (const { key, weight } of topAffinityEntries(profile.preferences.regions, true)) {
       if (region.includes(key) || hay.includes(key)) {
         const boost = Math.min(W.regionPositiveMax, weight * W.regionPositiveMax) * scale;
@@ -273,8 +387,7 @@ export function applyPreferenceScores(
     }
   }
 
-  // Grape affinities — skip if memory already claimed grape
-  if (!memoryGrapeHit) {
+  if (!grapeClaimed) {
     for (const { key, weight } of topAffinityEntries(profile.preferences.grapes, true)) {
       if (gs.includes(key)) {
         const boost = Math.min(W.grapePositiveMax, weight * W.grapePositiveMax) * scale;
@@ -300,7 +413,7 @@ export function applyPreferenceScores(
     }
   }
 
-  // Body — request > valid memory bodyPreference (global) > taste override > inferred
+  // Body — request > explicit > memory > taste override > inferred
   if (requestBody === 'light') {
     if (LIGHT_GRAPE_RE.test(gs)) {
       score += W.bodyMax * scale;
@@ -308,7 +421,6 @@ export function applyPreferenceScores(
       features.push('body_source:request');
       tasteSignalKeys.push('request_body');
     }
-    // Do not apply memory or taste body when user asked for light
   } else if (requestBody === 'full') {
     if (FULL_GRAPE_RE.test(gs)) {
       score += W.bodyMax * scale;
@@ -316,14 +428,14 @@ export function applyPreferenceScores(
       features.push('body_source:request');
       tasteSignalKeys.push('request_body');
     }
-  } else if (memoryOwnsBodyDimension) {
-    // Valid agent-memory bodyPreference owns the whole body dimension for this request.
-    // Matching bottles already received mem_body above; never apply taste body here.
-    features.push('taste_body_suppressed_by_memory');
+  } else if (bodyClaimed) {
+    if (explicitClaimed.includes('body')) {
+      features.push('taste_body_suppressed_by_explicit');
+    } else {
+      features.push('taste_body_suppressed_by_memory');
+    }
   } else {
     const overrideBody = hasVectorOverride(profile, 'body');
-    // When a manual calibration exists for body, use that value for light/full
-    // preference (takes precedence over the rating-inferred vector).
     const bodyForPref = overrideBody
       ? (profile.overrides!.vector!.body as number)
       : getEffectiveTasteVector(profile).body;
@@ -344,11 +456,7 @@ export function applyPreferenceScores(
     }
   }
 
-  // Soft color bias — only when request did not already constrain color
-  // (caller passes constraints; we only nudge when no explicit color ask)
-  // Applied here only if tasteCtx carries a flag — see apply with constraints helper.
-
-  return { score, features, memoryClaimed, tasteSignalKeys };
+  return { score, features, memoryClaimed, explicitClaimed, tasteSignalKeys };
 }
 
 /**
@@ -405,6 +513,11 @@ export function collectTasteSignalKeysFromFeatures(features: string[]): string[]
     else if (f.startsWith('taste_body')) keys.add('taste_body');
     else if (f.startsWith('taste_color')) keys.add('taste_color');
     else if (f.startsWith('request_body')) keys.add('request_body');
+    else if (f.startsWith('explicit_region') || f.startsWith('explicit_preference_region'))
+      keys.add('explicit_region');
+    else if (f.startsWith('explicit_grape') || f.startsWith('explicit_preference_grape'))
+      keys.add('explicit_grape');
+    else if (f.startsWith('explicit_body')) keys.add('explicit_body');
     else if (f.startsWith('agent_memory_region') || f.startsWith('mem_region:'))
       keys.add('agent_memory_region');
     else if (f.startsWith('agent_memory_grape') || f.startsWith('mem_grape:'))

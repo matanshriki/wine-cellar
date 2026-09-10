@@ -44,6 +44,10 @@ import {
 import type { ActionContext, AgentResponseMeta, RecommendationExplanation } from './sommelierTypes.js';
 import { findSimilarCandidates } from './similarBottles.js';
 import { inferMemoryUpdateFromText } from './preferenceInference.js';
+import {
+  preferenceAckMessage,
+  processPreferenceMessage,
+} from './canonicalTasteWrite.js';
 import { parseJsonFromModelContent } from '../../utils/safeJson.js';
 import {
   markBottleOpened,
@@ -800,7 +804,6 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
 
       case 'memory_update': {
         try {
-        const inferred = inferMemoryUpdateFromText(message);
         if (!supabase) {
           return withMeta(
             { message: m(language,
@@ -810,6 +813,38 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             { routedAction: 'memory_update', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
+        const processed = await processPreferenceMessage({
+          userId,
+          message,
+          supabase,
+          language: language === 'he' ? 'he' : 'en',
+        });
+        if (processed) {
+          const ack =
+            preferenceAckMessage(
+              processed.acknowledgmentKind,
+              processed.candidate,
+              language === 'he' ? 'he' : 'en'
+            ) ||
+            m(
+              language,
+              "Got it — I've noted that preference.",
+              'קיבלתי — רשמתי את ההעדפה.'
+            );
+          logSommelier('action', {
+            action: 'memory_update',
+            user: shortUser(userId),
+            ok: 'true',
+            class: processed.candidate.class,
+            canonical: processed.canonicalApplied ? 'yes' : 'no',
+          });
+          return withMeta(
+            { message: ack, type: 'single' },
+            { routedAction: 'memory_update', actionResult: 'ok', processingMode: 'deterministic_action' }
+          );
+        }
+        // Fallback: legacy regex memory merge for phrases the Phase 2A extractor does not cover
+        const inferred = inferMemoryUpdateFromText(message);
         if (!inferred || Object.keys(inferred).length === 0) {
           return withMeta(
             { message: m(language,
@@ -820,7 +855,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           );
         }
         await mergeAndSavePreferences(userId, inferred, supabase);
-        logSommelier('action', { action: 'memory_update', user: shortUser(userId), ok: 'true' });
+        logSommelier('action', { action: 'memory_update', user: shortUser(userId), ok: 'true', path: 'legacy' });
         return withMeta(
           { message: m(language,
               "Done — I'll lean on those preferences when shortlisting your cellar from now on.",
@@ -842,17 +877,47 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             { routedAction: 'feedback_inline', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
+        const processed = await processPreferenceMessage({
+          userId,
+          message,
+          supabase,
+          language: language === 'he' ? 'he' : 'en',
+        });
+        if (processed) {
+          const ack =
+            preferenceAckMessage(
+              processed.acknowledgmentKind,
+              processed.candidate,
+              language === 'he' ? 'he' : 'en'
+            ) ||
+            m(
+              language,
+              "Thanks — I've logged that feedback.",
+              'תודה — רשמתי את המשוב.'
+            );
+          logSommelier('action', {
+            action: 'feedback_inline',
+            user: shortUser(userId),
+            ok: 'true',
+            class: processed.candidate.class,
+          });
+          return withMeta(
+            { message: ack, type: 'single' },
+            { routedAction: 'feedback_inline', actionResult: 'ok', processingMode: 'deterministic_action' }
+          );
+        }
+        // Unstructured feedback: evidence-style persist without promoting to global memory
         await saveSommelierFeedback(userId, {
           rawText: message,
           recommendationEventId: actionContext?.lastEventId ?? null,
           bottleId: actionContext?.lastRecommendationBottleId ?? null,
-          supabase, applyToMemory: true,
+          supabase, applyToMemory: false,
         });
         logSommelier('action', { action: 'feedback_inline', user: shortUser(userId), ok: 'true' });
         return withMeta(
           { message: m(language,
-              "Thanks — I've logged that and will adjust future picks from your cellar.",
-              "תודה — רשמתי זאת ואתאים את הבחירות העתידיות מהמרתף שלך."
+              "Thanks — I've logged that and will use it as feedback for future picks.",
+              "תודה — רשמתי זאת ואשתמש בזה כמשוב לבחירות הבאות."
             ), type: 'single' },
           { routedAction: 'feedback_inline', actionResult: 'ok', processingMode: 'deterministic_action' }
         );
