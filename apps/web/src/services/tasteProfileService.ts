@@ -21,6 +21,7 @@ export { attachPreservedOverrides } from './tasteProfileOverrides';
 export {
   getCalibrationOverrideVector,
   getCalibrationSliderValues,
+  getProfileCardDisplayVector,
   mergeCalibrationOverrideVector,
   CALIBRATION_SLIDER_DEFAULTS,
 } from './tasteProfileCalibration';

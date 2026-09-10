@@ -40,6 +40,24 @@ export function mergeCalibrationOverrideVector(
 }
 
 /**
+ * Profile-card display vector: calibrated overrides win per dimension.
+ * Falls back to the inferred/learned vector when a dimension has no override.
+ * Used for UI bars/chips only — recommendation affinity still uses getEffectiveVector.
+ */
+export function getProfileCardDisplayVector(profile: TasteProfile): TasteProfileVector {
+  const learned = profile.vector;
+  const overrides = profile.overrides?.vector || {};
+  return {
+    body: overrides.body ?? learned.body,
+    tannin: overrides.tannin ?? learned.tannin,
+    acidity: overrides.acidity ?? learned.acidity,
+    oak: overrides.oak ?? learned.oak,
+    sweetness: overrides.sweetness ?? learned.sweetness,
+    power: overrides.power ?? learned.power,
+  };
+}
+
+/**
  * Slider display values: saved overrides win per-dimension; else defaults.
  * Never uses the inferred profile vector (calibration is raw overrides).
  */

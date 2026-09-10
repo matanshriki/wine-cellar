@@ -14,6 +14,7 @@ import * as tasteProfileService from '../services/tasteProfileService';
 import {
   getCalibrationOverrideVector,
   getCalibrationSliderValues,
+  getProfileCardDisplayVector,
 } from '../services/tasteProfileCalibration';
 import { WineLoader } from './WineLoader';
 
@@ -121,10 +122,17 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
     );
   }
   
-  const descriptors = profile ? tasteProfileService.getTasteDescriptors(profile) : [];
+  const displayVector = profile ? getProfileCardDisplayVector(profile) : null;
+  // Descriptors follow the same visible preferences as the bars (overrides win).
+  const descriptors = profile
+    ? tasteProfileService.getTasteDescriptors({
+        ...profile,
+        vector: displayVector!,
+        overrides: undefined,
+      })
+    : [];
   const topRegions = profile ? tasteProfileService.getTopRegions(profile, 3) : [];
   const topGrapes = profile ? tasteProfileService.getTopGrapes(profile, 3) : [];
-  const effectiveVector = profile ? tasteProfileService.getEffectiveVector(profile) : null;
   
   return (
     <motion.div
@@ -245,16 +253,16 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
             </div>
           )}
           
-          {/* Taste vector visualization */}
-          {effectiveVector && (
+          {/* Taste vector visualization — shows calibrated prefs when set */}
+          {displayVector && (
             <div className="mb-6 p-4 rounded-xl" style={{ background: 'var(--bg-surface-elevated)' }}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <TasteBar label={t('tasteProfile.body', 'Body')} value={effectiveVector.body} />
-                <TasteBar label={t('tasteProfile.tannin', 'Tannin')} value={effectiveVector.tannin} />
-                <TasteBar label={t('tasteProfile.acidity', 'Acidity')} value={effectiveVector.acidity} />
-                <TasteBar label={t('tasteProfile.oak', 'Oak')} value={effectiveVector.oak} />
-                <TasteBar label={t('tasteProfile.sweetness', 'Sweetness')} value={effectiveVector.sweetness} />
-                <TasteBar label={t('tasteProfile.power', 'Power')} value={effectiveVector.power} />
+                <TasteBar label={t('tasteProfile.body', 'Body')} value={displayVector.body} />
+                <TasteBar label={t('tasteProfile.tannin', 'Tannin')} value={displayVector.tannin} />
+                <TasteBar label={t('tasteProfile.acidity', 'Acidity')} value={displayVector.acidity} />
+                <TasteBar label={t('tasteProfile.oak', 'Oak')} value={displayVector.oak} />
+                <TasteBar label={t('tasteProfile.sweetness', 'Sweetness')} value={displayVector.sweetness} />
+                <TasteBar label={t('tasteProfile.power', 'Power')} value={displayVector.power} />
               </div>
             </div>
           )}

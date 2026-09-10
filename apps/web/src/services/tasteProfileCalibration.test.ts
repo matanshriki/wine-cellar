@@ -3,6 +3,7 @@ import type { TasteProfile } from '../types/supabase';
 import {
   getCalibrationOverrideVector,
   getCalibrationSliderValues,
+  getProfileCardDisplayVector,
   mergeCalibrationOverrideVector,
 } from './tasteProfileCalibration';
 import { attachPreservedOverrides } from './tasteProfileOverrides';
@@ -91,6 +92,18 @@ describe('calibration slider semantics (raw overrides)', () => {
 
     expect(merged).toEqual({ body: 0.9, tannin: 0.3, oak: 0.15 });
     expect(existing).toEqual({ body: 0.2, tannin: 0.3 });
+  });
+
+  it('profile card display prefers saved overrides over inferred vector', () => {
+    const profile = baseProfile({ vector: { body: 0.95, oak: 0.1 } });
+    profile.vector.body = 0.2;
+    profile.vector.oak = 0.8;
+    profile.vector.tannin = 0.45;
+
+    const display = getProfileCardDisplayVector(profile);
+    expect(display.body).toBe(0.95);
+    expect(display.oak).toBe(0.1);
+    expect(display.tannin).toBe(0.45);
   });
 });
 
