@@ -1,5 +1,5 @@
 /**
- * Phase 2A kill-switch + canonical evidence apply client (user JWT supabase).
+ * Phase 2A/2B.1 kill-switch + canonical evidence / pending confirmation client.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -8,13 +8,24 @@ import {
   extractPreferenceEvidence,
   type ExtractedPreferenceCandidate,
 } from './preferenceExtractRules.js';
-import { mergeAndSavePreferences } from './sommelierRepo.js';
+import {
+  mergeAndSavePreferences,
+  patchSommelierMemoryRemovals,
+} from './sommelierRepo.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 import { logSommelier, logSommelierWarn, shortUser } from './sommelierLog.js';
+import type { StructuredTasteProfile } from './tasteProfileTypes.js';
+import {
+  classifyConfirmationDecision,
+  detectPendingTasteAction,
+  pendingPromptMessage,
+  resolveAckMessage,
+  type PendingTasteAction,
+} from './tasteConfirmation.js';
+import { validateOwnedConversationId } from './conversationOwnership.js';
 
 /**
  * CANONICAL_TASTE_WRITES — default OFF when missing/invalid.
- * Truth table: missing/empty/0/false/off → OFF; 1/true/on → ON; other → OFF + warn.
  */
 export function isCanonicalTasteWritesEnabled(): boolean {
   const raw = process.env.CANONICAL_TASTE_WRITES;
@@ -39,8 +50,14 @@ export type CanonicalApplyResult = {
     | 'unsupported_change'
     | 'session_ack'
     | 'bottle_ack'
+    | 'pending_confirm'
+    | 'not_found'
+    | 'reaffirm'
     | 'none';
   memoryDualWrite: 'ok' | 'failed' | 'skipped' | 'legacy_only';
+  pendingAction?: PendingTasteAction;
+  /** Override message when pending/resolve needs exact bilingual text */
+  messageOverride?: string;
 };
 
 function legacyMemoryDelta(
@@ -80,17 +97,353 @@ async function writeLegacyMemory(
   }
 }
 
+async function syncLegacyAfterPendingApply(
+  userId: string,
+  action: PendingTasteAction,
+  supabase: SupabaseClient
+): Promise<'ok' | 'failed' | 'skipped'> {
+  try {
+    if (action.action === 'replace' && action.dimension === 'body' && action.proposedValue) {
+      if (action.proposedValue === 'light' || action.proposedValue === 'full') {
+        await patchSommelierMemoryRemovals(
+          userId,
+          { setBodyPreference: action.proposedValue },
+          supabase
+        );
+        return 'ok';
+      }
+    }
+    if (action.action === 'remove' && action.dimension === 'body') {
+      await patchSommelierMemoryRemovals(userId, { clearBodyPreference: true }, supabase);
+      return 'ok';
+    }
+    if (action.action === 'remove' && action.dimension === 'region') {
+      await patchSommelierMemoryRemovals(
+        userId,
+        { removeRegions: [action.existingValue, action.labelEn || ''].filter(Boolean) },
+        supabase
+      );
+      return 'ok';
+    }
+    if (action.action === 'remove' && action.dimension === 'grape') {
+      await patchSommelierMemoryRemovals(
+        userId,
+        { removeGrapes: [action.existingValue, action.labelEn || ''].filter(Boolean) },
+        supabase
+      );
+      return 'ok';
+    }
+    if (action.action === 'move_polarity' && action.dimension === 'region') {
+      if (action.proposedPolarity === 'dislike') {
+        await patchSommelierMemoryRemovals(
+          userId,
+          { removeRegions: [action.existingValue, action.labelEn || ''].filter(Boolean) },
+          supabase
+        );
+      } else {
+        await mergeAndSavePreferences(
+          userId,
+          { favoriteRegions: [action.labelEn || action.existingValue], version: 1 },
+          supabase
+        );
+      }
+      return 'ok';
+    }
+    if (action.action === 'move_polarity' && action.dimension === 'grape') {
+      if (action.proposedPolarity === 'dislike') {
+        await patchSommelierMemoryRemovals(
+          userId,
+          { removeGrapes: [action.existingValue, action.labelEn || ''].filter(Boolean) },
+          supabase
+        );
+      } else {
+        await mergeAndSavePreferences(
+          userId,
+          { favoriteGrapes: [action.labelEn || action.existingValue], version: 1 },
+          supabase
+        );
+      }
+      return 'ok';
+    }
+    return 'skipped';
+  } catch {
+    return 'failed';
+  }
+}
+
 export async function processPreferenceMessage(params: {
   userId: string;
   message: string;
   supabase: SupabaseClient;
   language?: 'en' | 'he';
+  tasteProfile?: StructuredTasteProfile | null;
+  conversationId?: string | null;
 }): Promise<CanonicalApplyResult | null> {
   const candidate = extractPreferenceEvidence(params.message);
   if (!candidate) return null;
 
+  const language = params.language === 'he' ? 'he' : 'en';
   const writesOn = isCanonicalTasteWritesEnabled();
-  const wantApply = writesOn && candidate.applyCanonical;
+  const pendingDetect = detectPendingTasteAction(candidate, params.tasteProfile ?? null);
+
+  // ── Pending confirmation creation (2B.1) ─────────────────────────────────
+  if (writesOn && pendingDetect.kind === 'pending') {
+    const owned = await validateOwnedConversationId(
+      params.supabase,
+      params.conversationId
+    );
+    if (!owned.ok) {
+      return {
+        candidate,
+        eventId: null,
+        canonicalApplied: false,
+        reason:
+          owned.reason === 'invalid_format'
+            ? 'invalid_conversation'
+            : 'forbidden_conversation',
+        acknowledgmentKind: 'unsupported_change',
+        memoryDualWrite: 'skipped',
+        messageOverride:
+          language === 'he'
+            ? 'לא הצלחתי לקשר את ההודעה לשיחה שלך. רענן ונסה שוב.'
+            : "I couldn't tie that message to your conversation. Refresh and try again.",
+      };
+    }
+    const conversationId = owned.conversationId;
+    const action = pendingDetect.action;
+    const idempotencyKey = buildIdempotencyKey({
+      userId: params.userId,
+      message: params.message,
+      candidate,
+    });
+    try {
+      const { data, error } = await params.supabase.rpc('create_taste_pending_confirmation', {
+        p_payload: {
+          idempotency_key: `${idempotencyKey}_pending`,
+          action: action.action,
+          dimension: action.dimension,
+          existing_value: action.existingValue,
+          proposed_value: action.proposedValue ?? null,
+          proposed_polarity: action.proposedPolarity ?? null,
+          locale: candidate.locale,
+          raw_text: params.message.slice(0, 4000),
+          conversation_id: conversationId,
+          label_en: action.labelEn ?? candidate.labelEn ?? null,
+          label_he: action.labelHe ?? candidate.labelHe ?? null,
+        },
+      });
+      if (error) {
+        logSommelierWarn('taste_pending_rpc', {
+          user: shortUser(params.userId),
+          code: error.code,
+          message: error.message?.slice(0, 120),
+        });
+        return {
+          candidate,
+          eventId: null,
+          canonicalApplied: false,
+          reason: 'rpc_error',
+          acknowledgmentKind: 'unsupported_change',
+          memoryDualWrite: 'skipped',
+        };
+      }
+      const row = data as { event_id?: string; reason?: string } | null;
+      logSommelier('taste_preference_extract', {
+        user: shortUser(params.userId),
+        class: candidate.class,
+        applied: 'no',
+        writes: 'on',
+        rpc: 'ok',
+        reason: 'pending_confirmation',
+      });
+      return {
+        candidate,
+        eventId: row?.event_id ?? null,
+        canonicalApplied: false,
+        reason: 'pending_confirmation',
+        acknowledgmentKind: 'pending_confirm',
+        memoryDualWrite: 'skipped',
+        pendingAction: action,
+        messageOverride: pendingPromptMessage(action, language),
+      };
+    } catch (e) {
+      logSommelierWarn('taste_pending_rpc_throw', {
+        user: shortUser(params.userId),
+        err: e instanceof Error ? e.message.slice(0, 120) : 'unknown',
+      });
+      return {
+        candidate,
+        eventId: null,
+        canonicalApplied: false,
+        reason: 'rpc_throw',
+        acknowledgmentKind: 'unsupported_change',
+        memoryDualWrite: 'skipped',
+      };
+    }
+  }
+
+  if (pendingDetect.kind === 'not_found') {
+    return {
+      candidate,
+      eventId: null,
+      canonicalApplied: false,
+      reason: 'not_found',
+      acknowledgmentKind: 'not_found',
+      memoryDualWrite: 'skipped',
+      messageOverride:
+        language === 'he'
+          ? 'לא מצאתי העדפה שמורה כזו להסרה.'
+          : "I couldn't find that saved preference to remove.",
+    };
+  }
+
+  if (pendingDetect.kind === 'reaffirm') {
+    // Idempotent support: still write evidence with apply when writes on
+    // Fall through to normal apply path with applyCanonical true for remember
+  }
+
+  // Kill switch OFF + would-be pending → do not claim mutation; legacy-only for remember
+  if (!writesOn && pendingDetect.kind === 'pending') {
+    return {
+      candidate,
+      eventId: null,
+      canonicalApplied: false,
+      reason: 'writes_off',
+      acknowledgmentKind: 'unsupported_change',
+      memoryDualWrite: 'skipped',
+      messageOverride:
+        language === 'he'
+          ? 'רשמתי את הבקשה, אבל עדכון/הסרת העדפה שמורה מהצ׳אט לא פעיל כרגע. ההעדפה הקיימת לא שונתה.'
+          : "I've noted that, but changing or removing a saved preference from chat isn't enabled right now. Your existing preference was not changed.",
+    };
+  }
+
+  // Retraction without pending (writes off or not stored) already handled
+  if (candidate.class === 'retraction' && pendingDetect.kind !== 'reaffirm') {
+    if (pendingDetect.kind === 'none') {
+      return {
+        candidate,
+        eventId: null,
+        canonicalApplied: false,
+        reason: 'not_found',
+        acknowledgmentKind: 'not_found',
+        memoryDualWrite: 'skipped',
+        messageOverride:
+          language === 'he'
+            ? 'לא מצאתי העדפה שמורה כזו להסרה.'
+            : "I couldn't find that saved preference to remove.",
+      };
+    }
+  }
+
+  const wantApply =
+    writesOn &&
+    candidate.applyCanonical &&
+    (pendingDetect.kind === 'apply_direct' ||
+      pendingDetect.kind === 'reaffirm' ||
+      pendingDetect.kind === 'none');
+
+  // First-time remember-dislike: create pending + auto-confirm (no user prompt)
+  if (
+    writesOn &&
+    pendingDetect.kind === 'apply_direct' &&
+    candidate.class === 'stable_remember' &&
+    candidate.polarity === 'dislike' &&
+    (candidate.dimension === 'region' || candidate.dimension === 'grape')
+  ) {
+    const owned = await validateOwnedConversationId(
+      params.supabase,
+      params.conversationId
+    );
+    if (!owned.ok) {
+      return {
+        candidate,
+        eventId: null,
+        canonicalApplied: false,
+        reason:
+          owned.reason === 'invalid_format'
+            ? 'invalid_conversation'
+            : 'forbidden_conversation',
+        acknowledgmentKind: 'unsupported_change',
+        memoryDualWrite: 'skipped',
+        messageOverride:
+          language === 'he'
+            ? 'לא הצלחתי לקשר את ההודעה לשיחה שלך. רענן ונסה שוב.'
+            : "I couldn't tie that message to your conversation. Refresh and try again.",
+      };
+    }
+    const conversationId = owned.conversationId;
+    const idempotencyKey = buildIdempotencyKey({
+      userId: params.userId,
+      message: params.message,
+      candidate,
+    });
+    try {
+      const { data: created, error: createErr } = await params.supabase.rpc(
+        'create_taste_pending_confirmation',
+        {
+          p_payload: {
+            idempotency_key: `${idempotencyKey}_dislike`,
+            action: 'move_polarity',
+            dimension: candidate.dimension,
+            existing_value: candidate.valueId,
+            proposed_value: candidate.valueId,
+            proposed_polarity: 'dislike',
+            locale: candidate.locale,
+            raw_text: params.message.slice(0, 4000),
+            conversation_id: conversationId,
+            label_en: candidate.labelEn ?? null,
+            label_he: candidate.labelHe ?? null,
+          },
+        }
+      );
+      if (createErr) throw createErr;
+      const eventId = (created as { event_id?: string } | null)?.event_id;
+      const { data: resolved, error: resolveErr } = await params.supabase.rpc(
+        'resolve_taste_confirmation',
+        {
+          p_payload: {
+            decision: 'confirm',
+            event_id: eventId ?? null,
+            conversation_id: conversationId,
+          },
+        }
+      );
+      if (resolveErr) throw resolveErr;
+      const applied = !!(resolved as { canonical_applied?: boolean } | null)?.canonical_applied;
+      if (applied) {
+        await syncLegacyAfterPendingApply(
+          params.userId,
+          {
+            action: 'move_polarity',
+            dimension: candidate.dimension,
+            existingValue: candidate.valueId,
+            proposedValue: candidate.valueId,
+            proposedPolarity: 'dislike',
+            labelEn: candidate.labelEn,
+            labelHe: candidate.labelHe,
+          },
+          params.supabase
+        );
+      }
+      return {
+        candidate,
+        eventId: eventId ?? null,
+        canonicalApplied: applied,
+        reason: (resolved as { reason?: string } | null)?.reason ?? 'applied',
+        acknowledgmentKind: applied ? 'remember_saved' : 'unsupported_change',
+        memoryDualWrite: applied ? 'ok' : 'skipped',
+      };
+    } catch (e) {
+      logSommelierWarn('taste_dislike_apply', {
+        user: shortUser(params.userId),
+        err: e instanceof Error ? e.message.slice(0, 120) : 'unknown',
+      });
+    }
+  }
+
+  // For retraction never apply via 2A RPC
+  const applyCanonical = wantApply && candidate.class === 'stable_remember' && candidate.polarity === 'like';
 
   const idempotencyKey = buildIdempotencyKey({
     userId: params.userId,
@@ -110,7 +463,8 @@ export async function processPreferenceMessage(params: {
         idempotency_key: idempotencyKey,
         scope: candidate.scope,
         polarity: candidate.polarity,
-        status: candidate.status,
+        status:
+          candidate.class === 'retraction' ? 'pending_unsupported' : candidate.status,
         target_dimension: candidate.dimension,
         target_value: candidate.valueId,
         locale: candidate.locale,
@@ -123,7 +477,7 @@ export async function processPreferenceMessage(params: {
             : candidate.polarity === 'dislike'
               ? 'negative'
               : 'neutral',
-        apply_canonical: wantApply,
+        apply_canonical: applyCanonical,
         label_en: candidate.labelEn ?? null,
         label_he: candidate.labelHe ?? null,
         preference_delta: {
@@ -133,7 +487,7 @@ export async function processPreferenceMessage(params: {
           dimension: candidate.dimension,
           value_id: candidate.valueId,
           confidence: candidate.confidence,
-          requires_confirmation: candidate.status === 'pending_unsupported',
+          requires_confirmation: false,
           applied_to_canonical: false,
           source_route: 'memory_update',
           extraction_method: 'rules_v2',
@@ -167,7 +521,6 @@ export async function processPreferenceMessage(params: {
     reason = 'rpc_throw';
   }
 
-  // Dual-write legacy memory only after successful canonical apply (kill-switch ON path).
   if (canonicalApplied) {
     const mem = await writeLegacyMemory(params.userId, candidate, params.supabase);
     memoryDualWrite = mem;
@@ -177,22 +530,18 @@ export async function processPreferenceMessage(params: {
         event: eventId ?? 'none',
       });
     }
-  } else if (
-    !writesOn &&
-    candidate.class === 'stable_remember' &&
-    candidate.applyCanonical
-  ) {
-    // Kill-switch OFF: keep legacy agent-memory behavior without claiming canonical save.
+  } else if (!writesOn && candidate.class === 'stable_remember' && candidate.applyCanonical) {
     const mem = await writeLegacyMemory(params.userId, candidate, params.supabase);
     memoryDualWrite = mem === 'ok' ? 'legacy_only' : mem;
   }
 
   let acknowledgmentKind: CanonicalApplyResult['acknowledgmentKind'] = 'none';
-  if (candidate.class === 'stable_remember') {
+  if (pendingDetect.kind === 'reaffirm' && (canonicalApplied || reason === 'already_applied')) {
+    acknowledgmentKind = 'reaffirm';
+  } else if (candidate.class === 'stable_remember') {
     if (canonicalApplied) acknowledgmentKind = 'remember_saved';
-    else if (reason === 'contradiction' || candidate.status === 'pending_unsupported') {
-      acknowledgmentKind = 'unsupported_change';
-    } else acknowledgmentKind = 'remember_disabled';
+    else if (reason === 'contradiction') acknowledgmentKind = 'unsupported_change';
+    else acknowledgmentKind = 'remember_disabled';
   } else if (candidate.class === 'retraction' || candidate.class === 'contradiction') {
     acknowledgmentKind = 'unsupported_change';
   } else if (candidate.class === 'stable_general') {
@@ -201,8 +550,6 @@ export async function processPreferenceMessage(params: {
     acknowledgmentKind = 'session_ack';
   } else if (candidate.class === 'bottle') {
     acknowledgmentKind = 'bottle_ack';
-  } else if (candidate.class === 'ambiguous' || candidate.class === 'operational') {
-    acknowledgmentKind = 'none';
   }
 
   logSommelier('taste_preference_extract', {
@@ -224,6 +571,222 @@ export async function processPreferenceMessage(params: {
   };
 }
 
+export async function processTasteConfirmation(params: {
+  userId: string;
+  message: string;
+  supabase: SupabaseClient;
+  language?: 'en' | 'he';
+  conversationId?: string | null;
+}): Promise<{ message: string; reason: string; applied: boolean }> {
+  const language = params.language === 'he' ? 'he' : 'en';
+  const decision = classifyConfirmationDecision(params.message);
+
+  if (decision === null) {
+    return {
+      message:
+        language === 'he'
+          ? 'לא הבנתי. אפשר לענות ב״כן״ או ״לא״ לגבי שינוי ההעדפה.'
+          : "I didn't catch that. Please answer yes or no about the preference change.",
+      reason: 'not_confirmation',
+      applied: false,
+    };
+  }
+
+  if (decision === 'ambiguous') {
+    return {
+      message:
+        language === 'he'
+          ? 'אפשר לענות בבירור ״כן״ או ״לא״ לגבי שינוי ההעדפה?'
+          : 'Please answer clearly with yes or no about the preference change.',
+      reason: 'ambiguous',
+      applied: false,
+    };
+  }
+
+  if (!isCanonicalTasteWritesEnabled()) {
+    return {
+      message:
+        language === 'he'
+          ? 'עדכון העדפות שמורות מהצ׳אט לא פעיל כרגע. לא שיניתי דבר.'
+          : 'Saved preference updates from chat are not enabled right now. Nothing was changed.',
+      reason: 'writes_off',
+      applied: false,
+    };
+  }
+
+  const owned = await validateOwnedConversationId(
+    params.supabase,
+    params.conversationId
+  );
+  if (!owned.ok) {
+    return {
+      message:
+        language === 'he'
+          ? 'לא הצלחתי לקשר את האישור לשיחה שלך. רענן ונסה שוב.'
+          : "I couldn't tie that confirmation to your conversation. Refresh and try again.",
+      reason:
+        owned.reason === 'invalid_format'
+          ? 'invalid_conversation'
+          : 'forbidden_conversation',
+      applied: false,
+    };
+  }
+  const conversationId = owned.conversationId;
+
+  try {
+    const { data, error } = await params.supabase.rpc('resolve_taste_confirmation', {
+      p_payload: {
+        decision: decision === 'confirm' ? 'confirm' : 'reject',
+        conversation_id: conversationId,
+      },
+    });
+
+    if (error) {
+      logSommelierWarn('taste_resolve_rpc', {
+        user: shortUser(params.userId),
+        code: error.code,
+        message: error.message?.slice(0, 120),
+      });
+      return {
+        message:
+          language === 'he'
+            ? 'לא הצלחתי לעדכן את ההעדפה כרגע. נסה שוב.'
+            : "I couldn't update that preference just now. Please try again.",
+        reason: 'rpc_error',
+        applied: false,
+      };
+    }
+
+    const row = data as {
+      reason?: string;
+      canonical_applied?: boolean;
+      pending_action?: Record<string, unknown>;
+      event_id?: string;
+    } | null;
+
+    let reason = row?.reason || 'not_found';
+    const pendingRaw = row?.pending_action;
+    const action: PendingTasteAction | null = pendingRaw
+      ? {
+          action: pendingRaw.action as PendingTasteAction['action'],
+          dimension: pendingRaw.dimension as PendingTasteAction['dimension'],
+          existingValue: String(pendingRaw.existing_value || ''),
+          proposedValue: pendingRaw.proposed_value
+            ? String(pendingRaw.proposed_value)
+            : undefined,
+          proposedPolarity: pendingRaw.proposed_polarity as 'like' | 'dislike' | undefined,
+          labelEn: pendingRaw.label_en ? String(pendingRaw.label_en) : undefined,
+          labelHe: pendingRaw.label_he ? String(pendingRaw.label_he) : undefined,
+        }
+      : null;
+
+    // Mixed client: non-null conversation resolve must not fall back to user-level NULL pending.
+    if (reason === 'not_found' && conversationId) {
+      const mixed = await handleNullPendingOnScopedResolve({
+        supabase: params.supabase,
+        userId: params.userId,
+      });
+      if (mixed) {
+        reason = 'stale_null_pending';
+        logSommelier('taste_preference_extract', {
+          user: shortUser(params.userId),
+          class: 'confirmation',
+          applied: 'no',
+          writes: 'on',
+          rpc: 'ok',
+          reason,
+        });
+        return {
+          message: resolveAckMessage(reason, null, language),
+          reason,
+          applied: false,
+        };
+      }
+    }
+
+    if (reason === 'applied' && action) {
+      const mem = await syncLegacyAfterPendingApply(params.userId, action, params.supabase);
+      if (mem === 'failed') {
+        logSommelierWarn('taste_memory_dual_write_failed', {
+          user: shortUser(params.userId),
+          event: row?.event_id ?? 'none',
+        });
+      }
+    }
+
+    logSommelier('taste_preference_extract', {
+      user: shortUser(params.userId),
+      class: 'confirmation',
+      applied: row?.canonical_applied ? 'yes' : 'no',
+      writes: 'on',
+      rpc: 'ok',
+      reason,
+    });
+
+    return {
+      message: resolveAckMessage(reason, action, language),
+      reason,
+      applied: !!row?.canonical_applied,
+    };
+  } catch (e) {
+    logSommelierWarn('taste_resolve_rpc_throw', {
+      user: shortUser(params.userId),
+      err: e instanceof Error ? e.message.slice(0, 120) : 'unknown',
+    });
+    return {
+      message:
+        language === 'he'
+          ? 'לא הצלחתי לעדכן את ההעדפה כרגע. נסה שוב.'
+          : "I couldn't update that preference just now. Please try again.",
+      reason: 'rpc_throw',
+      applied: false,
+    };
+  }
+}
+
+/**
+ * When a scoped (non-null) resolve finds no pending, optionally supersede an orphaned
+ * user-level NULL pending from an old client — never apply it into the new conversation.
+ */
+async function handleNullPendingOnScopedResolve(params: {
+  supabase: SupabaseClient;
+  userId: string;
+}): Promise<boolean> {
+  const { data, error } = await params.supabase
+    .from('sommelier_feedback_events')
+    .select('id')
+    .eq('user_id', params.userId)
+    .is('conversation_id', null)
+    .eq('status', 'pending_confirmation')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data?.id) {
+    return false;
+  }
+
+  const { error: updateError } = await params.supabase
+    .from('sommelier_feedback_events')
+    .update({
+      status: 'superseded',
+      resolved_at: new Date().toISOString(),
+    })
+    .eq('id', data.id)
+    .eq('user_id', params.userId)
+    .eq('status', 'pending_confirmation')
+    .is('conversation_id', null);
+
+  if (updateError) {
+    logSommelierWarn('taste_null_pending_supersede', {
+      user: shortUser(params.userId),
+      message: updateError.message?.slice(0, 120),
+    });
+  }
+
+  return true;
+}
+
 export function preferenceAckMessage(
   kind: CanonicalApplyResult['acknowledgmentKind'],
   candidate: ExtractedPreferenceCandidate,
@@ -234,7 +797,7 @@ export function preferenceAckMessage(
       ? candidate.labelHe || candidate.labelEn || candidate.valueId
       : candidate.labelEn || candidate.valueId;
 
-  if (kind === 'remember_saved') {
+  if (kind === 'remember_saved' || kind === 'reaffirm') {
     if (language === 'he') {
       if (candidate.dimension === 'body') {
         return `הבנתי — אזכור שאתה מעדיף יינות עם גוף ${candidate.valueId === 'full' ? 'מלא' : candidate.valueId === 'light' ? 'קל' : 'בינוני'}.`;
@@ -282,3 +845,5 @@ export function preferenceAckMessage(
 
   return null;
 }
+
+export { classifyConfirmationDecision };

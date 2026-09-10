@@ -24,6 +24,7 @@ import {
   generateConversationTitle,
   type SommelierConversation,
 } from '../services/sommelierConversationService';
+import { createConversationEnsureGate } from '../services/ensurePersistedConversation';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
 import { WineDetailsModal } from '../components/WineDetailsModal';
@@ -245,22 +246,27 @@ export function AgentPageWorking() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const greetingInjectedRef = useRef(false);
   const restoredRef = useRef(false);
+  /** Keep conversation id synchronous across ensure → send → save (avoids stale React state). */
+  const currentConversationRef = useRef<SommelierConversation | null>(null);
+  const conversationEnsureGateRef = useRef(createConversationEnsureGate(createConversation));
 
   /** Correlates follow-up actions (open, similar, feedback) with the last recommendation turn */
   function buildActionContextFromHistory(
-    priorMessages: AgentMessage[]
+    priorMessages: AgentMessage[],
+    conversationId?: string
   ): SendAgentMessageOptions['actionContext'] {
     const lastAssistant = [...priorMessages].reverse().find((m) => m.role === 'assistant');
-    if (!lastAssistant) return undefined;
-    const eventId = lastAssistant.agentMeta?.eventId;
-    let bottleId = lastAssistant.recommendation?.bottleId;
-    if (!bottleId && lastAssistant.bottleList?.bottles?.length) {
+    const resolvedConversationId = conversationId ?? currentConversationRef.current?.id;
+    const eventId = lastAssistant?.agentMeta?.eventId;
+    let bottleId = lastAssistant?.recommendation?.bottleId;
+    if (!bottleId && lastAssistant?.bottleList?.bottles?.length) {
       bottleId = lastAssistant.bottleList.bottles[0].bottleId;
     }
-    if (!eventId && !bottleId) return undefined;
+    if (!eventId && !bottleId && !resolvedConversationId) return undefined;
     return {
       lastEventId: eventId,
       lastRecommendationBottleId: bottleId,
+      conversationId: resolvedConversationId,
     };
   }
 
@@ -303,6 +309,7 @@ export function AgentPageWorking() {
               const mostRecent = conversations[0];
               const msgs = mostRecent.messages || [];
               if (msgs.length > 0) {
+                currentConversationRef.current = mostRecent;
                 setCurrentConversation(mostRecent);
                 setMessages(msgs);
                 greetingInjectedRef.current = true;
@@ -378,6 +385,28 @@ export function AgentPageWorking() {
       return;
     }
 
+    setIsSubmitting(true);
+
+    // Phase 2B.1: persist conversation thread before first /recommend so pending
+    // confirmations are scoped to a stable non-null conversation_id.
+    let activeConversation: SommelierConversation;
+    try {
+      activeConversation = await conversationEnsureGateRef.current.ensure(
+        currentConversationRef.current
+      );
+      currentConversationRef.current = activeConversation;
+      setCurrentConversation(activeConversation);
+      setConversationList((prev) =>
+        prev.some((c) => c.id === activeConversation.id)
+          ? prev
+          : [activeConversation, ...prev]
+      );
+    } catch (error: any) {
+      toast.error(error?.message || t('errors.generic', 'Something went wrong'));
+      setIsSubmitting(false);
+      return;
+    }
+
     const userMsg: AgentMessage = {
       role: 'user',
       content: text,
@@ -387,11 +416,10 @@ export function AgentPageWorking() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInputValue('');
-    setIsSubmitting(true);
 
     try {
       const history = messages.slice(-8);
-      const actionContext = buildActionContextFromHistory(messages);
+      const actionContext = buildActionContextFromHistory(messages, activeConversation.id);
       const response = await sendAgentMessage(text, history, bottlesInCellar, {
         actionContext,
       }, i18n.language);
@@ -414,7 +442,7 @@ export function AgentPageWorking() {
       const finalMessages = [...newMessages, assistantMsg];
       setMessages(finalMessages);
       
-      await saveConversation(finalMessages);
+      await saveConversation(finalMessages, activeConversation);
     } catch (error: any) {
       if (isInsufficientCreditsError(error)) {
         setMessages(messages);
@@ -472,24 +500,31 @@ export function AgentPageWorking() {
     }
   }
 
-  async function saveConversation(updatedMessages: AgentMessage[]) {
+  async function saveConversation(
+    updatedMessages: AgentMessage[],
+    activeConversation?: SommelierConversation | null
+  ) {
     const persistable = updatedMessages.filter((m) => !m.isGreeting);
     if (persistable.length === 0) return;
     setIsSavingConversation(true);
+    const existing = activeConversation ?? currentConversationRef.current;
     try {
-      if (currentConversation) {
+      if (existing?.id) {
         const updated = await updateConversation(
-          currentConversation.id,
+          existing.id,
           persistable,
-          currentConversation.title
+          existing.title || generateConversationTitle(persistable)
         );
+        currentConversationRef.current = updated;
         setCurrentConversation(updated);
         setConversationList((prev) =>
           prev.map((c) => (c.id === updated.id ? updated : c))
         );
       } else {
+        // New-client path should have ensured an ID before send; keep create as safety net.
         const title = generateConversationTitle(persistable);
         const created = await createConversation(persistable, title);
+        currentConversationRef.current = created;
         setCurrentConversation(created);
         setConversationList((prev) => [created, ...prev]);
       }
@@ -502,6 +537,8 @@ export function AgentPageWorking() {
 
   function startNewConversation() {
     greetingInjectedRef.current = false;
+    conversationEnsureGateRef.current.reset();
+    currentConversationRef.current = null;
     setMessages([]);
     setCurrentConversation(null);
     setSidebarOpen(false);
@@ -509,6 +546,8 @@ export function AgentPageWorking() {
 
   function resumeConversation(conv: SommelierConversation) {
     greetingInjectedRef.current = true;
+    conversationEnsureGateRef.current.reset();
+    currentConversationRef.current = conv;
     setCurrentConversation(conv);
     setMessages(conv.messages || []);
     setSidebarOpen(false);

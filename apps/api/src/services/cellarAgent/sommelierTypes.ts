@@ -52,12 +52,15 @@ export type AgentRoute =
   | 'similar'
   | 'tasting_draft'
   | 'feedback_inline'
-  | 'buy_recommendation';
+  | 'buy_recommendation'
+  | 'taste_confirmation';
 
 export interface ActionContext {
   lastRecommendationBottleId?: string;
   lastEventId?: string;
   anchorBottleId?: string;
+  /** Optional web sommelier_conversations.id for pending confirmation scope. */
+  conversationId?: string;
 }
 
 /** Optional extension on API responses — clients may ignore */

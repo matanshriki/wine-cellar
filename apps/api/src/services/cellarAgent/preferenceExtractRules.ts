@@ -104,7 +104,7 @@ const BOTTLE_HE = /היין\s+הזה|הבקבוק\s+הזה|המלצה\s+הזו/;
 
 const RETRACT_EN =
   /\b(forget(?:\s+that)?|don'?t\s+(?:like|prefer)\s+.+\s+anymore|no\s+longer\s+(?:like|prefer)|remove\s+(?:that\s+)?preference)\b/i;
-const RETRACT_HE = /תשכח|כבר\s+לא\s+אוהב|תסיר\s+את\s+ההעדפה/;
+const RETRACT_HE = /תשכח|שכח(\s+ש)?|כבר\s+לא\s+אוהב|תסיר\s+את\s+ההעדפה/;
 
 const OPERATIONAL_EN =
   /\b(drank\s+it\s+yesterday|too\s+expensive|save\s+(?:this|it)\s+for|anniversary|keep\s+(?:this|it))\b/i;
@@ -248,6 +248,38 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
       status: 'recorded_no_apply',
       applyCanonical: false,
     };
+  }
+
+  // Explicit remember + negation (dislike / forget-like remember)
+  if (isRemember && isNeg && !isSession && !isBottle) {
+    if (region) {
+      return {
+        ...base,
+        class: 'stable_remember',
+        scope: 'stable',
+        polarity: 'dislike',
+        dimension: 'region',
+        valueId: region.id,
+        labelEn: region.en,
+        labelHe: region.he,
+        status: 'active',
+        applyCanonical: true,
+      };
+    }
+    if (grape) {
+      return {
+        ...base,
+        class: 'stable_remember',
+        scope: 'stable',
+        polarity: 'dislike',
+        dimension: 'grape',
+        valueId: grape.id,
+        labelEn: grape.en,
+        labelHe: grape.he,
+        status: 'active',
+        applyCanonical: true,
+      };
+    }
   }
 
   // Explicit remember + allowlisted target

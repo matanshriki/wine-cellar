@@ -47,7 +47,9 @@ import { inferMemoryUpdateFromText } from './preferenceInference.js';
 import {
   preferenceAckMessage,
   processPreferenceMessage,
+  processTasteConfirmation,
 } from './canonicalTasteWrite.js';
+
 import { parseJsonFromModelContent } from '../../utils/safeJson.js';
 import {
   markBottleOpened,
@@ -723,6 +725,59 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
   });
 
   switch (route) {
+      case 'taste_confirmation': {
+        try {
+          if (!supabase) {
+            return withMeta(
+              {
+                message: m(
+                  language,
+                  "I couldn't update preferences without storage.",
+                  'לא ניתן לעדכן העדפות בלי אחסון.'
+                ),
+              },
+              {
+                routedAction: 'taste_confirmation',
+                actionResult: 'error',
+                processingMode: 'deterministic_action',
+              }
+            );
+          }
+          const resolved = await processTasteConfirmation({
+            userId,
+            message,
+            supabase,
+            language: language === 'he' ? 'he' : 'en',
+            conversationId: actionContext?.conversationId ?? null,
+          });
+          logSommelier('action', {
+            action: 'taste_confirmation',
+            user: shortUser(userId),
+            ok: 'true',
+            reason: resolved.reason,
+            applied: resolved.applied ? 'yes' : 'no',
+          });
+          return withMeta(
+            { message: resolved.message, type: 'single' },
+            {
+              routedAction: 'taste_confirmation',
+              actionResult: 'ok',
+              processingMode: 'deterministic_action',
+            }
+          );
+        } catch (e) {
+          logSommelierError('action', e, {
+            user: shortUser(userId),
+            action: 'taste_confirmation',
+          });
+          return withMeta(safeActionErrorMessage(), {
+            routedAction: 'taste_confirmation',
+            actionResult: 'error',
+            processingMode: 'deterministic_action',
+          });
+        }
+      }
+
       case 'open_bottle': {
         try {
         const bottleId = resolveBottleIdForOpenAction(message, actionContext);
@@ -818,9 +873,12 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           message,
           supabase,
           language: language === 'he' ? 'he' : 'en',
+          tasteProfile,
+          conversationId: actionContext?.conversationId ?? null,
         });
         if (processed) {
           const ack =
+            processed.messageOverride ||
             preferenceAckMessage(
               processed.acknowledgmentKind,
               processed.candidate,
@@ -882,9 +940,12 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
           message,
           supabase,
           language: language === 'he' ? 'he' : 'en',
+          tasteProfile,
+          conversationId: actionContext?.conversationId ?? null,
         });
         if (processed) {
           const ack =
+            processed.messageOverride ||
             preferenceAckMessage(
               processed.acknowledgmentKind,
               processed.candidate,

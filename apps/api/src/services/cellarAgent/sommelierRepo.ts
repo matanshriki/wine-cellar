@@ -77,6 +77,46 @@ export async function mergeAndSavePreferences(
   return merged;
 }
 
+/**
+ * Phase 2B.1: replace-save that can remove targeted legacy memory fields.
+ * Does not use append-only union for the patched arrays.
+ */
+export async function patchSommelierMemoryRemovals(
+  userId: string,
+  patch: {
+    removeRegions?: string[];
+    removeGrapes?: string[];
+    setBodyPreference?: string | null;
+    clearBodyPreference?: boolean;
+  },
+  supabase: SupabaseClient
+): Promise<SommelierPreferenceMemory> {
+  const current = await loadSommelierMemory(userId, supabase);
+  const removeRegions = new Set((patch.removeRegions || []).map((x) => x.toLowerCase()));
+  const removeGrapes = new Set((patch.removeGrapes || []).map((x) => x.toLowerCase()));
+
+  const next: SommelierPreferenceMemory = {
+    ...current,
+    favoriteRegions: (current.favoriteRegions || []).filter(
+      (r) => !removeRegions.has(r.toLowerCase())
+    ),
+    favoriteGrapes: (current.favoriteGrapes || []).filter((g) => {
+      const gl = g.toLowerCase();
+      return !removeGrapes.has(gl) && !removeGrapes.has(gl.replace(/\s+/g, '_'));
+    }),
+    version: 1,
+  };
+
+  if (patch.clearBodyPreference) {
+    next.bodyPreference = null;
+  } else if (patch.setBodyPreference !== undefined) {
+    next.bodyPreference = patch.setBodyPreference;
+  }
+
+  await saveSommelierMemory(userId, next, supabase);
+  return next;
+}
+
 function uniq(arr: string[]): string[] {
   return [...new Set(arr.map((s) => s.trim().toLowerCase()).filter(Boolean))];
 }

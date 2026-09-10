@@ -52,6 +52,15 @@ export interface ExplicitTastePreferences {
   styles_disliked: ExplicitPreferenceValue[];
   body: ExplicitBodyPreference | null;
   updated_at?: string;
+  /**
+   * Phase 2B.1: after forget/remove, suppress stale legacy memory for these
+   * dimensions/ids even if dual-write cleanup fails.
+   */
+  legacy_suppress?: {
+    regions?: string[];
+    grapes?: string[];
+    body?: boolean;
+  };
 }
 
 export interface StructuredTasteProfile {
@@ -245,6 +254,23 @@ function parseExplicit(raw: unknown): ExplicitTastePreferences | undefined {
     body,
     updated_at: typeof o.updated_at === 'string' ? o.updated_at : undefined,
   };
+  if (o.legacy_suppress && typeof o.legacy_suppress === 'object' && !Array.isArray(o.legacy_suppress)) {
+    const ls = o.legacy_suppress as Record<string, unknown>;
+    const regions = Array.isArray(ls.regions)
+      ? ls.regions.filter((x): x is string => typeof x === 'string').map((x) => x.toLowerCase())
+      : undefined;
+    const grapes = Array.isArray(ls.grapes)
+      ? ls.grapes.filter((x): x is string => typeof x === 'string').map((x) => x.toLowerCase())
+      : undefined;
+    const bodySuppress = ls.body === true;
+    if ((regions && regions.length) || (grapes && grapes.length) || bodySuppress) {
+      explicit.legacy_suppress = {
+        ...(regions && regions.length ? { regions } : {}),
+        ...(grapes && grapes.length ? { grapes } : {}),
+        ...(bodySuppress ? { body: true } : {}),
+      };
+    }
+  }
   const any =
     explicit.regions_liked.length +
       explicit.regions_disliked.length +
@@ -252,7 +278,9 @@ function parseExplicit(raw: unknown): ExplicitTastePreferences | undefined {
       explicit.grapes_disliked.length +
       explicit.styles_liked.length +
       explicit.styles_disliked.length >
-      0 || explicit.body != null;
+      0 ||
+    explicit.body != null ||
+    !!explicit.legacy_suppress;
   return any ? explicit : undefined;
 }
 

@@ -108,6 +108,8 @@ export interface SendAgentMessageOptions {
     lastEventId?: string;
     lastRecommendationBottleId?: string;
     anchorBottleId?: string;
+    /** Phase 2B.1: scopes pending taste confirmations when present */
+    conversationId?: string;
   };
 }
 

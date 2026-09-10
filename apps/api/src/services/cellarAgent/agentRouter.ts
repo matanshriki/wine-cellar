@@ -132,14 +132,23 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
   }
 
   if (
-    /(remember\s+(that\s+)?|don'?t forget|i\s+prefer|i\s+usually\s+like|^i\s+like\s+(lighter|heavier)|i\s+don'?t\s+like)/i.test(
+    /(remember\s+(that\s+)?|don'?t forget|forget(?:\s+that)?|i\s+prefer|i\s+usually\s+like|^i\s+like\s+(lighter|heavier)|i\s+don'?t\s+like)/i.test(
       lower
     ) ||
-    /(תזכור(\s+ש)?|אל\s+תשכח|אני\s+מעדיף|אני\s+לא\s+אוהב|אני\s+בדרך\s+כלל\s+אוהב|אני\s+אוהב\s+בדרך\s+כלל)/u.test(
+    /(תזכור(\s+ש)?|אל\s+תשכח|תשכח|שכח(\s+ש)?|אני\s+מעדיף|אני\s+לא\s+אוהב|אני\s+בדרך\s+כלל\s+אוהב|אני\s+אוהב\s+בדרך\s+כלל)/u.test(
       t
     )
   ) {
     return 'memory_update';
+  }
+
+  // Phase 2B.1: short yes/no confirmation replies (before recommend/LLM)
+  if (
+    /^(yes|no|confirm|cancel|כן|לא|מאשר|בטל)([,.]?\s+(please|thanks|thank\s+you|update(\s+it)?|do\s+it|remove(\s+it)?|keep\s+it|never\s*mind|תעדכן|תעשה(\s+את\s+זה)?|תמחק|תסיר|תשאיר|לא\s+משנה)?)?\.?$/i.test(
+      t.trim()
+    )
+  ) {
+    return 'taste_confirmation';
   }
 
   // Short reactions only — avoid stealing pairing / recommendation questions ("perfect with steak")

@@ -283,14 +283,20 @@ export function applyPreferenceScores(
     }
   }
 
-  // ── Agent memory (only uncovered dimensions) ───────────────────────────────
+  // ── Agent memory (only uncovered dimensions; respect legacy_suppress) ─────
+  const suppress = profile?.explicit?.legacy_suppress;
+  const suppressRegions = new Set((suppress?.regions || []).map((x) => x.toLowerCase()));
+  const suppressGrapes = new Set((suppress?.grapes || []).map((x) => x.toLowerCase()));
+  const suppressBody = !!suppress?.body;
+
   const memoryBodyPreference = resolveMemoryBodyPreference(memory);
-  const memoryOwnsBodyDimension = memoryBodyPreference !== null;
+  const memoryOwnsBodyDimension = memoryBodyPreference !== null && !suppressBody;
 
   if (memory) {
     if (!regionClaimed) {
       for (const r of memory.favoriteRegions || []) {
         const rl = r.toLowerCase();
+        if (suppressRegions.has(rl)) continue;
         if (rl.length >= 3 && (region.includes(rl) || hay.includes(rl))) {
           score += AGENT_MEMORY_WEIGHTS.region;
           features.push(`mem_region:${rl}`);
@@ -304,6 +310,7 @@ export function applyPreferenceScores(
     if (!grapeClaimed) {
       for (const g of memory.favoriteGrapes || []) {
         const gl = g.toLowerCase();
+        if (suppressGrapes.has(gl) || suppressGrapes.has(gl.replace(/\s+/g, '_'))) continue;
         if (gl.length >= 3 && gs.includes(gl)) {
           score += AGENT_MEMORY_WEIGHTS.grape;
           features.push(`mem_grape:${gl}`);
@@ -315,7 +322,7 @@ export function applyPreferenceScores(
       }
     }
 
-    if (!bodyClaimed && !requestBody && memoryBodyPreference === 'light' && LIGHT_GRAPE_RE.test(gs)) {
+    if (!bodyClaimed && !requestBody && !suppressBody && memoryBodyPreference === 'light' && LIGHT_GRAPE_RE.test(gs)) {
       score += AGENT_MEMORY_WEIGHTS.body;
       features.push('mem_body:light');
       features.push('agent_memory_body');
@@ -325,6 +332,7 @@ export function applyPreferenceScores(
     } else if (
       !bodyClaimed &&
       !requestBody &&
+      !suppressBody &&
       memoryBodyPreference === 'full' &&
       FULL_GRAPE_RE.test(gs)
     ) {
