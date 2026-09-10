@@ -13,6 +13,7 @@ import type {
 } from './types.js';
 import { scoreBottleHeuristically } from './heuristics.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
+import type { TasteScoreContext } from './tasteScoring.js';
 
 /** Tunable: keep LLM context small but rich enough for multi-bottle asks. */
 export const SHORTLIST_MIN = 8;
@@ -95,7 +96,8 @@ export function shortlistCandidates(
   userMessageLower: string,
   memory?: SommelierPreferenceMemory | null,
   recentlyRecommended?: Set<string> | null,
-  includeReserved = false
+  includeReserved = false,
+  tasteCtx?: TasteScoreContext | null
 ): { scored: ScoredCandidate[]; relaxedFilter: boolean; reservedExcluded: number } {
   // Separate reserved bottles before any heuristic scoring
   const reservedBottles = bottles.filter((b) => b.isReserved);
@@ -121,7 +123,8 @@ export function shortlistCandidates(
       constraints,
       userMessageLower,
       memory ?? null,
-      recentlyRecommended ?? null
+      recentlyRecommended ?? null,
+      tasteCtx ?? null
     );
     return { bottle, score, features };
   });

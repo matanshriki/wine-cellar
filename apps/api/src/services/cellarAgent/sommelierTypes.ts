@@ -35,6 +35,11 @@ export interface RecommendationExplanation {
     styleFit?: string;
     preferenceFit?: string;
     diversity?: string;
+    /** Phase 1 taste shortlist scoring — safe metadata only (no profile dump). */
+    tasteScoringVersion?: string;
+    tasteProfileLoaded?: boolean;
+    tasteConfidence?: string;
+    tasteSignalKeys?: string[];
   };
   topScores: { bottleId: string; score: number }[];
 }

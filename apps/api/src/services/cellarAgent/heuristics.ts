@@ -2,11 +2,16 @@
  * Deterministic scoring — the model explains; the server ranks.
  *
  * Scores are comparable only within one request. They bias shortlisting toward
- * readiness, constraint match, and simple text overlap (no embeddings in Phase 1).
+ * readiness, constraint match, and simple text overlap (no embeddings).
  */
 
 import type { CellarBottleInput, ExtractedConstraints } from './types.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
+import {
+  applyPreferenceScores,
+  applyTasteColorBias,
+  type TasteScoreContext,
+} from './tasteScoring.js';
 
 const READINESS_WEIGHT: Record<string, number> = {
   peak: 34,
@@ -88,69 +93,17 @@ function colorNormalized(b: CellarBottleInput): string {
   return (b.color || '').toLowerCase();
 }
 
-function applyPreferenceMemory(
-  bottle: CellarBottleInput,
-  memory: SommelierPreferenceMemory | null | undefined,
-  features: string[]
-): number {
-  if (!memory) return 0;
-  let boost = 0;
-  const hay = bottleSearchBlob(bottle);
-  const region = (bottle.region || '').toLowerCase();
-
-  for (const r of memory.favoriteRegions || []) {
-    const rl = r.toLowerCase();
-    if (rl.length >= 3 && (region.includes(rl) || hay.includes(rl))) {
-      boost += 8;
-      features.push(`mem_region:${rl}`);
-      break;
-    }
-  }
-  for (const g of memory.favoriteGrapes || []) {
-    const gl = g.toLowerCase();
-    if (gl.length >= 3 && grapeString(bottle).includes(gl)) {
-      boost += 8;
-      features.push(`mem_grape:${gl}`);
-      break;
-    }
-  }
-
-  const body = (memory.bodyPreference || '').toLowerCase();
-  const gs = grapeString(bottle);
-  if (body === 'light' && /pinot|gamay|barbera|grenache|valpolicella/.test(gs)) {
-    boost += 5;
-    features.push('mem_body:light');
-  }
-  if (body === 'full' && /cabernet|syrah|nebbiolo|malbec|petit\s*verdot/.test(gs)) {
-    boost += 5;
-    features.push('mem_body:full');
-  }
-
-  for (const d of memory.dislikedProfiles || []) {
-    const dl = d.toLowerCase();
-    if (dl.includes('heavy') && /cabernet|nebbiolo|barolo|napa\s*cab/.test(gs)) {
-      boost -= 6;
-      features.push('mem_avoid:heavy');
-    }
-    if (dl.includes('acid') && /sangiovese|barbera|riesling|sauvignon/.test(gs)) {
-      boost -= 4;
-      features.push('mem_avoid:acid');
-    }
-  }
-
-  return boost;
-}
-
 /**
  * Heuristic score for one bottle vs. extracted constraints and user message intent.
- * Optional learned preferences (Phase 2) nudge ranking — never required for a valid score.
+ * Optional learned preferences + structured taste profile nudge ranking — never required.
  */
 export function scoreBottleHeuristically(
   bottle: CellarBottleInput,
   constraints: ExtractedConstraints,
   userMessageLower: string,
   memory?: SommelierPreferenceMemory | null,
-  recentlyRecommended?: Set<string> | null
+  recentlyRecommended?: Set<string> | null,
+  tasteCtx?: TasteScoreContext | null
 ): { score: number; features: string[] } {
   const features: string[] = [];
   let score = 0;
@@ -212,7 +165,16 @@ export function scoreBottleHeuristically(
   const q = bottle.quantity ?? 1;
   if (q > 0) score += Math.min(5, q);
 
-  score += applyPreferenceMemory(bottle, memory ?? null, features);
+  const pref = applyPreferenceScores(bottle, memory ?? null, tasteCtx ?? null, features);
+  score += pref.score;
+  score += applyTasteColorBias(
+    bottle,
+    constraints,
+    tasteCtx?.tasteProfile ?? null,
+    features,
+    pref.tasteSignalKeys
+  );
+
   score += applyPastOpensHistory(bottle, features);
 
   if (recentlyRecommended?.has(bottle.id)) {
@@ -223,8 +185,6 @@ export function scoreBottleHeuristically(
   // Direct text mention: if the bottle's producer or wine name (English OR Hebrew)
   // appears verbatim in the user message, give a large boost so it rises to the
   // top of the shortlist regardless of readiness.
-  // Checks English names against the lowercased message, and Hebrew names against
-  // the original message (Hebrew is script-invariant to case).
   const producerLower = (bottle.producer || '').toLowerCase();
   const wineNameLower = (bottle.wineName || '').toLowerCase();
   const producerHeLower = (bottle.producerHe || '').toLowerCase();
