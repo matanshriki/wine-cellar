@@ -72,7 +72,10 @@ function buildClient(): BetaAnalyticsDataClient {
       },
       scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
     });
-    return new BetaAnalyticsDataClient({ auth });
+    // Railway can install two google-auth-library copies (direct + google-gax).
+    // Their GoogleAuth types are incompatible under tsc (TS2322) despite being
+    // runtime-compatible. Escape hatch required for the OAuth client path.
+    return new BetaAnalyticsDataClient({ auth: auth as any });
   }
 
   throw new Error('GA4 not configured');
