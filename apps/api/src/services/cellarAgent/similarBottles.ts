@@ -5,6 +5,7 @@
 import type { CellarBottleInput, ExtractedConstraints, ScoredCandidate } from './types.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
 import { scoreBottleHeuristically } from './heuristics.js';
+import type { TasteScoreContext } from './tasteScoring.js';
 
 function grapeStr(b: CellarBottleInput): string {
   const g = b.grapes;
@@ -45,6 +46,7 @@ function similarityToAnchor(a: CellarBottleInput, b: CellarBottleInput): number 
 
 /**
  * Rank bottles by similarity to anchor, excluding anchor id, then blend with global heuristic score.
+ * Reserved (Keep) bottles are excluded by default — pass includeReserved=true when the user asks.
  */
 export function findSimilarCandidates(
   anchorId: string,
@@ -52,19 +54,29 @@ export function findSimilarCandidates(
   constraints: ExtractedConstraints,
   userMessageLower: string,
   memory: SommelierPreferenceMemory | null,
-  cap: number
+  cap: number,
+  tasteCtx?: TasteScoreContext | null,
+  includeReserved = false
 ): ScoredCandidate[] {
   const anchor = bottles.find((b) => b.id === anchorId);
   if (!anchor) return [];
 
-  const others = bottles.filter((b) => b.id !== anchorId);
+  // Filter before scoring so reserved bottles cannot influence ranking.
+  const others = bottles.filter((b) => {
+    if (b.id === anchorId) return false;
+    if (!includeReserved && b.isReserved) return false;
+    return true;
+  });
+
   const scored: ScoredCandidate[] = others.map((bottle) => {
     const sim = similarityToAnchor(anchor, bottle);
     const { score: hScore, features } = scoreBottleHeuristically(
       bottle,
       constraints,
       userMessageLower,
-      memory
+      memory,
+      null,
+      tasteCtx ?? null
     );
     const score = sim * 1.2 + hScore;
     return { bottle, score, features: [...features, `similarity:${Math.round(sim)}`] };

@@ -52,6 +52,15 @@ import {
 } from './sommelierActions.js';
 import { logSommelier, logSommelierError, logSommelierWarn, shortUser } from './sommelierLog.js';
 import type { SommelierPreferenceMemory } from './sommelierTypes.js';
+import { loadUserTasteProfile } from './tasteProfileRepo.js';
+import type { StructuredTasteProfile } from './tasteProfileTypes.js';
+import {
+  collectTasteSignalKeysFromFeatures,
+  detectRequestBodyPreference,
+  isTasteShortlistScoringEnabled,
+  TASTE_SHORTLIST_SCORING_VERSION,
+  type TasteScoreContext,
+} from './tasteScoring.js';
 
 function buildCellarSummaryForBuy(bottles: CellarBottleInput[]): string {
   if (bottles.length === 0) return 'The user has an empty cellar.';
@@ -130,7 +139,12 @@ function buildExplanation(
   constraints: ReturnType<typeof extractConstraints>,
   scored: ScoredCandidate[],
   relaxedFilter: boolean,
-  memoryLoaded: boolean
+  memoryLoaded: boolean,
+  tasteMeta?: {
+    loaded: boolean;
+    confidence?: string;
+    scoringEnabled: boolean;
+  }
 ): RecommendationExplanation {
   const topScores = scored.slice(0, 5).map((s) => ({
     bottleId: s.bottle.id,
@@ -151,6 +165,20 @@ function buildExplanation(
   if (relaxedFilter) {
     signals.diversity = 'Color filter relaxed to keep a viable shortlist.';
   }
+
+  if (tasteMeta?.scoringEnabled) {
+    signals.tasteScoringVersion = TASTE_SHORTLIST_SCORING_VERSION;
+    signals.tasteProfileLoaded = tasteMeta.loaded;
+    if (tasteMeta.confidence) signals.tasteConfidence = tasteMeta.confidence;
+    const keys = new Set<string>();
+    for (const s of scored.slice(0, 15)) {
+      for (const k of collectTasteSignalKeysFromFeatures(s.features || [])) {
+        keys.add(k);
+      }
+    }
+    if (keys.size > 0) signals.tasteSignalKeys = [...keys];
+  }
+
   return { intent, signals, topScores };
 }
 
@@ -205,6 +233,8 @@ async function runOrchestratedRecommendation(params: {
   cellarBottles: CellarBottleInput[];
   memory: SommelierPreferenceMemory | null;
   tasteContext?: string;
+  tasteScoreCtx?: TasteScoreContext | null;
+  tasteMeta?: { loaded: boolean; confidence?: string; scoringEnabled: boolean };
   scoredOverride?: ScoredCandidate[];
   intentOverride?: CellarIntent;
   recentlyRecommended?: Set<string> | null;
@@ -228,6 +258,8 @@ async function runOrchestratedRecommendation(params: {
     cellarBottles,
     memory,
     tasteContext,
+    tasteScoreCtx,
+    tasteMeta,
     scoredOverride,
     intentOverride,
     language,
@@ -271,7 +303,8 @@ async function runOrchestratedRecommendation(params: {
         userMessageLower,
         memory,
         params.recentlyRecommended ?? null,
-        resolvedIncludeReserved
+        resolvedIncludeReserved,
+        tasteScoreCtx ?? null
       );
 
   const cap = computeEffectiveShortlistCap(scored.length, extendedShortlist);
@@ -422,7 +455,8 @@ async function runOrchestratedRecommendation(params: {
     constraints,
     scored,
     relaxedFilter,
-    !!memory && Object.keys(memory).length > 1
+    !!memory && Object.keys(memory).length > 1,
+    tasteMeta
   );
 
   return {
@@ -471,6 +505,8 @@ async function runLlmPathThenPersist(params: {
   cellarBottles: CellarBottleInput[];
   memory: SommelierPreferenceMemory | null;
   tasteContext?: string;
+  tasteScoreCtx?: TasteScoreContext | null;
+  tasteMeta?: { loaded: boolean; confidence?: string; scoringEnabled: boolean };
   scoredOverride?: ScoredCandidate[];
   intentOverride?: CellarIntent;
   routedAction: 'recommend' | 'similar';
@@ -487,6 +523,8 @@ async function runLlmPathThenPersist(params: {
     cellarBottles: params.cellarBottles,
     memory: params.memory,
     tasteContext: params.tasteContext,
+    tasteScoreCtx: params.tasteScoreCtx,
+    tasteMeta: params.tasteMeta,
     scoredOverride: params.scoredOverride,
     intentOverride: params.intentOverride,
     recentlyRecommended: params.recentlyRecommended ?? null,
@@ -636,25 +674,48 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
   const includeReserved = detectsIncludeReservedRequest(message);
   let memoryPrefs: SommelierPreferenceMemory | null = null;
   let recentPicks: Set<string> | null = null;
+  let tasteProfile: StructuredTasteProfile | null = null;
+  let tasteLoaded = false;
   if (supabase) {
     try {
-      const [mem, picks] = await Promise.all([
+      const [mem, picks, tasteLoad] = await Promise.all([
         loadSommelierMemory(userId, supabase),
         loadRecentRecommendedBottleIds(userId, supabase, 5),
+        loadUserTasteProfile(userId, supabase),
       ]);
       memoryPrefs = mem;
       recentPicks = picks.size > 0 ? picks : null;
+      tasteProfile = tasteLoad.profile;
+      tasteLoaded = tasteLoad.loaded && tasteLoad.reason === 'ok';
+      if (tasteLoad.reason === 'query_error' || tasteLoad.reason === 'parse_rejected') {
+        logSommelierWarn('taste_profile_load', {
+          user: shortUser(userId),
+          reason: tasteLoad.reason,
+        });
+      }
     } catch {
       logSommelierWarn('memory_load_failed', { user: shortUser(userId) });
       memoryPrefs = null;
     }
   }
 
+  const tasteScoreCtx: TasteScoreContext | null = {
+    tasteProfile,
+    requestBodyPreference: detectRequestBodyPreference(message.toLowerCase()),
+  };
+  const tasteMeta = {
+    loaded: tasteLoaded,
+    confidence: tasteProfile?.confidence,
+    scoringEnabled: isTasteShortlistScoringEnabled(),
+  };
+
   logSommelier('route', {
     route,
     user: shortUser(userId),
     msgLen: String(message.length),
     hasLastRecoBottle: actionContext?.lastRecommendationBottleId ? 'yes' : 'no',
+    tasteProfileLoaded: tasteLoaded ? 'yes' : 'no',
+    tasteScoring: tasteMeta.scoringEnabled ? 'on' : 'off',
   });
 
   switch (route) {
@@ -938,7 +999,14 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         const constraints = extractConstraints(message);
         const cap = computeEffectiveShortlistCap(cellarBottles.length);
         const similarScored = findSimilarCandidates(
-          anchor, cellarBottles, constraints, message.toLowerCase(), memoryPrefs, cap
+          anchor,
+          cellarBottles,
+          constraints,
+          message.toLowerCase(),
+          memoryPrefs,
+          cap,
+          tasteScoreCtx,
+          includeReserved
         );
         if (similarScored.length === 0) {
           return withMeta(
@@ -949,7 +1017,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         try {
           return await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
-            memory: memoryPrefs, tasteContext,
+            memory: memoryPrefs, tasteContext, tasteScoreCtx, tasteMeta,
             scoredOverride: similarScored, intentOverride: 'similar_cellar',
             routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
             anchorBottleId: anchor,
@@ -983,7 +1051,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         try {
           return await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
-            memory: memoryPrefs, tasteContext,
+            memory: memoryPrefs, tasteContext, tasteScoreCtx, tasteMeta,
             routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
             anchorBottleId: actionContext?.lastRecommendationBottleId ?? actionContext?.anchorBottleId,
           });

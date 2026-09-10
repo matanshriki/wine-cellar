@@ -12,7 +12,8 @@
     "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
     "lint": "eslint . --ext ts,tsx",
     "test": "vitest run",
-    "test:calibration": "vitest run src/services/tasteProfileCalibration.test.ts"
+    "test:overrides": "vitest run src/services/tasteProfileService.overrides.test.ts",
+    "test:calibration": "vitest run src/services/tasteProfileCalibration.test.ts src/services/tasteProfileService.overrides.test.ts"
   },
   "dependencies": {
     "@paddle/paddle-js": "^1.6.2",

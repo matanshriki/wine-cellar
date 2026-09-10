@@ -10,8 +10,14 @@ import { supabase } from '../lib/supabase';
 import type { TasteProfile, TasteProfileVector, TasteProfilePreferences } from '../types/supabase';
 import * as wineProfileService from './wineProfileService';
 import type { WineProfile } from './wineProfileService';
+import {
+  attachPreservedOverrides,
+  type RecomputeTasteProfileOptions,
+} from './tasteProfileOverrides';
 import { mergeCalibrationOverrideVector } from './tasteProfileCalibration';
 
+export type { RecomputeTasteProfileOptions } from './tasteProfileOverrides';
+export { attachPreservedOverrides } from './tasteProfileOverrides';
 export {
   getCalibrationOverrideVector,
   getCalibrationSliderValues,
@@ -347,21 +353,28 @@ export async function getMyTasteProfile(): Promise<TasteProfile | null> {
 }
 
 /**
- * Recompute and save taste profile for current user
+ * Recompute and save taste profile for current user.
+ * Defaults to preserving calibration overrides (safe for rating-triggered callers).
  */
-export async function recomputeMyTasteProfile(): Promise<TasteProfile | null> {
+export async function recomputeMyTasteProfile(
+  options: RecomputeTasteProfileOptions = {}
+): Promise<TasteProfile | null> {
+  const preserveOverrides = options.preserveOverrides !== false;
+
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
     throw new Error('Not authenticated');
   }
+
+  const previousProfile = preserveOverrides ? await getMyTasteProfile() : null;
+  const computed = await computeTasteProfile(user.id);
   
-  const profile = await computeTasteProfile(user.id);
-  
-  if (!profile) {
+  if (!computed) {
     return null;
   }
 
+  const profile = attachPreservedOverrides(computed, previousProfile, preserveOverrides);
   return saveTasteProfile(user.id, profile);
 }
 
@@ -595,23 +608,11 @@ export function getTopGrapes(profile: TasteProfile, limit = 3): string[] {
 }
 
 /**
- * Reset taste profile (relearn from ratings)
+ * Reset taste profile (relearn from ratings).
+ * Explicitly discards calibration overrides — do not preserve them on recompute.
  */
 export async function resetTasteProfile(): Promise<TasteProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    throw new Error('Not authenticated');
-  }
-  
-  const currentProfile = await getMyTasteProfile();
-  
-  if (currentProfile?.overrides) {
-    const { overrides, ...rest } = currentProfile;
-    await saveTasteProfile(user.id, rest);
-  }
-  
-  return recomputeMyTasteProfile();
+  return recomputeMyTasteProfile({ preserveOverrides: false });
 }
 
 /**

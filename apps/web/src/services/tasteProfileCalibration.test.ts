@@ -5,6 +5,7 @@ import {
   getCalibrationSliderValues,
   mergeCalibrationOverrideVector,
 } from './tasteProfileCalibration';
+import { attachPreservedOverrides } from './tasteProfileOverrides';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -208,6 +209,7 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
     const mod = await import('./tasteProfileService');
     const afterSave = await mod.applyCalibration({ body: 0.91, oak: 0.12 });
 
+    // Simulate subsequent getMyTasteProfile / page refresh reading DB
     mockFrom.mockImplementation(() => ({
       update: mockUpdate,
       select: vi.fn(() => ({
@@ -223,6 +225,27 @@ describe('applyCalibration / saveTasteProfile persistence', () => {
     const refetched = await mod.getMyTasteProfile();
     expect(refetched?.overrides?.vector).toEqual({ body: 0.91, oak: 0.12 });
     expect(getCalibrationSliderValues(refetched).body).toBe(0.91);
+  });
+});
+
+describe('recompute / reset vs calibration', () => {
+  it('F/G: rating-driven and manual recompute preserve overrides', () => {
+    const previous = baseProfile({ vector: { body: 0.92, sweetness: 0.05 } });
+    const computed = baseProfile();
+    computed.vector.body = 0.5;
+    delete computed.overrides;
+
+    const kept = attachPreservedOverrides(computed, previous, true);
+    expect(kept.overrides?.vector).toEqual({ body: 0.92, sweetness: 0.05 });
+  });
+
+  it('H: Reset removes overrides', () => {
+    const previous = baseProfile({ vector: { body: 0.92 } });
+    const computed = baseProfile();
+    delete computed.overrides;
+
+    const reset = attachPreservedOverrides(computed, previous, false);
+    expect(reset.overrides).toBeUndefined();
   });
 });
 
