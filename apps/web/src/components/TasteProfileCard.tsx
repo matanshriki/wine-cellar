@@ -11,6 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
 import type { TasteProfile, TasteProfileVector } from '../types/supabase';
 import * as tasteProfileService from '../services/tasteProfileService';
+import {
+  getCalibrationOverrideVector,
+  getCalibrationSliderValues,
+} from '../services/tasteProfileCalibration';
 import { WineLoader } from './WineLoader';
 
 interface TasteProfileCardProps {
@@ -22,6 +26,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
   const [profile, setProfile] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
+  const [savingCalibration, setSavingCalibration] = useState(false);
   const [showCalibration, setShowCalibration] = useState(false);
   const [calibrationValues, setCalibrationValues] = useState<Partial<TasteProfileVector>>({});
   
@@ -34,15 +39,17 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
     try {
       const loadedProfile = await tasteProfileService.getMyTasteProfile();
       setProfile(loadedProfile);
-      
-      if (loadedProfile?.overrides?.vector) {
-        setCalibrationValues(loadedProfile.overrides.vector);
-      }
+      setCalibrationValues(getCalibrationOverrideVector(loadedProfile));
     } catch (error) {
       console.error('Error loading taste profile:', error);
     } finally {
       setLoading(false);
     }
+  }
+
+  function openCalibration() {
+    setCalibrationValues(getCalibrationOverrideVector(profile));
+    setShowCalibration(true);
   }
   
   async function handleRecompute() {
@@ -50,6 +57,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
     try {
       const newProfile = await tasteProfileService.recomputeMyTasteProfile();
       setProfile(newProfile);
+      setCalibrationValues(getCalibrationOverrideVector(newProfile));
       toast.success(t('tasteProfile.recomputeSuccess', 'Taste profile updated!'));
       onProfileUpdated?.();
     } catch (error: any) {
@@ -60,16 +68,25 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
     }
   }
   
-  async function handleSaveCalibration() {
+  async function handleSaveCalibration(values: Partial<TasteProfileVector>) {
+    if (savingCalibration) return;
+    setSavingCalibration(true);
     try {
-      const updatedProfile = await tasteProfileService.applyCalibration(calibrationValues);
+      // Pass slider values directly — do not read stale React state.
+      const updatedProfile = await tasteProfileService.applyCalibration(values);
+      if (!updatedProfile) {
+        throw new Error(t('tasteProfile.calibrationFailed', 'Failed to save preferences'));
+      }
       setProfile(updatedProfile);
+      setCalibrationValues(getCalibrationOverrideVector(updatedProfile));
       setShowCalibration(false);
       toast.success(t('tasteProfile.calibrationSaved', 'Preferences saved!'));
       onProfileUpdated?.();
     } catch (error: any) {
       console.error('Error saving calibration:', error);
       toast.error(error.message || t('tasteProfile.calibrationFailed', 'Failed to save preferences'));
+    } finally {
+      setSavingCalibration(false);
     }
   }
   
@@ -83,6 +100,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
       const newProfile = await tasteProfileService.resetTasteProfile();
       setProfile(newProfile);
       setCalibrationValues({});
+      setShowCalibration(false);
       toast.success(t('tasteProfile.resetSuccess', 'Profile reset successfully'));
       onProfileUpdated?.();
     } catch (error: any) {
@@ -191,7 +209,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => setShowCalibration(true)}
+              onClick={openCalibration}
               className="btn btn-secondary"
             >
               {t('tasteProfile.empty.calibrate', 'Set preferences manually')}
@@ -293,7 +311,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
           {/* Actions */}
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => setShowCalibration(true)}
+              onClick={openCalibration}
               className="btn btn-primary flex-1 sm:flex-none"
             >
               {t('tasteProfile.calibrate', 'Calibrate')}
@@ -317,12 +335,14 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
       <AnimatePresence>
         {showCalibration && (
           <CalibrationModal
-            initialValues={calibrationValues}
+            initialValues={getCalibrationSliderValues(profile, calibrationValues)}
+            saving={savingCalibration}
             onSave={(values) => {
-              setCalibrationValues(values);
-              handleSaveCalibration();
+              void handleSaveCalibration(values);
             }}
-            onClose={() => setShowCalibration(false)}
+            onClose={() => {
+              if (!savingCalibration) setShowCalibration(false);
+            }}
             onReset={handleReset}
             hasExistingProfile={!!profile}
           />
@@ -369,17 +389,25 @@ interface CalibrationModalProps {
   onClose: () => void;
   onReset: () => void;
   hasExistingProfile: boolean;
+  saving?: boolean;
 }
 
-function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExistingProfile }: CalibrationModalProps) {
+function CalibrationModal({
+  initialValues,
+  onSave,
+  onClose,
+  onReset,
+  hasExistingProfile,
+  saving = false,
+}: CalibrationModalProps) {
   const { t } = useTranslation();
-  const [values, setValues] = useState<Partial<TasteProfileVector>>({
+  const [values, setValues] = useState<Partial<TasteProfileVector>>(() => ({
     body: initialValues.body ?? 0.5,
     tannin: initialValues.tannin ?? 0.5,
     acidity: initialValues.acidity ?? 0.5,
     oak: initialValues.oak ?? 0.5,
     sweetness: initialValues.sweetness ?? 0.2,
-  });
+  }));
   
   const handleSliderChange = (key: keyof TasteProfileVector, value: number) => {
     setValues(prev => ({ ...prev, [key]: value }));
@@ -494,7 +522,8 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
             {hasExistingProfile && (
               <button
                 onClick={onReset}
-                className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors"
+                disabled={saving}
+                className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors disabled:opacity-50"
                 style={{
                   color: 'var(--color-error, #dc2626)',
                   borderColor: 'var(--border-base)',
@@ -506,7 +535,8 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
             )}
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors"
+              disabled={saving}
+              className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors disabled:opacity-50"
               style={{
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-base)',
@@ -517,13 +547,16 @@ function CalibrationModal({ initialValues, onSave, onClose, onReset, hasExisting
             </button>
             <button
               onClick={() => onSave(values)}
-              className="flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-colors"
+              disabled={saving}
+              className="flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
               style={{
                 background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
                 color: 'white',
               }}
             >
-              {t('tasteProfile.calibration.save', 'Save Preferences')}
+              {saving
+                ? t('tasteProfile.calibration.saving', 'Saving...')
+                : t('tasteProfile.calibration.save', 'Save Preferences')}
             </button>
           </div>
         </div>

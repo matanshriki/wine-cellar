@@ -10,6 +10,14 @@ import { supabase } from '../lib/supabase';
 import type { TasteProfile, TasteProfileVector, TasteProfilePreferences } from '../types/supabase';
 import * as wineProfileService from './wineProfileService';
 import type { WineProfile } from './wineProfileService';
+import { mergeCalibrationOverrideVector } from './tasteProfileCalibration';
+
+export {
+  getCalibrationOverrideVector,
+  getCalibrationSliderValues,
+  mergeCalibrationOverrideVector,
+  CALIBRATION_SLIDER_DEFAULTS,
+} from './tasteProfileCalibration';
 
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ENTRIES = 100;
@@ -276,10 +284,15 @@ function getConfidence(ratedCount: number): 'low' | 'med' | 'high' {
 }
 
 /**
- * Save taste profile to user's profile
+ * Save taste profile to the authenticated user's profiles row.
+ * Returns the persisted taste_profile JSON. Throws on PostgREST error or
+ * zero-row update (e.g. RLS miss) so callers cannot treat a no-op as success.
  */
-export async function saveTasteProfile(userId: string, profile: TasteProfile): Promise<void> {
-  const { error } = await supabase
+export async function saveTasteProfile(
+  userId: string,
+  profile: TasteProfile
+): Promise<TasteProfile> {
+  const { data, error } = await supabase
     .from('profiles')
     // @ts-expect-error - taste_profile columns added via migration but not yet in generated types
     .update({
@@ -287,14 +300,27 @@ export async function saveTasteProfile(userId: string, profile: TasteProfile): P
       taste_profile_updated_at: new Date().toISOString(),
       taste_profile_version: PROFILE_VERSION,
     })
-    .eq('id', userId);
-  
+    .eq('id', userId)
+    .select('taste_profile')
+    .maybeSingle();
+
   if (error) {
-    console.error('[TasteProfileService] Error saving profile:', error);
+    console.error('[TasteProfileService] Error saving profile:', error.code ?? error.message);
     throw new Error('Failed to save taste profile');
   }
-  
-  console.log('[TasteProfileService] Profile saved successfully');
+
+  if (!data) {
+    console.error('[TasteProfileService] Taste profile update matched zero rows');
+    throw new Error('Failed to save taste profile');
+  }
+
+  const saved = (data as { taste_profile?: TasteProfile | null }).taste_profile;
+  if (!saved || typeof saved !== 'object') {
+    console.error('[TasteProfileService] Taste profile update returned empty payload');
+    throw new Error('Failed to save taste profile');
+  }
+
+  return saved;
 }
 
 /**
@@ -332,25 +358,32 @@ export async function recomputeMyTasteProfile(): Promise<TasteProfile | null> {
   
   const profile = await computeTasteProfile(user.id);
   
-  if (profile) {
-    await saveTasteProfile(user.id, profile);
+  if (!profile) {
+    return null;
   }
-  
-  return profile;
+
+  return saveTasteProfile(user.id, profile);
 }
 
 /**
- * Apply manual calibration overrides to taste profile
+ * Apply manual calibration overrides to taste profile.
+ * `overrides` are raw slider targets stored under taste_profile.overrides.vector.
  */
-export async function applyCalibration(overrides: Partial<TasteProfileVector>): Promise<TasteProfile | null> {
+export async function applyCalibration(
+  overrides: Partial<TasteProfileVector>
+): Promise<TasteProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('Not authenticated');
   }
-  
+
   const currentProfile = await getMyTasteProfile();
-  
+  const mergedVector = mergeCalibrationOverrideVector(
+    currentProfile?.overrides?.vector,
+    overrides
+  );
+
   if (!currentProfile) {
     const baseProfile: TasteProfile = {
       version: PROFILE_VERSION,
@@ -363,28 +396,31 @@ export async function applyCalibration(overrides: Partial<TasteProfileVector>): 
         regions: {},
         grapes: {},
       },
-      overrides: { vector: overrides },
+      overrides: { vector: { ...mergedVector } },
       confidence: 'low',
       data_points: { rated_count: 0, last_rated_at: null },
     };
-    
-    await saveTasteProfile(user.id, baseProfile);
-    return baseProfile;
+
+    return saveTasteProfile(user.id, baseProfile);
   }
-  
+
   const updatedProfile: TasteProfile = {
-    ...currentProfile,
-    overrides: {
-      ...currentProfile.overrides,
-      vector: {
-        ...(currentProfile.overrides?.vector || {}),
-        ...overrides,
-      },
+    version: currentProfile.version,
+    vector: { ...currentProfile.vector },
+    preferences: {
+      ...currentProfile.preferences,
+      style_tags: { ...currentProfile.preferences.style_tags },
+      regions: { ...currentProfile.preferences.regions },
+      grapes: { ...currentProfile.preferences.grapes },
     },
+    overrides: {
+      vector: mergedVector,
+    },
+    confidence: currentProfile.confidence,
+    data_points: { ...currentProfile.data_points },
   };
-  
-  await saveTasteProfile(user.id, updatedProfile);
-  return updatedProfile;
+
+  return saveTasteProfile(user.id, updatedProfile);
 }
 
 /**
