@@ -397,3 +397,23 @@ export function buildIdempotencyKey(params: {
   }
   return `p2a_${Math.abs(h).toString(16)}_${params.candidate.valueId}`.slice(0, 180);
 }
+
+/**
+ * Lookup bilingual wine-term labels for known region/grape ids (Profile memory UI / API).
+ */
+export function lookupWineTermLabels(
+  dimension: 'region' | 'grape',
+  id: string
+): { en: string; he?: string } | null {
+  const needle = id.toLowerCase().trim();
+  if (!needle) return null;
+  const table = dimension === 'region' ? REGION_ALIASES : GRAPE_ALIASES;
+  for (const entry of Object.values(table)) {
+    if (entry.id === needle) {
+      return { en: entry.en, he: entry.he };
+    }
+  }
+  const direct = table[needle];
+  if (direct) return { en: direct.en, he: direct.he };
+  return null;
+}

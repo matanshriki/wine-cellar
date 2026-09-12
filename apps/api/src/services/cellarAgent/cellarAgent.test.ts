@@ -2,9 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { classifyAgentRoute } from './agentRouter.js';
 import { parseChosenBottleIds } from './chosenBottleIds.js';
 import { inferMemoryUpdateFromText } from './preferenceInference.js';
-import { extractConstraints, detectsSpecificProducerMention } from './tools.js';
+import {
+  extractConstraints,
+  detectsSpecificProducerMention,
+  detectPriceSortIntent,
+} from './tools.js';
 import { scoreBottleHeuristically } from './heuristics.js';
-import type { CellarBottleInput } from './types.js';
+import {
+  applyPriceSortToScored,
+  compactBottlesForLlm,
+} from './candidateSelection.js';
+import type { CellarBottleInput, ScoredCandidate } from './types.js';
 
 describe('parseChosenBottleIds', () => {
   it('parses string arrays', () => {
@@ -142,14 +150,14 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
   it('gives big boost when producer name appears in user message (Latin)', () => {
     const { score: scoreWithMention } = scoreBottleHeuristically(
       base,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
       'i want to open the raziel reserve tonight',
       null,
       null
     );
     const { score: scoreWithout } = scoreBottleHeuristically(
       base,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
       'i want something nice tonight',
       null,
       null
@@ -165,13 +173,13 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
     };
     const { score: withHe, features: featuresWithHe } = scoreBottleHeuristically(
       bottleWithHe,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
       'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
       null, null
     );
     const { score: withoutHe } = scoreBottleHeuristically(
       base, // no producerHe
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
       'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
       null, null
     );
@@ -193,5 +201,52 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
     );
     // Should get color_match (+22) + readiness base (8 for aging)
     expect(score).toBeGreaterThanOrEqual(30);
+  });
+});
+
+describe('detectPriceSortIntent / purchase price in shortlist', () => {
+  it('detects cheapest and most expensive in English and Hebrew', () => {
+    expect(detectPriceSortIntent('What is the cheapest wine in my cellar?')).toBe('cheapest');
+    expect(detectPriceSortIntent('most expensive bottle')).toBe('most_expensive');
+    expect(detectPriceSortIntent('מה היין הזול ביותר במרתף?')).toBe('cheapest');
+    expect(detectPriceSortIntent('מה היין הכי יקר שלי?')).toBe('most_expensive');
+    expect(extractConstraints('cheapest red').priceSort).toBe('cheapest');
+  });
+
+  it('sorts priced bottles first for cheapest asks and keeps purchasePrice in compact payload', () => {
+    const cheap: CellarBottleInput = {
+      id: 'cheap',
+      producer: 'A',
+      wineName: 'Budget',
+      purchasePrice: 20,
+      purchasePriceCurrency: 'ILS',
+      readinessStatus: 'aging',
+    };
+    const pricey: CellarBottleInput = {
+      id: 'pricey',
+      producer: 'B',
+      wineName: 'Reserve',
+      purchasePrice: 200,
+      purchasePriceCurrency: 'ILS',
+      readinessStatus: 'peak',
+    };
+    const unpriced: CellarBottleInput = {
+      id: 'noprice',
+      producer: 'C',
+      wineName: 'Mystery',
+      readinessStatus: 'peak',
+    };
+    const scored: ScoredCandidate[] = [
+      { bottle: unpriced, score: 100, features: [] },
+      { bottle: pricey, score: 90, features: [] },
+      { bottle: cheap, score: 50, features: [] },
+    ];
+    const ordered = applyPriceSortToScored(scored, 'cheapest');
+    expect(ordered.map((s) => s.bottle.id)).toEqual(['cheap', 'pricey', 'noprice']);
+
+    const compact = compactBottlesForLlm(ordered.slice(0, 2));
+    expect(compact[0].purchasePrice).toBe(20);
+    expect(compact[0].purchasePriceCurrency).toBe('ILS');
+    expect(compact[1].purchasePrice).toBe(200);
   });
 });

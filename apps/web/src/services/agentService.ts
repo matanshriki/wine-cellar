@@ -184,16 +184,20 @@ function buildCellarContext(
   let summary = '';
 
   if (bottles.length > 60) {
-    // Prefer bottles that are ready now + recent additions
+    // Prefer bottles that are ready now + recent additions + any with a purchase price
+    // (so cheapest/most-expensive questions still see priced bottles)
     const readyBottles = bottles.filter(
       (b) => b.readiness_status === 'ready' || b.readiness_status === 'peak'
     );
-    const recentBottles = bottles
+    const pricedBottles = bottles
+      .filter((b) => b.purchase_price != null && Number.isFinite(b.purchase_price))
+      .sort((a, b) => (a.purchase_price ?? 0) - (b.purchase_price ?? 0));
+    const recentBottles = [...bottles]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 30);
 
-    // Combine and dedupe
-    const combined = [...readyBottles, ...recentBottles];
+    // Combine and dedupe — priced bottles first so price questions stay accurate
+    const combined = [...pricedBottles, ...readyBottles, ...recentBottles];
     const unique = Array.from(new Set(combined.map((b) => b.id))).map((id) =>
       combined.find((b) => b.id === id)!
     );
@@ -276,6 +280,10 @@ function buildCellarContext(
         quantity: b.quantity,
         purchaseDate: b.purchase_date,
         purchasePrice: b.purchase_price,
+        ...((b as { purchase_price_currency?: string | null }).purchase_price_currency && {
+          purchasePriceCurrency: (b as { purchase_price_currency?: string | null })
+            .purchase_price_currency as string,
+        }),
 
         // Vivino data for additional context
         vivinoRating: b.wine.vivino_rating,

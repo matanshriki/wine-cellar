@@ -18,6 +18,7 @@ import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill
 import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
 import { AdminImageBackfill } from '../components/AdminImageBackfill';
 import { TasteProfileCard } from '../components/TasteProfileCard';
+import { SommiMemoryCard } from '../components/SommiMemoryCard';
 import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { getPortalUrl } from '../lib/paddle';
@@ -341,6 +342,9 @@ export function ProfilePage() {
 
       {/* Taste Profile */}
       <TasteProfileCard />
+
+      {/* Explicit Sommi conversational memory (separate from inferred taste) */}
+      <SommiMemoryCard />
 
       {/* Weekly Summary — reflective taste snapshot for last 7 days */}
       <WeeklySummaryCard />

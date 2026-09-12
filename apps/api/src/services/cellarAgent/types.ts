@@ -33,6 +33,10 @@ export interface CellarBottleInput {
   readinessStatus?: string;
   notes?: string;
   quantity?: number;
+  /** Purchase price the user entered (may be null/omitted for many bottles). */
+  purchasePrice?: number | null;
+  /** ISO currency code for purchasePrice (e.g. USD, ILS). */
+  purchasePriceCurrency?: string | null;
   /** From consumption_history — how many times this wine was opened */
   pastOpeningsCount?: number;
   /** Average user_rating (1–5) across rated opens */
@@ -76,6 +80,11 @@ export interface ExtractedConstraints {
   occasionKeywords: string[];
   wantsSparkling: boolean;
   wantsChampagne: boolean;
+  /**
+   * When set, shortlist should prefer bottles that have purchasePrice and
+   * order them cheapest-first or most-expensive-first.
+   */
+  priceSort: 'cheapest' | 'most_expensive' | null;
 }
 
 /** Compact bottle row sent to the LLM (token-safe). */
@@ -93,6 +102,8 @@ export interface CompactCellarBottle {
   readinessStatus?: string;
   notes?: string;
   quantity?: number;
+  purchasePrice?: number | null;
+  purchasePriceCurrency?: string | null;
   pastOpeningsCount?: number;
   pastOpeningsAvgRating?: number;
   pastOpeningsRatingCount?: number;

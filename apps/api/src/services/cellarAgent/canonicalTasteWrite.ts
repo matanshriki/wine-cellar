@@ -112,6 +112,9 @@ async function syncLegacyAfterPendingApply(
         );
         return 'ok';
       }
+      // medium (or unexpected): clear legacy body so a prior light/full scalar cannot linger
+      await patchSommelierMemoryRemovals(userId, { clearBodyPreference: true }, supabase);
+      return 'ok';
     }
     if (action.action === 'remove' && action.dimension === 'body') {
       await patchSommelierMemoryRemovals(userId, { clearBodyPreference: true }, supabase);
@@ -169,6 +172,15 @@ async function syncLegacyAfterPendingApply(
   } catch {
     return 'failed';
   }
+}
+
+/** Exported for Profile UI create→resolve path (same legacy parity as chat). */
+export async function syncLegacyAfterTasteConfirmation(
+  userId: string,
+  action: PendingTasteAction,
+  supabase: SupabaseClient
+): Promise<'ok' | 'failed' | 'skipped'> {
+  return syncLegacyAfterPendingApply(userId, action, supabase);
 }
 
 export async function processPreferenceMessage(params: {

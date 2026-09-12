@@ -174,6 +174,39 @@ export function detectsIncludeReservedRequest(message: string): boolean {
   return false;
 }
 
+/**
+ * Detect cheapest vs most-expensive intent so shortlisting can prefer priced bottles.
+ * Checks "most expensive" / "least expensive" before bare "expensive"/"cheap".
+ */
+export function detectPriceSortIntent(
+  message: string
+): 'cheapest' | 'most_expensive' | null {
+  const m = message.toLowerCase();
+  if (
+    /\b(most\s+expensive|priciest|highest\s+priced?|most\s+costly)\b/i.test(m) ||
+    /היקר(?:ה)?\s*ביותר|הכי\s*יקר|יקר\s*ביותר/.test(message)
+  ) {
+    return 'most_expensive';
+  }
+  if (
+    /\b(cheap(?:er|est)?|least\s+expensive|most\s+affordable|budget|inexpensive|lowest\s+priced?)\b/i.test(
+      m
+    ) ||
+    /הזול(?:ה)?\s*ביותר|הכי\s*זול|זול\s*ביותר|זול(?:ה|ים)?/.test(message)
+  ) {
+    return 'cheapest';
+  }
+  // Bare "expensive" / Hebrew "יקר" without "most/cheapest" → treat as most expensive
+  if (/\b(expensive|pricey|costly)\b/i.test(m) || /יקר(?:ה|ים)?/.test(message)) {
+    return 'most_expensive';
+  }
+  if (/\b(price|cost|how\s+much)\b/i.test(m) || /מחיר|כסף/.test(message)) {
+    // Generic price question — surface priced bottles; default to cheapest listing
+    return 'cheapest';
+  }
+  return null;
+}
+
 export function extractConstraints(message: string): ExtractedConstraints {
   const m = normalizeMessage(message);
   const { regions, grapes } = extractRegionGrapeHints(message);
@@ -189,6 +222,7 @@ export function extractConstraints(message: string): ExtractedConstraints {
     occasionKeywords: occasion,
     wantsSparkling: /\b(sparkling|champagne|bubbles?|cr[eé]mant)\b/i.test(m),
     wantsChampagne: /\bchampagne\b/i.test(m),
+    priceSort: detectPriceSortIntent(message),
   };
 }
 
@@ -198,7 +232,7 @@ const FOOD_CONTEXT_RE =
 
 /** Matches price/value follow-up requests — these should NOT demand food clarification */
 const PRICE_FOLLOWUP_RE =
-  /\b(cheap(er|est)?|budget|affordable|value|inexpensive|least expensive|most affordable|price)\b|זול(ה?|ים|יותר|ביותר)|יקר(ה?|יותר)|מחיר|כסף/i;
+  /\b(cheap(er|est)?|budget|affordable|value|inexpensive|least expensive|most affordable|price|expensive|priciest|cost)\b|זול(ה?|ים|יותר|ביותר)|יקר(ה?|יותר|ביותר)|מחיר|כסף/i;
 
 /**
  * Whether we should nudge the model toward a clarifying question first.
@@ -299,6 +333,15 @@ export function buildReasoningContext(
   }
   if (constraints.foodKeywords.length) {
     parts.push(`Food context: ${constraints.foodKeywords.join(', ')}`);
+  }
+  if (constraints.priceSort === 'cheapest') {
+    parts.push(
+      'Price ask: cheapest — use purchasePrice on bottles that have it; do not invent prices for unpriced bottles'
+    );
+  } else if (constraints.priceSort === 'most_expensive') {
+    parts.push(
+      'Price ask: most expensive — use purchasePrice on bottles that have it; do not invent prices for unpriced bottles'
+    );
   }
   if (shortlistRegions.length) {
     parts.push(`Shortlist regions (sample): ${shortlistRegions.slice(0, 6).join(', ')}`);

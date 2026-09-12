@@ -19,6 +19,7 @@ import { eventsRouter } from './routes/events.js'; // Wine World Moments
 import { billingRouter } from './routes/billing.js'; // Paddle Billing
 import { metaRouter } from './routes/meta.js'; // Meta Conversions API relay
 import { analyticsRouter } from './routes/analytics.js'; // GA4 Data API (admin)
+import { profileRouter } from './routes/profile.js'; // Profile Sommi memory management
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.use('/api/events', eventsRouter); // Wine World Moments
 app.use('/api/billing', billingRouter); // Paddle Billing (checkout-config, portal)
 app.use('/api/meta', metaRouter); // Meta CAPI (authenticated)
 app.use('/api/analytics', analyticsRouter); // GA4 Data API (admin-only)
+app.use('/api/profile', profileRouter); // Profile Sommi memory (JWT, zero credits)
 
 // Startup diagnostic for GA4 config
 const ga4Method =

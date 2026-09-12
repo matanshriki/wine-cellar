@@ -52,6 +52,10 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     readinessStatus: b.readinessStatus,
     notes: b.notes?.substring(0, 200),
     quantity: b.quantity,
+    ...(typeof b.purchasePrice === 'number' && {
+      purchasePrice: b.purchasePrice,
+      ...(b.purchasePriceCurrency && { purchasePriceCurrency: b.purchasePriceCurrency }),
+    }),
     pastOpeningsCount: b.pastOpeningsCount,
     pastOpeningsAvgRating: b.pastOpeningsAvgRating,
     pastOpeningsRatingCount: b.pastOpeningsRatingCount,
@@ -63,6 +67,43 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     ...(b.isKosher !== undefined && { isKosher: b.isKosher }),
     ...(b.kosherConfidence != null && { kosherConfidence: b.kosherConfidence }),
   };
+}
+
+function hasPurchasePrice(b: CellarBottleInput): boolean {
+  return typeof b.purchasePrice === 'number' && Number.isFinite(b.purchasePrice);
+}
+
+/**
+ * When the user asks cheapest/most expensive, put priced bottles first and sort by price
+ * so the shortlist actually contains the answer (heuristic readiness ranking alone won't).
+ */
+export function applyPriceSortToScored(
+  scored: ScoredCandidate[],
+  priceSort: ExtractedConstraints['priceSort']
+): ScoredCandidate[] {
+  if (!priceSort) return scored;
+
+  const withPrice: ScoredCandidate[] = [];
+  const withoutPrice: ScoredCandidate[] = [];
+  for (const s of scored) {
+    if (hasPurchasePrice(s.bottle)) withPrice.push(s);
+    else withoutPrice.push(s);
+  }
+
+  withPrice.sort((a, b) => {
+    const pa = a.bottle.purchasePrice as number;
+    const pb = b.bottle.purchasePrice as number;
+    return priceSort === 'cheapest' ? pa - pb : pb - pa;
+  });
+
+  return [
+    ...withPrice.map((s) => ({
+      ...s,
+      score: s.score + 200,
+      features: [...s.features, `price:${priceSort}`],
+    })),
+    ...withoutPrice,
+  ];
 }
 
 function normalizeColor(c: string | undefined): string {
@@ -130,7 +171,8 @@ export function shortlistCandidates(
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return { scored, relaxedFilter, reservedExcluded };
+  const ordered = applyPriceSortToScored(scored, constraints.priceSort);
+  return { scored: ordered, relaxedFilter, reservedExcluded };
 }
 
 /** Slice top N after `computeEffectiveShortlistCap(scored.length)`. */

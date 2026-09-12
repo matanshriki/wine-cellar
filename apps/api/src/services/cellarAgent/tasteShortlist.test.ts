@@ -31,6 +31,7 @@ const emptyConstraints = (): ExtractedConstraints => ({
   occasionKeywords: [],
   wantsSparkling: false,
   wantsChampagne: false,
+  priceSort: null,
 });
 
 function fullBodiedRedLoverProfile(

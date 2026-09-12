@@ -631,6 +631,10 @@ function formatBottleForConversation(bottle: CellarBottleInput): string {
     parts.push(`Drink window: ${bottle.drinkWindowStart ?? '?'}–${bottle.drinkWindowEnd ?? '?'}`);
   }
   if (bottle.notes) parts.push(`Cellar notes: ${bottle.notes}`);
+  if (typeof bottle.purchasePrice === 'number') {
+    const cur = bottle.purchasePriceCurrency ? ` ${bottle.purchasePriceCurrency}` : '';
+    parts.push(`Purchase price: ${bottle.purchasePrice}${cur}`);
+  }
   if (bottle.pastOpeningsCount) {
     parts.push(`Past opens: ${bottle.pastOpeningsCount}`);
     if (bottle.pastOpeningsAvgRating) parts.push(`Avg rating: ${bottle.pastOpeningsAvgRating}/5`);
