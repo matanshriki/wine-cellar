@@ -8,11 +8,11 @@ import {
 } from './ensurePersistedConversation';
 import type { SommelierConversation } from './sommelierConversationService';
 
-function fakeConv(id: string): SommelierConversation {
+function fakeConv(id: string, title: string | null = null): SommelierConversation {
   return {
     id,
     user_id: 'user-1',
-    title: 'New conversation',
+    title,
     messages: [],
     created_at: '2026-09-10T00:00:00Z',
     updated_at: '2026-09-10T00:00:00Z',
@@ -25,7 +25,7 @@ describe('ensurePersistedConversation', () => {
     const createFn = vi.fn(async () => fakeConv('conv-new'));
     const result = await ensurePersistedConversation(null, createFn);
     expect(createFn).toHaveBeenCalledTimes(1);
-    expect(createFn).toHaveBeenCalledWith([], 'New conversation');
+    expect(createFn).toHaveBeenCalledWith([]);
     expect(result.id).toBe('conv-new');
   });
 

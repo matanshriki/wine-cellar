@@ -140,6 +140,33 @@ export function detectPendingTasteAction(
       }
       return { kind: 'not_found' };
     }
+    if (candidate.dimension === 'style') {
+      if (listHas(explicit.styles_liked, id)) {
+        return {
+          kind: 'pending',
+          action: {
+            action: 'remove',
+            dimension: 'style',
+            existingValue: id,
+            labelEn: candidate.labelEn,
+            labelHe: candidate.labelHe,
+          },
+        };
+      }
+      if (listHas(explicit.styles_disliked, id)) {
+        return {
+          kind: 'pending',
+          action: {
+            action: 'remove',
+            dimension: 'style',
+            existingValue: id,
+            labelEn: candidate.labelEn,
+            labelHe: candidate.labelHe,
+          },
+        };
+      }
+      return { kind: 'not_found' };
+    }
     return { kind: 'not_found' };
   }
 
@@ -163,13 +190,23 @@ export function detectPendingTasteAction(
     }
 
     if (
-      (candidate.dimension === 'region' || candidate.dimension === 'grape') &&
+      (candidate.dimension === 'region' ||
+        candidate.dimension === 'grape' ||
+        candidate.dimension === 'style') &&
       candidate.polarity === 'like'
     ) {
       const liked =
-        candidate.dimension === 'region' ? explicit?.regions_liked : explicit?.grapes_liked;
+        candidate.dimension === 'region'
+          ? explicit?.regions_liked
+          : candidate.dimension === 'grape'
+            ? explicit?.grapes_liked
+            : explicit?.styles_liked;
       const disliked =
-        candidate.dimension === 'region' ? explicit?.regions_disliked : explicit?.grapes_disliked;
+        candidate.dimension === 'region'
+          ? explicit?.regions_disliked
+          : candidate.dimension === 'grape'
+            ? explicit?.grapes_disliked
+            : explicit?.styles_disliked;
       if (listHas(liked, candidate.valueId)) return { kind: 'reaffirm' };
       if (listHas(disliked, candidate.valueId)) {
         return {
@@ -189,13 +226,23 @@ export function detectPendingTasteAction(
     }
 
   if (
-    (candidate.dimension === 'region' || candidate.dimension === 'grape') &&
+    (candidate.dimension === 'region' ||
+      candidate.dimension === 'grape' ||
+      candidate.dimension === 'style') &&
     candidate.polarity === 'dislike'
   ) {
     const liked =
-      candidate.dimension === 'region' ? explicit?.regions_liked : explicit?.grapes_liked;
+      candidate.dimension === 'region'
+        ? explicit?.regions_liked
+        : candidate.dimension === 'grape'
+          ? explicit?.grapes_liked
+          : explicit?.styles_liked;
     const disliked =
-      candidate.dimension === 'region' ? explicit?.regions_disliked : explicit?.grapes_disliked;
+      candidate.dimension === 'region'
+        ? explicit?.regions_disliked
+        : candidate.dimension === 'grape'
+          ? explicit?.grapes_disliked
+          : explicit?.styles_disliked;
     if (listHas(disliked, candidate.valueId)) return { kind: 'reaffirm' };
     if (listHas(liked, candidate.valueId)) {
       return {

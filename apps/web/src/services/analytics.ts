@@ -525,6 +525,21 @@ export const trackRecommendation = {
     }),
   resultsShown: (resultCount: number) =>
     trackEvent('recommendation_results_shown', { result_count: resultCount }),
+
+  /** Tonight form Sommi shortcut card became visible. */
+  sommiCardShown: (params: { locale: string; source_page?: string }) =>
+    trackEvent('tonight_sommi_card_shown', {
+      locale: params.locale,
+      source_page: params.source_page ?? 'recommendation',
+      platform: detectPlatform(),
+    }),
+
+  /** User tapped Talk to Sommi on the Tonight shortcut card. */
+  sommiCardClicked: (params?: { source?: string }) =>
+    trackEvent('tonight_sommi_card_clicked', {
+      source: params?.source ?? 'tonight_card',
+      platform: detectPlatform(),
+    }),
 };
 
 export const trackEveningPlan = {
@@ -561,8 +576,11 @@ export const trackSommelier = {
   agentButtonClick: (source: string) =>
     trackEvent('sommelier_agent_click', { source, platform: detectPlatform() }),
 
-  agentOpen: () =>
-    trackEvent('sommelier_agent_open', { platform: detectPlatform() }),
+  agentOpen: (source?: string) =>
+    trackEvent('sommelier_agent_open', {
+      platform: detectPlatform(),
+      ...(source ? { source } : {}),
+    }),
 
   /**
    * User sent a query to the AI agent.

@@ -16,10 +16,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
-import { isDevEnvironment } from '../utils/devOnly';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { SommelierChatButton } from '../components/SommelierChatButton';
+import { TonightSommiCard } from '../components/TonightSommiCard';
 import { Toggle } from '../components/ui/Toggle';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
@@ -32,6 +32,7 @@ import { WineLoader } from '../components/WineLoader';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 type WineType = 'red' | 'white' | 'rose' | 'mixed';
 type PriceRange = 0 | 1 | 2 | 3 | 4;
@@ -65,6 +66,7 @@ const vibes = [
 export function RecommendationPage() {
   const { t, i18n } = useTranslation();
   const { openRitual } = useOpenRitual();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const isOnline = useOnlineStatus();
   const [step, setStep] = useState<'form' | 'results'>('form');
   const [loading, setLoading] = useState(false);
@@ -88,13 +90,6 @@ export function RecommendationPage() {
   const [selectedBottle, setSelectedBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const navigate = useNavigate();
-
-  // Dev/staging: agent-first experience replaces the form
-  useEffect(() => {
-    if (isDevEnvironment()) {
-      navigate('/agent', { replace: true });
-    }
-  }, [navigate]);
 
   // Scroll to top on mount. This page has a sticky submit button and long
   // content that can cause the global ScrollToTop to fire before the full
@@ -631,6 +626,8 @@ export function RecommendationPage() {
         <p style={{ color: 'var(--text-secondary)' }}>{t('recommendation.subtitle')}</p>
       </div>
 
+      {!flagsLoading && flags?.cellarAgentEnabled && <TonightSommiCard />}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card space-y-5">
           <div>
@@ -934,7 +931,8 @@ export function RecommendationPage() {
         </div>
       </form>
 
-      <SommelierChatButton />
+      {/* Local FAB only when Sommi card is unavailable (flag off). */}
+      {!flagsLoading && !flags?.cellarAgentEnabled && <SommelierChatButton />}
     </motion.div>
   );
 }

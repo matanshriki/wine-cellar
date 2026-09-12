@@ -15,6 +15,8 @@ export type PublicSommiMemory = {
   regions_disliked: PublicMemoryItem[];
   grapes_liked: PublicMemoryItem[];
   grapes_disliked: PublicMemoryItem[];
+  styles_liked: PublicMemoryItem[];
+  styles_disliked: PublicMemoryItem[];
   body: { value: 'light' | 'medium' | 'full'; label: string } | null;
 };
 
@@ -27,7 +29,7 @@ export function extractPublicSommiMemory(
   const lang = language.startsWith('he') ? 'he' : 'en';
 
   const map = (
-    dimension: 'region' | 'grape',
+    dimension: 'region' | 'grape' | 'style',
     list?: Array<{ id: string; label_en?: string; label_he?: string }>
   ): PublicMemoryItem[] => {
     if (!list?.length) return [];
@@ -43,6 +45,8 @@ export function extractPublicSommiMemory(
     regions_disliked: map('region', explicit?.regions_disliked),
     grapes_liked: map('grape', explicit?.grapes_liked),
     grapes_disliked: map('grape', explicit?.grapes_disliked),
+    styles_liked: map('style', explicit?.styles_liked),
+    styles_disliked: map('style', explicit?.styles_disliked),
     body:
       bodyVal === 'light' || bodyVal === 'medium' || bodyVal === 'full'
         ? { value: bodyVal, label: bodyPreferenceLabel(bodyVal, lang, t) }
@@ -56,11 +60,13 @@ export function countPublicSommiMemory(memory: PublicSommiMemory): number {
     memory.regions_disliked.length +
     memory.grapes_liked.length +
     memory.grapes_disliked.length +
+    memory.styles_liked.length +
+    memory.styles_disliked.length +
     (memory.body ? 1 : 0)
   );
 }
 
-export function previewMemoryLabels(memory: PublicSommiMemory, limit = 4): string[] {
+export function allMemoryLabels(memory: PublicSommiMemory): string[] {
   const labels: string[] = [];
   if (memory.body) labels.push(memory.body.label);
   for (const item of [
@@ -68,9 +74,21 @@ export function previewMemoryLabels(memory: PublicSommiMemory, limit = 4): strin
     ...memory.regions_disliked,
     ...memory.grapes_liked,
     ...memory.grapes_disliked,
+    ...memory.styles_liked,
+    ...memory.styles_disliked,
   ]) {
-    if (labels.length >= limit) break;
     labels.push(item.label);
   }
-  return labels.slice(0, limit);
+  return labels;
+}
+
+export function previewMemoryLabels(
+  memory: PublicSommiMemory,
+  limit = 4
+): { labels: string[]; moreCount: number } {
+  const all = allMemoryLabels(memory);
+  return {
+    labels: all.slice(0, limit),
+    moreCount: Math.max(0, all.length - limit),
+  };
 }

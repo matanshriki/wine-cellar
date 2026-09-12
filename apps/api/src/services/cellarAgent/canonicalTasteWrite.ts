@@ -53,6 +53,8 @@ export type CanonicalApplyResult = {
     | 'pending_confirm'
     | 'not_found'
     | 'reaffirm'
+    | 'unrecognized'
+    | 'persist_failed'
     | 'none';
   memoryDualWrite: 'ok' | 'failed' | 'skipped' | 'legacy_only';
   pendingAction?: PendingTasteAction;
@@ -135,6 +137,10 @@ async function syncLegacyAfterPendingApply(
         supabase
       );
       return 'ok';
+    }
+    if (action.action === 'remove' && action.dimension === 'style') {
+      // Legacy agent memory has no styles list — canonical is authoritative.
+      return 'skipped';
     }
     if (action.action === 'move_polarity' && action.dimension === 'region') {
       if (action.proposedPolarity === 'dislike') {
@@ -550,10 +556,15 @@ export async function processPreferenceMessage(params: {
   let acknowledgmentKind: CanonicalApplyResult['acknowledgmentKind'] = 'none';
   if (pendingDetect.kind === 'reaffirm' && (canonicalApplied || reason === 'already_applied')) {
     acknowledgmentKind = 'reaffirm';
+  } else if (candidate.class === 'ambiguous') {
+    // Explicit remember without a recognized allowlisted term — never claim success.
+    acknowledgmentKind = 'unrecognized';
   } else if (candidate.class === 'stable_remember') {
     if (canonicalApplied) acknowledgmentKind = 'remember_saved';
+    else if (reason === 'already_applied') acknowledgmentKind = 'reaffirm';
     else if (reason === 'contradiction') acknowledgmentKind = 'unsupported_change';
-    else acknowledgmentKind = 'remember_disabled';
+    else if (!writesOn) acknowledgmentKind = 'remember_disabled';
+    else acknowledgmentKind = 'persist_failed';
   } else if (candidate.class === 'retraction' || candidate.class === 'contradiction') {
     acknowledgmentKind = 'unsupported_change';
   } else if (candidate.class === 'stable_general') {
@@ -815,14 +826,29 @@ export function preferenceAckMessage(
         return `הבנתי — אזכור שאתה מעדיף יינות עם גוף ${candidate.valueId === 'full' ? 'מלא' : candidate.valueId === 'light' ? 'קל' : 'בינוני'}.`;
       }
       if (candidate.dimension === 'region') {
-        return `הבנתי — אזכור שאתה מעדיף יינות מ${label}.`;
+        return `הבנתי — אזכור שאתה אוהב יינות מ${label}.`;
       }
-      return `הבנתי — אזכור שאתה מעדיף ${label}.`;
+      if (candidate.dimension === 'style') {
+        return `הבנתי — אזכור שאתה אוהב ${label}.`;
+      }
+      return `הבנתי — אזכור שאתה אוהב ${label}.`;
     }
     if (candidate.dimension === 'body') {
       return `Got it — I'll remember that you prefer ${candidate.valueId}-bodied wines.`;
     }
     return `Got it — I'll remember that you prefer ${label}.`;
+  }
+
+  if (kind === 'unrecognized') {
+    return language === 'he'
+      ? 'הבנתי שאתה רוצה שאזכור העדפת יין, אבל לא הצלחתי לזהות איזו. נסה לציין זן, אזור או סגנון.'
+      : "I understood that you want me to remember a wine preference, but I couldn't identify which one. Try naming the grape, region, or style.";
+  }
+
+  if (kind === 'persist_failed') {
+    return language === 'he'
+      ? 'זיהיתי את ההעדפה, אבל לא הצלחתי לשמור אותה כרגע. נסה שוב.'
+      : "I recognized that preference, but couldn't save it just now. Please try again.";
   }
 
   if (kind === 'remember_disabled') {

@@ -7,6 +7,12 @@
 import { supabase } from '../lib/supabase';
 import type { AgentMessage } from './agentService';
 
+export {
+  generateConversationTitle,
+  isPlaceholderConversationTitle,
+  resolveConversationTitle,
+} from './conversationTitle';
+
 export interface SommelierConversation {
   id: string;
   user_id: string;
@@ -161,29 +167,5 @@ export async function deleteConversation(id: string): Promise<void> {
     console.error('Error deleting conversation:', error);
     throw new Error('Failed to delete conversation');
   }
-}
-
-/**
- * Generate a title for a conversation based on its first message
- * Returns a short, descriptive title (max 50 chars)
- */
-export function generateConversationTitle(messages: AgentMessage[]): string {
-  if (messages.length === 0) {
-    return 'New conversation';
-  }
-
-  const firstUserMessage = messages.find(m => m.role === 'user');
-  if (!firstUserMessage) {
-    return 'New conversation';
-  }
-
-  const content = firstUserMessage.content.trim();
-  
-  // Truncate to 50 chars
-  if (content.length <= 50) {
-    return content;
-  }
-
-  return content.substring(0, 47) + '...';
 }
 

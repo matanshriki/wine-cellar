@@ -32,6 +32,8 @@ export type PublicSommiMemory = {
   regions_disliked: PublicMemoryItem[];
   grapes_liked: PublicMemoryItem[];
   grapes_disliked: PublicMemoryItem[];
+  styles_liked: PublicMemoryItem[];
+  styles_disliked: PublicMemoryItem[];
   body: { value: 'light' | 'medium' | 'full'; label: string } | null;
 };
 
@@ -43,6 +45,11 @@ export type ProfileMemoryAction =
     }
   | {
       type: 'remove_grape';
+      polarity: 'like' | 'dislike';
+      id: string;
+    }
+  | {
+      type: 'remove_style';
       polarity: 'like' | 'dislike';
       id: string;
     }
@@ -85,7 +92,7 @@ function formatIdFallback(id: string): string {
 }
 
 export function resolvePublicLabel(
-  dimension: 'region' | 'grape',
+  dimension: 'region' | 'grape' | 'style',
   item: Pick<ExplicitPreferenceValue, 'id' | 'label_en' | 'label_he'>,
   language: 'en' | 'he'
 ): string {
@@ -105,7 +112,7 @@ export function resolvePublicLabel(
 }
 
 function mapList(
-  dimension: 'region' | 'grape',
+  dimension: 'region' | 'grape' | 'style',
   list: ExplicitPreferenceValue[] | undefined,
   language: 'en' | 'he'
 ): PublicMemoryItem[] {
@@ -126,6 +133,8 @@ export function toPublicSommiMemory(
     regions_disliked: mapList('region', explicit?.regions_disliked, language),
     grapes_liked: mapList('grape', explicit?.grapes_liked, language),
     grapes_disliked: mapList('grape', explicit?.grapes_disliked, language),
+    styles_liked: mapList('style', explicit?.styles_liked, language),
+    styles_disliked: mapList('style', explicit?.styles_disliked, language),
     body:
       bodyVal === 'light' || bodyVal === 'medium' || bodyVal === 'full'
         ? { value: bodyVal, label: bodyLabel(bodyVal, language) }
@@ -139,23 +148,28 @@ export function countPublicSommiMemory(memory: PublicSommiMemory): number {
     memory.regions_disliked.length +
     memory.grapes_liked.length +
     memory.grapes_disliked.length +
+    memory.styles_liked.length +
+    memory.styles_disliked.length +
     (memory.body ? 1 : 0)
   );
 }
 
 function listKey(
-  dimension: 'region' | 'grape',
+  dimension: 'region' | 'grape' | 'style',
   polarity: 'like' | 'dislike'
 ): keyof ExplicitTastePreferences {
   if (dimension === 'region') {
     return polarity === 'like' ? 'regions_liked' : 'regions_disliked';
   }
-  return polarity === 'like' ? 'grapes_liked' : 'grapes_disliked';
+  if (dimension === 'grape') {
+    return polarity === 'like' ? 'grapes_liked' : 'grapes_disliked';
+  }
+  return polarity === 'like' ? 'styles_liked' : 'styles_disliked';
 }
 
 function findTerm(
   explicit: ExplicitTastePreferences | undefined,
-  dimension: 'region' | 'grape',
+  dimension: 'region' | 'grape' | 'style',
   polarity: 'like' | 'dislike',
   id: string
 ): ExplicitPreferenceValue | null {
@@ -171,13 +185,13 @@ export function parseProfileMemoryAction(body: unknown): ProfileMemoryAction | n
   const o = body as Record<string, unknown>;
   const type = typeof o.type === 'string' ? o.type : typeof o.action === 'string' ? o.action : '';
 
-  if (type === 'remove_region' || type === 'remove_grape') {
+  if (type === 'remove_region' || type === 'remove_grape' || type === 'remove_style') {
     const polarity = o.polarity === 'dislike' ? 'dislike' : o.polarity === 'like' ? 'like' : null;
     const id = typeof o.id === 'string' ? o.id.toLowerCase().trim() : '';
     if (!polarity || !id || id.length > 64) return null;
-    return type === 'remove_region'
-      ? { type: 'remove_region', polarity, id }
-      : { type: 'remove_grape', polarity, id };
+    if (type === 'remove_region') return { type: 'remove_region', polarity, id };
+    if (type === 'remove_grape') return { type: 'remove_grape', polarity, id };
+    return { type: 'remove_style', polarity, id };
   }
 
   if (type === 'replace_body') {
@@ -362,8 +376,17 @@ export async function applyProfileSommiMemoryAction(params: {
   let pending: PendingTasteAction | null = null;
   let rawText = 'profile_ui';
 
-  if (params.action.type === 'remove_region' || params.action.type === 'remove_grape') {
-    const dimension = params.action.type === 'remove_region' ? 'region' : 'grape';
+  if (
+    params.action.type === 'remove_region' ||
+    params.action.type === 'remove_grape' ||
+    params.action.type === 'remove_style'
+  ) {
+    const dimension =
+      params.action.type === 'remove_region'
+        ? 'region'
+        : params.action.type === 'remove_grape'
+          ? 'grape'
+          : 'style';
     // Always call RPC (even if absent) so same-operation retries return already_applied.
     const item = findTerm(explicit, dimension, params.action.polarity, params.action.id);
     pending = {
@@ -400,7 +423,9 @@ export async function applyProfileSommiMemoryAction(params: {
   }
 
   const polarity =
-    params.action.type === 'remove_region' || params.action.type === 'remove_grape'
+    params.action.type === 'remove_region' ||
+    params.action.type === 'remove_grape' ||
+    params.action.type === 'remove_style'
       ? params.action.polarity
       : undefined;
 
@@ -448,10 +473,18 @@ export async function applyProfileSommiMemoryAction(params: {
 
   // Verify canonical success before claiming ok (skip for already_applied recovery)
   if (applied.reason === 'applied') {
-    if (params.action.type === 'remove_region' || params.action.type === 'remove_grape') {
+    if (
+      params.action.type === 'remove_region' ||
+      params.action.type === 'remove_grape' ||
+      params.action.type === 'remove_style'
+    ) {
       const stillThere = findTerm(
         reloaded.profile?.explicit,
-        params.action.type === 'remove_region' ? 'region' : 'grape',
+        params.action.type === 'remove_region'
+          ? 'region'
+          : params.action.type === 'remove_grape'
+            ? 'grape'
+            : 'style',
         params.action.polarity,
         params.action.id
       );

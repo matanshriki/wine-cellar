@@ -27,7 +27,8 @@ export function createConversationEnsureGate(createFn: CreateConversationFn) {
         return current;
       }
       if (!inFlight) {
-        inFlight = createFn([], 'New conversation').finally(() => {
+        // Title stays null until the first real user turn is saved.
+        inFlight = createFn([]).finally(() => {
           inFlight = null;
         });
       }
@@ -49,5 +50,5 @@ export async function ensurePersistedConversation(
   if (current?.id) {
     return current;
   }
-  return createFn([], 'New conversation');
+  return createFn([]);
 }

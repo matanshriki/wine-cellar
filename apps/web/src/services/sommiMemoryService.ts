@@ -22,6 +22,7 @@ export {
 export type SommiMemoryMutation =
   | { type: 'remove_region'; polarity: 'like' | 'dislike'; id: string }
   | { type: 'remove_grape'; polarity: 'like' | 'dislike'; id: string }
+  | { type: 'remove_style'; polarity: 'like' | 'dislike'; id: string }
   | {
       type: 'replace_body';
       value: 'light' | 'medium' | 'full';

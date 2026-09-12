@@ -640,6 +640,12 @@
       "hint": "Build your collection and we'll help you discover the perfect bottle for any occasion.",
       "goToCellar": "Go to My Cellar"
     },
+    "sommiCard": {
+      "title": "Less tapping, more sipping?",
+      "body": "Tell Sommi what's on the table, who you're with, and the mood. He'll find the right bottle from your cellar.",
+      "cta": "Talk to Sommi",
+      "orPickYourWay": "Or pick your way"
+    },
     "checkingCellar": "Checking your cellar...",
     "generated": {
       "explainTop": "This {{color}} wine from {{origin}} is an excellent choice for {{meal}}.",
@@ -1132,6 +1138,7 @@
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
     "greetingContent": "{{greeting}}! 🍷 I've scanned your cellar — {{count}} bottles ready to explore. Tell me about tonight and I'll find your perfect match.",
+    "greetingContentTonight": "{{greeting}}! Looking for tonight's bottle? Tell me what's on the table, who you're with, and the mood — I'll find the right one in your cellar ({{count}} bottles ready).",
     "quickStartHeader": "Start here — or describe tonight below",
     "inputPlaceholderFirst": "What's the occasion tonight?",
     "scenarios": {
@@ -1275,6 +1282,9 @@
     "sectionRegionsDisliked": "Disliked regions",
     "sectionGrapesLiked": "Liked grapes",
     "sectionGrapesDisliked": "Disliked grapes",
+    "sectionStylesLiked": "Liked styles",
+    "sectionStylesDisliked": "Disliked styles",
+    "moreCount": "+{{count}} more",
     "bodyLight": "Light",
     "bodyMedium": "Medium",
     "bodyFull": "Full",

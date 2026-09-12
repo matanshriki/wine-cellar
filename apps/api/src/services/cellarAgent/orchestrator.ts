@@ -908,22 +908,44 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               processed.acknowledgmentKind,
               processed.candidate,
               language === 'he' ? 'he' : 'en'
-            ) ||
-            m(
-              language,
-              "Got it — I've noted that preference.",
-              'קיבלתי — רשמתי את ההעדפה.'
             );
+          if (!ack) {
+            // Never claim a preference was noted/saved without an explicit ack kind.
+            return withMeta(
+              {
+                message: preferenceAckMessage(
+                  'unrecognized',
+                  processed.candidate,
+                  language === 'he' ? 'he' : 'en'
+                )!,
+                type: 'single',
+              },
+              {
+                routedAction: 'memory_update',
+                actionResult: 'error',
+                processingMode: 'deterministic_action',
+              }
+            );
+          }
           logSommelier('action', {
             action: 'memory_update',
             user: shortUser(userId),
-            ok: 'true',
+            ok: processed.canonicalApplied || processed.acknowledgmentKind === 'remember_saved' ? 'true' : 'partial',
             class: processed.candidate.class,
             canonical: processed.canonicalApplied ? 'yes' : 'no',
+            ack: processed.acknowledgmentKind,
           });
           return withMeta(
             { message: ack, type: 'single' },
-            { routedAction: 'memory_update', actionResult: 'ok', processingMode: 'deterministic_action' }
+            {
+              routedAction: 'memory_update',
+              actionResult:
+                processed.acknowledgmentKind === 'unrecognized' ||
+                processed.acknowledgmentKind === 'persist_failed'
+                  ? 'error'
+                  : 'ok',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         // Fallback: legacy regex memory merge for phrases the Phase 2A extractor does not cover

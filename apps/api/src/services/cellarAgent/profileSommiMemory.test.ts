@@ -54,8 +54,8 @@ function emptyExplicit() {
     regions_disliked: [] as { id: string; confidence: number; label_en?: string }[],
     grapes_liked: [] as { id: string; confidence: number; label_en?: string }[],
     grapes_disliked: [] as { id: string; confidence: number; label_en?: string }[],
-    styles_liked: [] as never[],
-    styles_disliked: [] as never[],
+    styles_liked: [] as { id: string; confidence: number; label_en?: string }[],
+    styles_disliked: [] as { id: string; confidence: number; label_en?: string }[],
     body: null as { value: 'light' | 'medium' | 'full'; confidence: number } | null,
   };
 }
@@ -506,10 +506,44 @@ describe('applyProfileSommiMemoryAction atomic RPC', () => {
       'utf8'
     );
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.apply_taste_profile_memory_action/);
+    expect(sql).toMatch(/p_payload\s+jsonb/);
+    expect(sql).toMatch(/SECURITY INVOKER/);
+    expect(sql).toMatch(/SET search_path\s*=\s*public/);
     expect(sql).toMatch(/profile_memory_action_/);
     expect(sql).toMatch(/idempotency_conflict/);
     expect(sql).toMatch(/reason', 'unchanged'/);
     expect(sql).not.toMatch(/VALUES \([\s\S]*'pending_confirmation'/);
     expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.apply_taste_profile_memory_action/);
+  });
+
+  it('verification dashboard uses proconfig-normalized search_path (not fragile def substring)', () => {
+    const verification = readFileSync(
+      resolve(
+        __dirname,
+        '../../../../../supabase/verification/phase2b1_profile_memory_action_verification.sql'
+      ),
+      'utf8'
+    );
+    expect(verification).toMatch(/p\.proconfig/);
+    expect(verification).toMatch(/fixed_search_path_ok/);
+    expect(verification).toMatch(/normalized|search_path/);
+    expect(verification).toMatch(/public,pg_temp|pg_temp,public/);
+    // Must not rely solely on the literal "SET search_path = public" in pg_get_functiondef
+    expect(verification).not.toMatch(
+      /position\('SET search_path = public' IN def\)\s*>\s*0\s*\n\s*OR position\('SET search_path=public'/
+    );
+
+    const diagnose = readFileSync(
+      resolve(
+        __dirname,
+        '../../../../../supabase/verification/phase2b1_profile_memory_action_search_path_diagnose.sql'
+      ),
+      'utf8'
+    );
+    expect(diagnose).toMatch(/normalized_search_path/);
+    expect(diagnose).toMatch(/overload_count/);
+    expect(diagnose).toMatch(/proconfig/);
+    expect(diagnose).not.toMatch(/FROM public\.profiles/i);
+    expect(diagnose).not.toMatch(/apply_taste_profile_memory_action\s*\(/);
   });
 });

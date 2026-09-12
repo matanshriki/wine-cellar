@@ -619,6 +619,12 @@
       "hint": "בנה את האוסף שלך ואנחנו נעזור לך לגלות את הבקבוק המושלם לכל אירוע.",
       "goToCellar": "עבור למרתף שלי"
     },
+    "sommiCard": {
+      "title": "פחות ללחוץ, יותר ללגום?",
+      "body": "ספרו לסומי מה אוכלים, עם מי ומה מצב הרוח — והוא ימצא את הבקבוק הנכון מתוך המרתף שלכם.",
+      "cta": "מדברים עם סומי",
+      "orPickYourWay": "או שבוחרים בדרך שלכם"
+    },
     "checkingCellar": "בודק את המרתף שלך...",
     "generated": {
       "explainTop": "יין {{color}} מ{{origin}} הוא בחירה מצוינת ל{{meal}}.",
@@ -1020,6 +1026,7 @@
     "greetingAfternoon": "צהריים טובים",
     "greetingEvening": "ערב טוב",
     "greetingContent": "{{greeting}}! 🍷 סרקתי את המרתף שלך — {{count}} בקבוקים מוכנים לחוויה. ספר לי על הערב ואמצא לך התאמה מושלמת.",
+    "greetingContentTonight": "{{greeting}}! מחפשים את הבקבוק להערב? ספרו לי מה על השולחן, עם מי ומה מצב הרוח — ואמצא את המתאים במרתף שלכם ({{count}} בקבוקים מוכנים).",
     "quickStartHeader": "אפשר להתחיל כאן — או לתאר את הערב למטה",
     "inputPlaceholderFirst": "מה המיוחד הלילה?",
     "scenarios": {
@@ -1341,6 +1348,9 @@
     "sectionRegionsDisliked": "אזורים שלא אהובים",
     "sectionGrapesLiked": "זנים שאהובים",
     "sectionGrapesDisliked": "זנים שלא אהובים",
+    "sectionStylesLiked": "סגנונות שאהובים",
+    "sectionStylesDisliked": "סגנונות שלא אהובים",
+    "moreCount": "+עוד {{count}}",
     "bodyLight": "קל",
     "bodyMedium": "בינוני",
     "bodyFull": "מלא",

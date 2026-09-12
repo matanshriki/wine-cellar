@@ -1,6 +1,13 @@
 /**
  * Phase 2A deterministic HE/EN preference extraction (no LLM).
  * Only unambiguous remember/store language may auto-apply canonical taste.
+ *
+ * Hebrew prefix strategy:
+ * - Known catalog aliases that are Hebrew-script get explicit prefixed forms:
+ *   מ / ב / ל / ה / ו + base (e.g. נביולו → מנביולו).
+ * - We do NOT strip arbitrary first letters from free text (avoids false positives).
+ * - Latin terms are matched case-insensitively inside mixed RTL/LTR text via includes().
+ * - Longer aliases are preferred so "cabernet sauvignon" beats "sauvignon" / "cabernet".
  */
 
 export type EvidenceScope =
@@ -41,54 +48,149 @@ export interface ExtractedPreferenceCandidate {
   extractionVersion: 'rules_v2';
 }
 
-/** Canonical region allowlist: aliases → id */
-const REGION_ALIASES: Record<string, { id: string; en: string; he?: string }> = {
-  rioja: { id: 'rioja', en: 'Rioja', he: 'ריוחה' },
-  ריוחה: { id: 'rioja', en: 'Rioja', he: 'ריוחה' },
-  burgundy: { id: 'burgundy', en: 'Burgundy', he: 'בורגון' },
-  בורגון: { id: 'burgundy', en: 'Burgundy', he: 'בורגון' },
-  bordeaux: { id: 'bordeaux', en: 'Bordeaux', he: 'בורדו' },
-  בורדו: { id: 'bordeaux', en: 'Bordeaux', he: 'בורדו' },
-  barolo: { id: 'barolo', en: 'Barolo' },
-  napa: { id: 'napa', en: 'Napa' },
-  champagne: { id: 'champagne', en: 'Champagne', he: 'שמפניה' },
-  שמפניה: { id: 'champagne', en: 'Champagne', he: 'שמפניה' },
-  tuscany: { id: 'tuscany', en: 'Tuscany', he: 'טוסקנה' },
-  טוסקנה: { id: 'tuscany', en: 'Tuscany', he: 'טוסקנה' },
-  rhone: { id: 'rhone', en: 'Rhone' },
-  'rhône': { id: 'rhone', en: 'Rhone' },
-  piemonte: { id: 'piemonte', en: 'Piemonte' },
-  piedmont: { id: 'piemonte', en: 'Piemonte' },
-  mendoza: { id: 'mendoza', en: 'Mendoza' },
-  mosel: { id: 'mosel', en: 'Mosel' },
-  alsace: { id: 'alsace', en: 'Alsace' },
-  priorat: { id: 'priorat', en: 'Priorat' },
-};
+type TermEntry = { id: string; en: string; he?: string };
 
-const GRAPE_ALIASES: Record<string, { id: string; en: string; he?: string }> = {
-  'pinot noir': { id: 'pinot_noir', en: 'Pinot Noir', he: 'פינו נואר' },
-  pinot: { id: 'pinot_noir', en: 'Pinot Noir', he: 'פינו נואר' },
-  'פינו נואר': { id: 'pinot_noir', en: 'Pinot Noir', he: 'פינו נואר' },
-  cabernet: { id: 'cabernet', en: 'Cabernet', he: 'קברנה' },
-  קברנה: { id: 'cabernet', en: 'Cabernet', he: 'קברנה' },
-  merlot: { id: 'merlot', en: 'Merlot', he: 'מרלו' },
-  מרלו: { id: 'merlot', en: 'Merlot', he: 'מרלו' },
-  syrah: { id: 'syrah', en: 'Syrah' },
-  shiraz: { id: 'syrah', en: 'Syrah' },
-  sangiovese: { id: 'sangiovese', en: 'Sangiovese' },
-  nebbiolo: { id: 'nebbiolo', en: 'Nebbiolo' },
-  chardonnay: { id: 'chardonnay', en: 'Chardonnay', he: 'שרדונה' },
-  שרדונה: { id: 'chardonnay', en: 'Chardonnay', he: 'שרדונה' },
-  riesling: { id: 'riesling', en: 'Riesling' },
-  sauvignon: { id: 'sauvignon', en: 'Sauvignon Blanc' },
-  tempranillo: { id: 'tempranillo', en: 'Tempranillo' },
-  malbec: { id: 'malbec', en: 'Malbec' },
-  grenache: { id: 'grenache', en: 'Grenache' },
-  primitivo: { id: 'primitivo', en: 'Primitivo', he: 'פרימיטיבו' },
-  פרימיטיבו: { id: 'primitivo', en: 'Primitivo', he: 'פרימיטיבו' },
-  zinfandel: { id: 'zinfandel', en: 'Zinfandel' },
-  barbera: { id: 'barbera', en: 'Barbera' },
-};
+/** Safe attached Hebrew prepositions/conjunctions for known wine terms only. */
+const HE_SAFE_PREFIXES = ['מ', 'ב', 'ל', 'ה', 'ו'] as const;
+
+function withHebrewPrefixes(aliases: string[]): string[] {
+  const out = new Set<string>();
+  for (const a of aliases) {
+    const t = a.trim();
+    if (!t) continue;
+    out.add(t);
+    if (/[\u0590-\u05FF]/.test(t)) {
+      for (const p of HE_SAFE_PREFIXES) {
+        out.add(p + t);
+      }
+    }
+  }
+  return [...out];
+}
+
+function buildAliasMap(
+  entries: Array<{ aliases: string[]; term: TermEntry }>
+): Record<string, TermEntry> {
+  const map: Record<string, TermEntry> = {};
+  for (const { aliases, term } of entries) {
+    for (const a of withHebrewPrefixes(aliases)) {
+      map[a.toLowerCase()] = term;
+      map[a] = term; // preserve exact Hebrew key for includes on original text
+    }
+  }
+  return map;
+}
+
+/** Canonical region allowlist: aliases → id */
+const REGION_ALIASES: Record<string, TermEntry> = buildAliasMap([
+  { aliases: ['rioja', 'ריוחה'], term: { id: 'rioja', en: 'Rioja', he: 'ריוחה' } },
+  { aliases: ['burgundy', 'בורגון'], term: { id: 'burgundy', en: 'Burgundy', he: 'בורגון' } },
+  { aliases: ['bordeaux', 'בורדו'], term: { id: 'bordeaux', en: 'Bordeaux', he: 'בורדו' } },
+  {
+    aliases: ['barolo', 'ברולו'],
+    term: { id: 'barolo', en: 'Barolo', he: 'ברולו' },
+  },
+  { aliases: ['napa'], term: { id: 'napa', en: 'Napa' } },
+  {
+    aliases: ['champagne', 'שמפניה'],
+    term: { id: 'champagne', en: 'Champagne', he: 'שמפניה' },
+  },
+  { aliases: ['tuscany', 'טוסקנה'], term: { id: 'tuscany', en: 'Tuscany', he: 'טוסקנה' } },
+  { aliases: ['rhone', 'rhône'], term: { id: 'rhone', en: 'Rhone' } },
+  { aliases: ['piemonte', 'piedmont'], term: { id: 'piemonte', en: 'Piemonte' } },
+  { aliases: ['mendoza'], term: { id: 'mendoza', en: 'Mendoza' } },
+  { aliases: ['mosel'], term: { id: 'mosel', en: 'Mosel' } },
+  { aliases: ['alsace'], term: { id: 'alsace', en: 'Alsace' } },
+  { aliases: ['priorat'], term: { id: 'priorat', en: 'Priorat' } },
+  {
+    aliases: ['taurasi', 'טאורזי'],
+    term: { id: 'taurasi', en: 'Taurasi', he: 'טאורזי' },
+  },
+]);
+
+/**
+ * Canonical grape allowlist.
+ * Cabernet Sauvignon uses id `cabernet_sauvignon` (not generic cabernet, never sauvignon blanc).
+ * Bare "Cabernet" / "קברנה" alone still maps to generic `cabernet`.
+ */
+const GRAPE_ALIASES: Record<string, TermEntry> = buildAliasMap([
+  {
+    aliases: ['pinot noir', 'pinot', 'פינו נואר'],
+    term: { id: 'pinot_noir', en: 'Pinot Noir', he: 'פינו נואר' },
+  },
+  {
+    aliases: [
+      'cabernet sauvignon',
+      'קברנה סוביניון',
+      'קברנה סובניון',
+      'קברנה סובינון',
+    ],
+    term: {
+      id: 'cabernet_sauvignon',
+      en: 'Cabernet Sauvignon',
+      he: 'קברנה סוביניון',
+    },
+  },
+  {
+    aliases: ['cabernet franc', 'קברנה פרנק'],
+    term: { id: 'cabernet_franc', en: 'Cabernet Franc', he: 'קברנה פרנק' },
+  },
+  {
+    aliases: ['cabernet', 'קברנה'],
+    term: { id: 'cabernet', en: 'Cabernet', he: 'קברנה' },
+  },
+  { aliases: ['merlot', 'מרלו'], term: { id: 'merlot', en: 'Merlot', he: 'מרלו' } },
+  { aliases: ['syrah', 'shiraz'], term: { id: 'syrah', en: 'Syrah' } },
+  { aliases: ['sangiovese'], term: { id: 'sangiovese', en: 'Sangiovese' } },
+  {
+    aliases: ['nebbiolo', 'נביולו'],
+    term: { id: 'nebbiolo', en: 'Nebbiolo', he: 'נביולו' },
+  },
+  {
+    aliases: ['nero di troia', 'נרו די טרויה'],
+    term: { id: 'nero_di_troia', en: 'Nero di Troia', he: 'נרו די טרויה' },
+  },
+  {
+    aliases: ['chardonnay', 'שרדונה'],
+    term: { id: 'chardonnay', en: 'Chardonnay', he: 'שרדונה' },
+  },
+  { aliases: ['riesling'], term: { id: 'riesling', en: 'Riesling' } },
+  {
+    aliases: ['sauvignon blanc', 'sauvignon'],
+    term: { id: 'sauvignon', en: 'Sauvignon Blanc' },
+  },
+  { aliases: ['tempranillo'], term: { id: 'tempranillo', en: 'Tempranillo' } },
+  {
+    aliases: ['malbec', 'מלבק'],
+    term: { id: 'malbec', en: 'Malbec', he: 'מלבק' },
+  },
+  { aliases: ['grenache'], term: { id: 'grenache', en: 'Grenache' } },
+  {
+    aliases: ['primitivo', 'פרימיטיבו'],
+    term: { id: 'primitivo', en: 'Primitivo', he: 'פרימיטיבו' },
+  },
+  { aliases: ['zinfandel'], term: { id: 'zinfandel', en: 'Zinfandel' } },
+  {
+    aliases: ['barbera', 'ברברה'],
+    term: { id: 'barbera', en: 'Barbera', he: 'ברברה' },
+  },
+  {
+    aliases: ['aglianico', 'אליאניקו'],
+    term: { id: 'aglianico', en: 'Aglianico', he: 'אליאניקו' },
+  },
+  {
+    aliases: ['cannonau', 'קנונאו'],
+    term: { id: 'cannonau', en: 'Cannonau', he: 'קנונאו' },
+  },
+]);
+
+/** Wine styles / appellation styles (not grapes). */
+const STYLE_ALIASES: Record<string, TermEntry> = buildAliasMap([
+  {
+    aliases: ['amarone', 'אמרונה'],
+    term: { id: 'amarone', en: 'Amarone', he: 'אמרונה' },
+  },
+]);
 
 const REMEMBER_EN =
   /\b(remember(?:\s+that)?|please\s+remember|don'?t\s+forget|do\s+not\s+forget|store\s+(?:that|this))\b/i;
@@ -122,34 +224,38 @@ function detectLocale(text: string): 'en' | 'he' | 'unknown' {
   return 'unknown';
 }
 
-function findRegion(text: string): { id: string; en: string; he?: string } | null {
+function findTerm(
+  text: string,
+  table: Record<string, TermEntry>
+): TermEntry | null {
   const lower = text.toLowerCase();
-  // Longer keys first
-  const keys = Object.keys(REGION_ALIASES).sort((a, b) => b.length - a.length);
+  const keys = Object.keys(table).sort((a, b) => b.length - a.length);
   for (const k of keys) {
-    if (k.length >= 3 && (lower.includes(k) || text.includes(k))) {
-      return REGION_ALIASES[k];
+    if (k.length < 3) continue;
+    if (lower.includes(k.toLowerCase()) || text.includes(k)) {
+      return table[k]!;
     }
   }
   return null;
 }
 
-function findGrape(text: string): { id: string; en: string; he?: string } | null {
-  const lower = text.toLowerCase();
-  const keys = Object.keys(GRAPE_ALIASES).sort((a, b) => b.length - a.length);
-  for (const k of keys) {
-    if (k.length >= 3 && (lower.includes(k) || text.includes(k))) {
-      return GRAPE_ALIASES[k];
-    }
-  }
-  return null;
+function findRegion(text: string): TermEntry | null {
+  return findTerm(text, REGION_ALIASES);
+}
+
+function findGrape(text: string): TermEntry | null {
+  return findTerm(text, GRAPE_ALIASES);
+}
+
+function findStyle(text: string): TermEntry | null {
+  return findTerm(text, STYLE_ALIASES);
 }
 
 function findBody(text: string): 'light' | 'medium' | 'full' | null {
   const t = text.toLowerCase();
   if (
     /\b(full[-\s]?bodied|fuller|heavier|bold(?:er)?|too\s+heavy|heavy)\b/.test(t) ||
-    /גוף\s+מלא|מלא[־\s]?גוף|כבד/.test(text)
+    /גוף\s+מלא|מלא[־\s]?גוף|כבד|בעלי\s+גוף\s+מלא/.test(text)
   ) {
     return 'full';
   }
@@ -163,6 +269,23 @@ function findBody(text: string): 'light' | 'medium' | 'full' | null {
     return 'medium';
   }
   return null;
+}
+
+function stableTermCandidate(
+  base: Omit<
+    ExtractedPreferenceCandidate,
+    'dimension' | 'valueId' | 'labelEn' | 'labelHe' | 'polarity'
+  > & { confidence: number },
+  term: TermEntry,
+  dimension: 'region' | 'grape' | 'style'
+): Omit<ExtractedPreferenceCandidate, 'polarity'> {
+  return {
+    ...base,
+    dimension,
+    valueId: term.id,
+    labelEn: term.en,
+    labelHe: term.he,
+  };
 }
 
 /**
@@ -184,6 +307,7 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
 
   const region = findRegion(text);
   const grape = findGrape(text);
+  const style = findStyle(text);
   const body = findBody(text);
 
   const base = {
@@ -193,13 +317,21 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
   };
 
   if (isRetract) {
-    const target = region || grape;
+    const target = region || grape || style;
     return {
       ...base,
       class: 'retraction',
       scope: 'stable',
       polarity: 'retract',
-      dimension: region ? 'region' : grape ? 'grape' : body ? 'body' : 'other',
+      dimension: region
+        ? 'region'
+        : grape
+          ? 'grape'
+          : style
+            ? 'style'
+            : body
+              ? 'body'
+              : 'other',
       valueId: target?.id || body || 'unknown',
       labelEn: target?.en,
       labelHe: target?.he,
@@ -228,10 +360,18 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
       class: 'session',
       scope: 'session',
       polarity: isNeg ? 'dislike' : 'like',
-      dimension: body ? 'body' : region ? 'region' : grape ? 'grape' : 'other',
-      valueId: body || region?.id || grape?.id || 'session',
-      labelEn: region?.en || grape?.en,
-      labelHe: region?.he || grape?.he,
+      dimension: body
+        ? 'body'
+        : region
+          ? 'region'
+          : grape
+            ? 'grape'
+            : style
+              ? 'style'
+              : 'other',
+      valueId: body || region?.id || grape?.id || style?.id || 'session',
+      labelEn: region?.en || grape?.en || style?.en,
+      labelHe: region?.he || grape?.he || style?.he,
       status: 'recorded_no_apply',
       applyCanonical: false,
     };
@@ -250,78 +390,45 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
     };
   }
 
-  // Explicit remember + negation (dislike / forget-like remember)
+  const rememberBase = {
+    ...base,
+    class: 'stable_remember' as const,
+    scope: 'stable' as const,
+    status: 'active' as const,
+    applyCanonical: true,
+  };
+
+  // Explicit remember + negation (dislike)
   if (isRemember && isNeg && !isSession && !isBottle) {
     if (region) {
-      return {
-        ...base,
-        class: 'stable_remember',
-        scope: 'stable',
-        polarity: 'dislike',
-        dimension: 'region',
-        valueId: region.id,
-        labelEn: region.en,
-        labelHe: region.he,
-        status: 'active',
-        applyCanonical: true,
-      };
+      return { ...stableTermCandidate(rememberBase, region, 'region'), polarity: 'dislike' };
     }
     if (grape) {
-      return {
-        ...base,
-        class: 'stable_remember',
-        scope: 'stable',
-        polarity: 'dislike',
-        dimension: 'grape',
-        valueId: grape.id,
-        labelEn: grape.en,
-        labelHe: grape.he,
-        status: 'active',
-        applyCanonical: true,
-      };
+      return { ...stableTermCandidate(rememberBase, grape, 'grape'), polarity: 'dislike' };
+    }
+    if (style) {
+      return { ...stableTermCandidate(rememberBase, style, 'style'), polarity: 'dislike' };
     }
   }
 
   // Explicit remember + allowlisted target
+  // Priority: region → grape → style → body (single primary candidate).
   if (isRemember && !isNeg) {
     if (region) {
-      return {
-        ...base,
-        class: 'stable_remember',
-        scope: 'stable',
-        polarity: 'like',
-        dimension: 'region',
-        valueId: region.id,
-        labelEn: region.en,
-        labelHe: region.he,
-        status: 'active',
-        applyCanonical: true,
-      };
+      return { ...stableTermCandidate(rememberBase, region, 'region'), polarity: 'like' };
     }
     if (grape) {
-      return {
-        ...base,
-        class: 'stable_remember',
-        scope: 'stable',
-        polarity: 'like',
-        dimension: 'grape',
-        valueId: grape.id,
-        labelEn: grape.en,
-        labelHe: grape.he,
-        status: 'active',
-        applyCanonical: true,
-      };
+      return { ...stableTermCandidate(rememberBase, grape, 'grape'), polarity: 'like' };
+    }
+    if (style) {
+      return { ...stableTermCandidate(rememberBase, style, 'style'), polarity: 'like' };
     }
     if (body) {
       return {
-        ...base,
-        class: 'stable_remember',
-        scope: 'stable',
+        ...rememberBase,
         polarity: 'like',
         dimension: 'body',
         valueId: body,
-        status: 'active',
-        applyCanonical: true,
       };
     }
     // Remember without known target
@@ -339,14 +446,20 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
   }
 
   // General like without remember → evidence only
-  if (isGeneralLike && !isNeg && (region || grape || body)) {
-    const target = region || grape;
+  if (isGeneralLike && !isNeg && (region || grape || style || body)) {
+    const target = region || grape || style;
     return {
       ...base,
       class: 'stable_general',
       scope: 'stable_candidate',
       polarity: 'like',
-      dimension: region ? 'region' : grape ? 'grape' : 'body',
+      dimension: region
+        ? 'region'
+        : grape
+          ? 'grape'
+          : style
+            ? 'style'
+            : 'body',
       valueId: target?.id || body || 'unknown',
       labelEn: target?.en,
       labelHe: target?.he,
@@ -356,14 +469,14 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
     };
   }
 
-  if (isNeg && (region || grape)) {
-    const target = region || grape!;
+  if (isNeg && (region || grape || style)) {
+    const target = region || grape || style!;
     return {
       ...base,
       class: 'stable_general',
       scope: 'stable_candidate',
       polarity: 'dislike',
-      dimension: region ? 'region' : 'grape',
+      dimension: region ? 'region' : grape ? 'grape' : 'style',
       valueId: target.id,
       labelEn: target.en,
       labelHe: target.he,
@@ -390,7 +503,6 @@ export function buildIdempotencyKey(params: {
     params.candidate.valueId,
     params.candidate.polarity,
   ].join('|');
-  // Simple stable hash (not crypto) for idempotency within Postgres text key
   let h = 0;
   for (let i = 0; i < raw.length; i++) {
     h = (h * 31 + raw.charCodeAt(i)) | 0;
@@ -399,15 +511,20 @@ export function buildIdempotencyKey(params: {
 }
 
 /**
- * Lookup bilingual wine-term labels for known region/grape ids (Profile memory UI / API).
+ * Lookup bilingual wine-term labels for known region/grape/style ids.
  */
 export function lookupWineTermLabels(
-  dimension: 'region' | 'grape',
+  dimension: 'region' | 'grape' | 'style',
   id: string
 ): { en: string; he?: string } | null {
   const needle = id.toLowerCase().trim();
   if (!needle) return null;
-  const table = dimension === 'region' ? REGION_ALIASES : GRAPE_ALIASES;
+  const table =
+    dimension === 'region'
+      ? REGION_ALIASES
+      : dimension === 'grape'
+        ? GRAPE_ALIASES
+        : STYLE_ALIASES;
   for (const entry of Object.values(table)) {
     if (entry.id === needle) {
       return { en: entry.en, he: entry.he };

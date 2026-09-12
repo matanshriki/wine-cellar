@@ -82,7 +82,7 @@ BEGIN
   END IF;
 
   v_dim := COALESCE(v_payload->>'dimension', '');
-  IF v_dim NOT IN ('region', 'grape', 'body') THEN
+  IF v_dim NOT IN ('region', 'grape', 'body', 'style') THEN
     RAISE EXCEPTION 'invalid_dimension' USING ERRCODE = '22023';
   END IF;
 
@@ -104,7 +104,7 @@ BEGIN
     IF v_existing IS NULL OR v_existing NOT IN ('light', 'medium', 'full') THEN
       RAISE EXCEPTION 'invalid_body_value' USING ERRCODE = '22023';
     END IF;
-  ELSIF v_action = 'remove' AND v_dim IN ('region', 'grape') THEN
+  ELSIF v_action = 'remove' AND v_dim IN ('region', 'grape', 'style') THEN
     IF v_existing IS NULL THEN
       RAISE EXCEPTION 'invalid_remove_value' USING ERRCODE = '22023';
     END IF;
@@ -121,7 +121,7 @@ BEGIN
     'dimension', v_dim,
     'existing_value', v_existing,
     'proposed_value', v_proposed,
-    'polarity', CASE WHEN v_dim IN ('region', 'grape') THEN v_polarity ELSE NULL END
+    'polarity', CASE WHEN v_dim IN ('region', 'grape', 'style') THEN v_polarity ELSE NULL END
   );
 
   v_delta := jsonb_build_object(
@@ -237,7 +237,9 @@ BEGIN
       WHEN v_dim = 'region' AND v_polarity = 'like' THEN 'regions_liked'
       WHEN v_dim = 'region' THEN 'regions_disliked'
       WHEN v_dim = 'grape' AND v_polarity = 'like' THEN 'grapes_liked'
-      ELSE 'grapes_disliked'
+      WHEN v_dim = 'grape' THEN 'grapes_disliked'
+      WHEN v_dim = 'style' AND v_polarity = 'like' THEN 'styles_liked'
+      ELSE 'styles_disliked'
     END;
     SELECT EXISTS (
       SELECT 1 FROM jsonb_array_elements(COALESCE(v_explicit->v_list, '[]'::jsonb)) e
@@ -352,37 +354,39 @@ BEGIN
       END IF;
     END LOOP;
     v_explicit := jsonb_set(v_explicit, ARRAY[v_list], v_new_arr, true);
-    v_suppress := COALESCE(v_explicit->'legacy_suppress', '{}'::jsonb);
-    IF v_dim = 'region' THEN
-      v_suppress := jsonb_set(
-        v_suppress,
-        '{regions}',
-        (
-          SELECT COALESCE(jsonb_agg(DISTINCT x), '[]'::jsonb)
-          FROM (
-            SELECT jsonb_array_elements_text(COALESCE(v_suppress->'regions', '[]'::jsonb)) AS x
-            UNION ALL
-            SELECT v_existing
-          ) s
-        ),
-        true
-      );
-    ELSE
-      v_suppress := jsonb_set(
-        v_suppress,
-        '{grapes}',
-        (
-          SELECT COALESCE(jsonb_agg(DISTINCT x), '[]'::jsonb)
-          FROM (
-            SELECT jsonb_array_elements_text(COALESCE(v_suppress->'grapes', '[]'::jsonb)) AS x
-            UNION ALL
-            SELECT v_existing
-          ) s
-        ),
-        true
-      );
+    IF v_dim = 'region' OR v_dim = 'grape' THEN
+      v_suppress := COALESCE(v_explicit->'legacy_suppress', '{}'::jsonb);
+      IF v_dim = 'region' THEN
+        v_suppress := jsonb_set(
+          v_suppress,
+          '{regions}',
+          (
+            SELECT COALESCE(jsonb_agg(DISTINCT x), '[]'::jsonb)
+            FROM (
+              SELECT jsonb_array_elements_text(COALESCE(v_suppress->'regions', '[]'::jsonb)) AS x
+              UNION ALL
+              SELECT v_existing
+            ) s
+          ),
+          true
+        );
+      ELSE
+        v_suppress := jsonb_set(
+          v_suppress,
+          '{grapes}',
+          (
+            SELECT COALESCE(jsonb_agg(DISTINCT x), '[]'::jsonb)
+            FROM (
+              SELECT jsonb_array_elements_text(COALESCE(v_suppress->'grapes', '[]'::jsonb)) AS x
+              UNION ALL
+              SELECT v_existing
+            ) s
+          ),
+          true
+        );
+      END IF;
+      v_explicit := jsonb_set(v_explicit, '{legacy_suppress}', v_suppress, true);
     END IF;
-    v_explicit := jsonb_set(v_explicit, '{legacy_suppress}', v_suppress, true);
     v_explicit := jsonb_set(v_explicit, '{updated_at}', to_jsonb(now()::text), true);
     v_doc := jsonb_set(v_doc, '{explicit}', v_explicit, true);
   END IF;

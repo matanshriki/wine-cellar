@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
@@ -22,6 +22,7 @@ import {
   updateConversation,
   deleteConversation,
   generateConversationTitle,
+  resolveConversationTitle,
   type SommelierConversation,
 } from '../services/sommelierConversationService';
 import { createConversationEnsureGate } from '../services/ensurePersistedConversation';
@@ -43,6 +44,12 @@ import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { useTheme } from '../contexts/ThemeContext';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
+import {
+  AGENT_ENTRY_TONIGHT_CARD,
+  clearTonightCardEntry,
+  resolveTonightCardEntry,
+  type AgentLocationState,
+} from '../types/agentEntry';
 
 function formatConversationDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -202,10 +209,16 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
 
 export function AgentPageWorking() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const { flags } = useFeatureFlags();
   const { profile } = useAuth();
   const { openRitual } = useOpenRitual();
+  const entrySource =
+    (location.state as AgentLocationState | null)?.agentEntry?.source ?? null;
+  const fromTonightCardRef = useRef(
+    resolveTonightCardEntry(location.state as AgentLocationState | null)
+  );
   const [loading, setLoading] = useState(true);
   const [bottles, setBottles] = useState<BottleWithWineInfo[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -270,9 +283,30 @@ export function AgentPageWorking() {
     };
   }
 
-  // Track agent page open (once on mount)
+  // Track agent page open (once on mount), including Tonight card attribution
   useEffect(() => {
-    trackSommelier.agentOpen();
+    trackSommelier.agentOpen(
+      fromTonightCardRef.current ? AGENT_ENTRY_TONIGHT_CARD : undefined
+    );
+  }, []);
+
+  // Consume one-shot navigation state so refresh does not re-apply entry behavior.
+  // Pending module marker stays until we leave /agent (Strict Mode remount-safe).
+  useEffect(() => {
+    if (!entrySource) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [entrySource, location.pathname, navigate]);
+
+  useEffect(() => {
+    return () => {
+      // Strict Mode unmounts/remounts while still on /agent — keep pending.
+      // Clear only when the next route is no longer the agent page.
+      queueMicrotask(() => {
+        if (!window.location.pathname.startsWith('/agent')) {
+          clearTonightCardEntry();
+        }
+      });
+    };
   }, []);
 
   // Auto-scroll to bottom when messages change
@@ -302,21 +336,32 @@ export function AgentPageWorking() {
         await loadBottles();
         if (!restoredRef.current) {
           restoredRef.current = true;
-          try {
-            const conversations = await listConversations();
-            setConversationList(conversations);
-            if (conversations.length > 0) {
-              const mostRecent = conversations[0];
-              const msgs = mostRecent.messages || [];
-              if (msgs.length > 0) {
-                currentConversationRef.current = mostRecent;
-                setCurrentConversation(mostRecent);
-                setMessages(msgs);
-                greetingInjectedRef.current = true;
+          // Tonight card entry starts a fresh Tonight-oriented greeting instead of
+          // silently resuming the previous thread.
+          if (!fromTonightCardRef.current) {
+            try {
+              const conversations = await listConversations();
+              setConversationList(conversations);
+              if (conversations.length > 0) {
+                const mostRecent = conversations[0];
+                const msgs = mostRecent.messages || [];
+                if (msgs.length > 0) {
+                  currentConversationRef.current = mostRecent;
+                  setCurrentConversation(mostRecent);
+                  setMessages(msgs);
+                  greetingInjectedRef.current = true;
+                }
               }
+            } catch {
+              // Silent — fall through to fresh greeting
             }
-          } catch {
-            // Silent — fall through to fresh greeting
+          } else {
+            try {
+              const conversations = await listConversations();
+              setConversationList(conversations);
+            } catch {
+              // Sidebar can stay empty until next open
+            }
           }
         }
       } finally {
@@ -333,9 +378,12 @@ export function AgentPageWorking() {
       : hour < 12 ? t('cellarSommelier.greetingMorning')
       : hour < 17 ? t('cellarSommelier.greetingAfternoon')
       : t('cellarSommelier.greetingEvening');
+    const greetingKey = fromTonightCardRef.current
+      ? 'cellarSommelier.greetingContentTonight'
+      : 'cellarSommelier.greetingContent';
     return {
       role: 'assistant',
-      content: t('cellarSommelier.greetingContent', { greeting: timeGreeting, count: bottleCount }),
+      content: t(greetingKey, { greeting: timeGreeting, count: bottleCount }),
       timestamp: new Date().toISOString(),
       isGreeting: true,
     };
@@ -513,7 +561,7 @@ export function AgentPageWorking() {
         const updated = await updateConversation(
           existing.id,
           persistable,
-          existing.title || generateConversationTitle(persistable)
+          resolveConversationTitle(existing.title, persistable)
         );
         currentConversationRef.current = updated;
         setCurrentConversation(updated);
@@ -536,6 +584,9 @@ export function AgentPageWorking() {
   }
 
   function startNewConversation() {
+    // Ending the Tonight entry session — subsequent greets use the default copy.
+    fromTonightCardRef.current = false;
+    clearTonightCardEntry();
     greetingInjectedRef.current = false;
     conversationEnsureGateRef.current.reset();
     currentConversationRef.current = null;
@@ -545,6 +596,9 @@ export function AgentPageWorking() {
   }
 
   function resumeConversation(conv: SommelierConversation) {
+    // Opening an existing thread ends Tonight-entry framing for this visit.
+    fromTonightCardRef.current = false;
+    clearTonightCardEntry();
     greetingInjectedRef.current = true;
     conversationEnsureGateRef.current.reset();
     currentConversationRef.current = conv;
@@ -856,7 +910,7 @@ export function AgentPageWorking() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
-                      {conv.title || t('cellarSommelier.newConversation', 'New conversation')}
+                      {resolveConversationTitle(conv.title, conv.messages || [])}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
                       <span>{formatConversationDate(conv.last_message_at || conv.updated_at)}</span>

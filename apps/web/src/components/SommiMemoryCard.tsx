@@ -76,14 +76,16 @@ export function SommiMemoryCard() {
   }
 
   function requestRemoveTerm(
-    dimension: 'region' | 'grape',
+    dimension: 'region' | 'grape' | 'style',
     polarity: 'like' | 'dislike',
     item: PublicMemoryItem
   ) {
     const mutation: SommiMemoryMutation =
       dimension === 'region'
         ? { type: 'remove_region', polarity, id: item.id }
-        : { type: 'remove_grape', polarity, id: item.id };
+        : dimension === 'grape'
+          ? { type: 'remove_grape', polarity, id: item.id }
+          : { type: 'remove_style', polarity, id: item.id };
     beginConfirm({
       title: t('sommiMemory.removeTitle', 'Remove preference?'),
       message: t('sommiMemory.removeMessage', {
@@ -168,6 +170,8 @@ export function SommiMemoryCard() {
     regions_disliked: [],
     grapes_liked: [],
     grapes_disliked: [],
+    styles_liked: [],
+    styles_disliked: [],
     body: null,
   };
   const count = countPublicSommiMemory(view);
@@ -234,9 +238,9 @@ export function SommiMemoryCard() {
           </div>
         ) : (
           <>
-            {preview.length > 0 && (
+            {preview.labels.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {preview.map((label) => (
+                {preview.labels.map((label) => (
                   <span
                     key={label}
                     className="rounded-full px-3 py-1 text-xs"
@@ -249,6 +253,21 @@ export function SommiMemoryCard() {
                     {label}
                   </span>
                 ))}
+                {preview.moreCount > 0 && (
+                  <span
+                    className="rounded-full px-3 py-1 text-xs"
+                    style={{
+                      background: 'var(--bg-surface-elevated)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    {t('sommiMemory.moreCount', {
+                      count: preview.moreCount,
+                      defaultValue: `+${preview.moreCount} more`,
+                    })}
+                  </span>
+                )}
               </div>
             )}
             <button
@@ -301,7 +320,7 @@ function MemoryManageOverlay(props: {
   busyKey: string | null;
   onClose: () => void;
   onRemoveTerm: (
-    dimension: 'region' | 'grape',
+    dimension: 'region' | 'grape' | 'style',
     polarity: 'like' | 'dislike',
     item: PublicMemoryItem
   ) => void;
@@ -456,6 +475,18 @@ function MemoryManageOverlay(props: {
             items={memory.grapes_disliked}
             busy={!!busyKey}
             onRemove={(item) => onRemoveTerm('grape', 'dislike', item)}
+          />
+          <TermSection
+            title={t('sommiMemory.sectionStylesLiked', 'Liked styles')}
+            items={memory.styles_liked}
+            busy={!!busyKey}
+            onRemove={(item) => onRemoveTerm('style', 'like', item)}
+          />
+          <TermSection
+            title={t('sommiMemory.sectionStylesDisliked', 'Disliked styles')}
+            items={memory.styles_disliked}
+            busy={!!busyKey}
+            onRemove={(item) => onRemoveTerm('style', 'dislike', item)}
           />
         </div>
       </motion.div>

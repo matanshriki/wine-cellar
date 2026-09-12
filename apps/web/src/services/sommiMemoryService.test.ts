@@ -104,13 +104,36 @@ describe('sommiMemory web helpers', () => {
     };
     const memory = extractPublicSommiMemory(profile, 'en', t);
     expect(countPublicSommiMemory(memory)).toBe(0);
-    expect(previewMemoryLabels(memory)).toEqual([]);
+    expect(previewMemoryLabels(memory)).toEqual({ labels: [], moreCount: 0 });
     expect(Object.keys(profile.preferences.regions)).toContain('Rioja');
+  });
+
+  it('preview shows +N more when capped', () => {
+    const memory = {
+      regions_liked: [
+        { id: 'rioja', label: 'Rioja' },
+        { id: 'napa', label: 'Napa' },
+      ],
+      regions_disliked: [],
+      grapes_liked: [
+        { id: 'nebbiolo', label: 'Nebbiolo' },
+        { id: 'cabernet_sauvignon', label: 'Cabernet Sauvignon' },
+      ],
+      grapes_disliked: [],
+      styles_liked: [{ id: 'amarone', label: 'Amarone' }],
+      styles_disliked: [],
+      body: { value: 'full' as const, label: 'Full' },
+    };
+    const preview = previewMemoryLabels(memory, 4);
+    expect(preview.labels).toHaveLength(4);
+    expect(preview.moreCount).toBe(2);
+    expect(countPublicSommiMemory(memory)).toBe(6);
   });
 
   it('formats id fallback without snake_case', () => {
     expect(formatMemoryIdFallback('pinot_noir')).toBe('Pinot Noir');
     expect(resolveMemoryItemLabel('grape', { id: 'pinot_noir' }, 'en')).toBe('Pinot Noir');
+    expect(resolveMemoryItemLabel('style', { id: 'amarone' }, 'he')).toBe('אמרונה');
   });
 });
 
