@@ -16,6 +16,7 @@ import {
   diversifyShortlistForPrompt,
   shortlistCandidates,
   takeTopForCap,
+  buildPurchasePriceFact,
 } from './candidateSelection.js';
 import { buildOrchestratedSystemPrompt, buildBuyRecommendationPrompt, buildConversationalSystemPrompt } from './prompt.js';
 import type { CellarBottleInput, CellarIntent, OrchestrationLogPayload, ScoredCandidate } from './types.js';
@@ -298,8 +299,11 @@ async function runOrchestratedRecommendation(params: {
     recentUserMessages
   );
 
-  // Detect if user explicitly wants to include reserved bottles (param overrides detection)
-  const resolvedIncludeReserved = includeReserved ?? detectsIncludeReservedRequest(message);
+  // Detect if user explicitly wants to include reserved bottles (param overrides detection).
+  // Price extremes (cheapest/most expensive across the cellar) should include Keep bottles.
+  const resolvedIncludeReserved =
+    includeReserved ??
+    (constraints.priceSort != null || detectsIncludeReservedRequest(message));
 
   const { scored, relaxedFilter, reservedExcluded } = scoredOverride
     ? { scored: scoredOverride, relaxedFilter: false, reservedExcluded: 0 }
@@ -313,31 +317,48 @@ async function runOrchestratedRecommendation(params: {
         tasteScoreCtx ?? null
       );
 
-  const cap = computeEffectiveShortlistCap(scored.length, extendedShortlist);
+  const cap = computeEffectiveShortlistCap(
+    scored.length,
+    extendedShortlist,
+    constraints.priceSort != null
+  );
   const top = takeTopForCap(scored, cap);
 
+  // Never region-diversify price rankings — order must stay cheapest/most-expensive first.
   let diversified =
-    intent === 'multi_recommendation' && top.length > 1
+    constraints.priceSort == null &&
+    intent === 'multi_recommendation' &&
+    top.length > 1
       ? diversifyShortlistForPrompt(scored, cap)
       : top;
 
   // Pin the anchor bottle (from the previous turn) into the shortlist so the model
   // always sees the wine the user is referring to, even if the heuristic scorer ranked
-  // it out of the current shortlist.
+  // it out of the current shortlist. For price asks, keep price order — append anchor at end.
   if (anchorBottleId && !diversified.some((s) => s.bottle.id === anchorBottleId)) {
     const anchorBottle = cellarBottles.find((b) => b.id === anchorBottleId);
     if (anchorBottle) {
-      diversified = [{ bottle: anchorBottle, score: 999, features: ['anchor'] }, ...diversified];
+      const anchorCand: ScoredCandidate = {
+        bottle: anchorBottle,
+        score: 999,
+        features: ['anchor'],
+      };
+      diversified =
+        constraints.priceSort != null
+          ? [...diversified, anchorCand]
+          : [anchorCand, ...diversified];
     }
   }
 
   const compact = compactBottlesForLlm(diversified);
 
   let summary = '';
-  if (cellarBottles.length > compact.length) {
+  if (constraints.priceSort) {
+    summary = `\n\n${buildPurchasePriceFact(cellarBottles, constraints.priceSort)}`;
+  } else if (cellarBottles.length > compact.length) {
     summary = `\n\nNote: Your full cellar has more bottles than listed here. This is a relevance-ranked shortlist for this question only.`;
   }
-  if (reservedExcluded > 0) {
+  if (reservedExcluded > 0 && !constraints.priceSort) {
     summary += `\n\nKEEP/RESERVE NOTE: ${reservedExcluded} bottle(s) in the user's cellar are marked as "Keep" (reserved for future events) and have been excluded from this shortlist. If the user asks why a bottle is missing or requests reserved wines, acknowledge this and mention they can say "include reserved bottles" to see them.`;
   }
 

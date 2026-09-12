@@ -10,6 +10,7 @@ import {
 import { scoreBottleHeuristically } from './heuristics.js';
 import {
   applyPriceSortToScored,
+  buildPurchasePriceFact,
   compactBottlesForLlm,
 } from './candidateSelection.js';
 import type { CellarBottleInput, ScoredCandidate } from './types.js';
@@ -209,6 +210,7 @@ describe('detectPriceSortIntent / purchase price in shortlist', () => {
     expect(detectPriceSortIntent('What is the cheapest wine in my cellar?')).toBe('cheapest');
     expect(detectPriceSortIntent('most expensive bottle')).toBe('most_expensive');
     expect(detectPriceSortIntent('מה היין הזול ביותר במרתף?')).toBe('cheapest');
+    expect(detectPriceSortIntent('מה היין הכי זול שיש לי במרתף?')).toBe('cheapest');
     expect(detectPriceSortIntent('מה היין הכי יקר שלי?')).toBe('most_expensive');
     expect(extractConstraints('cheapest red').priceSort).toBe('cheapest');
   });
@@ -248,5 +250,47 @@ describe('detectPriceSortIntent / purchase price in shortlist', () => {
     expect(compact[0].purchasePrice).toBe(20);
     expect(compact[0].purchasePriceCurrency).toBe('ILS');
     expect(compact[1].purchasePrice).toBe(200);
+  });
+
+  it('compares ILS vs USD using currency normalization (not raw numbers)', () => {
+    // 80 ILS ≈ $25 USD — cheaper than $26.56 USD
+    const ilsBottle: CellarBottleInput = {
+      id: 'ils-cheap',
+      producer: 'Local',
+      wineName: 'Shekel',
+      purchasePrice: 80,
+      purchasePriceCurrency: 'ILS',
+    };
+    const usdBottle: CellarBottleInput = {
+      id: 'usd-mid',
+      producer: 'San Marzano',
+      wineName: 'F Negroamaro',
+      purchasePrice: 26.56,
+      purchasePriceCurrency: 'USD',
+    };
+    const scored: ScoredCandidate[] = [
+      { bottle: usdBottle, score: 50, features: [] },
+      { bottle: ilsBottle, score: 50, features: [] },
+    ];
+    const ordered = applyPriceSortToScored(scored, 'cheapest');
+    expect(ordered[0].bottle.id).toBe('ils-cheap');
+
+    const fact = buildPurchasePriceFact([usdBottle, ilsBottle], 'cheapest');
+    expect(fact).toContain('ils-cheap');
+    expect(fact).toContain('PRICE FACT');
+  });
+});
+
+describe('classifyAgentRoute — price corrections stay on recommend', () => {
+  const ctx = { lastRecommendationBottleId: 'b0000000-0000-4000-8000-000000000001' };
+
+  it('routes Hebrew cheapest ask to recommend', () => {
+    expect(classifyAgentRoute('מה היין הכי זול שיש לי במרתף?')).toBe('recommend');
+  });
+
+  it('does not send "wrong, I have cheaper" to conversational after a pick', () => {
+    expect(
+      classifyAgentRoute('זה לא נכון, יש לי יינות זולים יותר במקרר', ctx)
+    ).toBe('recommend');
   });
 });

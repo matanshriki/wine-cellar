@@ -24,14 +24,30 @@ export const SHORTLIST_MAX = 15;
  * bottles are included even when the heuristic can't match cross-script text.
  */
 export const SHORTLIST_MAX_PRODUCER_QUERY = 30;
+/** Cap for cheapest/most-expensive asks — include (almost) every priced bottle. */
+export const SHORTLIST_MAX_PRICE_QUERY = 80;
+
+/** Align with apps/web currency util — used only for ranking, not display. */
+const USD_TO_ILS_RATE = 3.2;
+
+export function purchasePriceToUsd(
+  amount: number,
+  currency?: string | null
+): number {
+  const c = (currency || 'USD').toUpperCase();
+  if (c === 'ILS' || c === 'NIS') return amount / USD_TO_ILS_RATE;
+  return amount;
+}
 
 /** When the cellar is large, cap at SHORTLIST_MAX; when small, send all ranked bottles. */
 export function computeEffectiveShortlistCap(
   totalRanked: number,
-  extended?: boolean
+  extended?: boolean,
+  priceQuery?: boolean
 ): number {
   if (totalRanked <= 0) return 0;
   if (totalRanked < SHORTLIST_MIN) return totalRanked;
+  if (priceQuery) return Math.min(SHORTLIST_MAX_PRICE_QUERY, totalRanked);
   const cap = extended ? SHORTLIST_MAX_PRODUCER_QUERY : SHORTLIST_MAX;
   return Math.min(cap, totalRanked);
 }
@@ -73,9 +89,13 @@ function hasPurchasePrice(b: CellarBottleInput): boolean {
   return typeof b.purchasePrice === 'number' && Number.isFinite(b.purchasePrice);
 }
 
+function priceSortKey(b: CellarBottleInput): number {
+  return purchasePriceToUsd(b.purchasePrice as number, b.purchasePriceCurrency);
+}
+
 /**
- * When the user asks cheapest/most expensive, put priced bottles first and sort by price
- * so the shortlist actually contains the answer (heuristic readiness ranking alone won't).
+ * When the user asks cheapest/most expensive, put priced bottles first and sort by
+ * currency-normalized USD so ILS vs USD bottles compare fairly.
  */
 export function applyPriceSortToScored(
   scored: ScoredCandidate[],
@@ -91,8 +111,8 @@ export function applyPriceSortToScored(
   }
 
   withPrice.sort((a, b) => {
-    const pa = a.bottle.purchasePrice as number;
-    const pb = b.bottle.purchasePrice as number;
+    const pa = priceSortKey(a.bottle);
+    const pb = priceSortKey(b.bottle);
     return priceSort === 'cheapest' ? pa - pb : pb - pa;
   });
 
@@ -104,6 +124,43 @@ export function applyPriceSortToScored(
     })),
     ...withoutPrice,
   ];
+}
+
+/**
+ * Deterministic fact for the LLM — cheapest/most-expensive among bottles that
+ * actually have purchasePrice (currency-normalized).
+ */
+export function buildPurchasePriceFact(
+  bottles: CellarBottleInput[],
+  priceSort: 'cheapest' | 'most_expensive'
+): string {
+  const priced = bottles.filter(hasPurchasePrice);
+  const unpriced = bottles.length - priced.length;
+  if (priced.length === 0) {
+    return (
+      `PRICE FACT: 0 of ${bottles.length} bottles in this request have purchasePrice. ` +
+      `You cannot name a cheapest/most expensive bottle — ask the user to add purchase prices.`
+    );
+  }
+
+  const sorted = [...priced].sort((a, b) => {
+    const pa = priceSortKey(a);
+    const pb = priceSortKey(b);
+    return priceSort === 'cheapest' ? pa - pb : pb - pa;
+  });
+  const winner = sorted[0];
+  const label = priceSort === 'cheapest' ? 'CHEAPEST' : 'MOST EXPENSIVE';
+  const cur = winner.purchasePriceCurrency || 'USD';
+  const usd = purchasePriceToUsd(winner.purchasePrice as number, winner.purchasePriceCurrency);
+
+  return (
+    `PRICE FACT (deterministic — TRUST THIS COMPLETELY): Among ${priced.length} bottles ` +
+    `with purchasePrice (${unpriced} have no price and must be ignored for ranking), the ${label} ` +
+    `is bottleId="${winner.id}" — ${winner.producer || ''} ${winner.wineName || ''} ` +
+    `@ ${winner.purchasePrice} ${cur} (~$${usd.toFixed(2)} USD normalized). ` +
+    `Recommend exactly this bottleId for a ${priceSort} ask. ` +
+    `Do NOT hedge about an incomplete shortlist for this price ranking — this fact covers all priced bottles in context.`
+  );
 }
 
 function normalizeColor(c: string | undefined): string {

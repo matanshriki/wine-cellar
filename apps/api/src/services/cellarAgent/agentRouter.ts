@@ -4,6 +4,7 @@
  */
 
 import type { ActionContext, AgentRoute } from './sommelierTypes.js';
+import { detectPriceSortIntent } from './tools.js';
 
 const UUID_RE =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
@@ -180,6 +181,19 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
   // Explicit info / explain questions about the current wine — always conversational
   if (CONVERSATIONAL_INFO_EN.test(lower) || CONVERSATIONAL_INFO_HE.test(t)) {
     return 'conversational';
+  }
+
+  // Price / value cellar queries (and corrections like "that's wrong, I have cheaper")
+  // must re-run recommend with the full priced shortlist — never conversational (anchor-only).
+  const priceCorrection =
+    /\b(wrong|incorrect|not\s+correct|cheaper|more\s+expensive|lowest\s+price|highest\s+price)\b/i.test(
+      lower
+    ) ||
+    /לא\s+נכון|זול(ים|ות)?\s+יותר|יקר(ים|ות)?\s+יותר|יש\s+לי\s+(יינות?|בקבוקים?)\s+זול|מחיר\s+נמוך\s+יותר/.test(
+      t
+    );
+  if (detectPriceSortIntent(t) || priceCorrection) {
+    return 'recommend';
   }
 
   // Short follow-up question when an anchor bottle exists AND user isn't asking for a new pick
