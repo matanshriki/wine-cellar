@@ -54,17 +54,35 @@ export function detectsWantsKosher(message: string): boolean {
   return false;
 }
 
+/**
+ * Bottle-level storage filters (bottles.storage_location).
+ *
+ * Important product rule: bare “fridge” / “wine fridge” / מקרר / “cellar” / מרתף
+ * mean the user’s wine collection itself (many people store wine only in a wine
+ * fridge). Those are NOT hard filters on storage_location — otherwise kosher/etc.
+ * inventory asks return 0 when location is unset.
+ *
+ * Only distinct places (e.g. kitchen fridge, garage) become location hints.
+ */
 export function extractStorageLocationHints(message: string): string[] {
   const hints: string[] = [];
   const m = normalizeMessage(message);
-  if (/\b(fridge|refrigerator|fridge\s+door)\b/.test(m)) hints.push('fridge');
-  if (/\b(cellar|wine\s+fridge|wine\s+cooler)\b/.test(m)) {
-    // "wine fridge" is still fridge-like storage; keep both tokens
-    if (/\bwine\s+(fridge|cooler)\b/.test(m)) hints.push('fridge');
-    else hints.push('cellar');
+
+  // Explicit non-collection places
+  if (/\bkitchen\s+(fridge|refrigerator)\b/.test(m)) hints.push('kitchen');
+  if (/\b(garage|basement\s+shelf|rack\s+\d+)\b/.test(m)) {
+    if (/\bgarage\b/.test(m)) hints.push('garage');
+    if (/\bbasement\s+shelf\b/.test(m)) hints.push('basement shelf');
+    if (/\brack\s+\d+\b/.test(m)) {
+      const rack = m.match(/\brack\s+(\d+)\b/);
+      if (rack) hints.push(`rack ${rack[1]}`);
+    }
   }
-  if (/מקרר/.test(message)) hints.push('fridge');
-  if (/מרתף/.test(message) && !/מקרר/.test(message)) hints.push('cellar');
+  if (/מקרר\s+המטבח|במטבח/.test(message) && /מקרר|fridge/i.test(message)) {
+    hints.push('kitchen');
+  }
+
+  // Bare fridge / wine fridge / מקרר / cellar / מרתף → no storage hint (cellar synonym)
   return [...new Set(hints)];
 }
 

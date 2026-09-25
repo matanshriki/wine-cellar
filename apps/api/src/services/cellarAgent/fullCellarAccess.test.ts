@@ -40,16 +40,26 @@ describe('kosher + storage constraint detection', () => {
     expect(detectsWantsKosher('red for steak')).toBe(false);
   });
 
-  it('extracts fridge storage hints', () => {
-    expect(extractStorageLocationHints("what's in my fridge?")).toContain('fridge');
-    expect(extractStorageLocationHints('מה יש במקרר')).toContain('fridge');
+  it('treats bare fridge / מקרר / wine fridge as cellar synonyms (no location filter)', () => {
+    expect(extractStorageLocationHints("what's in my fridge?")).toEqual([]);
+    expect(extractStorageLocationHints('מה יש במקרר')).toEqual([]);
+    expect(extractStorageLocationHints('wine fridge kosher reds')).toEqual([]);
+    expect(extractStorageLocationHints('איזה יינות כשרים יש לי במקרר')).toEqual([]);
   });
 
-  it('extractConstraints includes wantsKosher and storage', () => {
+  it('still extracts distinct places like kitchen fridge', () => {
+    expect(extractStorageLocationHints("what's in my kitchen fridge?")).toContain('kitchen');
+  });
+
+  it('extractConstraints: kosher + fridge keeps kosher, drops cellar-synonym storage filter', () => {
     const c = extractConstraints('list all my kosher reds in the fridge');
     expect(c.wantsKosher).toBe(true);
     expect(c.colors).toContain('red');
-    expect(c.storageLocationHints).toContain('fridge');
+    expect(c.storageLocationHints).toEqual([]);
+
+    const he = extractConstraints('איזה יינות כשרים יש לי במקרר');
+    expect(he.wantsKosher).toBe(true);
+    expect(he.storageLocationHints).toEqual([]);
   });
 });
 
@@ -168,13 +178,24 @@ describe('hard filters', () => {
     expect(dataGaps.unknownKosherAmongFilteredColor).toBeGreaterThan(0);
   });
 
-  it('fridge filter distinguishes tagged vs missing location', () => {
-    const constraints = extractConstraints("what's in my fridge?");
-    const { matched, dataGaps } = applyHardFilters(cellar, constraints, {
+  it('kitchen fridge filter still matches tagged storage_location', () => {
+    const cellarWithKitchen = [
+      ...cellar,
+      bottle({ id: 'kitch', isKosher: true, color: 'red', storageLocation: 'kitchen fridge' }),
+    ];
+    const constraints = extractConstraints("what's in my kitchen fridge?");
+    const { matched } = applyHardFilters(cellarWithKitchen, constraints, {
       excludeReserved: false,
     });
-    expect(matched.map((b) => b.id)).toEqual(['f1']);
-    expect(dataGaps.missingStorageLocationRows).toBeGreaterThan(0);
+    expect(matched.map((b) => b.id)).toEqual(['kitch']);
+  });
+
+  it('kosher + במקרר returns kosher wines (fridge is cellar synonym)', () => {
+    const constraints = extractConstraints('איזה יינות כשרים יש לי במקרר');
+    expect(constraints.wantsKosher).toBe(true);
+    expect(constraints.storageLocationHints).toEqual([]);
+    const { matched } = applyHardFilters(cellar, constraints, { excludeReserved: false });
+    expect(matched.map((b) => b.id).sort()).toEqual(['f1', 'k1', 'k2', 'w1']);
   });
 });
 
