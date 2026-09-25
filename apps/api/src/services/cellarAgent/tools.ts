@@ -16,10 +16,10 @@ const MULTI_PATTERNS =
   /\b(top|best|pick|give|show|need|want)\s+(\d{1,2})\b|\b(\d{1,2})\s+(bottles|wines|recommendations|picks|options)\b|\b(several|few|multiple|many)\s+(bottles|wines|recommendations|options|picks)\b/i;
 
 const BROWSE_PATTERNS =
-  /\b(what\s+do\s+i\s+have|what\s+(?:\w+\s+){1,4}do\s+i\s+have|what'?s\s+in\s+my\s+(cellar|fridge|collection)|show\s+(me\s+)?(all\s+)?(my\s+)?|list\s+(all\s+)?(my\s+)?|browse|inventory|collection|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i;
+  /\b(what\s+do\s+i\s+have|what\s+(?:\w+\s+){1,4}do\s+i\s+have|how\s+many\s+(?:\w+\s+){0,4}(do\s+i\s+have|wines?|bottles?)|what'?s\s+in\s+my\s+(cellar|fridge|collection)|show\s+(me\s+)?(all\s+)?(my\s+)?|list\s+(all\s+)?(my\s+)?|browse|inventory|collection|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i;
 
 const BROWSE_PATTERNS_HE =
-  /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|הצג\s+(את\s+)?(כל\s+)?|תראה\s+(לי\s+)?(את\s+)?(כל\s+)?|רשימת|כל\s+ה(כשרים|אדומים|לבנים)|מה\s+במקרר|מה\s+יש\s+במקרר)/;
+  /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|כמה\s+.+\s+יש\s+לי|הצג\s+(את\s+)?(כל\s+)?|תראה\s+(לי\s+)?(את\s+)?(כל\s+)?|רשימת|כל\s+ה(כשרים|אדומים|לבנים)|מה\s+במקרר|מה\s+יש\s+במקרר)/;
 
 const SHOW_ALL_FOLLOWUP =
   /\b(show\s+(me\s+)?(all\s+of\s+them|the\s+rest|them\s+all|more)|list\s+them\s+all|the\s+full\s+list|see\s+(them\s+)?all|next\s+page|show\s+the\s+rest)\b/i;
@@ -103,12 +103,14 @@ export function resolveQueryMode(
   if (intent === 'browse_cellar') return 'inventory';
   if (detectsInventoryFollowUp(message)) return 'inventory';
 
-  // Explicit list/show-all with hard attribute → inventory
+  // Explicit list/show-all/count with hard attribute → inventory
   const listy =
-    /\b(list|show\s+(me\s+)?all|what\s+(?:\w+\s+){1,4}do\s+i\s+have|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i.test(
+    /\b(list|show\s+(me\s+)?all|how\s+many|what\s+(?:\w+\s+){1,4}do\s+i\s+have|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i.test(
       message
     ) ||
-    /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|הצג\s+את\s+כל|כל\s+הכשרים)/.test(message);
+    /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|כמה\s+.+\s+יש\s+לי|הצג\s+את\s+כל|כל\s+הכשרים)/.test(
+      message
+    );
 
   const hasHard =
     constraints.wantsKosher ||
@@ -231,7 +233,8 @@ function extractFoodOccasion(message: string): { food: string[]; occasion: strin
   if (/חגיגה|יום הולדת|יום נישואין|אירוע|מסיבה/.test(message)) occasion.push('celebration');
   if (/חג|פסח|ראש השנה|סוכות|חנוכה|שבת/.test(message)) occasion.push('celebration');
   if (/קיץ|חם/.test(message)) occasion.push('summer');
-  if (/חורף|קר/.test(message)) occasion.push('winter');
+  // Avoid bare "קר" — it matches inside מקרר (fridge)
+  if (/חורף|יום\s+קר|מזג\s+אוויר\s+קר/.test(message)) occasion.push('winter');
 
   return { food: [...new Set(food)], occasion: [...new Set(occasion)] };
 }

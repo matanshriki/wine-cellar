@@ -64,6 +64,20 @@ describe('kosher + storage constraint detection', () => {
 });
 
 describe('query mode + follow-ups', () => {
+  it('routes inventory for HE כמה / EN how many kosher in cellar', () => {
+    const he = 'כמה יינות כשרים יש לי במרתף';
+    const c = extractConstraints(he);
+    expect(c.wantsKosher).toBe(true);
+    expect(c.storageLocationHints).toEqual([]);
+    expect(c.occasionKeywords).not.toContain('winter');
+    expect(detectIntent(he, 0)).toBe('browse_cellar');
+    expect(resolveQueryMode(he, detectIntent(he, 0), c)).toBe('inventory');
+
+    const en = 'how many kosher wines do I have in my cellar?';
+    expect(detectIntent(en, 0)).toBe('browse_cellar');
+    expect(resolveQueryMode(en, detectIntent(en, 0), extractConstraints(en))).toBe('inventory');
+  });
+
   it('routes inventory for list/browse kosher', () => {
     const c = extractConstraints('what kosher reds do I have?');
     expect(resolveQueryMode('what kosher reds do I have?', 'browse_cellar', c)).toBe(
