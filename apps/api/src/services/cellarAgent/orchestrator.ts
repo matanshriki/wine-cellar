@@ -8,7 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import { config } from '../../config.js';
+import { config, openaiSamplingParams } from '../../config.js';
 import {
   buildLegacyCellarContextPayload,
   compactBottlesForLlm,
@@ -18,16 +18,31 @@ import {
   takeTopForCap,
   buildPurchasePriceFact,
 } from './candidateSelection.js';
-import { buildOrchestratedSystemPrompt, buildBuyRecommendationPrompt, buildConversationalSystemPrompt } from './prompt.js';
-import type { CellarBottleInput, CellarIntent, OrchestrationLogPayload, ScoredCandidate } from './types.js';
+import {
+  buildOrchestratedSystemPrompt,
+  buildBuyRecommendationPrompt,
+  buildConversationalSystemPrompt,
+  formatCellarAccessFacts,
+} from './prompt.js';
+import type {
+  CellarAccessMeta,
+  CellarBottleInput,
+  CellarIntent,
+  ExtractedConstraints,
+  OrchestrationLogPayload,
+  ScoredCandidate,
+} from './types.js';
 import { validateModelOutput } from './validation.js';
 import {
   buildReasoningContext,
   detectIntent,
   detectsIncludeReservedRequest,
+  detectsInventoryFollowUp,
   detectsSpecificProducerMention,
   extractConstraints,
+  mergeConstraintsWithPrior,
   needsClarification,
+  resolveQueryMode,
 } from './tools.js';
 import { runLegacyRecommendation } from './legacyRecommend.js';
 import { sliceHistoryForChat } from './chatMessages.js';
@@ -68,6 +83,18 @@ import {
   TASTE_SHORTLIST_SCORING_VERSION,
   type TasteScoreContext,
 } from './tasteScoring.js';
+import {
+  applyHardFilters,
+  buildCellarAccessMeta,
+} from './hardFilters.js';
+import {
+  buildDeterministicInventoryFromMatched,
+  buildDeterministicInventoryResponse,
+} from './inventoryQuery.js';
+import {
+  loadLastCellarAccessFromConversation,
+  priorAccessHasListContext,
+} from './conversationCellarAccess.js';
 
 function buildCellarSummaryForBuy(bottles: CellarBottleInput[]): string {
   if (bottles.length === 0) return 'The user has an empty cellar.';
@@ -131,10 +158,14 @@ function formatMemoryForPrompt(mem: SommelierPreferenceMemory): string {
   return parts.join('\n') || 'No specific preferences stored yet.';
 }
 
-function constraintsSummaryText(c: ReturnType<typeof extractConstraints>): string {
+function constraintsSummaryText(c: ExtractedConstraints): string {
   const parts: string[] = [];
   if (c.requestedCount) parts.push(`count=${c.requestedCount}`);
   if (c.colors.length) parts.push(`colors=${c.colors.join('+')}`);
+  if (c.wantsKosher) parts.push('kosher=1');
+  if (c.storageLocationHints.length) {
+    parts.push(`storage=${c.storageLocationHints.join('+')}`);
+  }
   if (c.regionHints.length) parts.push(`regions=${c.regionHints.length}`);
   if (c.grapeHints.length) parts.push(`grapes=${c.grapeHints.length}`);
   if (c.foodKeywords.length) parts.push(`food=${c.foodKeywords.length}`);
@@ -238,6 +269,8 @@ async function runOrchestratedRecommendation(params: {
   message: string;
   history: unknown[];
   cellarBottles: CellarBottleInput[];
+  scannedBottleRows: number;
+  scannedPhysicalBottles: number;
   memory: SommelierPreferenceMemory | null;
   tasteContext?: string;
   tasteScoreCtx?: TasteScoreContext | null;
@@ -252,17 +285,22 @@ async function runOrchestratedRecommendation(params: {
   includeReserved?: boolean;
   /** Pin this bottle ID into the shortlist so the model always sees it */
   anchorBottleId?: string;
+  /** Pre-merged constraints (e.g. follow-up retained filters) */
+  constraintsOverride?: ExtractedConstraints;
 }): Promise<{
   recommendation: unknown;
   log: OrchestrationLogPayload;
   explanation: RecommendationExplanation;
   shortlistIds: string[];
+  cellarAccess: CellarAccessMeta;
 }> {
   const {
     openai,
     message,
     history,
     cellarBottles,
+    scannedBottleRows,
+    scannedPhysicalBottles,
     memory,
     tasteContext,
     tasteScoreCtx,
@@ -273,6 +311,7 @@ async function runOrchestratedRecommendation(params: {
     extendedShortlist,
     includeReserved,
     anchorBottleId,
+    constraintsOverride,
   } = params;
 
   const conversationHistory = sliceHistoryForChat(history, 20);
@@ -281,9 +320,8 @@ async function runOrchestratedRecommendation(params: {
   const userMessageLower = message.toLowerCase();
 
   const intent = intentOverride ?? detectIntent(message, historyLen);
-  const constraints = extractConstraints(message);
+  const constraints = constraintsOverride ?? extractConstraints(message);
 
-  // Extract user messages from recent history for food-context detection
   const recentUserMessages: Array<{ role?: string; content?: string }> = conversationHistory
     .map((m) => ({
       role: 'role' in m ? String(m.role) : undefined,
@@ -299,21 +337,29 @@ async function runOrchestratedRecommendation(params: {
     recentUserMessages
   );
 
-  // Detect if user explicitly wants to include reserved bottles (param overrides detection).
-  // Price extremes (cheapest/most expensive across the cellar) should include Keep bottles.
   const resolvedIncludeReserved =
     includeReserved ??
     (constraints.priceSort != null || detectsIncludeReservedRequest(message));
 
+  // Hard filters on FULL cellar first; Keep excluded by default for recommendations.
+  const hard = applyHardFilters(cellarBottles, constraints, {
+    excludeReserved: !resolvedIncludeReserved,
+  });
+  const eligibleForRank = hard.matched;
+
   const { scored, relaxedFilter, reservedExcluded } = scoredOverride
-    ? { scored: scoredOverride, relaxedFilter: false, reservedExcluded: 0 }
+    ? {
+        scored: scoredOverride,
+        relaxedFilter: false,
+        reservedExcluded: hard.reservedExcluded,
+      }
     : shortlistCandidates(
-        cellarBottles,
+        eligibleForRank,
         constraints,
         userMessageLower,
         memory,
         params.recentlyRecommended ?? null,
-        resolvedIncludeReserved,
+        true,
         tasteScoreCtx ?? null
       );
 
@@ -324,7 +370,6 @@ async function runOrchestratedRecommendation(params: {
   );
   const top = takeTopForCap(scored, cap);
 
-  // Never region-diversify price rankings — order must stay cheapest/most-expensive first.
   let diversified =
     constraints.priceSort == null &&
     intent === 'multi_recommendation' &&
@@ -332,9 +377,6 @@ async function runOrchestratedRecommendation(params: {
       ? diversifyShortlistForPrompt(scored, cap)
       : top;
 
-  // Pin the anchor bottle (from the previous turn) into the shortlist so the model
-  // always sees the wine the user is referring to, even if the heuristic scorer ranked
-  // it out of the current shortlist. For price asks, keep price order — append anchor at end.
   if (anchorBottleId && !diversified.some((s) => s.bottle.id === anchorBottleId)) {
     const anchorBottle = cellarBottles.find((b) => b.id === anchorBottleId);
     if (anchorBottle) {
@@ -352,14 +394,31 @@ async function runOrchestratedRecommendation(params: {
 
   const compact = compactBottlesForLlm(diversified);
 
+  const cellarAccess = buildCellarAccessMeta({
+    scope: 'recommend_from_filter',
+    scannedBottleRows,
+    scannedPhysicalBottles,
+    matched: eligibleForRank,
+    dataGaps: hard.dataGaps,
+    hardFilters: hard.applied,
+    displayedBottleRows: compact.length,
+    selectionCap: compact.length,
+  });
+
   let summary = '';
   if (constraints.priceSort) {
     summary = `\n\n${buildPurchasePriceFact(cellarBottles, constraints.priceSort)}`;
-  } else if (cellarBottles.length > compact.length) {
-    summary = `\n\nNote: Your full cellar has more bottles than listed here. This is a relevance-ranked shortlist for this question only.`;
+  } else {
+    summary =
+      `\n\nSELECTION NOTE: ${compact.length} candidate(s) shown for picking from ${eligibleForRank.length}` +
+      ` hard-filter match(es) after scanning ${scannedBottleRows} in-stock records.` +
+      ` Do not describe the selection size as the user's full matching inventory.`;
   }
-  if (reservedExcluded > 0 && !constraints.priceSort) {
-    summary += `\n\nKEEP/RESERVE NOTE: ${reservedExcluded} bottle(s) in the user's cellar are marked as "Keep" (reserved for future events) and have been excluded from this shortlist. If the user asks why a bottle is missing or requests reserved wines, acknowledge this and mention they can say "include reserved bottles" to see them.`;
+  if (reservedExcluded > 0 && !constraints.priceSort && !resolvedIncludeReserved) {
+    summary +=
+      `\n\nKEEP/RESERVE NOTE: ${reservedExcluded} Keep bottle(s) were excluded from recommendations by default.` +
+      ` Inventory questions still include them with Keep status.` +
+      ` User can say "include reserved bottles" to recommend from Keep wines too.`;
   }
 
   const shortlistRegions = compact
@@ -383,6 +442,7 @@ async function runOrchestratedRecommendation(params: {
       .join('\n'),
     tasteContext,
     language,
+    cellarAccessFacts: formatCellarAccessFacts(cellarAccess),
   });
 
   let attempt = 0;
@@ -404,7 +464,7 @@ async function runOrchestratedRecommendation(params: {
           { role: 'user', content: message },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.8,
+        ...openaiSamplingParams(0.8),
       });
 
       const content = response.choices[0]?.message?.content;
@@ -491,6 +551,7 @@ async function runOrchestratedRecommendation(params: {
     log,
     explanation,
     shortlistIds: compact.map((b) => b.id),
+    cellarAccess,
   };
 }
 
@@ -530,6 +591,8 @@ async function runLlmPathThenPersist(params: {
   message: string;
   history: unknown[];
   cellarBottles: CellarBottleInput[];
+  scannedBottleRows: number;
+  scannedPhysicalBottles: number;
   memory: SommelierPreferenceMemory | null;
   tasteContext?: string;
   tasteScoreCtx?: TasteScoreContext | null;
@@ -542,30 +605,37 @@ async function runLlmPathThenPersist(params: {
   extendedShortlist?: boolean;
   includeReserved?: boolean;
   anchorBottleId?: string;
+  constraintsOverride?: ExtractedConstraints;
 }): Promise<unknown> {
-  const { recommendation, log, explanation, shortlistIds } = await runOrchestratedRecommendation({
-    openai: params.openai,
-    message: params.message,
-    history: params.history,
-    cellarBottles: params.cellarBottles,
-    memory: params.memory,
-    tasteContext: params.tasteContext,
-    tasteScoreCtx: params.tasteScoreCtx,
-    tasteMeta: params.tasteMeta,
-    scoredOverride: params.scoredOverride,
-    intentOverride: params.intentOverride,
-    recentlyRecommended: params.recentlyRecommended ?? null,
-    language: params.language,
-    extendedShortlist: params.extendedShortlist,
-    includeReserved: params.includeReserved,
-    anchorBottleId: params.anchorBottleId,
-  });
+  const { recommendation, log, explanation, shortlistIds, cellarAccess } =
+    await runOrchestratedRecommendation({
+      openai: params.openai,
+      message: params.message,
+      history: params.history,
+      cellarBottles: params.cellarBottles,
+      scannedBottleRows: params.scannedBottleRows,
+      scannedPhysicalBottles: params.scannedPhysicalBottles,
+      memory: params.memory,
+      tasteContext: params.tasteContext,
+      tasteScoreCtx: params.tasteScoreCtx,
+      tasteMeta: params.tasteMeta,
+      scoredOverride: params.scoredOverride,
+      intentOverride: params.intentOverride,
+      recentlyRecommended: params.recentlyRecommended ?? null,
+      language: params.language,
+      extendedShortlist: params.extendedShortlist,
+      includeReserved: params.includeReserved,
+      anchorBottleId: params.anchorBottleId,
+      constraintsOverride: params.constraintsOverride,
+    });
 
   logSommelier('orchestration', {
     route: params.routedAction,
     user: shortUser(params.userId),
     intent: log.intent,
     shortlistSize: String(log.shortlistSize),
+    matched: String(cellarAccess.matchedBottleRows),
+    scanned: String(cellarAccess.scannedBottleRows),
     validation: log.validationResult,
     fallback: String(log.fallbackUsed),
   });
@@ -585,6 +655,7 @@ async function runLlmPathThenPersist(params: {
     routedAction: params.routedAction,
     explanation,
     processingMode: 'orchestrated_shortlist',
+    cellarAccess,
   });
 }
 
@@ -677,7 +748,12 @@ export interface RecommendCellarParams {
   supabase: SupabaseClient | null;
   message: string;
   history: unknown[];
+  /** Full in-stock cellar from authenticated server load (required). */
   cellarBottles: CellarBottleInput[];
+  scannedBottleRows: number;
+  scannedPhysicalBottles: number;
+  /** Must be 'server' — client 60-cap payloads are rejected at the route. */
+  cellarSource: 'server';
   tasteContext?: string;
   actionContext?: ActionContext;
   /** ISO 639-1 language code from the client — e.g. 'he' for Hebrew */
@@ -697,12 +773,79 @@ function safeActionErrorMessage(): Record<string, unknown> {
 }
 
 export async function recommendCellar(params: RecommendCellarParams): Promise<unknown> {
-  const { openai, userId, supabase, message, history, cellarBottles, tasteContext, actionContext, language } =
-    params;
+  const {
+    openai,
+    userId,
+    supabase,
+    message,
+    history,
+    cellarBottles,
+    scannedBottleRows,
+    scannedPhysicalBottles,
+    cellarSource,
+    tasteContext,
+    actionContext,
+    language,
+  } = params;
+
+  if (cellarSource !== 'server') {
+    return withMeta(
+      {
+        message: m(
+          language,
+          'Sommi needs a full cellar scan to answer accurately. Please try again.',
+          'סומי צריך סריקה מלאה של המרתף כדי לענות במדויק. נסה שוב.'
+        ),
+        type: 'single',
+      },
+      { routedAction: 'recommend', actionResult: 'error', processingMode: 'deterministic_action' }
+    );
+  }
 
   const route = classifyAgentRoute(message, actionContext);
   const extendedShortlist = detectsSpecificProducerMention(message);
   const includeReserved = detectsIncludeReservedRequest(message);
+
+  const inventoryFollowUp = detectsInventoryFollowUp(message);
+
+  // Prefer client lastCellarAccess; older clients: recover from conversation messages (RLS).
+  let priorAccess: CellarAccessMeta | null | undefined = actionContext?.lastCellarAccess;
+  if (
+    (!priorAccess || !priorAccessHasListContext(priorAccess)) &&
+    supabase &&
+    actionContext?.conversationId
+  ) {
+    try {
+      const recovered = await loadLastCellarAccessFromConversation(
+        userId,
+        actionContext.conversationId,
+        supabase
+      );
+      if (recovered) priorAccess = recovered;
+    } catch {
+      logSommelierWarn('cellar_access_recover_failed', { user: shortUser(userId) });
+    }
+  }
+
+  let constraints = extractConstraints(message);
+  if (inventoryFollowUp && priorAccess?.hardFilters) {
+    constraints = mergeConstraintsWithPrior(constraints, priorAccess.hardFilters);
+  }
+
+  const intentForMode = detectIntent(message, (history || []).length);
+  let queryMode = resolveQueryMode(message, intentForMode, constraints, {
+    inventoryFollowUp,
+    hasPriorHardFilters: priorAccessHasListContext(priorAccess),
+  });
+
+  // Escalation: conversational would be wrong for “show all” / inventory with filters
+  if (
+    route === 'conversational' &&
+    (queryMode === 'inventory' || inventoryFollowUp)
+  ) {
+    queryMode = 'inventory';
+  }
+
   let memoryPrefs: SommelierPreferenceMemory | null = null;
   let recentPicks: Set<string> | null = null;
   let tasteProfile: StructuredTasteProfile | null = null;
@@ -742,12 +885,160 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
 
   logSommelier('route', {
     route,
+    queryMode,
     user: shortUser(userId),
     msgLen: String(message.length),
+    scanned: String(scannedBottleRows),
     hasLastRecoBottle: actionContext?.lastRecommendationBottleId ? 'yes' : 'no',
+    hasPriorAccess: priorAccessHasListContext(priorAccess) ? 'yes' : 'no',
     tasteProfileLoaded: tasteLoaded ? 'yes' : 'no',
     tasteScoring: tasteMeta.scoringEnabled ? 'on' : 'off',
   });
+
+  // Follow-up “show the rest / show all” without recoverable list context → ask, don’t broaden.
+  // If the message itself carries hard filters (e.g. “are these all my kosher wines?”), treat as inventory.
+  const messageHasHardFilters =
+    constraints.wantsKosher ||
+    constraints.colors.length > 0 ||
+    constraints.storageLocationHints.length > 0;
+
+  if (
+    inventoryFollowUp &&
+    (route === 'recommend' || route === 'conversational') &&
+    !priorAccessHasListContext(priorAccess) &&
+    !messageHasHardFilters
+  ) {
+    return withMeta(
+      {
+        type: 'single',
+        message: m(
+          language,
+          "I'm not sure which list you mean — I don't have the previous filter saved. Tell me what to list (e.g. kosher reds, fridge, or wines like the last one).",
+          'לא ברור לי לאיזו רשימה התכוונת — אין לי את הסינון הקודם. ציין מה להציג (למשל אדומים כשרים, מקרר, או יינות כמו הקודם).'
+        ),
+        followUpQuestion: m(
+          language,
+          'Which wines should I list from your cellar?',
+          'אילו יינות להציג מהמרתף?'
+        ),
+      },
+      {
+        routedAction: 'recommend',
+        actionResult: 'ok',
+        processingMode: 'deterministic_action',
+      }
+    );
+  }
+
+  // ── Deterministic inventory (full cellar filter; LLM does not select/count) ──
+  if (
+    queryMode === 'inventory' &&
+    (route === 'recommend' || route === 'conversational')
+  ) {
+    try {
+      if (cellarSource !== 'server' || scannedBottleRows < 0) {
+        throw new Error('inventory_requires_full_server_scan');
+      }
+
+      const resolvedOffset =
+        inventoryFollowUp && priorAccess?.hasMore && priorAccess.nextOffset != null
+          ? priorAccess.nextOffset
+          : 0;
+
+      let response: Record<string, unknown>;
+      let meta: CellarAccessMeta;
+
+      if (priorAccess?.hardFilters?.similarAnchorBottleId && inventoryFollowUp) {
+        const anchorId = priorAccess.hardFilters.similarAnchorBottleId;
+        const allSimilar = findSimilarCandidates(
+          anchorId,
+          cellarBottles,
+          constraints,
+          message.toLowerCase(),
+          memoryPrefs,
+          0,
+          tasteScoreCtx,
+          true
+        );
+        const matched = allSimilar.map((s) => s.bottle);
+        const built = buildDeterministicInventoryFromMatched({
+          matched,
+          scannedBottleRows,
+          scannedPhysicalBottles,
+          constraints,
+          hardFilters: {
+            colors: constraints.colors,
+            wantsKosher: constraints.wantsKosher,
+            storageLocationHints: constraints.storageLocationHints,
+            excludeReserved: false,
+            similarAnchorBottleId: anchorId,
+          },
+          dataGaps: {
+            unknownKosherRows: cellarBottles.filter(
+              (b) => b.isKosher === null || b.isKosher === undefined
+            ).length,
+            missingStorageLocationRows: cellarBottles.filter(
+              (b) => !b.storageLocation || !String(b.storageLocation).trim()
+            ).length,
+            reservedExcluded: 0,
+          },
+          offset: resolvedOffset,
+          language,
+          scope: 'similar_from_filter',
+        });
+        response = built.response;
+        meta = built.meta;
+      } else {
+        const built = buildDeterministicInventoryResponse({
+          cellarBottles,
+          scannedBottleRows,
+          scannedPhysicalBottles,
+          constraints,
+          offset: resolvedOffset,
+          language,
+        });
+        response = built.response;
+        meta = built.meta;
+      }
+
+      if (meta.displayedBottleRows > meta.matchedBottleRows) {
+        throw new Error('inventory_display_exceeds_match');
+      }
+      if (!meta.cellarScannedFully) {
+        throw new Error('inventory_incomplete_scan');
+      }
+
+      logSommelier('inventory', {
+        user: shortUser(userId),
+        matched: String(meta.matchedBottleRows),
+        displayed: String(meta.displayedBottleRows),
+        hasMore: meta.hasMore ? 'yes' : 'no',
+      });
+
+      return withMeta(response, {
+        routedAction: 'recommend',
+        processingMode: 'deterministic_inventory',
+        cellarAccess: meta,
+      });
+    } catch (e) {
+      logSommelierError('inventory', e, { user: shortUser(userId) });
+      return withMeta(
+        {
+          type: 'single',
+          message: m(
+            language,
+            "I couldn't complete a full cellar inventory scan for that question, so I won't guess from a partial list. Please try again in a moment.",
+            'לא הצלחתי להשלים סריקת מלאי מלאה לשאלה הזו, ולכן לא אנחש מרשימה חלקית. נסה שוב בעוד רגע.'
+          ),
+        },
+        {
+          routedAction: 'recommend',
+          actionResult: 'error',
+          processingMode: 'deterministic_action',
+        }
+      );
+    }
+  }
 
   switch (route) {
       case 'taste_confirmation': {
@@ -1057,7 +1348,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               { role: 'user', content: message },
             ],
             response_format: { type: 'json_object' },
-            temperature: 0.85,
+            ...openaiSamplingParams(0.85),
           });
 
           const content = response.choices[0]?.message?.content;
@@ -1128,7 +1419,7 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
               ...conversationHistory,
               { role: 'user', content: message },
             ],
-            temperature: 0.75,
+            ...openaiSamplingParams(0.75),
           });
 
           const content = response.choices[0]?.message?.content?.trim() ?? '';
@@ -1169,43 +1460,160 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
             { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
-        const constraints = extractConstraints(message);
-        const cap = computeEffectiveShortlistCap(cellarBottles.length);
-        const similarScored = findSimilarCandidates(
+        const similarConstraints = extractConstraints(message);
+        // Full match set for completeness; selection cap only for LLM picks.
+        const allSimilarMatches = findSimilarCandidates(
           anchor,
           cellarBottles,
-          constraints,
+          similarConstraints,
           message.toLowerCase(),
           memoryPrefs,
-          cap,
+          0,
           tasteScoreCtx,
           includeReserved
         );
-        if (similarScored.length === 0) {
+        if (allSimilarMatches.length === 0) {
           return withMeta(
             { message: m(language, "I couldn't find other bottles to compare in your cellar.", "לא מצאתי בקבוקים אחרים להשוואה במרתף שלך.") },
             { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
           );
         }
+
+        const similarDataGaps = {
+          unknownKosherRows: cellarBottles.filter(
+            (b) => b.isKosher === null || b.isKosher === undefined
+          ).length,
+          missingStorageLocationRows: cellarBottles.filter(
+            (b) => !b.storageLocation || !String(b.storageLocation).trim()
+          ).length,
+          reservedExcluded: includeReserved
+            ? 0
+            : cellarBottles.filter((b) => b.isReserved && b.id !== anchor).length,
+        };
+        const similarHardFilters = {
+          colors: similarConstraints.colors,
+          wantsKosher: similarConstraints.wantsKosher,
+          storageLocationHints: similarConstraints.storageLocationHints,
+          excludeReserved: !includeReserved,
+          similarAnchorBottleId: anchor,
+        };
+
+        // Inventory phrasing (“what else do I have like this?”) → full match list, not a shortlist.
+        if (queryMode === 'inventory') {
+          if (cellarSource !== 'server' || scannedBottleRows < 0) {
+            return withMeta(
+              {
+                message: m(
+                  language,
+                  "I couldn't complete a full cellar scan for similar bottles, so I won't guess from a partial list. Please try again.",
+                  'לא הצלחתי להשלים סריקת מרתף מלאה ליינות דומים, ולכן לא אנחש מרשימה חלקית. נסה שוב.'
+                ),
+              },
+              {
+                routedAction: 'similar',
+                actionResult: 'error',
+                processingMode: 'deterministic_action',
+              }
+            );
+          }
+          const built = buildDeterministicInventoryFromMatched({
+            matched: allSimilarMatches.map((s) => s.bottle),
+            scannedBottleRows,
+            scannedPhysicalBottles,
+            constraints: similarConstraints,
+            hardFilters: similarHardFilters,
+            dataGaps: similarDataGaps,
+            offset: 0,
+            language,
+            scope: 'similar_from_filter',
+          });
+          return withMeta(built.response, {
+            routedAction: 'similar',
+            processingMode: 'deterministic_inventory',
+            cellarAccess: built.meta,
+          });
+        }
+
+        const selectionCap = computeEffectiveShortlistCap(allSimilarMatches.length);
+        const similarScored = allSimilarMatches.slice(0, Math.max(selectionCap, 1));
+
+        const similarAccess = buildCellarAccessMeta({
+          scope: 'similar_from_filter',
+          scannedBottleRows,
+          scannedPhysicalBottles,
+          matched: allSimilarMatches.map((s) => s.bottle),
+          dataGaps: similarDataGaps,
+          hardFilters: similarHardFilters,
+          displayedBottleRows: similarScored.length,
+          selectionCap: similarScored.length,
+          hasMore: allSimilarMatches.length > similarScored.length,
+          nextOffset: allSimilarMatches.length > similarScored.length ? similarScored.length : null,
+        });
+
         try {
-          return await runLlmPathThenPersist({
+          const result = (await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
+            scannedBottleRows, scannedPhysicalBottles,
             memory: memoryPrefs, tasteContext, tasteScoreCtx, tasteMeta,
             scoredOverride: similarScored, intentOverride: 'similar_cellar',
             routedAction: 'similar', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
             anchorBottleId: anchor,
-          });
+            constraintsOverride: similarConstraints,
+          })) as Record<string, unknown>;
+
+          const agentMeta = {
+            ...((result.agentMeta as Record<string, unknown>) || {}),
+            cellarAccess: similarAccess,
+            processingMode: 'orchestrated_shortlist',
+            routedAction: 'similar',
+          };
+
+          const matchN = similarAccess.matchedBottleRows;
+          const shownN = similarScored.length;
+          const completenessNote =
+            language === 'he'
+              ? matchN > shownN
+                ? ` מצאתי ${matchN} יינות דומים במרתף; כאן ${shownN} המלצות. אפשר לבקש "הצג את כולם" לרשימה המלאה.`
+                : ` אלה כל ${matchN} היינות הדומים שמצאתי במרתף.`
+              : matchN > shownN
+                ? ` I found ${matchN} similar bottles in your cellar; showing ${shownN} picks. Say “show all of them” for the complete list.`
+                : ` These are all ${matchN} similar bottles I found in your cellar.`;
+
+          const msg = typeof result.message === 'string' ? result.message : '';
+          result.message = `${msg}${completenessNote}`.trim();
+          if (matchN > shownN && !result.followUpQuestion) {
+            result.followUpQuestion =
+              language === 'he' ? 'להציג את כל הדומים?' : 'Show all similar bottles?';
+          }
+          result.agentMeta = agentMeta;
+          result.inventory = {
+            matchedCount: matchN,
+            displayedCount: shownN,
+            hasMore: matchN > shownN,
+            cellarScannedFully: true,
+            listFullyDisplayed: matchN <= shownN,
+          };
+          return result;
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'similar' });
-          try {
-            return await legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'similar', language });
-          } catch (legacyErr) {
-            logSommelierError('fallback', legacyErr, { user: shortUser(userId) });
-            return withMeta(
-              { message: m(language, "I'm having trouble right now. Please try again in a moment.", "אני נתקל בבעיה כרגע. נסה שוב בעוד רגע.") },
-              { routedAction: 'similar', actionResult: 'error', processingMode: 'deterministic_action' }
-            );
-          }
+          // Don't leave the user with an incomplete shortlist — fall back to full similar inventory.
+          const built = buildDeterministicInventoryFromMatched({
+            matched: allSimilarMatches.map((s) => s.bottle),
+            scannedBottleRows,
+            scannedPhysicalBottles,
+            constraints: similarConstraints,
+            hardFilters: similarHardFilters,
+            dataGaps: similarDataGaps,
+            offset: 0,
+            language,
+            scope: 'similar_from_filter',
+          });
+          return withMeta(built.response, {
+            routedAction: 'similar',
+            processingMode: 'deterministic_inventory',
+            cellarAccess: built.meta,
+            actionResult: 'ok',
+          });
         }
       }
 
@@ -1224,12 +1632,37 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
         try {
           return await runLlmPathThenPersist({
             openai, userId, supabase, message, history, cellarBottles,
+            scannedBottleRows, scannedPhysicalBottles,
             memory: memoryPrefs, tasteContext, tasteScoreCtx, tasteMeta,
             routedAction: 'recommend', recentlyRecommended: recentPicks, language, extendedShortlist, includeReserved,
             anchorBottleId: actionContext?.lastRecommendationBottleId ?? actionContext?.anchorBottleId,
+            constraintsOverride: constraints,
           });
         } catch (e) {
           logSommelierError('llm', e, { user: shortUser(userId), route: 'recommend' });
+          // Inventory-shaped asks must never be answered from legacy partial shuffle
+          if (
+            resolveQueryMode(message, detectIntent(message, (history || []).length), constraints, {
+              inventoryFollowUp,
+              hasPriorHardFilters: !!priorAccess?.hardFilters,
+            }) === 'inventory'
+          ) {
+            return withMeta(
+              {
+                type: 'single',
+                message: m(
+                  language,
+                  "I couldn't complete a full cellar inventory answer, so I won't guess from a partial list. Please try again.",
+                  'לא הצלחתי להשלים תשובת מלאי מלאה, ולכן לא אנחש מרשימה חלקית. נסה שוב.'
+                ),
+              },
+              {
+                routedAction: 'recommend',
+                actionResult: 'error',
+                processingMode: 'deterministic_action',
+              }
+            );
+          }
           try {
             return await legacyFallback({ openai, message, history, cellarBottles, tasteContext, userId, routedAction: 'recommend', language });
           } catch (legacyErr) {

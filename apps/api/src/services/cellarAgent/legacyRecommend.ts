@@ -6,7 +6,7 @@
  */
 
 import OpenAI from 'openai';
-import { config } from '../../config.js';
+import { config, openaiSamplingParams } from '../../config.js';
 import { buildLegacySystemPrompt } from './prompt.js';
 import type { CellarBottleInput } from './types.js';
 import { buildLegacyCellarContextPayload } from './candidateSelection.js';
@@ -49,7 +49,7 @@ export async function runLegacyRecommendation(params: {
           { role: 'user', content: message },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.8,
+        ...openaiSamplingParams(0.8),
       });
 
       const content = response.choices[0]?.message?.content;

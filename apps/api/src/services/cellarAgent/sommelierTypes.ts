@@ -55,15 +55,6 @@ export type AgentRoute =
   | 'buy_recommendation'
   | 'taste_confirmation';
 
-export interface ActionContext {
-  lastRecommendationBottleId?: string;
-  lastEventId?: string;
-  anchorBottleId?: string;
-  /** Optional web sommelier_conversations.id for pending confirmation scope. */
-  conversationId?: string;
-}
-
-/** Optional extension on API responses — clients may ignore */
 export interface AgentResponseMeta {
   eventId?: string;
   routedAction?: AgentRoute;
@@ -73,8 +64,26 @@ export interface AgentResponseMeta {
   /**
    * How the reply was produced (observability — not for UI logic).
    * - deterministic_action: routed server action (open, memory, draft, …), no rec LLM
-   * - orchestrated_shortlist: LLM on server-ranked shortlist + validation
-   * - legacy_full_cellar: fallback LLM over full cellar (orchestrated path failed)
+   * - deterministic_inventory: full-cellar filter + server-built list (no LLM selection)
+   * - orchestrated_shortlist: LLM picks from hard-filtered then ranked selection
+   * - legacy_full_cellar: fallback LLM (should be rare; cellar still server-loaded)
    */
-  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar' | 'conversational_response';
+  processingMode?:
+    | 'deterministic_action'
+    | 'deterministic_inventory'
+    | 'orchestrated_shortlist'
+    | 'legacy_full_cellar'
+    | 'conversational_response';
+  /** Completeness / filter metadata for inventory + recommend-from-filter */
+  cellarAccess?: import('./types.js').CellarAccessMeta;
+}
+
+export interface ActionContext {
+  lastRecommendationBottleId?: string;
+  lastEventId?: string;
+  anchorBottleId?: string;
+  /** Optional web sommelier_conversations.id for pending confirmation scope. */
+  conversationId?: string;
+  /** Prior turn cellar access — retain hard filters on “show all” follow-ups. */
+  lastCellarAccess?: import('./types.js').CellarAccessMeta;
 }

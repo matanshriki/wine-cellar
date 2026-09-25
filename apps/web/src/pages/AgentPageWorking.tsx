@@ -275,11 +275,13 @@ export function AgentPageWorking() {
     if (!bottleId && lastAssistant?.bottleList?.bottles?.length) {
       bottleId = lastAssistant.bottleList.bottles[0].bottleId;
     }
-    if (!eventId && !bottleId && !resolvedConversationId) return undefined;
+    const lastCellarAccess = lastAssistant?.agentMeta?.cellarAccess;
+    if (!eventId && !bottleId && !resolvedConversationId && !lastCellarAccess) return undefined;
     return {
       lastEventId: eventId,
       lastRecommendationBottleId: bottleId,
       conversationId: resolvedConversationId,
+      lastCellarAccess,
     };
   }
 

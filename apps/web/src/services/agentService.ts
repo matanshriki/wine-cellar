@@ -22,10 +22,33 @@ export interface AgentResponseMeta {
   explanation?: unknown;
   actionResult?: 'ok' | 'error';
   /**
-   * Server pipeline: deterministic_action (open/memory/…), orchestrated_shortlist (agent+LLM),
-   * legacy_full_cellar (fallback — full cellar to model).
+   * Server pipeline: deterministic_action, deterministic_inventory,
+   * orchestrated_shortlist, legacy_full_cellar, conversational_response.
    */
-  processingMode?: 'deterministic_action' | 'orchestrated_shortlist' | 'legacy_full_cellar';
+  processingMode?:
+    | 'deterministic_action'
+    | 'deterministic_inventory'
+    | 'orchestrated_shortlist'
+    | 'legacy_full_cellar'
+    | 'conversational_response';
+  cellarAccess?: {
+    scope?: string;
+    cellarScannedFully?: boolean;
+    listFullyDisplayed?: boolean;
+    scannedBottleRows?: number;
+    matchedBottleRows?: number;
+    displayedBottleRows?: number;
+    hasMore?: boolean;
+    nextOffset?: number | null;
+    hardFilters?: {
+      colors?: string[];
+      wantsKosher?: boolean;
+      storageLocationHints?: string[];
+      excludeReserved?: boolean;
+    };
+    dataGaps?: Record<string, number | undefined>;
+    inventoryOffset?: number;
+  };
 }
 
 export interface BuySuggestion {
@@ -110,6 +133,8 @@ export interface SendAgentMessageOptions {
     anchorBottleId?: string;
     /** Phase 2B.1: scopes pending taste confirmations when present */
     conversationId?: string;
+    /** Prior cellarAccess — retain hard filters on “show all” follow-ups */
+    lastCellarAccess?: AgentResponseMeta['cellarAccess'];
   };
 }
 
@@ -179,48 +204,9 @@ function buildCellarContext(
   bottles: BottleWithWineInfo[],
   historyByWineId?: Map<string, WineHistoryInsight>
 ) {
-  // If too many bottles, keep best 60 for recommendations
-  let bottlesToInclude = bottles;
-  let summary = '';
-
-  if (bottles.length > 60) {
-    // Prefer bottles that are ready now + recent additions + any with a purchase price
-    // (so cheapest/most-expensive questions still see priced bottles)
-    const readyBottles = bottles.filter(
-      (b) => b.readiness_status === 'ready' || b.readiness_status === 'peak'
-    );
-    const pricedBottles = bottles
-      .filter((b) => b.purchase_price != null && Number.isFinite(b.purchase_price))
-      .sort((a, b) => (a.purchase_price ?? 0) - (b.purchase_price ?? 0));
-    const recentBottles = [...bottles]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 30);
-
-    // Combine and dedupe — priced bottles first so price questions stay accurate
-    const combined = [...pricedBottles, ...readyBottles, ...recentBottles];
-    const unique = Array.from(new Set(combined.map((b) => b.id))).map((id) =>
-      combined.find((b) => b.id === id)!
-    );
-
-    bottlesToInclude = unique.slice(0, 60);
-
-    // Build summary
-    const colorCounts = countByProperty(bottles, (b) => b.wine.color);
-    const regionCounts = countByProperty(bottles, (b) => b.wine.region || 'Unknown');
-    const vintages = bottles
-      .map((b) => b.wine.vintage)
-      .filter((v): v is number => v !== null)
-      .sort();
-    const minVintage = vintages[0];
-    const maxVintage = vintages[vintages.length - 1];
-
-    // Calculate total physical bottles (sum of quantities, not just entries)
-    const totalPhysicalBottles = bottles.reduce((sum, b) => sum + b.quantity, 0);
-    
-    summary = `Total cellar: ${totalPhysicalBottles} bottles. Colors: ${formatCounts(colorCounts)}. Regions: ${formatCounts(regionCounts, 5)}. Vintages: ${minVintage}-${maxVintage}.`;
-  }
-
-  // Calculate total physical bottles (sum of quantities, not just entries)
+  // Full in-stock list — server is source of truth; do not truncate.
+  // History fields are merged server-side onto the authenticated cellar load.
+  const bottlesToInclude = bottles;
   const totalPhysicalBottles = bottles.reduce((sum, b) => sum + b.quantity, 0);
 
   return {
@@ -284,6 +270,10 @@ function buildCellarContext(
           purchasePriceCurrency: (b as { purchase_price_currency?: string | null })
             .purchase_price_currency as string,
         }),
+        ...(b.storage_location != null &&
+          String(b.storage_location).trim() !== '' && {
+            storageLocation: b.storage_location,
+          }),
 
         // Vivino data for additional context
         vivinoRating: b.wine.vivino_rating,
@@ -295,34 +285,9 @@ function buildCellarContext(
         ...historyFields,
       };
     }),
-    summary: summary || undefined,
+    summary: undefined,
     totalBottles: totalPhysicalBottles,
   };
-}
-
-/**
- * Helper: Count by property
- */
-function countByProperty<T>(
-  items: T[],
-  keyFn: (item: T) => string
-): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const item of items) {
-    const key = keyFn(item);
-    counts[key] = (counts[key] || 0) + 1;
-  }
-  return counts;
-}
-
-/**
- * Helper: Format counts for summary
- */
-function formatCounts(counts: Record<string, number>, limit = 3): string {
-  const entries = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit);
-  return entries.map(([key, count]) => `${key} (${count})`).join(', ');
 }
 
 /**

@@ -66,6 +66,8 @@ export interface CellarBottleInput {
   isKosher?: boolean | null;
   /** Confidence tier: 'high' | 'med' | 'low' */
   kosherConfidence?: string | null;
+  /** Free-text storage from bottles.storage_location (e.g. fridge, cellar). */
+  storageLocation?: string | null;
 }
 
 /** Deterministic extraction output used for shortlisting and prompt context. */
@@ -85,7 +87,60 @@ export interface ExtractedConstraints {
    * order them cheapest-first or most-expensive-first.
    */
   priceSort: 'cheapest' | 'most_expensive' | null;
+  /**
+   * true = user asked for kosher-only (use wines.is_kosher === true).
+   * null/false = no kosher hard filter.
+   */
+  wantsKosher: boolean;
+  /** Normalized storage hints (fridge, cellar, מקרר, …). */
+  storageLocationHints: string[];
 }
+
+/** How the cellar was accessed for this turn (client-safe observability). */
+export type CellarAccessScope =
+  | 'filtered_full'
+  | 'recommend_from_filter'
+  | 'similar_from_filter'
+  | 'anchor_only'
+  | 'summary_only';
+
+export interface HardFilterSnapshot {
+  colors: string[];
+  wantsKosher: boolean;
+  storageLocationHints: string[];
+  excludeReserved: boolean;
+  /** When set, inventory “show all” expands similar-to-anchor matches */
+  similarAnchorBottleId?: string;
+}
+
+export interface CellarAccessMeta {
+  scope: CellarAccessScope;
+  /** True when server loaded/scanned every in-stock row (not a client 60-cap). */
+  cellarScannedFully: boolean;
+  /** True when every matched row is present in this response page. */
+  listFullyDisplayed: boolean;
+  /** Legacy alias — always false when cellarScannedFully on inventory paths. */
+  truncated: boolean;
+  scannedBottleRows: number;
+  scannedPhysicalBottles: number;
+  matchedBottleRows: number;
+  matchedPhysicalBottles: number;
+  displayedBottleRows: number;
+  hardFilters: HardFilterSnapshot;
+  dataGaps: {
+    unknownKosherRows: number;
+    unknownKosherAmongFilteredColor?: number;
+    missingStorageLocationRows: number;
+    reservedExcluded: number;
+  };
+  selectionCap?: number;
+  inventoryOffset?: number;
+  hasMore?: boolean;
+  nextOffset?: number | null;
+}
+
+/** inventory = deterministic full-filter list; recommend = filter then rank picks */
+export type CellarQueryMode = 'inventory' | 'recommend' | 'conversational' | 'other';
 
 /** Compact bottle row sent to the LLM (token-safe). */
 export interface CompactCellarBottle {
@@ -114,6 +169,9 @@ export interface CompactCellarBottle {
   /** Kosher status from DB enrichment pipeline. null = unknown. */
   isKosher?: boolean | null;
   kosherConfidence?: string | null;
+  storageLocation?: string | null;
+  isReserved?: boolean;
+  reservedFor?: string;
 }
 
 export interface CellarContextBuildResult {
@@ -179,6 +237,11 @@ export interface BottleListBottle {
   serveTempC?: number | null;
   decantMinutes?: number | null;
   shortWhy?: string;
+  isReserved?: boolean;
+  reservedFor?: string;
+  isKosher?: boolean | null;
+  storageLocation?: string | null;
+  quantity?: number;
 }
 
 export interface BottleListResponse {

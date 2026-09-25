@@ -16,7 +16,16 @@ const MULTI_PATTERNS =
   /\b(top|best|pick|give|show|need|want)\s+(\d{1,2})\b|\b(\d{1,2})\s+(bottles|wines|recommendations|picks|options)\b|\b(several|few|multiple|many)\s+(bottles|wines|recommendations|options|picks)\b/i;
 
 const BROWSE_PATTERNS =
-  /\b(what\s+do\s+i\s+have|what'?s\s+in\s+my\s+cellar|show\s+my\s+cellar|browse|inventory|collection)\b/i;
+  /\b(what\s+do\s+i\s+have|what\s+(?:\w+\s+){1,4}do\s+i\s+have|what'?s\s+in\s+my\s+(cellar|fridge|collection)|show\s+(me\s+)?(all\s+)?(my\s+)?|list\s+(all\s+)?(my\s+)?|browse|inventory|collection|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i;
+
+const BROWSE_PATTERNS_HE =
+  /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|הצג\s+(את\s+)?(כל\s+)?|תראה\s+(לי\s+)?(את\s+)?(כל\s+)?|רשימת|כל\s+ה(כשרים|אדומים|לבנים)|מה\s+במקרר|מה\s+יש\s+במקרר)/;
+
+const SHOW_ALL_FOLLOWUP =
+  /\b(show\s+(me\s+)?(all\s+of\s+them|the\s+rest|them\s+all|more)|list\s+them\s+all|the\s+full\s+list|see\s+(them\s+)?all|next\s+page|show\s+the\s+rest)\b/i;
+
+const SHOW_ALL_FOLLOWUP_HE =
+  /(הצג\s+(את\s+)?(כולם|השאר|ההמשך)|תראה\s+(לי\s+)?(את\s+)?(כולם|השאר)|את\s+כולם|את\s+כל\s+אלה|המשך\s+הרשימה|עמוד\s+הבא|אלה\s+כל\s+ה|האם\s+אלה\s+כל)/;
 
 const FOOD_HINT =
   /\b(pair(ing|ed)?|with\s+(the\s+)?(steak|fish|salmon|chicken|pasta|cheese|sushi|bbq|lamb|beef|pork|duck)|dinner\s+with|for\s+(the\s+)?(steak|fish|salmon|chicken|pasta|cheese|sushi|bbq|lamb|beef|pork|duck)|steak|fish|salmon|chicken|pasta|cheese|dessert|sushi|bbq|grill|roast|curry|spicy|cream|tomato|lamb|beef|seafood)\b/i;
@@ -27,11 +36,77 @@ function normalizeMessage(s: string): string {
 
 export function detectIntent(message: string, historyLen: number): CellarIntent {
   const m = normalizeMessage(message);
-  if (BROWSE_PATTERNS.test(m)) return 'browse_cellar';
+  if (BROWSE_PATTERNS.test(m) || BROWSE_PATTERNS_HE.test(message)) return 'browse_cellar';
   if (MULTI_PATTERNS.test(m)) return 'multi_recommendation';
   if (FOOD_HINT.test(m)) return 'pairing';
   if (m.split(/\s+/).length <= 2 && historyLen === 0) return 'general';
   return 'single_recommendation';
+}
+
+/** User wants the full matching list / next page (retain prior filters). */
+export function detectsInventoryFollowUp(message: string): boolean {
+  return SHOW_ALL_FOLLOWUP.test(message) || SHOW_ALL_FOLLOWUP_HE.test(message);
+}
+
+export function detectsWantsKosher(message: string): boolean {
+  if (/\bkosher\b/i.test(message)) return true;
+  if (/כשר/.test(message)) return true;
+  return false;
+}
+
+export function extractStorageLocationHints(message: string): string[] {
+  const hints: string[] = [];
+  const m = normalizeMessage(message);
+  if (/\b(fridge|refrigerator|fridge\s+door)\b/.test(m)) hints.push('fridge');
+  if (/\b(cellar|wine\s+fridge|wine\s+cooler)\b/.test(m)) {
+    // "wine fridge" is still fridge-like storage; keep both tokens
+    if (/\bwine\s+(fridge|cooler)\b/.test(m)) hints.push('fridge');
+    else hints.push('cellar');
+  }
+  if (/מקרר/.test(message)) hints.push('fridge');
+  if (/מרתף/.test(message) && !/מקרר/.test(message)) hints.push('cellar');
+  return [...new Set(hints)];
+}
+
+/**
+ * Inventory mode: list/count from full cellar (deterministic).
+ * Recommend mode: hard-filter then rank picks.
+ */
+export function resolveQueryMode(
+  message: string,
+  intent: CellarIntent,
+  constraints: ExtractedConstraints,
+  opts?: {
+    inventoryFollowUp?: boolean;
+    hasPriorHardFilters?: boolean;
+  }
+): 'inventory' | 'recommend' {
+  if (opts?.inventoryFollowUp && opts.hasPriorHardFilters) return 'inventory';
+  if (intent === 'browse_cellar') return 'inventory';
+  if (detectsInventoryFollowUp(message)) return 'inventory';
+
+  // Explicit list/show-all with hard attribute → inventory
+  const listy =
+    /\b(list|show\s+(me\s+)?all|what\s+(?:\w+\s+){1,4}do\s+i\s+have|which\s+(?:\w+\s+){0,3}do\s+i\s+have)\b/i.test(
+      message
+    ) ||
+    /(מה\s+יש\s+לי|איזה\s+.+\s+יש\s+לי|הצג\s+את\s+כל|כל\s+הכשרים)/.test(message);
+
+  const hasHard =
+    constraints.wantsKosher ||
+    constraints.storageLocationHints.length > 0 ||
+    constraints.colors.length > 0;
+
+  if (listy && hasHard) return 'inventory';
+  if (constraints.storageLocationHints.length > 0 && listy) return 'inventory';
+  if (
+    constraints.storageLocationHints.length > 0 &&
+    (/\bwhat'?s\s+in\b/i.test(message) || /מה\s+(יש\s+)?במקרר/.test(message))
+  ) {
+    return 'inventory';
+  }
+
+  return 'recommend';
 }
 
 function parseRequestedCount(message: string): number | null {
@@ -223,6 +298,28 @@ export function extractConstraints(message: string): ExtractedConstraints {
     wantsSparkling: /\b(sparkling|champagne|bubbles?|cr[eé]mant)\b/i.test(m),
     wantsChampagne: /\bchampagne\b/i.test(m),
     priceSort: detectPriceSortIntent(message),
+    wantsKosher: detectsWantsKosher(message),
+    storageLocationHints: extractStorageLocationHints(message),
+  };
+}
+
+/** Merge prior hard filters when follow-up is “show all / show the rest”. */
+export function mergeConstraintsWithPrior(
+  current: ExtractedConstraints,
+  prior: Partial<{
+    colors: string[];
+    wantsKosher: boolean;
+    storageLocationHints: string[];
+  }> | null | undefined
+): ExtractedConstraints {
+  if (!prior) return current;
+  return {
+    ...current,
+    colors: current.colors.length ? current.colors : prior.colors ?? [],
+    wantsKosher: current.wantsKosher || prior.wantsKosher === true,
+    storageLocationHints: current.storageLocationHints.length
+      ? current.storageLocationHints
+      : prior.storageLocationHints ?? [],
   };
 }
 
@@ -343,8 +440,14 @@ export function buildReasoningContext(
       'Price ask: most expensive — use purchasePrice on bottles that have it; do not invent prices for unpriced bottles'
     );
   }
+  if (constraints.wantsKosher) {
+    parts.push('Hard filter: kosher only (isKosher === true); null/unknown is not kosher');
+  }
+  if (constraints.storageLocationHints.length) {
+    parts.push(`Hard filter: storage ${constraints.storageLocationHints.join(', ')}`);
+  }
   if (shortlistRegions.length) {
-    parts.push(`Shortlist regions (sample): ${shortlistRegions.slice(0, 6).join(', ')}`);
+    parts.push(`Selection regions (sample): ${shortlistRegions.slice(0, 6).join(', ')}`);
   }
   if (relaxedColorFilter) {
     parts.push(

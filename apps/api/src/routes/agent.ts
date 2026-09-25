@@ -13,10 +13,15 @@ import OpenAI from 'openai';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { recommendCellar } from '../services/cellarAgent/orchestrator.js';
+import {
+  loadInStockCellar,
+  mergeClientHistoryOntoCellar,
+} from '../services/cellarAgent/cellarInventoryRepo.js';
 import { saveSommelierFeedback } from '../services/cellarAgent/sommelierActions.js';
 import { updateRecommendationOutcome } from '../services/cellarAgent/sommelierRepo.js';
 import type { RecommendationOutcome } from '../services/cellarAgent/sommelierTypes.js';
 import { processAiCreditUsage, checkCreditBalance } from '../services/creditService.js';
+import type { CellarBottleInput } from '../services/cellarAgent/types.js';
 
 export const agentRouter = Router();
 
@@ -211,10 +216,6 @@ agentRouter.post(
         return res.status(400).json({ error: 'Message is required' });
       }
 
-      if (!cellarContext || !cellarContext.bottles || cellarContext.bottles.length === 0) {
-        return res.status(400).json({ error: 'Cellar context is required' });
-      }
-
       // ── Credit pre-flight check (fast-fail when enforcement is enabled) ──
       // During dark launch enforcement is OFF for all users → always passes.
       // When Stage 3 begins (credit_enforcement_enabled = true), this gate
@@ -240,12 +241,43 @@ agentRouter.post(
         });
       }
 
+      const userSupabase = createUserSupabase(req);
+      if (!userSupabase) {
+        return res.status(500).json({ error: 'Unable to access cellar with your session' });
+      }
+
+      let loaded;
+      try {
+        loaded = await loadInStockCellar(req.userId!, userSupabase);
+      } catch (loadErr: unknown) {
+        const msg = loadErr instanceof Error ? loadErr.message : 'unknown';
+        console.error(
+          '[Sommelier]',
+          JSON.stringify({ phase: 'cellar_load', error: msg, user: req.userId?.slice(0, 8) })
+        );
+        return res.status(500).json({
+          error: 'Failed to load your full cellar. Please try again.',
+        });
+      }
+
+      const clientBottles = Array.isArray(cellarContext?.bottles)
+        ? (cellarContext.bottles as CellarBottleInput[])
+        : undefined;
+      const cellarBottles = mergeClientHistoryOntoCellar(loaded.bottles, clientBottles);
+
+      if (cellarBottles.length === 0) {
+        return res.status(400).json({ error: 'Cellar is empty' });
+      }
+
       console.log(
         '[Sommelier]',
         JSON.stringify({
           phase: 'recommend_http',
           user: req.userId?.slice(0, 8),
-          cellarEntries: cellarContext.bottles.length,
+          cellarSource: 'server',
+          scannedBottleRows: loaded.scannedBottleRows,
+          scannedPhysicalBottles: loaded.scannedPhysicalBottles,
+          clientPayloadRows: clientBottles?.length ?? 0,
           msgLen: message.length,
           hasTasteContext: !!tasteContext,
           hasActionContext: !!actionContext,
@@ -258,7 +290,7 @@ agentRouter.post(
           category: 'ai',
           data: {
             user_id: req.userId,
-            cellar_size: cellarContext.bottles.length,
+            cellar_size: loaded.scannedBottleRows,
             language: typeof language === 'string' ? language : 'en',
             provider: 'openai',
           },
@@ -266,15 +298,16 @@ agentRouter.post(
         });
       }
 
-      const userSupabase = createUserSupabase(req);
-
       const recommendation = await recommendCellar({
         openai,
         userId: req.userId!,
         supabase: userSupabase,
         message,
         history: history || [],
-        cellarBottles: cellarContext.bottles,
+        cellarBottles,
+        scannedBottleRows: loaded.scannedBottleRows,
+        scannedPhysicalBottles: loaded.scannedPhysicalBottles,
+        cellarSource: 'server',
         tasteContext: typeof tasteContext === 'string' ? tasteContext : undefined,
         actionContext:
           actionContext && typeof actionContext === 'object' ? actionContext : undefined,
@@ -310,7 +343,8 @@ agentRouter.post(
         metadata: {
           processingMode: meta?.processingMode ?? null,
           routedAction:   meta?.routedAction ?? null,
-          cellarEntries:  cellarContext.bottles.length,
+          cellarEntries:  loaded.scannedBottleRows,
+          cellarSource:   'server',
           durationMs:     duration,
         },
       });

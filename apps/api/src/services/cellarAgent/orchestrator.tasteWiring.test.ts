@@ -210,6 +210,9 @@ describe('recommendCellar taste shortlist wiring', () => {
         { role: 'assistant', content: 'Hi — what are you eating?' },
       ],
       cellarBottles: bottles,
+      scannedBottleRows: bottles.length,
+      scannedPhysicalBottles: bottles.length,
+      cellarSource: 'server' as const,
       tasteContext: 'prose should not drive scoring',
       actionContext: params.actionContext,
       language: 'en',
@@ -310,6 +313,9 @@ describe('recommendCellar taste shortlist wiring', () => {
       message: 'What else do I have like this?',
       history: [],
       cellarBottles: bottles,
+      scannedBottleRows: bottles.length,
+      scannedPhysicalBottles: bottles.length,
+      cellarSource: 'server' as const,
       actionContext: { lastRecommendationBottleId: 'burgundy-pinot' },
       language: 'en',
     })) as {
@@ -327,6 +333,9 @@ describe('recommendCellar taste shortlist wiring', () => {
       message: 'What else do I have like this? Please include reserved bottles',
       history: [],
       cellarBottles: bottles,
+      scannedBottleRows: bottles.length,
+      scannedPhysicalBottles: bottles.length,
+      cellarSource: 'server' as const,
       actionContext: { lastRecommendationBottleId: 'burgundy-pinot' },
       language: 'en',
     })) as {
@@ -352,6 +361,9 @@ describe('recommendCellar taste shortlist wiring', () => {
         { role: 'assistant', content: 'Hi' },
       ],
       cellarBottles: bottles,
+      scannedBottleRows: bottles.length,
+      scannedPhysicalBottles: bottles.length,
+      cellarSource: 'server' as const,
       language: 'en',
     })) as { recommendation?: { bottleId?: string }; agentMeta?: { processingMode?: string } };
 

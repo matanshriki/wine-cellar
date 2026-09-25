@@ -47,7 +47,12 @@ function similarityToAnchor(a: CellarBottleInput, b: CellarBottleInput): number 
 /**
  * Rank bottles by similarity to anchor, excluding anchor id, then blend with global heuristic score.
  * Reserved (Keep) bottles are excluded by default — pass includeReserved=true when the user asks.
+ *
+ * When `cap` is omitted or <= 0, returns the full ranked list (for inventory counts / show-all).
+ * A bottle is a “match” when similarityToAnchor >= MIN_SIMILARITY_MATCH (shared signal).
  */
+export const MIN_SIMILARITY_MATCH = 15;
+
 export function findSimilarCandidates(
   anchorId: string,
   bottles: CellarBottleInput[],
@@ -56,7 +61,8 @@ export function findSimilarCandidates(
   memory: SommelierPreferenceMemory | null,
   cap: number,
   tasteCtx?: TasteScoreContext | null,
-  includeReserved = false
+  includeReserved = false,
+  options?: { matchesOnly?: boolean }
 ): ScoredCandidate[] {
   const anchor = bottles.find((b) => b.id === anchorId);
   if (!anchor) return [];
@@ -68,7 +74,7 @@ export function findSimilarCandidates(
     return true;
   });
 
-  const scored: ScoredCandidate[] = others.map((bottle) => {
+  let scored: ScoredCandidate[] = others.map((bottle) => {
     const sim = similarityToAnchor(anchor, bottle);
     const { score: hScore, features } = scoreBottleHeuristically(
       bottle,
@@ -79,9 +85,23 @@ export function findSimilarCandidates(
       tasteCtx ?? null
     );
     const score = sim * 1.2 + hScore;
-    return { bottle, score, features: [...features, `similarity:${Math.round(sim)}`] };
+    return {
+      bottle,
+      score,
+      features: [...features, `similarity:${Math.round(sim)}`],
+    };
   });
 
   scored.sort((a, b) => b.score - a.score);
+
+  if (options?.matchesOnly !== false) {
+    scored = scored.filter((s) => {
+      const simFeature = s.features.find((f) => f.startsWith('similarity:'));
+      const sim = simFeature ? parseInt(simFeature.split(':')[1] || '0', 10) : 0;
+      return sim >= MIN_SIMILARITY_MATCH;
+    });
+  }
+
+  if (cap <= 0) return scored;
   return scored.slice(0, cap);
 }

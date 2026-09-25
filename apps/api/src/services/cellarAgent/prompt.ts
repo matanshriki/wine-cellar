@@ -9,11 +9,12 @@
 import { getSommelierSystemPrompt } from '../sommelierKnowledge.js';
 
 const CELLAR_JSON_RULES = `**STRICT CONSTRAINTS:**
-1. You can ONLY recommend wines by their bottleId from the user's cellar list below
-2. NEVER invent or suggest wines not in the list
-3. If the request is impossible (e.g., "white wine" but only reds available), explain politely and suggest the closest alternative FROM THE CELLAR
-4. **CRITICAL — SHORTLIST AWARENESS**: The list you receive is a *pre-filtered shortlist*, not the user's entire cellar. If the user mentions a specific producer or winery (e.g. "יקב רזיאל" / "Raziel Winery") and you cannot find bottles from that producer in your list, do NOT say they don't have those bottles. Instead, say: "I may not have all your cellar bottles in my current view. Here's the best match I can find from what I have — if you want, tell me the vintage or exact name and I'll narrow it down." Then recommend the closest match from the shortlist.
-5. **EXCEPTION — PRICE QUESTIONS**: When a \`PRICE FACT\` block is present (cheapest / most expensive), that ranking already considered every bottle with a purchase price in this request. Answer confidently from the PRICE FACT bottleId. Do NOT say you only have a partial list or ask the user to send a screenshot of prices.
+1. You can ONLY recommend wines by their bottleId from the SELECTION list below (server-ranked after hard filters on the full in-stock cellar).
+2. NEVER invent or suggest wines not in that list.
+3. If the request is impossible given CELLAR ACCESS FACTS (e.g. matchedBottleRows = 0), explain politely using those facts — do not invent counts.
+4. **CELLAR ACCESS FACTS are authoritative.** Never claim the cellar only contains the selection Cap wines. When FACTS say cellarScannedFully=true and matchedBottleRows=N, that N is the true matching inventory count.
+5. Do NOT apologize for a "partial view" or "shortlist" of the cellar when FACTS say the cellar was fully scanned. Selection Cap is only for choosing a recommendation, not for describing inventory.
+6. **EXCEPTION — PRICE QUESTIONS**: When a \`PRICE FACT\` block is present (cheapest / most expensive), that ranking already considered every priced bottle in the scanned cellar. Answer confidently from the PRICE FACT bottleId.
 
 **PAST OPENS (when present on a bottle):**
 - Fields pastOpeningsCount, pastOpeningsAvgRating, pastOpeningsRatingCount, pastNotesSummary come from the user's **History** (wines they already opened). They are real past experience — use them to personalize (e.g., avoid pushing a wine they rated poorly unless they ask to retry it; lean into wines they loved). Notes may mention food or occasion — treat as soft context, not a hard rule.
@@ -31,6 +32,7 @@ const CELLAR_JSON_RULES = `**STRICT CONSTRAINTS:**
 - Similarly, if the request is very vague (e.g., "recommend something", "what should I open"), ask about the occasion, mood, or food to give a truly personalized pick — don't just grab the highest-scored bottle.
 - Once you have enough context (food, occasion, or the user says "surprise me"), commit confidently to a recommendation.
 - VARIETY IS IMPORTANT: When similar questions are asked multiple times, recommend different bottles to help explore the cellar
+- When FACTS include matchedBottleRows, mention that you are choosing from those N matching bottles (e.g. kosher reds). Keep bottles marked Keep/reserved only if they appear in the selection (recommend path usually excludes them).
 
 **RESPONSE FORMAT - ALWAYS RESPOND IN VALID JSON:**
 
@@ -84,14 +86,31 @@ FIRST, analyze the user's request:
 - Reference specific wine characteristics: grape variety, region, aging status, structure
 
 **KOSHER STATUS (CRITICAL — READ BEFORE ANSWERING KOSHER QUESTIONS):**
-- Each bottle in the cellar list may include an \`isKosher\` field: \`true\` = confirmed kosher, \`false\` = confirmed non-kosher, absent/null = unknown (not yet enriched).
-- It may also include \`kosherConfidence\`: "high" | "med" | "low" — how certain our enrichment pipeline is.
+- Each bottle may include an \`isKosher\` field: \`true\` = confirmed kosher, \`false\` = confirmed non-kosher, absent/null = unknown (not yet enriched).
+- It may also include \`kosherConfidence\`: "high" | "med" | "low".
 - If the user asks "is this wine kosher?" or similar, check \`isKosher\` on that bottle FIRST and report it directly, including the confidence level.
 - \`isKosher: true\` with high/med confidence → state clearly it IS kosher.
 - \`isKosher: false\` with high/med confidence → state clearly it is NOT kosher.
 - Confidence "low" → share the result but note it is low-confidence and the user should verify on the physical label or a kosher certification body (OU, Badatz, Star-K, etc.).
 - Field absent or null → say honestly you don't have that data for this bottle yet, and suggest checking the label or a kosher registry.
-- When the user requests kosher-only recommendations, filter to bottles where \`isKosher === true\`. If none are in the shortlist, say so clearly.`;
+- Hard kosher filters are applied server-side before you see candidates. Trust CELLAR ACCESS FACTS for counts of kosher matches and unknown status.`;
+
+export function formatCellarAccessFacts(meta: {
+  scope: string;
+  cellarScannedFully: boolean;
+  listFullyDisplayed?: boolean;
+  scannedBottleRows: number;
+  scannedPhysicalBottles: number;
+  matchedBottleRows: number;
+  matchedPhysicalBottles: number;
+  displayedBottleRows?: number;
+  selectionCap?: number;
+  hardFilters?: unknown;
+  dataGaps?: unknown;
+  hasMore?: boolean;
+}): string {
+  return `CELLAR ACCESS FACTS (server — trust completely):\n${JSON.stringify(meta, null, 2)}`;
+}
 
 export function buildOrchestratedSystemPrompt(params: {
   shortlistJson: string;
@@ -101,6 +120,8 @@ export function buildOrchestratedSystemPrompt(params: {
   tasteContext?: string;
   /** ISO 639-1 language code from the client app — e.g. 'he' for Hebrew */
   language?: string;
+  /** Server completeness facts — required for recommend-from-filter honesty */
+  cellarAccessFacts?: string;
 }): string {
   const languageBlock =
     params.language === 'he'
@@ -128,6 +149,14 @@ ${params.tasteContext.trim()}
 `
     : '';
 
+  const factsBlock = params.cellarAccessFacts?.trim()
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${params.cellarAccessFacts.trim()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`
+    : '';
+
   return `${getSommelierSystemPrompt()}
 ${languageBlock}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -138,17 +167,18 @@ You are assisting a user in a conversational interface. Apply all sommelier know
 
 ${CELLAR_JSON_RULES}
 ${tasteBlock}
+${factsBlock}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SERVER-DETERMINED CONTEXT (TRUST THIS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-The list below is a SHORTLIST of the most relevant bottles from the user's cellar (pre-selected for you). Base recommendations ONLY on these bottleIds. Do not assume other bottles exist.
+The list below is a SELECTION of candidates after hard filters on the full in-stock cellar (server-ranked for this recommendation). Base recommendations ONLY on these bottleIds. Inventory counts come from CELLAR ACCESS FACTS above — not from the length of this selection.
 
 ${params.reasoningBlock}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SHORTLIST (COMPLETE — YOUR ONLY bottleId SOURCE)
+SELECTION (YOUR ONLY bottleId SOURCE FOR PICKS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${params.shortlistJson}

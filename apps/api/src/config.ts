@@ -112,3 +112,12 @@ console.log('[Config] Paddle Price IDs:', [
 ].every(Boolean) ? 'ALL SET ✓' : 'SOME MISSING ✗');
 console.log('[Config] Meta Pixel (CAPI):', config.metaPixelId && config.metaConversionsApiAccessToken ? 'CONFIGURED ✓' : 'NOT SET (optional) ✗');
 
+/** gpt-5* only accepts the default temperature; omit custom values for those models. */
+export function openaiSamplingParams(temperature: number): { temperature?: number } {
+  const model = (config.openaiModel || '').toLowerCase();
+  if (model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return {};
+  }
+  return { temperature };
+}
+

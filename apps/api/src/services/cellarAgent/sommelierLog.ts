@@ -13,7 +13,8 @@ export type SommelierLogPhase =
   | 'fallback'
   | 'persist'
   | 'action'
-  | 'taste_preference_extract';
+  | 'taste_preference_extract'
+  | 'inventory';
 
 function shortUser(userId: string | undefined): string {
   if (!userId) return '—';

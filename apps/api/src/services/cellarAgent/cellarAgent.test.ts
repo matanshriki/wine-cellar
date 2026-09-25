@@ -151,14 +151,14 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
   it('gives big boost when producer name appears in user message (Latin)', () => {
     const { score: scoreWithMention } = scoreBottleHeuristically(
       base,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null, wantsKosher: false, storageLocationHints: [] },
       'i want to open the raziel reserve tonight',
       null,
       null
     );
     const { score: scoreWithout } = scoreBottleHeuristically(
       base,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null, wantsKosher: false, storageLocationHints: [] },
       'i want something nice tonight',
       null,
       null
@@ -174,13 +174,13 @@ describe('scoreBottleHeuristically — explicit producer mention boost', () => {
     };
     const { score: withHe, features: featuresWithHe } = scoreBottleHeuristically(
       bottleWithHe,
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null, wantsKosher: false, storageLocationHints: [] },
       'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
       null, null
     );
     const { score: withoutHe } = scoreBottleHeuristically(
       base, // no producerHe
-      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null },
+      { requestedCount: null, colors: [], regionHints: [], grapeHints: [], foodKeywords: [], occasionKeywords: [], wantsSparkling: false, wantsChampagne: false, priceSort: null, wantsKosher: false, storageLocationHints: [] },
       'מגניב. מחר בערב יש חג פסח, חשבתי לפתוח את אחד מהאדומים (של יקב רזיאל)',
       null, null
     );

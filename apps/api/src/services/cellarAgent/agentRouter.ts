@@ -4,7 +4,7 @@
  */
 
 import type { ActionContext, AgentRoute } from './sommelierTypes.js';
-import { detectPriceSortIntent } from './tools.js';
+import { detectPriceSortIntent, detectsInventoryFollowUp } from './tools.js';
 
 const UUID_RE =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
@@ -125,7 +125,7 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
     /(what\s+else\s+(do\s+i\s+)?have|similar\s+(wines?|bottles?)|more\s+like\s+this|something\s+like\s+that|others\s+like\s+this)/i.test(
       lower
     ) ||
-    /(מה\s+עוד\s+יש|עוד\s+כמו|דומה\s+לזה|משהו\s+דומה|בדומה\s+ל|עוד\s+בקבוקים\s+כמו|עוד\s+יינות\s+כמו|דומה\s+ל)/u.test(
+    /(מה\s+עוד\s+יש|עוד\s+כמו|דומה\s+לזה|משהו\s+דומה|בדומה\s+ל|עוד\s+בקבוקים\s+כמו|עוד\s+יינות\s+כמו|דומה\s+ל|איזה\s+עוד\s+יינות|יינות\s+כאלה|עוד\s+כאלה)/u.test(
       t
     )
   ) {
@@ -171,6 +171,14 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
 
   if (BUY_INTENT_EN.test(lower) || BUY_INTENT_HE.test(t)) {
     return 'buy_recommendation';
+  }
+
+  // Inventory follow-ups (“show all / show the rest”) must re-scan the cellar — never anchor-only.
+  if (
+    detectsInventoryFollowUp(t) &&
+    (ctx?.lastCellarAccess?.hardFilters || ctx?.lastCellarAccess?.matchedBottleRows != null)
+  ) {
+    return 'recommend';
   }
 
   // Explicit aging / readiness questions about the current wine — always conversational

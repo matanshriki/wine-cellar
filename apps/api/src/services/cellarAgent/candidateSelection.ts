@@ -82,6 +82,12 @@ function compactOne(b: CellarBottleInput): CompactCellarBottle {
     // Kosher status — always forward even when null so the LLM knows it's unknown
     ...(b.isKosher !== undefined && { isKosher: b.isKosher }),
     ...(b.kosherConfidence != null && { kosherConfidence: b.kosherConfidence }),
+    ...(b.storageLocation != null &&
+      String(b.storageLocation).trim() !== '' && {
+        storageLocation: b.storageLocation,
+      }),
+    ...(b.isReserved && { isReserved: true }),
+    ...(b.reservedFor && { reservedFor: b.reservedFor }),
   };
 }
 
@@ -159,7 +165,7 @@ export function buildPurchasePriceFact(
     `is bottleId="${winner.id}" — ${winner.producer || ''} ${winner.wineName || ''} ` +
     `@ ${winner.purchasePrice} ${cur} (~$${usd.toFixed(2)} USD normalized). ` +
     `Recommend exactly this bottleId for a ${priceSort} ask. ` +
-    `Do NOT hedge about an incomplete shortlist for this price ranking — this fact covers all priced bottles in context.`
+    `Do NOT hedge about an incomplete cellar for this price ranking — this fact covers all priced bottles scanned server-side in this request.`
   );
 }
 
