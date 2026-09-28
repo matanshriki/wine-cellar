@@ -14,9 +14,6 @@ import { WineLoader } from '../components/WineLoader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
 // import { ThemeToggle } from '../components/ThemeToggle'; // Dark mode disabled
-import { AdminWineProfileBackfill } from '../components/AdminWineProfileBackfill';
-import { AdminReadinessBackfill } from '../components/AdminReadinessBackfill';
-import { AdminImageBackfill } from '../components/AdminImageBackfill';
 import { TasteProfileCard } from '../components/TasteProfileCard';
 import { SommiMemoryCard } from '../components/SommiMemoryCard';
 import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
@@ -410,11 +407,6 @@ export function ProfilePage() {
           )}
         </div>
       )}
-
-      {/* Admin Tools */}
-      <AdminWineProfileBackfill />
-      <AdminReadinessBackfill />
-      <AdminImageBackfill />
     </div>
   );
 }
