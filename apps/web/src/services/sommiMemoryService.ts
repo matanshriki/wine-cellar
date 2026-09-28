@@ -3,7 +3,11 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { PublicSommiMemory } from './sommiMemoryView';
+import type { TasteProfile } from '../types/supabase';
+import {
+  extractPublicSommiMemory,
+  type PublicSommiMemory,
+} from './sommiMemoryView';
 import { shouldRetainOperationIdAfterFailure } from './sommiMemoryOperation';
 
 export type {
@@ -35,9 +39,60 @@ export type SommiMemoryMutation =
     }
   | { type: 'clear_body'; from: 'light' | 'medium' | 'full' };
 
-export async function fetchSommiMemory(
+export type SommiMemoryLoadSource = 'api' | 'taste_profile_fallback';
+
+export type SommiMemoryLoadResult = {
+  memory: PublicSommiMemory;
+  source: SommiMemoryLoadSource;
+  /** True when wine experiences could not be loaded (API GET failed). */
+  winesUnavailable: boolean;
+};
+
+function emptyPublicMemory(): PublicSommiMemory {
+  return {
+    regions_liked: [],
+    regions_disliked: [],
+    grapes_liked: [],
+    grapes_disliked: [],
+    styles_liked: [],
+    styles_disliked: [],
+    body: null,
+    wines_liked: [],
+    wines_disliked: [],
+  };
+}
+
+/**
+ * Read taste_profile.explicit for the authenticated user only (RLS + eq id = session.user.id).
+ * Does not include named-wine experiences (those live on feedback_events via the API).
+ */
+export async function fetchSommiMemoryFromTasteProfile(
   language: string
 ): Promise<PublicSommiMemory | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user?.id) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('taste_profile')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  const profile = (data as { taste_profile?: TasteProfile | null }).taste_profile;
+  return extractPublicSommiMemory(profile, language, (_key, fallback) => fallback);
+}
+
+/**
+ * Prefer API (includes wine experiences). If GET fails, fall back to the
+ * authenticated user's taste_profile.explicit — never show a false “empty”
+ * when grape/region/body prefs exist. Caller should surface winesUnavailable.
+ */
+export async function loadSommiMemory(
+  language: string
+): Promise<SommiMemoryLoadResult | null> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -51,12 +106,41 @@ export async function fetchSommiMemory(
       headers: { Authorization: `Bearer ${session.access_token}` },
       credentials: 'include',
     });
-    if (!response.ok) return null;
-    const data = await response.json();
-    return (data?.memory as PublicSommiMemory) ?? null;
+    if (response.ok) {
+      const data = await response.json();
+      const memory = (data?.memory as PublicSommiMemory) ?? null;
+      if (memory) {
+        return {
+          memory: {
+            ...emptyPublicMemory(),
+            ...memory,
+            wines_liked: memory.wines_liked ?? [],
+            wines_disliked: memory.wines_disliked ?? [],
+          },
+          source: 'api',
+          winesUnavailable: false,
+        };
+      }
+    }
   } catch {
-    return null;
+    // fall through
   }
+
+  const fallback = await fetchSommiMemoryFromTasteProfile(language);
+  if (!fallback) return null;
+  return {
+    memory: fallback,
+    source: 'taste_profile_fallback',
+    winesUnavailable: true,
+  };
+}
+
+/** @deprecated Prefer loadSommiMemory for source/winesUnavailable. */
+export async function fetchSommiMemory(
+  language: string
+): Promise<PublicSommiMemory | null> {
+  const loaded = await loadSommiMemory(language);
+  return loaded?.memory ?? null;
 }
 
 export type SommiMemoryMutationResult =

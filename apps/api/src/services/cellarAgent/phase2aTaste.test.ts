@@ -274,6 +274,32 @@ describe('explicit scoring precedence Phase 2A', () => {
     expect(body.features).toContain('explicit_body:full');
   });
 
+  it('legacy_suppress cabernet also blocks stale favoriteGrapes cabernet sauvignon', () => {
+    process.env.TASTE_SHORTLIST_SCORING = '1';
+    const memory: SommelierPreferenceMemory = {
+      version: 1,
+      favoriteGrapes: ['cabernet sauvignon'],
+    };
+    const features: string[] = [];
+    const r = applyPreferenceScores(
+      cabBottle,
+      memory,
+      ctx({
+        regions_liked: [],
+        regions_disliked: [],
+        grapes_liked: [],
+        grapes_disliked: [],
+        styles_liked: [],
+        styles_disliked: [],
+        body: null,
+        legacy_suppress: { grapes: ['cabernet'] },
+      }),
+      features
+    );
+    expect(r.features.some((f) => f.startsWith('mem_grape:'))).toBe(false);
+    expect(r.features).not.toContain('agent_memory_grape');
+  });
+
   it('24: explicit blocks overlapping legacy memory/taste bonuses', () => {
     const memory: SommelierPreferenceMemory = {
       version: 1,

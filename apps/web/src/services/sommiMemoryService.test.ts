@@ -164,6 +164,95 @@ describe('sommiMemory operation ID lifecycle', () => {
   });
 });
 
+describe('fetchSommiMemory resilience', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it('falls back to taste_profile.explicit when API GET is unavailable', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    })) as any;
+
+    const eqMock = vi.fn(() => ({
+      maybeSingle: async () => ({
+        data: {
+          taste_profile: {
+            version: 2,
+            vector: {
+              body: 0.5,
+              tannin: 0.5,
+              acidity: 0.5,
+              oak: 0.5,
+              sweetness: 0.2,
+              power: 0.5,
+            },
+            preferences: {
+              reds_bias: 0,
+              whites_bias: 0,
+              sparkling_bias: 0,
+              style_tags: {},
+              regions: {},
+              grapes: {},
+            },
+            explicit: {
+              grapes_liked: [
+                {
+                  id: 'nebbiolo',
+                  confidence: 0.9,
+                  label_en: 'Nebbiolo',
+                  label_he: 'נביולו',
+                },
+              ],
+              grapes_disliked: [],
+              regions_liked: [],
+              regions_disliked: [],
+              styles_liked: [],
+              styles_disliked: [],
+            },
+            confidence: 'med',
+            data_points: { rated_count: 0, last_rated_at: null },
+          },
+        },
+        error: null,
+      }),
+    }));
+
+    vi.doMock('../lib/supabase', () => ({
+      supabase: {
+        auth: {
+          getSession: async () => ({
+            data: {
+              session: {
+                access_token: 'tok',
+                user: { id: 'user-1' },
+              },
+            },
+          }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: eqMock,
+          }),
+        }),
+      },
+    }));
+
+    const { loadSommiMemory } = await import('./sommiMemoryService');
+    const loaded = await loadSommiMemory('en');
+    expect(loaded?.source).toBe('taste_profile_fallback');
+    expect(loaded?.winesUnavailable).toBe(true);
+    expect(loaded?.memory.grapes_liked.map((g) => g.id)).toContain('nebbiolo');
+    expect(eqMock).toHaveBeenCalledWith('id', 'user-1');
+  });
+});
+
 describe('mutateSommiMemory operationId wire-up', () => {
   const originalFetch = globalThis.fetch;
 

@@ -10,7 +10,7 @@ import { toast } from '../lib/toast';
 import { WineLoader } from './WineLoader';
 import {
   countPublicSommiMemory,
-  fetchSommiMemory,
+  loadSommiMemory,
   mutateSommiMemory,
   previewMemoryLabels,
   resolveOperationIdForAttempt,
@@ -34,6 +34,7 @@ export function SommiMemoryCard() {
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [memory, setMemory] = useState<PublicSommiMemory | null>(null);
+  const [winesUnavailable, setWinesUnavailable] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -47,23 +48,18 @@ export function SommiMemoryCard() {
   async function load() {
     setLoading(true);
     try {
-      const next = await fetchSommiMemory(i18n.language);
-      setMemory(
-        next ?? {
-          regions_liked: [],
-          regions_disliked: [],
-          grapes_liked: [],
-          grapes_disliked: [],
-          styles_liked: [],
-          styles_disliked: [],
-          body: null,
-          wines_liked: [],
-          wines_disliked: [],
-        }
-      );
+      const loaded = await loadSommiMemory(i18n.language);
+      if (!loaded) {
+        setMemory(null);
+        setWinesUnavailable(false);
+        return;
+      }
+      setMemory(loaded.memory);
+      setWinesUnavailable(loaded.winesUnavailable);
     } catch (e) {
       console.error('[SommiMemoryCard] load failed', e);
       setMemory(null);
+      setWinesUnavailable(false);
     } finally {
       setLoading(false);
     }
@@ -169,6 +165,7 @@ export function SommiMemoryCard() {
         return;
       }
       setMemory(result.memory);
+      setWinesUnavailable(false);
       setConfirm(null);
       setActiveOperationId(null);
       toast.success(t('sommiMemory.updateSuccess', 'Preference updated'));
@@ -203,7 +200,9 @@ export function SommiMemoryCard() {
   };
   const count = countPublicSommiMemory(view);
   const preview = previewMemoryLabels(view);
-  const isEmpty = count === 0;
+  // Never treat “API wines unavailable” as a fully empty memory card when
+  // grape/region/body prefs loaded from taste_profile.
+  const isEmpty = count === 0 && !winesUnavailable;
 
   return (
     <>
@@ -232,7 +231,7 @@ export function SommiMemoryCard() {
               </p>
             </div>
           </div>
-          {!isEmpty && (
+          {!isEmpty && count > 0 && (
             <span
               className="rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0"
               style={{
@@ -245,6 +244,34 @@ export function SommiMemoryCard() {
             </span>
           )}
         </div>
+
+        {winesUnavailable && (
+          <div
+            className="rounded-xl px-3 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3"
+            style={{
+              background: 'rgba(139,105,20,0.08)',
+              border: '1px solid rgba(139,105,20,0.28)',
+            }}
+            data-testid="sommi-memory-wines-partial"
+            role="status"
+          >
+            <p className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>
+              {t(
+                'sommiMemory.winesPartialLoad',
+                'Saved grape, region, and body preferences are shown. Named-wine memories could not be loaded — retry to refresh them.'
+              )}
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary min-h-[44px] shrink-0"
+              disabled={!!busyKey || loading}
+              onClick={() => void load()}
+              data-testid="sommi-memory-retry-wines"
+            >
+              {t('sommiMemory.retryLoad', 'Retry')}
+            </button>
+          </div>
+        )}
 
         {isEmpty ? (
           <div className="rounded-xl px-4 py-5 text-center" style={{ background: 'var(--bg-muted)' }}>

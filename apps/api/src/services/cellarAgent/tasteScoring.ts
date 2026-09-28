@@ -358,6 +358,18 @@ export function applyPreferenceScores(
   const suppress = profile?.explicit?.legacy_suppress;
   const suppressRegions = new Set((suppress?.regions || []).map((x) => x.toLowerCase()));
   const suppressGrapes = new Set((suppress?.grapes || []).map((x) => x.toLowerCase()));
+  /** Match exact id or spaced/underscore forms; "cabernet" also covers "cabernet sauvignon". */
+  const grapeSuppressed = (raw: string): boolean => {
+    const gl = raw.toLowerCase().trim();
+    const underscored = gl.replace(/\s+/g, '_');
+    if (suppressGrapes.has(gl) || suppressGrapes.has(underscored)) return true;
+    for (const s of suppressGrapes) {
+      if (!s) continue;
+      if (gl === s || underscored === s.replace(/\s+/g, '_')) return true;
+      if (gl.startsWith(`${s} `) || underscored.startsWith(`${s}_`)) return true;
+    }
+    return false;
+  };
   const suppressBody = !!suppress?.body;
 
   const memoryBodyPreference = resolveMemoryBodyPreference(memory);
@@ -381,7 +393,7 @@ export function applyPreferenceScores(
     if (!grapeClaimed) {
       for (const g of memory.favoriteGrapes || []) {
         const gl = g.toLowerCase();
-        if (suppressGrapes.has(gl) || suppressGrapes.has(gl.replace(/\s+/g, '_'))) continue;
+        if (grapeSuppressed(gl)) continue;
         if (gl.length >= 3 && gs.includes(gl)) {
           score += AGENT_MEMORY_WEIGHTS.grape;
           features.push(`mem_grape:${gl}`);
