@@ -133,10 +133,10 @@ export function classifyAgentRoute(message: string, ctx?: ActionContext): AgentR
   }
 
   if (
-    /(remember\s+(that\s+)?|don'?t forget|forget(?:\s+that)?|i\s+prefer|i\s+usually\s+like|^i\s+like\s+(lighter|heavier)|i\s+don'?t\s+like)/i.test(
+    /(remember\s+(that\s+)?|don'?t forget|forget(?:\s+that)?|i\s+prefer|i\s+usually\s+like|^i\s+like\s+(lighter|heavier)|i\s+don'?t\s+like|i\s+didn'?t\s+like|i\s+did\s+not\s+like|i\s+(really\s+)?loved|i\s+hated|actually[, ]+i\s+(didn'?t|did\s+not)\s+like)/i.test(
       lower
     ) ||
-    /(תזכור(\s+ש)?|אל\s+תשכח|תשכח|שכח(\s+ש)?|אני\s+מעדיף|אני\s+לא\s+אוהב|אני\s+בדרך\s+כלל\s+אוהב|אני\s+אוהב\s+בדרך\s+כלל)/u.test(
+    /(תזכור(\s+ש)?|אל\s+תשכח|תשכח|שכח(\s+ש)?|אני\s+מעדיף|אני\s+לא\s+אוהב|אני\s+בדרך\s+כלל\s+אוהב|אני\s+אוהב\s+בדרך\s+כלל|אהבתי(\s+את)?|לא\s+אהבתי(\s+את)?)/u.test(
       t
     )
   ) {

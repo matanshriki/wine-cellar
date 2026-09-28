@@ -68,6 +68,19 @@ function mockSupabase(opts: {
   ) => { data: unknown; error: unknown };
 }) {
   const rpcCalls: { name: string; payload: Record<string, unknown> }[] = [];
+  /** Chainable thenable for loadActiveWineExperiences (empty by default). */
+  function wineExperienceSelectChain() {
+    const resolved = { data: [] as unknown[], error: null };
+    const chain: Record<string, unknown> = {};
+    const self = () => chain;
+    chain.eq = self;
+    chain.in = self;
+    chain.order = self;
+    chain.limit = async () => resolved;
+    // Allow awaiting mid-chain if a test ends early
+    chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(resolved).then(resolve);
+    return chain;
+  }
   const supabase = {
     from(table: string) {
       if (table === 'profiles') {
@@ -86,6 +99,24 @@ function mockSupabase(opts: {
               },
             };
           },
+        };
+      }
+      if (table === 'sommelier_feedback_events') {
+        return {
+          select: () => wineExperienceSelectChain(),
+          update: () => ({
+            eq: () => ({
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    select: () => ({
+                      maybeSingle: async () => ({ data: null, error: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
         };
       }
       return {

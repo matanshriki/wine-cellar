@@ -8,15 +8,15 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { WineLoader } from './WineLoader';
-import * as tasteProfileService from '../services/tasteProfileService';
 import {
   countPublicSommiMemory,
-  extractPublicSommiMemory,
+  fetchSommiMemory,
   mutateSommiMemory,
   previewMemoryLabels,
   resolveOperationIdForAttempt,
   type PublicMemoryItem,
   type PublicSommiMemory,
+  type PublicWineMemoryItem,
   type SommiMemoryMutation,
 } from '../services/sommiMemoryService';
 
@@ -47,8 +47,20 @@ export function SommiMemoryCard() {
   async function load() {
     setLoading(true);
     try {
-      const profile = await tasteProfileService.getMyTasteProfile();
-      setMemory(extractPublicSommiMemory(profile, i18n.language, t));
+      const next = await fetchSommiMemory(i18n.language);
+      setMemory(
+        next ?? {
+          regions_liked: [],
+          regions_disliked: [],
+          grapes_liked: [],
+          grapes_disliked: [],
+          styles_liked: [],
+          styles_disliked: [],
+          body: null,
+          wines_liked: [],
+          wines_disliked: [],
+        }
+      );
     } catch (e) {
       console.error('[SommiMemoryCard] load failed', e);
       setMemory(null);
@@ -94,6 +106,19 @@ export function SommiMemoryCard() {
       }),
       confirmText: t('sommiMemory.removeConfirm', 'Remove'),
       mutation,
+      label: item.label,
+    });
+  }
+
+  function requestRemoveWine(item: PublicWineMemoryItem) {
+    beginConfirm({
+      title: t('sommiMemory.removeWineTitle', 'Remove wine memory?'),
+      message: t('sommiMemory.removeWineMessage', {
+        label: item.label,
+        defaultValue: `Remove “${item.label}” from wines Sommi remembers?`,
+      }),
+      confirmText: t('sommiMemory.removeConfirm', 'Remove'),
+      mutation: { type: 'remove_wine_experience', id: item.id },
       label: item.label,
     });
   }
@@ -173,6 +198,8 @@ export function SommiMemoryCard() {
     styles_liked: [],
     styles_disliked: [],
     body: null,
+    wines_liked: [],
+    wines_disliked: [],
   };
   const count = countPublicSommiMemory(view);
   const preview = previewMemoryLabels(view);
@@ -290,6 +317,7 @@ export function SommiMemoryCard() {
             busyKey={busyKey}
             onClose={closeManage}
             onRemoveTerm={requestRemoveTerm}
+            onRemoveWine={requestRemoveWine}
             onBodyChange={requestBodyChange}
           />
         )}
@@ -324,10 +352,11 @@ function MemoryManageOverlay(props: {
     polarity: 'like' | 'dislike',
     item: PublicMemoryItem
   ) => void;
+  onRemoveWine: (item: PublicWineMemoryItem) => void;
   onBodyChange: (next: 'light' | 'medium' | 'full' | 'clear') => void;
 }) {
   const { t } = useTranslation();
-  const { memory, busyKey, onClose, onRemoveTerm, onBodyChange } = props;
+  const { memory, busyKey, onClose, onRemoveTerm, onRemoveWine, onBodyChange } = props;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -452,6 +481,18 @@ function MemoryManageOverlay(props: {
             </section>
           )}
 
+          <WineTermSection
+            title={t('sommiMemory.sectionWinesLiked', 'Wines I loved')}
+            items={memory.wines_liked || []}
+            busy={!!busyKey}
+            onRemove={onRemoveWine}
+          />
+          <WineTermSection
+            title={t('sommiMemory.sectionWinesDisliked', "Wines I didn't like")}
+            items={memory.wines_disliked || []}
+            busy={!!busyKey}
+            onRemove={onRemoveWine}
+          />
           <TermSection
             title={t('sommiMemory.sectionRegionsLiked', 'Liked regions')}
             items={memory.regions_liked}
@@ -491,6 +532,53 @@ function MemoryManageOverlay(props: {
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+function WineTermSection(props: {
+  title: string;
+  items: PublicWineMemoryItem[];
+  busy: boolean;
+  onRemove: (item: PublicWineMemoryItem) => void;
+}) {
+  const { t } = useTranslation();
+  if (!props.items.length) return null;
+  return (
+    <section>
+      <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+        {props.title}
+      </h4>
+      <ul className="space-y-2">
+        {props.items.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+            style={{
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              {item.label}
+            </span>
+            <button
+              type="button"
+              className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium"
+              style={{ color: '#B91C1C' }}
+              disabled={props.busy}
+              aria-label={t('sommiMemory.removeAria', {
+                label: item.label,
+                defaultValue: `Remove ${item.label}`,
+              })}
+              onClick={() => props.onRemove(item)}
+              data-testid={`sommi-memory-remove-wine-${item.id}`}
+            >
+              {t('sommiMemory.remove', 'Remove')}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

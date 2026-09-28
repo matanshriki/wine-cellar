@@ -13,6 +13,7 @@ import { type AuthRequest, authenticateSupabase } from '../middleware/auth.js';
 import { parseProfileMemoryOperationId } from '../services/cellarAgent/profileMemoryOperation.js';
 import {
   applyProfileSommiMemoryAction,
+  loadPublicSommiMemoryForUser,
   parseProfileMemoryAction,
 } from '../services/cellarAgent/profileSommiMemory.js';
 
@@ -46,6 +47,25 @@ function statusForReason(reason: string): number {
       return 500;
   }
 }
+
+profileRouter.get(
+  '/sommi-memory',
+  authenticateSupabase,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const language =
+      req.query?.locale === 'he' || req.query?.language === 'he' ? 'he' : 'en';
+    const supabase = createUserSupabase(req);
+    if (!supabase) {
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+    const memory = await loadPublicSommiMemoryForUser(userId, supabase, language);
+    return res.json({ ok: true, memory });
+  }
+);
 
 profileRouter.post(
   '/sommi-memory',

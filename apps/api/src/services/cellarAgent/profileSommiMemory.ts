@@ -21,10 +21,23 @@ import type {
   StructuredTasteProfile,
 } from './tasteProfileTypes.js';
 import { logSommelier, logSommelierWarn, shortUser } from './sommelierLog.js';
+import {
+  loadActiveWineExperiences,
+  retractWineExperienceEvent,
+  toPublicWineExperienceItems,
+} from './wineExperiencePersist.js';
 
 export type PublicMemoryItem = {
   id: string;
   label: string;
+};
+
+export type PublicWineMemoryItem = {
+  id: string;
+  label: string;
+  polarity: 'like' | 'dislike';
+  vintage: number | null;
+  wineId: string | null;
 };
 
 export type PublicSommiMemory = {
@@ -35,6 +48,8 @@ export type PublicSommiMemory = {
   styles_liked: PublicMemoryItem[];
   styles_disliked: PublicMemoryItem[];
   body: { value: 'light' | 'medium' | 'full'; label: string } | null;
+  wines_liked: PublicWineMemoryItem[];
+  wines_disliked: PublicWineMemoryItem[];
 };
 
 export type ProfileMemoryAction =
@@ -63,6 +78,11 @@ export type ProfileMemoryAction =
       type: 'clear_body';
       /** Body value at confirm time — stable across retries. */
       from: 'light' | 'medium' | 'full';
+    }
+  | {
+      type: 'remove_wine_experience';
+      /** sommelier_feedback_events.id */
+      id: string;
     };
 
 export type ProfileMemoryApplyResult =
@@ -125,9 +145,12 @@ function mapList(
 
 export function toPublicSommiMemory(
   explicit: ExplicitTastePreferences | null | undefined,
-  language: 'en' | 'he' = 'en'
+  language: 'en' | 'he' = 'en',
+  wineItems: PublicWineMemoryItem[] = []
 ): PublicSommiMemory {
   const bodyVal = explicit?.body?.value;
+  const liked = wineItems.filter((w) => w.polarity === 'like');
+  const disliked = wineItems.filter((w) => w.polarity === 'dislike');
   return {
     regions_liked: mapList('region', explicit?.regions_liked, language),
     regions_disliked: mapList('region', explicit?.regions_disliked, language),
@@ -139,6 +162,8 @@ export function toPublicSommiMemory(
       bodyVal === 'light' || bodyVal === 'medium' || bodyVal === 'full'
         ? { value: bodyVal, label: bodyLabel(bodyVal, language) }
         : null,
+    wines_liked: liked,
+    wines_disliked: disliked,
   };
 }
 
@@ -150,8 +175,37 @@ export function countPublicSommiMemory(memory: PublicSommiMemory): number {
     memory.grapes_disliked.length +
     memory.styles_liked.length +
     memory.styles_disliked.length +
-    (memory.body ? 1 : 0)
+    (memory.body ? 1 : 0) +
+    (memory.wines_liked?.length ?? 0) +
+    (memory.wines_disliked?.length ?? 0)
   );
+}
+
+export async function loadPublicSommiMemoryForUser(
+  userId: string,
+  supabase: SupabaseClient,
+  language: 'en' | 'he',
+  profile?: StructuredTasteProfile | null
+): Promise<PublicSommiMemory> {
+  const explicit =
+    profile !== undefined
+      ? profile?.explicit
+      : (await loadUserTasteProfile(userId, supabase)).profile?.explicit;
+  const wines = await loadActiveWineExperiences(userId, supabase);
+  return toPublicSommiMemory(
+    explicit,
+    language,
+    toPublicWineExperienceItems(wines)
+  );
+}
+
+async function loadPublicMemoryWithWines(
+  userId: string,
+  supabase: SupabaseClient,
+  language: 'en' | 'he',
+  profile?: StructuredTasteProfile | null
+): Promise<PublicSommiMemory> {
+  return loadPublicSommiMemoryForUser(userId, supabase, language, profile);
 }
 
 function listKey(
@@ -184,6 +238,20 @@ export function parseProfileMemoryAction(body: unknown): ProfileMemoryAction | n
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
   const o = body as Record<string, unknown>;
   const type = typeof o.type === 'string' ? o.type : typeof o.action === 'string' ? o.action : '';
+
+  if (type === 'remove_wine_experience') {
+    const id = typeof o.id === 'string' ? o.id.trim() : '';
+    if (!id || id.length > 64) return null;
+    // UUID feedback event id
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        id
+      )
+    ) {
+      return null;
+    }
+    return { type: 'remove_wine_experience', id };
+  }
 
   if (type === 'remove_region' || type === 'remove_grape' || type === 'remove_style') {
     const polarity = o.polarity === 'dislike' ? 'dislike' : o.polarity === 'like' ? 'like' : null;
@@ -351,6 +419,36 @@ export async function applyProfileSommiMemoryAction(params: {
   }
   const operationId = params.operationId.trim().toLowerCase();
 
+  // Wine experiences are feedback_events — independent of CANONICAL_TASTE_WRITES.
+  if (params.action.type === 'remove_wine_experience') {
+    const retracted = await retractWineExperienceEvent({
+      userId: params.userId,
+      eventId: params.action.id,
+      supabase: params.supabase,
+    });
+    const memory = await loadPublicMemoryWithWines(
+      params.userId,
+      params.supabase,
+      language
+    );
+    if (!retracted.ok) {
+      return {
+        ok: false,
+        reason: retracted.reason === 'not_found' ? 'not_found' : 'rpc_error',
+        message:
+          language === 'he'
+            ? 'לא מצאתי יין שמור להסרה.'
+            : "I couldn't find that saved wine to remove.",
+        memory,
+      };
+    }
+    logSommelier('profile_wine_memory_remove', {
+      user: shortUser(params.userId),
+      op: operationId.slice(0, 8),
+    });
+    return { ok: true, memory, reason: 'retracted' };
+  }
+
   if (!isCanonicalTasteWritesEnabled()) {
     return {
       ok: false,
@@ -439,8 +537,11 @@ export async function applyProfileSommiMemoryAction(params: {
     operationId,
   });
 
-  const reloaded = await loadUserTasteProfile(params.userId, params.supabase);
-  const memory = toPublicSommiMemory(reloaded.profile?.explicit, language);
+  const memory = await loadPublicMemoryWithWines(
+    params.userId,
+    params.supabase,
+    language
+  );
 
   if (!applied.ok) {
     const failReason:
@@ -473,6 +574,7 @@ export async function applyProfileSommiMemoryAction(params: {
 
   // Verify canonical success before claiming ok (skip for already_applied recovery)
   if (applied.reason === 'applied') {
+    const reloaded = await loadUserTasteProfile(params.userId, params.supabase);
     if (
       params.action.type === 'remove_region' ||
       params.action.type === 'remove_grape' ||

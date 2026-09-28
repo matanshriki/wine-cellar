@@ -26,6 +26,7 @@ export type ExtractionClass =
   | 'stable_remember'
   | 'stable_general'
   | 'bottle'
+  | 'wine_experience'
   | 'session'
   | 'operational'
   | 'ambiguous'
@@ -45,7 +46,11 @@ export interface ExtractedPreferenceCandidate {
   status: 'active' | 'pending_unsupported' | 'recorded_no_apply';
   /** Eligible for canonical apply when kill-switch ON */
   applyCanonical: boolean;
-  extractionVersion: 'rules_v2';
+  extractionVersion: 'rules_v2' | 'rules_v3';
+  /** Named wine phrase for wine_experience (producer + name, etc.) */
+  wineNamePhrase?: string;
+  /** Optional soft grape id found in phrase — never auto-applied as explicit grape */
+  softGrapeHint?: string;
 }
 
 type TermEntry = { id: string; en: string; he?: string };
@@ -312,7 +317,7 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
 
   const base = {
     locale,
-    extractionVersion: 'rules_v2' as const,
+    extractionVersion: 'rules_v3' as const,
     confidence: 0.9,
   };
 
@@ -396,7 +401,23 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
     scope: 'stable' as const,
     status: 'active' as const,
     applyCanonical: true,
+    extractionVersion: 'rules_v3' as const,
   };
+
+  // Named wine experience: “Remember that I loved Angiuli Donato Nero di Troia”
+  // Prefer wine-level memory over silently promoting an embedded grape/region.
+  const wineExp = extractNamedWineExperience(text, {
+    isRemember,
+    isNeg,
+    isSession,
+    isBottle,
+    isGeneralLike,
+    grape,
+    region,
+    style,
+    locale,
+  });
+  if (wineExp) return wineExp;
 
   // Explicit remember + negation (dislike)
   if (isRemember && isNeg && !isSession && !isBottle) {
@@ -487,6 +508,157 @@ export function extractPreferenceEvidence(rawText: string): ExtractedPreferenceC
   }
 
   return null;
+}
+
+/**
+ * Detect named-wine like/dislike statements that should become wine experiences
+ * rather than grape/region explicit prefs.
+ *
+ * “Remember that I like Nero di Troia” (phrase ≈ grape only) → still grape remember.
+ * “Remember that I loved Angiuli Donato Nero di Troia” → wine_experience.
+ */
+export function extractNamedWineExperience(
+  text: string,
+  ctx: {
+    isRemember: boolean;
+    isNeg: boolean;
+    isSession: boolean;
+    isBottle: boolean;
+    isGeneralLike: boolean;
+    grape: TermEntry | null;
+    region: TermEntry | null;
+    style: TermEntry | null;
+    locale: 'en' | 'he' | 'unknown';
+  }
+): ExtractedPreferenceCandidate | null {
+  if (ctx.isSession || ctx.isBottle) return null;
+
+  const lovedEn =
+    /\b(remember(?:\s+that)?\s+i\s+(?:loved|liked|enjoyed)|i\s+(?:loved|really\s+liked)|don'?t\s+forget\s+(?:that\s+)?i\s+(?:loved|liked))\b/i.test(
+      text
+    );
+  const dislikedEn =
+    /\b(remember(?:\s+that)?\s+i\s+(?:didn'?t|did\s+not)\s+like|i\s+(?:didn'?t|did\s+not)\s+like|i\s+hated|actually[, ]+i\s+(?:didn'?t|did\s+not)\s+like)\b/i.test(
+      text
+    );
+  const lovedHe =
+    /תזכ(?:ור|רי|רו)\s+ש(אני\s+)?אהבתי|אהבתי\s+את/.test(text);
+  const dislikedHe =
+    /תזכ(?:ור|רי|רו)\s+ש(אני\s+)?לא\s+אהבתי|לא\s+אהבתי(\s+את)?/.test(text);
+
+  /** Past / correction phrasing about a specific bottle — always wine-level. */
+  const isPastWineReaction = lovedEn || dislikedEn || lovedHe || dislikedHe;
+  /**
+   * Present “remember I like …” — wine only when the phrase is a named wine
+   * (allowlisted grape/region/style plus producer/extra tokens), not a bare term.
+   */
+  const isRememberPresent =
+    ctx.isRemember && (ctx.isGeneralLike || ctx.isNeg) && !isPastWineReaction;
+
+  if (!isPastWineReaction && !isRememberPresent) return null;
+
+  let phrase = text;
+  phrase = phrase
+    .replace(
+      /^(remember(?:\s+that)?\s+i\s+(?:really\s+)?(?:loved|liked|like|enjoyed|didn'?t\s+like|did\s+not\s+like)\s+)/i,
+      ''
+    )
+    .replace(
+      /^(please\s+)?(remember(?:\s+that)?\s+i\s+(?:really\s+)?(?:loved|liked|like|enjoyed)\s+)/i,
+      ''
+    )
+    .replace(/^(i\s+(?:really\s+)?(?:loved|liked|enjoyed|didn'?t\s+like|did\s+not\s+like|hated)\s+)/i, '')
+    .replace(/^(actually[, ]+i\s+(?:didn'?t|did\s+not)\s+like\s+)/i, '')
+    .replace(/^(don'?t\s+forget\s+(?:that\s+)?i\s+(?:loved|liked|like)\s+)/i, '')
+    .replace(/^תזכ(?:ור|רי|רו)\s+ש(אני\s+)?(לא\s+)?אהב(תי)?\s+(את\s+)?/, '')
+    .replace(/^תזכ(?:ור|רי|רו)\s+ש(אני\s+)?אוהב\s+/, '')
+    .replace(/^לא\s+אהבתי\s+(את\s+)?/, '')
+    .replace(/^אהבתי\s+(את\s+)?/, '')
+    .replace(/[.!?]+$/g, '')
+    .trim();
+
+  // Strip category fillers so “יינות מנביולו” / “wines from Rioja” reduce to the term
+  phrase = phrase
+    .replace(/^(the\s+wine\s+)/i, '')
+    .replace(/^(את\s+היין\s+)/, '')
+    .replace(/^(wines?\s+(from\s+|of\s+)?)/i, '')
+    .replace(/^(יינות\s+(מ|של\s+)?)/, '')
+    .replace(/^(יין\s+(מ|של\s+)?)/, '')
+    .replace(/^מזן\s+/, '')
+    .trim();
+
+  // Hebrew attached prefix מ/ב/ל on a known grape/region (מנביולו → נביולו)
+  if (/^[מבלכ]/.test(phrase) && phrase.length > 2) {
+    const stripped = phrase.slice(1);
+    if (
+      (ctx.grape &&
+        (stripped === ctx.grape.he ||
+          stripped === ctx.grape.en.toLowerCase())) ||
+      (ctx.region &&
+        (stripped === ctx.region.he ||
+          stripped === ctx.region.en.toLowerCase())) ||
+      (ctx.style &&
+        (stripped === ctx.style.he || stripped === ctx.style.en.toLowerCase()))
+    ) {
+      phrase = stripped;
+    }
+  }
+
+  if (!phrase || phrase.length < 3) return null;
+
+  const phraseNorm = phrase.toLowerCase().replace(/\s+/g, ' ').trim();
+  const termOnly = (
+    term: TermEntry | null,
+    aliasTable: Record<string, TermEntry>
+  ): boolean => {
+    if (!term) return false;
+    const candidates = [
+      term.en.toLowerCase(),
+      (term.he || '').toLowerCase(),
+      term.id.replace(/_/g, ' '),
+    ].filter(Boolean);
+    if (candidates.some((c) => phraseNorm === c)) return true;
+    // Alias spellings (e.g. קברנה סובניון vs סוביניון)
+    return aliasTable[phraseNorm]?.id === term.id;
+  };
+
+  const grapeOnly = termOnly(ctx.grape, GRAPE_ALIASES);
+  const regionOnly = termOnly(ctx.region, REGION_ALIASES);
+  const styleOnly = termOnly(ctx.style, STYLE_ALIASES);
+  const bodyOnly = /^(light|medium|full)([\s-]?bodied)?$/.test(phraseNorm) ||
+    /^(קלים?|בינוניים?|כבדים?|מלאים?)$/.test(phraseNorm);
+
+  // Allowlisted bare remembers stay on the grape/region/style/body path
+  if (grapeOnly || regionOnly || styleOnly || bodyOnly) return null;
+
+  const tokenCount = phraseNorm.split(' ').filter(Boolean).length;
+  if (tokenCount < 2) return null;
+
+  // Present-tense “remember I like …” without an embedded allowlisted term →
+  // keep the existing ambiguous / unrecognized flow (not a wine memory).
+  if (isRememberPresent && !ctx.grape && !ctx.region && !ctx.style) {
+    return null;
+  }
+
+  const isWineDislike =
+    dislikedEn || dislikedHe || (isRememberPresent && ctx.isNeg);
+  const polarity: EvidencePolarity = isWineDislike ? 'dislike' : 'like';
+
+  return {
+    class: 'wine_experience',
+    scope: 'bottle',
+    polarity,
+    dimension: 'other',
+    valueId: 'wine_experience',
+    labelEn: phrase,
+    confidence: 0.85,
+    locale: ctx.locale,
+    status: 'active',
+    applyCanonical: false,
+    extractionVersion: 'rules_v3',
+    wineNamePhrase: phrase,
+    softGrapeHint: ctx.grape?.id,
+  };
 }
 
 export function buildIdempotencyKey(params: {

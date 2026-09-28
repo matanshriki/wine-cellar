@@ -10,6 +10,14 @@ import type { TasteProfile } from '../types/supabase';
 
 export type PublicMemoryItem = { id: string; label: string };
 
+export type PublicWineMemoryItem = {
+  id: string;
+  label: string;
+  polarity: 'like' | 'dislike';
+  vintage: number | null;
+  wineId: string | null;
+};
+
 export type PublicSommiMemory = {
   regions_liked: PublicMemoryItem[];
   regions_disliked: PublicMemoryItem[];
@@ -18,6 +26,8 @@ export type PublicSommiMemory = {
   styles_liked: PublicMemoryItem[];
   styles_disliked: PublicMemoryItem[];
   body: { value: 'light' | 'medium' | 'full'; label: string } | null;
+  wines_liked: PublicWineMemoryItem[];
+  wines_disliked: PublicWineMemoryItem[];
 };
 
 export function extractPublicSommiMemory(
@@ -51,6 +61,8 @@ export function extractPublicSommiMemory(
       bodyVal === 'light' || bodyVal === 'medium' || bodyVal === 'full'
         ? { value: bodyVal, label: bodyPreferenceLabel(bodyVal, lang, t) }
         : null,
+    wines_liked: [],
+    wines_disliked: [],
   };
 }
 
@@ -62,7 +74,9 @@ export function countPublicSommiMemory(memory: PublicSommiMemory): number {
     memory.grapes_disliked.length +
     memory.styles_liked.length +
     memory.styles_disliked.length +
-    (memory.body ? 1 : 0)
+    (memory.body ? 1 : 0) +
+    (memory.wines_liked?.length ?? 0) +
+    (memory.wines_disliked?.length ?? 0)
   );
 }
 
@@ -76,6 +90,8 @@ export function allMemoryLabels(memory: PublicSommiMemory): string[] {
     ...memory.grapes_disliked,
     ...memory.styles_liked,
     ...memory.styles_disliked,
+    ...(memory.wines_liked || []),
+    ...(memory.wines_disliked || []),
   ]) {
     labels.push(item.label);
   }

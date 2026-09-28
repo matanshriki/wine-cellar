@@ -21,6 +21,8 @@ export type CellarIntent =
  */
 export interface CellarBottleInput {
   id: string;
+  /** wines.id — stable identity across bottle rows / repurchase */
+  wineId?: string | null;
   producer?: string;
   wineName?: string;
   vintage?: number;

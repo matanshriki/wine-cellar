@@ -82,11 +82,33 @@ export function resolveMemoryBodyPreference(
   return null;
 }
 
+export interface WineExperienceScoreSignal {
+  polarity: 'like' | 'dislike';
+  wineId: string | null;
+  producer: string | null;
+  wineName: string | null;
+  vintage: number | null;
+  displayLabel: string;
+}
+
 export interface TasteScoreContext {
   tasteProfile: StructuredTasteProfile | null;
   /** Request-level body ask parsed from the user message (outranks stable profile). */
   requestBodyPreference: 'light' | 'full' | null;
+  /**
+   * Named wine experiences from chat (scope=bottle feedback).
+   * Distinct from explicit grape/region likes — never treated as “like every Nero di Troia”.
+   */
+  wineExperiences?: WineExperienceScoreSignal[] | null;
 }
+
+/** Bounded weights for wine-level experience (below explicit grape). */
+export const WINE_EXPERIENCE_WEIGHTS = {
+  sameWineLike: 7,
+  sameWineDislike: -10,
+  sameLabelDifferentVintageLike: 2,
+  sameLabelDifferentVintageDislike: -4,
+} as const;
 
 function grapeString(b: CellarBottleInput): string {
   const g = b.grapes;
@@ -209,6 +231,55 @@ export function applyPreferenceScores(
   let regionClaimed = false;
   let grapeClaimed = false;
   let bodyClaimed = !!requestBody;
+
+  // ── Named wine experiences (chat) — wine_id first; vintage-aware ───────────
+  if (isTasteShortlistScoringEnabled() && tasteCtx?.wineExperiences?.length) {
+    const experiences = tasteCtx.wineExperiences;
+    const bottleWineId = (bottle.wineId || '').toLowerCase();
+    const bottleProd = (bottle.producer || '').toLowerCase().trim();
+    const bottleName = (bottle.wineName || '').toLowerCase().trim();
+
+    for (const exp of experiences) {
+      const expWineId = (exp.wineId || '').toLowerCase();
+      const sameWine = !!bottleWineId && !!expWineId && bottleWineId === expWineId;
+      const sameLabel =
+        !sameWine &&
+        !!bottleProd &&
+        !!bottleName &&
+        bottleProd === (exp.producer || '').toLowerCase().trim() &&
+        bottleName === (exp.wineName || '').toLowerCase().trim();
+
+      if (!sameWine && !sameLabel) continue;
+
+      const sameVintage =
+        exp.vintage != null &&
+        bottle.vintage != null &&
+        Number(exp.vintage) === Number(bottle.vintage);
+
+      if (exp.polarity === 'like') {
+        if (sameWine && (sameVintage || exp.vintage == null || bottle.vintage == null)) {
+          score += WINE_EXPERIENCE_WEIGHTS.sameWineLike;
+          features.push(`wine_experience_like:${expWineId || exp.displayLabel}`);
+          tasteSignalKeys.push('wine_experience');
+        } else if (sameWine || sameLabel) {
+          // Different vintage of same wine identity — weaker signal
+          score += WINE_EXPERIENCE_WEIGHTS.sameLabelDifferentVintageLike;
+          features.push(`wine_experience_like_other_vintage:${exp.displayLabel}`);
+          tasteSignalKeys.push('wine_experience');
+        }
+      } else {
+        if (sameWine && (sameVintage || exp.vintage == null || bottle.vintage == null)) {
+          score += WINE_EXPERIENCE_WEIGHTS.sameWineDislike;
+          features.push(`wine_experience_dislike:${expWineId || exp.displayLabel}`);
+          tasteSignalKeys.push('wine_experience');
+        } else if (sameWine || sameLabel) {
+          score += WINE_EXPERIENCE_WEIGHTS.sameLabelDifferentVintageDislike;
+          features.push(`wine_experience_dislike_other_vintage:${exp.displayLabel}`);
+          tasteSignalKeys.push('wine_experience');
+        }
+      }
+    }
+  }
 
   // ── Canonical explicit (Phase 2A) ──────────────────────────────────────────
   if (isTasteShortlistScoringEnabled() && explicit) {
@@ -521,6 +592,7 @@ export function collectTasteSignalKeysFromFeatures(features: string[]): string[]
     else if (f.startsWith('taste_body')) keys.add('taste_body');
     else if (f.startsWith('taste_color')) keys.add('taste_color');
     else if (f.startsWith('request_body')) keys.add('request_body');
+    else if (f.startsWith('wine_experience')) keys.add('wine_experience');
     else if (f.startsWith('explicit_region') || f.startsWith('explicit_preference_region'))
       keys.add('explicit_region');
     else if (f.startsWith('explicit_grape') || f.startsWith('explicit_preference_grape'))

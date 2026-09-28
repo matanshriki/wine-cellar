@@ -65,6 +65,11 @@ import {
   processPreferenceMessage,
   processTasteConfirmation,
 } from './canonicalTasteWrite.js';
+import { extractPreferenceEvidence } from './preferenceExtractRules.js';
+import {
+  loadActiveWineExperiences,
+  processWineExperienceMessage,
+} from './wineExperiencePersist.js';
 
 import { parseJsonFromModelContent } from '../../utils/safeJson.js';
 import {
@@ -850,17 +855,20 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
   let recentPicks: Set<string> | null = null;
   let tasteProfile: StructuredTasteProfile | null = null;
   let tasteLoaded = false;
+  let wineExperiences: Awaited<ReturnType<typeof loadActiveWineExperiences>> = [];
   if (supabase) {
     try {
-      const [mem, picks, tasteLoad] = await Promise.all([
+      const [mem, picks, tasteLoad, winesExp] = await Promise.all([
         loadSommelierMemory(userId, supabase),
         loadRecentRecommendedBottleIds(userId, supabase, 5),
         loadUserTasteProfile(userId, supabase),
+        loadActiveWineExperiences(userId, supabase),
       ]);
       memoryPrefs = mem;
       recentPicks = picks.size > 0 ? picks : null;
       tasteProfile = tasteLoad.profile;
       tasteLoaded = tasteLoad.loaded && tasteLoad.reason === 'ok';
+      wineExperiences = winesExp;
       if (tasteLoad.reason === 'query_error' || tasteLoad.reason === 'parse_rejected') {
         logSommelierWarn('taste_profile_load', {
           user: shortUser(userId),
@@ -876,6 +884,14 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
   const tasteScoreCtx: TasteScoreContext | null = {
     tasteProfile,
     requestBodyPreference: detectRequestBodyPreference(message.toLowerCase()),
+    wineExperiences: wineExperiences.map((w) => ({
+      polarity: w.polarity,
+      wineId: w.wineId,
+      producer: w.producer,
+      wineName: w.wineName,
+      vintage: w.vintage,
+      displayLabel: w.displayLabel,
+    })),
   };
   const tasteMeta = {
     loaded: tasteLoaded,
@@ -1182,6 +1198,32 @@ export async function recommendCellar(params: RecommendCellarParams): Promise<un
                 "ציינתי זאת בשיחה שלנו — חבר אחסון כדי לזכור זאת בפעם הבאה."
               ) },
             { routedAction: 'memory_update', actionResult: 'error', processingMode: 'deterministic_action' }
+          );
+        }
+        // Named wine experiences (distinct from grape/region explicit prefs)
+        const wineCandidate = extractPreferenceEvidence(message);
+        if (wineCandidate?.class === 'wine_experience') {
+          const wineResult = await processWineExperienceMessage({
+            userId,
+            message,
+            candidate: wineCandidate,
+            cellarBottles,
+            supabase,
+            language: language === 'he' ? 'he' : 'en',
+          });
+          return withMeta(
+            {
+              message: wineResult.message,
+              type: 'single',
+              ...(wineResult.followUpQuestion
+                ? { followUpQuestion: wineResult.followUpQuestion }
+                : {}),
+            },
+            {
+              routedAction: 'memory_update',
+              actionResult: wineResult.kind === 'error' ? 'error' : 'ok',
+              processingMode: 'deterministic_action',
+            }
           );
         }
         const processed = await processPreferenceMessage({

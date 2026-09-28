@@ -6,7 +6,11 @@ import { supabase } from '../lib/supabase';
 import type { PublicSommiMemory } from './sommiMemoryView';
 import { shouldRetainOperationIdAfterFailure } from './sommiMemoryOperation';
 
-export type { PublicMemoryItem, PublicSommiMemory } from './sommiMemoryView';
+export type {
+  PublicMemoryItem,
+  PublicSommiMemory,
+  PublicWineMemoryItem,
+} from './sommiMemoryView';
 export {
   countPublicSommiMemory,
   extractPublicSommiMemory,
@@ -23,12 +27,37 @@ export type SommiMemoryMutation =
   | { type: 'remove_region'; polarity: 'like' | 'dislike'; id: string }
   | { type: 'remove_grape'; polarity: 'like' | 'dislike'; id: string }
   | { type: 'remove_style'; polarity: 'like' | 'dislike'; id: string }
+  | { type: 'remove_wine_experience'; id: string }
   | {
       type: 'replace_body';
       value: 'light' | 'medium' | 'full';
       from: 'light' | 'medium' | 'full';
     }
   | { type: 'clear_body'; from: 'light' | 'medium' | 'full' };
+
+export async function fetchSommiMemory(
+  language: string
+): Promise<PublicSommiMemory | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  const endpoint = apiUrl ? `${apiUrl}/api/profile/sommi-memory` : '/api/profile/sommi-memory';
+  const locale = language.startsWith('he') ? 'he' : 'en';
+  try {
+    const response = await fetch(`${endpoint}?locale=${locale}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      credentials: 'include',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return (data?.memory as PublicSommiMemory) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export type SommiMemoryMutationResult =
   | { ok: true; memory: PublicSommiMemory; reason?: string }

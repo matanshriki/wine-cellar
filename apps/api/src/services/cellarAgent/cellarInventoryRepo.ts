@@ -9,6 +9,7 @@ import type { CellarBottleInput } from './types.js';
 const PAGE_SIZE = 500;
 
 type WineRow = {
+  id?: string | null;
   producer?: string | null;
   wine_name?: string | null;
   vintage?: number | null;
@@ -26,6 +27,7 @@ type WineRow = {
 
 type BottleRow = {
   id: string;
+  wine_id?: string | null;
   quantity: number;
   purchase_price?: number | null;
   purchase_price_currency?: string | null;
@@ -50,6 +52,7 @@ export function mapBottleRowToInput(row: BottleRow): CellarBottleInput {
   const he = wine?.translations?.he;
   return {
     id: row.id,
+    wineId: wine?.id ?? row.wine_id ?? null,
     producer: wine?.producer ?? undefined,
     wineName: wine?.wine_name ?? undefined,
     vintage: wine?.vintage ?? undefined,
@@ -100,6 +103,7 @@ export async function loadInStockCellar(
       .select(
         `
         id,
+        wine_id,
         quantity,
         purchase_price,
         purchase_price_currency,
@@ -111,6 +115,7 @@ export async function loadInStockCellar(
         is_reserved,
         reserved_for,
         wine:wines(
+          id,
           producer,
           wine_name,
           vintage,
@@ -172,4 +177,64 @@ export function mergeClientHistoryOntoCellar(
       pastNotesSummary: c.pastNotesSummary ?? b.pastNotesSummary,
     };
   });
+}
+
+/**
+ * Bottles for wine-experience name resolution — includes consumed/zero-qty rows
+ * so a loved wine still matches after the bottle left the cellar.
+ * Deduped by wine_id (prefer in-stock). Cap keeps resolve cheap.
+ */
+export async function loadBottleCatalogForWineMemory(
+  userId: string,
+  supabase: SupabaseClient,
+  limit = 400
+): Promise<CellarBottleInput[]> {
+  const { data, error } = await supabase
+    .from('bottles')
+    .select(
+      `
+        id,
+        wine_id,
+        quantity,
+        purchase_price,
+        purchase_price_currency,
+        storage_location,
+        drink_window_start,
+        drink_window_end,
+        readiness_status,
+        notes,
+        is_reserved,
+        reserved_for,
+        wine:wines(
+          id,
+          producer,
+          wine_name,
+          vintage,
+          region,
+          country,
+          grapes,
+          color,
+          is_kosher,
+          kosher_confidence,
+          translations
+        )
+      `
+    )
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  const byWine = new Map<string, CellarBottleInput>();
+  for (const row of data as BottleRow[]) {
+    const mapped = mapBottleRowToInput(row);
+    const key = mapped.wineId || `bottle:${mapped.id}`;
+    const prev = byWine.get(key);
+    // Prefer in-stock when multiple bottle rows share a wine_id
+    if (!prev || ((mapped.quantity ?? 0) > 0 && (prev.quantity ?? 0) <= 0)) {
+      byWine.set(key, mapped);
+    }
+  }
+  return [...byWine.values()];
 }
