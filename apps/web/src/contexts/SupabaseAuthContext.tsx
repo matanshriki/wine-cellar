@@ -361,6 +361,22 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   };
 
   const signOut = async () => {
+    // Unregister this device before the session ends (RLS needs auth.uid())
+    const uid = user?.id ?? null;
+    try {
+      const { disablePushNotificationsForThisDevice } = await import(
+        '../services/pushNotificationService'
+      );
+      await disablePushNotificationsForThisDevice(uid);
+    } catch (err) {
+      console.warn('[Auth] Push unsubscribe on sign-out failed', err);
+    }
+
+    // Clear local timer storage for this user (server reminders stay for other devices)
+    if (uid) {
+      safeRemoveItem(`activeTimers:${uid}`);
+    }
+
     const { error } = await supabase.auth.signOut();
     
     if (error) {

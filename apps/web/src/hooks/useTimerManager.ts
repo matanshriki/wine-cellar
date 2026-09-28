@@ -2,13 +2,17 @@
  * useTimerManager
  *
  * Manages in-app decant / rate-reminder timers persisted to localStorage.
- * Survives page refresh and app-close cycles.
- * Keyed per user: `activeTimers:<userId>`
+ * Countdown UI works without notification permission.
+ * Server wine_reminders (absolute fire_at) drive closed-app Web Push delivery.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safeLocalStorage';
+import {
+  cancelWineReminder,
+  upsertWineReminder,
+} from '../services/pushNotificationService';
 
 export interface WineTimer {
   id: string;
@@ -26,65 +30,6 @@ export interface WineTimer {
 }
 
 const STORAGE_PREFIX = 'activeTimers:';
-
-// ── OS notification helpers ────────────────────────────────────────────────────
-
-/** Returns true if the browser supports notifications and SW messaging */
-function notificationsSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'Notification' in window &&
-    'serviceWorker' in navigator
-  );
-}
-
-/**
- * Requests notification permission if not already granted.
- * Must be called from within a user-gesture handler (button click etc.)
- * Returns true if permission is now granted.
- */
-async function requestNotificationPermission(): Promise<boolean> {
-  if (!notificationsSupported()) return false;
-  if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') return false;
-  const result = await Notification.requestPermission();
-  return result === 'granted';
-}
-
-/** Posts a SCHEDULE_NOTIFICATION message to the active service worker */
-async function scheduleOSNotification(timer: WineTimer): Promise<void> {
-  if (!notificationsSupported()) return;
-  if (Notification.permission !== 'granted') return;
-
-  const reg = await navigator.serviceWorker.ready.catch(() => null);
-  if (!reg?.active) return;
-
-  const endMs = new Date(timer.started_at).getTime() + timer.duration_minutes * 60_000;
-  const delayMs = endMs - Date.now();
-  if (delayMs <= 0) return;
-
-  const isRate = timer.type === 'rate';
-  const title = isRate ? '⭐ Time to rate your wine!' : '🫙 Decanting complete!';
-  const body = isRate
-    ? `How was ${timer.producer} ${timer.wine_name}? Open the app to rate it.`
-    : `${timer.producer} ${timer.wine_name} is ready to pour.`;
-
-  reg.active.postMessage({
-    type: 'SCHEDULE_NOTIFICATION',
-    timerId: timer.id,
-    title,
-    body,
-    delayMs,
-    tag: `wine-timer-${timer.id}`,
-  });
-}
-
-/** Cancels a previously scheduled OS notification */
-async function cancelOSNotification(timerId: string): Promise<void> {
-  if (!notificationsSupported()) return;
-  const reg = await navigator.serviceWorker.ready.catch(() => null);
-  reg?.active?.postMessage({ type: 'CANCEL_NOTIFICATION', timerId });
-}
 
 function getKey(userId: string) {
   return `${STORAGE_PREFIX}${userId}`;
@@ -104,20 +49,59 @@ function saveToStorage(userId: string, timers: WineTimer[]) {
   safeSetItem(getKey(userId), JSON.stringify(timers));
 }
 
+function fireAtIso(timer: WineTimer): string {
+  const endMs = new Date(timer.started_at).getTime() + timer.duration_minutes * 60_000;
+  return new Date(endMs).toISOString();
+}
+
+async function persistServerReminder(userId: string, timer: WineTimer): Promise<void> {
+  await upsertWineReminder({
+    userId,
+    clientTimerId: timer.id,
+    reminderType: timer.type,
+    fireAt: fireAtIso(timer),
+    bottleId: timer.bottle_id,
+    wineId: timer.wine_id,
+    historyId: timer.history_id,
+    wineName: timer.wine_name,
+    producer: timer.producer,
+  });
+}
+
 export function useTimerManager() {
   const [userId, setUserId] = useState<string | null>(null);
   const [timers, setTimers] = useState<WineTimer[]>([]);
   /** Increments every second to force derived value re-evaluation */
   const [tick, setTick] = useState(0);
 
-  // Load user + timers on mount
+  // Load user + timers; clear in-memory state on sign-out
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
       if (data.user) {
         setUserId(data.user.id);
         setTimers(loadFromStorage(data.user.id));
       }
     });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setUserId(null);
+        setTimers([]);
+        return;
+      }
+      if (session.user) {
+        setUserId(session.user.id);
+        setTimers(loadFromStorage(session.user.id));
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   // Tick every second to update countdowns
@@ -160,10 +144,10 @@ export function useTimerManager() {
         return next;
       });
 
-      // Request OS notification permission (requires user-gesture context) then
-      // schedule a native notification for when this timer expires.
-      requestNotificationPermission().then(granted => {
-        if (granted) scheduleOSNotification(timer);
+      // Server reminder (absolute fire_at) — delivery is Web Push cron, not SW setTimeout.
+      // Failures are non-critical: in-app countdown still works.
+      persistServerReminder(userId, timer).catch(err => {
+        console.warn('[TimerManager] Server reminder persist failed:', err);
       });
 
       return timer;
@@ -179,7 +163,7 @@ export function useTimerManager() {
         saveToStorage(userId, next);
         return next;
       });
-      cancelOSNotification(timerId);
+      cancelWineReminder(userId, timerId).catch(() => {});
     },
     [userId],
   );
@@ -193,10 +177,18 @@ export function useTimerManager() {
         saveToStorage(userId, next);
         return next;
       });
-      cancelOSNotification(timerId);
+      cancelWineReminder(userId, timerId).catch(() => {});
     },
     [userId],
   );
+
+  /** Clear local timer storage for the signed-in user (call on sign-out). */
+  const clearLocalTimers = useCallback(() => {
+    if (userId) {
+      safeRemoveItem(getKey(userId));
+    }
+    setTimers([]);
+  }, [userId]);
 
   const getRemainingMs = useCallback(
     (timer: WineTimer): number => {
@@ -222,9 +214,11 @@ export function useTimerManager() {
     activeTimers,
     recentlyExpiredTimers,
     allTimers: timers,
+    userId,
     createTimer,
     cancelTimer,
     dismissTimer,
+    clearLocalTimers,
     getRemainingMs,
     formatCountdown,
   };

@@ -20,6 +20,7 @@ import { WeeklySummaryCard } from '../components/WeeklySummaryCard';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { getPortalUrl } from '../lib/paddle';
 import { supabase } from '../lib/supabase';
+import { NotificationEnableCard } from '../components/NotificationEnableCard';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -142,6 +143,10 @@ export function ProfilePage() {
           {profile.email && (
             <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{profile.email}</p>
           )}
+        </div>
+
+        <div className="mb-6">
+          <NotificationEnableCard userId={user?.id ?? null} />
         </div>
 
         {/* Profile Form */}

@@ -590,6 +590,109 @@ export interface Database {
           created_at?: string
         }
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'push_subscriptions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      wine_reminders: {
+        Row: {
+          id: string
+          user_id: string
+          client_timer_id: string
+          reminder_type: string
+          fire_at: string
+          status: string
+          bottle_id: string | null
+          wine_id: string | null
+          history_id: string | null
+          wine_name: string | null
+          producer: string | null
+          sent_at: string | null
+          last_error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          client_timer_id: string
+          reminder_type: string
+          fire_at: string
+          status?: string
+          bottle_id?: string | null
+          wine_id?: string | null
+          history_id?: string | null
+          wine_name?: string | null
+          producer?: string | null
+          sent_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          client_timer_id?: string
+          reminder_type?: string
+          fire_at?: string
+          status?: string
+          bottle_id?: string | null
+          wine_id?: string | null
+          history_id?: string | null
+          wine_name?: string | null
+          producer?: string | null
+          sent_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'wine_reminders_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       bottles_with_wine_info: {
@@ -659,6 +762,12 @@ export interface Database {
           p_request_status?: string
         }
         Returns: Json
+      }
+      claim_due_wine_reminders: {
+        Args: {
+          batch_size?: number
+        }
+        Returns: Database['public']['Tables']['wine_reminders']['Row'][]
       }
     }
     Enums: {

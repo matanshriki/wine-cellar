@@ -27,6 +27,8 @@ import type { WineInsight } from '../services/insightService';
 import { SommiInsightPill } from './SommiInsightPill';
 import { recordShownInsight, getRecentlyShownTypes } from '../services/insightCache';
 import { trackInsight } from '../services/analytics';
+import { useAuth } from '../contexts/SupabaseAuthContext';
+import { NotificationEnableCard } from './NotificationEnableCard';
 
 // ─── Serving guidance derivation ──────────────────────────────────────────────
 
@@ -384,6 +386,8 @@ export function OpenRitualSheet({
   createTimer,
 }: OpenRitualSheetProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const authUserId = user?.id ?? null;
 
   const [step, setStep] = useState<Step>('open');
   const [direction, setDirection] = useState(1);
@@ -818,6 +822,7 @@ export function OpenRitualSheet({
                                 />
                               ))}
                             </div>
+                            <NotificationEnableCard userId={authUserId} compact />
                           </motion.div>
                         )}
                       </div>

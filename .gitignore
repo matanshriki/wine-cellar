@@ -16,3 +16,4 @@ apps/web/.env.*.local
 apps/api/.env
 apps/api/.env.local
 **/.env.backup
+.local/

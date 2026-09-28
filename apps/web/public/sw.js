@@ -129,8 +129,44 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-/** Map<timerId, timeoutHandle> */
-const pendingNotifications = new Map();
+/**
+ * Web Push delivery (server → push service → here).
+ * Do NOT use setTimeout for closed-app reminders — iOS kills the SW.
+ */
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Sommi',
+    body: '',
+    tag: 'sommi-reminder',
+    data: { url: '/cellar' },
+  };
+
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = {
+        title: parsed.title || payload.title,
+        body: parsed.body || '',
+        tag: parsed.tag || payload.tag,
+        data: parsed.data && typeof parsed.data === 'object' ? parsed.data : payload.data,
+      };
+    }
+  } catch (err) {
+    console.warn('[Service Worker] Push payload parse failed', err);
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: payload.tag,
+      renotify: false,
+      requireInteraction: true,
+      data: payload.data,
+    })
+  );
+});
 
 self.addEventListener('message', (event) => {
   const { data } = event;
@@ -141,56 +177,40 @@ self.addEventListener('message', (event) => {
     return;
   }
 
-  if (data.type === 'SCHEDULE_NOTIFICATION') {
-    const { timerId, title, body, delayMs, tag } = data;
-
-    if (pendingNotifications.has(timerId)) {
-      clearTimeout(pendingNotifications.get(timerId));
-    }
-
-    if (delayMs <= 0) return;
-
-    const handle = setTimeout(() => {
-      self.registration.showNotification(title, {
-        body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag,
-        renotify: false,
-        requireInteraction: true,
-        data: { timerId, url: '/' },
-      });
-      pendingNotifications.delete(timerId);
-    }, delayMs);
-
-    pendingNotifications.set(timerId, handle);
-    return;
-  }
-
-  if (data.type === 'CANCEL_NOTIFICATION') {
-    const { timerId } = data;
-    if (pendingNotifications.has(timerId)) {
-      clearTimeout(pendingNotifications.get(timerId));
-      pendingNotifications.delete(timerId);
-    }
+  // Close an already-visible notification by tag (optional client helper)
+  if (data.type === 'CLOSE_NOTIFICATION') {
+    const tag = data.tag;
+    if (!tag) return;
     self.registration
-      .getNotifications({ tag: `wine-timer-${timerId}` })
+      .getNotifications({ tag })
       .then((notifications) => notifications.forEach((n) => n.close()))
       .catch(() => {});
-    return;
   }
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const rawUrl =
+    (event.notification.data && event.notification.data.url) || '/cellar';
+  const targetUrl = rawUrl.startsWith('http')
+    ? rawUrl
+    : new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
+        if (client.url && 'navigate' in client) {
+          try {
+            client.navigate(targetUrl);
+          } catch (_) {
+            /* navigate may be unavailable */
+          }
+        }
         if ('focus' in client) return client.focus();
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
     })
   );
 });

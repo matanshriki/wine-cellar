@@ -93,6 +93,20 @@
     "authFailed": "Authentication failed",
     "loggedOut": "Logged out successfully"
   },
+  "notifications": {
+    "title": "Reminder alerts",
+    "help": "Get an alert when decanting finishes or it is time to rate — even if Sommi is closed.",
+    "enable": "Enable alerts",
+    "disableThisDevice": "Disable on this device",
+    "enabled": "Alerts are on for this device.",
+    "grantedNotSubscribed": "Permission is granted — tap Enable to register this device.",
+    "unsupported": "Notifications are not supported in this browser.",
+    "needsStandalone": "On iPhone, add Sommi to your Home Screen first, then enable alerts from the installed app.",
+    "denied": "Notifications are blocked. Enable them in your device or browser settings for Sommi.",
+    "notConfigured": "Push alerts are not configured on this environment yet.",
+    "enableFailed": "Could not enable notifications on this device.",
+    "countdownNote": "In-app countdowns work even if alerts are off. Other signed-in devices keep their own alert settings."
+  },
   "profile": {
     "title": "Profile",
     "subtitle": "Manage your account settings",
