@@ -118,6 +118,7 @@ describe('Remember that I like [grape] → Profile', () => {
         grapes_disliked: [],
         styles_liked: [],
         styles_disliked: [],
+        body: null,
       },
       'en'
     );

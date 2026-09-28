@@ -14,7 +14,9 @@ export type SommelierLogPhase =
   | 'persist'
   | 'action'
   | 'taste_preference_extract'
-  | 'inventory';
+  | 'inventory'
+  | 'wine_experience'
+  | 'profile_wine_memory_remove';
 
 function shortUser(userId: string | undefined): string {
   if (!userId) return '—';
