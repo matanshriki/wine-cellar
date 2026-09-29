@@ -566,7 +566,11 @@
       "reservedForPlaceholder": "e.g., Noa's birthday",
       "date": "Target date",
       "note": "Note (optional)",
-      "notePlaceholder": "Any details about the occasion…"
+      "notePlaceholder": "Any details about the occasion…",
+      "notifyScheduled": "You'll get a notification at {{when}} (10:00 in your local time).",
+      "notifyPast": "This date is already here — you'll see an in-app reminder when you open your cellar (no push for past dates).",
+      "notifyNeedsDate": "Pick a date and we'll remind you that morning at 10:00 local time.",
+      "notifySyncFailed": "Reservation saved, but the notification could not be scheduled. Try editing the Keep date again."
     }
   },
   "recommendation": {

@@ -50,7 +50,8 @@ function buildDeepLink(row: {
   producer: string | null;
 }): string {
   const params = new URLSearchParams();
-  params.set('reminder', row.reminder_type === 'rate' ? 'rate' : 'decant');
+  // Pass through decant | rate | keep (do not collapse unknown → decant).
+  params.set('reminder', row.reminder_type);
   if (row.history_id) params.set('historyId', row.history_id);
   if (row.bottle_id) params.set('bottleId', row.bottle_id);
   if (row.wine_name) params.set('wineName', row.wine_name);
@@ -67,12 +68,19 @@ function buildPayload(row: {
   bottle_id: string | null;
 }): PushPayload {
   const wine = [row.producer, row.wine_name].filter(Boolean).join(' ') || 'your wine';
-  const isRate = row.reminder_type === 'rate';
+  const type = row.reminder_type;
+  let title = 'Decanting complete';
+  let body = `${wine} is ready to pour.`;
+  if (type === 'rate') {
+    title = 'Time to rate your wine';
+    body = `How was ${wine}? Open Sommi to rate it.`;
+  } else if (type === 'keep') {
+    title = 'Your Keep day is here';
+    body = `${wine} — the occasion you reserved it for is today.`;
+  }
   return {
-    title: isRate ? 'Time to rate your wine' : 'Decanting complete',
-    body: isRate
-      ? `How was ${wine}? Open Sommi to rate it.`
-      : `${wine} is ready to pour.`,
+    title,
+    body,
     tag: `wine-reminder-${row.id}`,
     data: {
       url: buildDeepLink(row),

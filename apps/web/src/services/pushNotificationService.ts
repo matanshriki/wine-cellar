@@ -5,6 +5,11 @@
 
 import { supabase } from '../lib/supabase';
 import { isIos, isStandalonePwa } from '../utils/deviceDetection';
+import {
+  keepClientTimerId,
+  keepReminderFireAtIso,
+  isKeepFireAtInFuture,
+} from '../utils/keepReminderSchedule';
 
 export type PushPermissionState =
   | 'unsupported'
@@ -146,7 +151,7 @@ export async function disablePushNotificationsForThisDevice(userId?: string | nu
 export type ReminderInsert = {
   userId: string;
   clientTimerId: string;
-  reminderType: 'decant' | 'rate';
+  reminderType: 'decant' | 'rate' | 'keep';
   fireAt: string;
   bottleId: string;
   wineId: string;
@@ -190,5 +195,74 @@ export async function cancelWineReminder(userId: string, clientTimerId: string):
     .in('status', ['pending', 'sending']);
   if (error) {
     console.warn('[push] reminder cancel failed', error);
+    throw error;
   }
+}
+
+export type SyncKeepReminderResult =
+  | { scheduled: true; fireAtIso: string; clientTimerId: string }
+  | { scheduled: false; reason: 'cleared' | 'past' | 'invalid_date'; clientTimerId: string };
+
+/**
+ * Schedule or cancel the Keep/Reserve Web Push for a bottle.
+ * - Future reserved_date → upsert pending keep reminder at ~10:00 local.
+ * - Past / cleared / unreserved → cancel pending keep reminder.
+ * Does not require notification permission; Push delivery still needs a subscription.
+ */
+export async function syncKeepPushReminder(opts: {
+  userId: string;
+  bottleId: string;
+  wineId: string;
+  wineName: string;
+  producer: string;
+  isReserved: boolean;
+  reservedDate: string | null | undefined;
+  timeZone?: string;
+  nowMs?: number;
+}): Promise<SyncKeepReminderResult> {
+  const clientTimerId = keepClientTimerId(opts.bottleId);
+
+  if (!opts.isReserved || !opts.reservedDate?.trim()) {
+    await cancelWineReminder(opts.userId, clientTimerId);
+    return { scheduled: false, reason: 'cleared', clientTimerId };
+  }
+
+  const tz =
+    opts.timeZone ||
+    (typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : undefined) ||
+    'UTC';
+
+  let fireAtIso: string;
+  try {
+    fireAtIso = keepReminderFireAtIso(opts.reservedDate.trim(), tz);
+  } catch {
+    await cancelWineReminder(opts.userId, clientTimerId);
+    return { scheduled: false, reason: 'invalid_date', clientTimerId };
+  }
+
+  if (!isKeepFireAtInFuture(fireAtIso, opts.nowMs ?? Date.now())) {
+    // No overdue Push on deploy / cellar open — in-app Keep modal still shows.
+    await cancelWineReminder(opts.userId, clientTimerId);
+    return { scheduled: false, reason: 'past', clientTimerId };
+  }
+
+  await upsertWineReminder({
+    userId: opts.userId,
+    clientTimerId,
+    reminderType: 'keep',
+    fireAt: fireAtIso,
+    bottleId: opts.bottleId,
+    wineId: opts.wineId,
+    wineName: opts.wineName,
+    producer: opts.producer,
+  });
+
+  return { scheduled: true, fireAtIso, clientTimerId };
+}
+
+/** Cancel Keep reminder when a bottle is deleted. */
+export async function cancelKeepPushReminder(userId: string, bottleId: string): Promise<void> {
+  await cancelWineReminder(userId, keepClientTimerId(bottleId));
 }

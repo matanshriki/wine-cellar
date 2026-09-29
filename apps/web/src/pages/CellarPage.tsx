@@ -254,6 +254,8 @@ export function CellarPage() {
   const [showFirstBottleSuccess, setShowFirstBottleSuccess] = useState(false);
   const [firstBottleName, setFirstBottleName] = useState('');
   const hasCheckedOnboarding = useRef(false);
+  /** Web Push Keep deep link: open WineDetailsModal after cold start / tap */
+  const pendingKeepBottleIdRef = useRef<string | null>(null);
   /** True when initial cellar load failed with a network-style error while list is still empty */
   const [cellarUnreachableEmpty, setCellarUnreachableEmpty] = useState(false);
 
@@ -401,8 +403,15 @@ export function CellarPage() {
   }, []);
 
   // Handle URL parameters for filtering (from Drink Window navigation)
+  // and Keep Web Push deep links (?reminder=keep&bottleId=…)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const keepBottleId =
+      params.get('reminder') === 'keep' ? params.get('bottleId') : null;
+    if (keepBottleId) {
+      pendingKeepBottleIdRef.current = keepBottleId;
+    }
+
     const readiness = params.get('readiness');
     const rating = params.get('rating');
     const sort = params.get('sort');
@@ -440,6 +449,12 @@ export function CellarPage() {
     // Clear URL params after applying (clean URL)
     // Note: We keep the filter states (activeFilters, ratingFilter) active
     // so the user sees the filtered results
+    // Leave rate/decant query params for OpenRitualContext to consume first;
+    // keep is captured above via pendingKeepBottleIdRef.
+    const reminder = params.get('reminder');
+    if (reminder === 'rate' || reminder === 'decant') {
+      return;
+    }
     if (params.toString()) {
       const timer = setTimeout(() => {
         navigate('/cellar', { replace: true });
@@ -447,6 +462,31 @@ export function CellarPage() {
       return () => clearTimeout(timer);
     }
   }, [location.search]);
+
+  // Cold-start / notification tap: open the reserved bottle details
+  useEffect(() => {
+    const id = pendingKeepBottleIdRef.current;
+    if (!id) return;
+    let cancelled = false;
+
+    (async () => {
+      let bottle = bottles.find((b) => b.id === id) ?? null;
+      if (!bottle) {
+        try {
+          bottle = await bottleService.getBottle(id);
+        } catch {
+          bottle = null;
+        }
+      }
+      if (cancelled || !bottle) return;
+      pendingKeepBottleIdRef.current = null;
+      setSelectedBottle(bottle);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bottles, location.search]);
 
   // Clear rating filter when user manually changes search or filters
   useEffect(() => {

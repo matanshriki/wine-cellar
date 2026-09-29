@@ -6,6 +6,7 @@
  * trigger the ritual via `useOpenRitual().openRitual(bottle, opts)`.
  *
  * Also handles Web Push deep links (?reminder=rate|decant&…) including cold start.
+ * Keep deep links (?reminder=keep&bottleId=…) are handled on CellarPage (opens bottle details).
  */
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';

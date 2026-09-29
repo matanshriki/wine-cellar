@@ -1,9 +1,23 @@
-# Web Push reminders (decant + rate-later)
+# Web Push reminders (decant + rate-later + Keep/Reserve)
 
 Server-scheduled reminders with absolute `fire_at`, Web Push delivery, and deep links.
 **Closed-app delivery does not use service-worker `setTimeout`.**
 
-> **Production / iPhone delivery: NOT PASSED.**
+## Reminder types
+
+| Type | When scheduled | Deep link |
+|------|----------------|-----------|
+| `decant` | Open ritual timer end | `/cellar?reminder=decant&…` |
+| `rate` | Rate-later timer end | `/cellar?reminder=rate&historyId=…` |
+| `keep` | Future `reserved_date` at **10:00 local** | `/cellar?reminder=keep&bottleId=…` |
+
+Keep notes:
+- Date-only UI → fire at 10:00 in the user’s timezone (shown explicitly in BottleForm).
+- Edit date upserts the same `client_timer_id` (`keep_<bottleId>`); clear/delete cancels.
+- No overdue Push for old `reserved_date` on deploy or cellar open; in-app Keep modal still works without notification permission.
+- Migration: `20260929_wine_reminders_keep.sql` (extends CHECK + unique pending keep per bottle).
+
+> **Production / iPhone closed-app delivery: leave for manual check after deploy.**
 
 ## Local test results (2026-09-28)
 

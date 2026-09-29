@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as bottleService from '../services/bottleService';
@@ -12,6 +12,11 @@ import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev on
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
 import * as storageImageService from '../services/storageImageService';
 import { uploadLabelImage } from '../services/labelScanService';
+import {
+  formatKeepNotifyWhen,
+  isKeepFireAtInFuture,
+  keepReminderFireAtIso,
+} from '../utils/keepReminderSchedule';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -100,6 +105,27 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   const [reservedFor, setReservedFor] = useState<string>((bottle as any)?.reserved_for || '');
   const [reservedDate, setReservedDate] = useState<string>((bottle as any)?.reserved_date || '');
   const [reservedNote, setReservedNote] = useState<string>((bottle as any)?.reserved_note || '');
+
+  const keepNotifyHint = useMemo(() => {
+    if (!isReserved) return null;
+    if (!reservedDate) {
+      return { kind: 'needs_date' as const, text: t('bottleForm.keep.notifyNeedsDate') };
+    }
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const fireAtIso = keepReminderFireAtIso(reservedDate, tz);
+      if (!isKeepFireAtInFuture(fireAtIso)) {
+        return { kind: 'past' as const, text: t('bottleForm.keep.notifyPast') };
+      }
+      const when = formatKeepNotifyWhen(reservedDate, tz, i18n.language);
+      return {
+        kind: 'scheduled' as const,
+        text: t('bottleForm.keep.notifyScheduled', { when }),
+      };
+    } catch {
+      return { kind: 'needs_date' as const, text: t('bottleForm.keep.notifyNeedsDate') };
+    }
+  }, [isReserved, reservedDate, t, i18n.language]);
 
   const [loading, setLoading] = useState(false);
   const [fetchingVivino, setFetchingVivino] = useState(false);
@@ -1119,6 +1145,19 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       onChange={(e) => setReservedDate(e.target.value)}
                       className="input-luxury w-full min-w-0 max-w-full text-sm"
                     />
+                    {keepNotifyHint && (
+                      <p
+                        className="text-xs mt-1.5 leading-snug"
+                        style={{
+                          color:
+                            keepNotifyHint.kind === 'scheduled'
+                              ? 'var(--gold-700, #92660a)'
+                              : 'var(--text-tertiary)',
+                        }}
+                      >
+                        {keepNotifyHint.text}
+                      </p>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>

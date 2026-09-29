@@ -14,6 +14,11 @@ import {
 import { triggerFoodPairingGeneration } from './foodPairingService';
 import { triggerKosherDetection } from './kosherService';
 import { storeBottleAnalysisFromEdgeResponse } from './aiAnalysisService';
+import {
+  cancelKeepPushReminder,
+  syncKeepPushReminder,
+} from './pushNotificationService';
+import { toast } from '../lib/toast';
 import i18n from '../i18n/config';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
@@ -380,7 +385,38 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   // Never blocks bottle creation — errors are swallowed inside the service.
   triggerKosherDetection(newBottle, 'system_background');
 
+  // Schedule Keep Web Push when a future reserved_date was set (no overdue backfill).
+  // Bottle save already succeeded — sync failure must not undo it, but the user must see a warning.
+  try {
+    await syncKeepReminderFromBottle(user.id, newBottle);
+  } catch (err) {
+    console.warn('[bottleService] Keep reminder sync failed:', err);
+    toast.warning(
+      i18n.t(
+        'bottleForm.keep.notifySyncFailed',
+        'Reservation saved, but the notification could not be scheduled. Try editing the Keep date again.',
+      ),
+    );
+  }
+
   return newBottle;
+}
+
+/** Sync server Keep reminder from bottle reservation fields (non-blocking for callers). */
+async function syncKeepReminderFromBottle(
+  userId: string,
+  bottle: BottleWithWineInfo,
+): Promise<void> {
+  const wine = bottle.wine as Wine | undefined;
+  await syncKeepPushReminder({
+    userId,
+    bottleId: bottle.id,
+    wineId: bottle.wine_id,
+    wineName: wine?.wine_name || 'Wine',
+    producer: wine?.producer || '',
+    isReserved: bottle.is_reserved === true,
+    reservedDate: bottle.reserved_date ?? null,
+  });
 }
 
 /**
@@ -411,7 +447,27 @@ export async function updateBottle(id: string, updates: BottleUpdate): Promise<B
     throw new Error('Failed to update bottle');
   }
 
-  return data as any as BottleWithWineInfo;
+  const updated = data as any as BottleWithWineInfo;
+
+  const touchesReservation =
+    Object.prototype.hasOwnProperty.call(updates, 'is_reserved') ||
+    Object.prototype.hasOwnProperty.call(updates, 'reserved_date');
+
+  if (touchesReservation) {
+    try {
+      await syncKeepReminderFromBottle(user.id, updated);
+    } catch (err) {
+      console.warn('[bottleService] Keep reminder sync failed:', err);
+      toast.warning(
+        i18n.t(
+          'bottleForm.keep.notifySyncFailed',
+          'Reservation saved, but the notification could not be scheduled. Try editing the Keep date again.',
+        ),
+      );
+    }
+  }
+
+  return updated;
 }
 
 /**
@@ -424,6 +480,11 @@ export async function deleteBottle(id: string): Promise<void> {
   if (!user) {
     throw new Error('Not authenticated');
   }
+
+  // Cancel Keep reminder before delete (no FK cascade on wine_reminders.bottle_id).
+  await cancelKeepPushReminder(user.id, id).catch((err) => {
+    console.warn('[bottleService] Keep reminder cancel on delete failed:', err);
+  });
 
   const { error } = await supabase
     .from('bottles')

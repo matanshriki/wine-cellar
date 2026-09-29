@@ -12,7 +12,8 @@
     "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
     "lint": "eslint . --ext ts,tsx",
     "test:overrides": "vitest run src/services/tasteProfileService.overrides.test.ts",
-    "test:calibration": "vitest run src/services/tasteProfileCalibration.test.ts src/services/tasteProfileService.overrides.test.ts"
+    "test:calibration": "vitest run src/services/tasteProfileCalibration.test.ts src/services/tasteProfileService.overrides.test.ts",
+    "test:keep-push": "vitest run src/utils/keepReminderSchedule.test.ts src/utils/wineReminderDeepLink.test.ts src/services/syncKeepPushReminder.test.ts"
   },
   "dependencies": {
     "@paddle/paddle-js": "^1.6.2",
