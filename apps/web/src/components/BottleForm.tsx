@@ -1144,10 +1144,18 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       value={reservedDate}
                       onChange={(e) => setReservedDate(e.target.value)}
                       className="input-luxury w-full min-w-0 max-w-full text-sm"
+                      style={{
+                        // Extra guard for iOS PWA WebKit date control sizing
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        height: 44,
+                        minHeight: 44,
+                        textAlign: 'start',
+                      }}
                     />
                     {keepNotifyHint && (
                       <p
-                        className="text-xs mt-1.5 leading-snug"
+                        className="text-xs mt-1.5 leading-snug break-words"
                         style={{
                           color:
                             keepNotifyHint.kind === 'scheduled'
@@ -1170,6 +1178,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                       className="input-luxury w-full min-w-0 max-w-full text-sm"
                       placeholder={t('bottleForm.keep.notePlaceholder')}
                       maxLength={200}
+                      style={{ textOverflow: 'ellipsis' }}
                     />
                   </div>
                 </div>

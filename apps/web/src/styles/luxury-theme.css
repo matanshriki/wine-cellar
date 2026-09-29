@@ -429,7 +429,8 @@
 }
 
 /* Native date/time controls use a wide intrinsic min-width; without this they
-   overflow narrow modals and grid cells (esp. mobile WebKit). */
+   overflow narrow modals and grid cells (esp. mobile WebKit).
+   iOS Safari also forces a tall centered date value — normalize to match text inputs. */
 .input-luxury[type="date"],
 .input-luxury[type="datetime-local"],
 .input-luxury[type="time"],
@@ -438,6 +439,42 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+  height: 44px;
+  line-height: 1.25;
+  text-align: start;
+  padding-block: 0.625rem;
+}
+
+/* WebKit paints the selected date in a centered pseudo-value; left-align it. */
+.input-luxury[type="date"]::-webkit-date-and-time-value,
+.input-luxury[type="datetime-local"]::-webkit-date-and-time-value,
+.input-luxury[type="month"]::-webkit-date-and-time-value,
+.input-luxury[type="time"]::-webkit-date-and-time-value {
+  text-align: start;
+  margin: 0;
+  min-height: 0;
+  height: auto;
+  line-height: 1.25;
+}
+
+.input-luxury[type="date"]::-webkit-datetime-edit,
+.input-luxury[type="datetime-local"]::-webkit-datetime-edit,
+.input-luxury[type="month"]::-webkit-datetime-edit,
+.input-luxury[type="time"]::-webkit-datetime-edit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  min-width: 0;
+}
+
+.input-luxury[type="date"]::-webkit-calendar-picker-indicator {
+  margin-inline-start: auto;
+  opacity: 0.55;
+  cursor: pointer;
 }
 
 /* ===== MODAL PRIMITIVE ===== */
