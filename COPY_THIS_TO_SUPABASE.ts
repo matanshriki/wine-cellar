@@ -89,7 +89,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           {
             role: 'system',

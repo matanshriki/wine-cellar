@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { config } from '../config.js';
+import { config, openaiSamplingParams } from '../config.js';
 import { Bottle, BottleAnalysis } from '@prisma/client';
 import { parseJsonFromModelContent } from '../utils/safeJson.js';
 import { Sentry, isSentryInitialized } from '../lib/sentry.js';
@@ -88,7 +88,7 @@ Respond ONLY with valid JSON.`;
         },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.7,
+      ...openaiSamplingParams(0.7),
       max_tokens: 400,
     });
 
@@ -346,7 +346,7 @@ Return ONLY the JSON array, no markdown or other text.`;
         },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.7, // Slightly lower for more consistent quality
+      ...openaiSamplingParams(0.7),
       max_tokens: 1200, // Increased for detailed explanations
     });
 

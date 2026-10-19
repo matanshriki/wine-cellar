@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 import { withSentry, setSentryWineContext } from '../_shared/sentry.ts';
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -189,7 +190,7 @@ serve(withSentry('parse-label-image', async (req) => {
     // would cause false IMAGE_NOT_ACCESSIBLE failures. OpenAI Vision will surface
     // a clear error if the URL is genuinely unreachable.
     console.log('[Parse Label] Calling OpenAI Vision API...');
-    console.log('[Parse Label] Model: gpt-4o-mini');
+    console.log('[Parse Label] Model:', OPENAI_CHAT_MODEL);
     console.log('[Parse Label] Mode:', isMultiBottle ? 'multi-bottle (with receipt detection)' : 'single');
     
     let openaiResponse;
@@ -201,7 +202,7 @@ serve(withSentry('parse-label-image', async (req) => {
           'Authorization': `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: OPENAI_CHAT_MODEL,
           messages: [
           {
             role: 'system',
@@ -451,7 +452,7 @@ Return JSON in this exact format:
         actionType: 'receipt_scan',
         creditsRequired: 8,
         requestStatus: 'success',
-        modelName: 'gpt-4o-mini',
+        modelName: OPENAI_CHAT_MODEL,
         inputTokens: openaiData.usage?.prompt_tokens ?? null,
         outputTokens: openaiData.usage?.completion_tokens ?? null,
         metadata: { image_type: 'receipt', item_count: validatedItems.length },
@@ -496,7 +497,7 @@ Return JSON in this exact format:
         actionType: 'receipt_scan',
         creditsRequired: 8,
         requestStatus: 'success',
-        modelName: 'gpt-4o-mini',
+        modelName: OPENAI_CHAT_MODEL,
         inputTokens: openaiData.usage?.prompt_tokens ?? null,
         outputTokens: openaiData.usage?.completion_tokens ?? null,
         metadata: { image_type: 'label', bottle_count: validatedBottles.length, mode: 'multi-bottle' },
@@ -552,7 +553,7 @@ Return JSON in this exact format:
       actionType: 'label_scan',
       creditsRequired: 2,
       requestStatus: 'success',
-      modelName: 'gpt-4o-mini',
+      modelName: OPENAI_CHAT_MODEL,
       inputTokens: openaiData.usage?.prompt_tokens ?? null,
       outputTokens: openaiData.usage?.completion_tokens ?? null,
       metadata: { image_type: 'label', overall_confidence: overallConfidence, fields_extracted: totalFields },

@@ -1925,7 +1925,7 @@ VALUES ('${user?.id}');`}
         <h4 style={{ marginTop: 0 }}>ℹ️ Notes</h4>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li><strong>missing_only</strong> is cheapest — skips bottles that already have analysis</li>
-          <li>Each bottle costs ~1 OpenAI API call (gpt-4o-mini, very cheap)</li>
+          <li>Each bottle costs ~1 OpenAI API call (gpt-6-luna, very cheap)</li>
           <li>Processing pauses 1 second between pages to avoid rate limits</li>
           <li>Safe to stop and re-run — already-analyzed bottles are skipped automatically in missing_only mode</li>
           <li>Results appear in the user's cellar immediately after each page</li>

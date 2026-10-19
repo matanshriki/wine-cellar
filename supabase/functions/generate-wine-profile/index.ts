@@ -5,6 +5,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -213,7 +214,7 @@ Grapes: ${grapesStr}${styleStr}${abvStr}${ratingStr}${vivinoNotesStr}${sommelier
         Authorization: `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_CHAT_MODEL,
         messages: [
           {
             role: 'system',
@@ -289,7 +290,7 @@ Base your analysis on:
         actionType: 'wine_profile_generation',
         creditsRequired: 1,
         requestStatus: 'failed',
-        modelName: 'gpt-4o-mini',
+        modelName: OPENAI_CHAT_MODEL,
         metadata: { openai_status: openaiResponse.status, wine_name: input.name },
       })
       throw new Error(`OpenAI API error: ${openaiResponse.status} ${errorText}`)
@@ -339,7 +340,7 @@ Base your analysis on:
       actionType: 'wine_profile_generation',
       creditsRequired: 1,
       requestStatus: 'success',
-      modelName: 'gpt-4o-mini',
+      modelName: OPENAI_CHAT_MODEL,
       inputTokens: openaiData.usage?.prompt_tokens ?? null,
       outputTokens: openaiData.usage?.completion_tokens ?? null,
       metadata: {

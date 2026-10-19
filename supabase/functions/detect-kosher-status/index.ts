@@ -13,7 +13,7 @@
  *             keyword signal, partial-Kosher producer, or rule=med upgrade).
  *             Skipped if PERPLEXITY_API_KEY is absent.
  *
- *   Layer 3 — Conservative OpenAI fallback (gpt-4o-mini)
+ *   Layer 3 — Conservative OpenAI fallback (OPENAI_CHAT_MODEL / gpt-6-luna)
  *             Runs only when Layers 1 and 2 both returned null or were skipped.
  *             Defaults to null for any uncertainty.
  *
@@ -38,6 +38,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { withSentry, setSentryWineContext } from '../_shared/sentry.ts'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 import {
   detectKosherByProducerRule,
   shouldSkipKosherEnrichment,
@@ -473,7 +474,7 @@ serve(withSentry('detect-kosher-status', async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: OPENAI_CHAT_MODEL,
           response_format: { type: 'json_object' },
           temperature: 0,
           max_tokens: 300,

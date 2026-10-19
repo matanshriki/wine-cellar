@@ -337,7 +337,8 @@ agentRouter.post(
         userId:        req.userId!,
         actionType:    'sommelier_chat_message',
         requestStatus: 'success',
-        modelName:     meta?.model ?? null,
+        // Prefer agentMeta.model when present; otherwise log the configured API model.
+        modelName:     meta?.model ?? config.openaiModel,
         inputTokens:   meta?.usage?.prompt_tokens ?? null,
         outputTokens:  meta?.usage?.completion_tokens ?? null,
         metadata: {

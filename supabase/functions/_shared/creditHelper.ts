@@ -35,7 +35,7 @@
  *     actionType: 'label_scan',
  *     creditsRequired: 2,
  *     requestStatus: 'success',
- *     modelName: 'gpt-4o-mini',
+ *     modelName: OPENAI_CHAT_MODEL,
  *     inputTokens: data.usage?.prompt_tokens,
  *     outputTokens: data.usage?.completion_tokens,
  *     metadata: { ... },

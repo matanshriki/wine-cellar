@@ -26,7 +26,9 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || defaultJwtSecret,
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
-  openaiModel: process.env.OPENAI_MODEL || 'gpt-5',
+  // Default: gpt-6-luna (OpenAI replacement for retiring gpt-4o-mini / gpt-5).
+  // Override in Railway with OPENAI_MODEL (e.g. gpt-5.6-sol for higher agent quality).
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-6-luna',
   nodeEnv,
   
   // Google OAuth (optional)
@@ -112,10 +114,18 @@ console.log('[Config] Paddle Price IDs:', [
 ].every(Boolean) ? 'ALL SET ✓' : 'SOME MISSING ✗');
 console.log('[Config] Meta Pixel (CAPI):', config.metaPixelId && config.metaConversionsApiAccessToken ? 'CONFIGURED ✓' : 'NOT SET (optional) ✗');
 
-/** gpt-5* only accepts the default temperature; omit custom values for those models. */
+/**
+ * Models that reject custom temperature when using reasoning defaults.
+ * Omit temperature for gpt-5*, gpt-6*, o1, o3 families.
+ */
 export function openaiSamplingParams(temperature: number): { temperature?: number } {
   const model = (config.openaiModel || '').toLowerCase();
-  if (model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3')) {
+  if (
+    model.startsWith('gpt-5') ||
+    model.startsWith('gpt-6') ||
+    model.startsWith('o1') ||
+    model.startsWith('o3')
+  ) {
     return {};
   }
   return { temperature };

@@ -23,6 +23,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -242,7 +243,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_CHAT_MODEL,
         messages: [
           { role: 'system', content: buildSystemPrompt(language) },
           { role: 'user', content: buildUserPrompt(wineData) },
@@ -261,7 +262,7 @@ serve(async (req) => {
         actionType: creditActionType,
         creditsRequired: creditCost,
         requestStatus: 'failed',
-        modelName: 'gpt-4o-mini',
+        modelName: OPENAI_CHAT_MODEL,
         metadata: { openai_status: openaiResponse.status, trigger_source: trigger_source ?? 'user_scan' },
       })
       throw new Error(`OpenAI API error: ${openaiResponse.status}`)
@@ -317,7 +318,7 @@ serve(async (req) => {
       actionType: creditActionType,
       creditsRequired: creditCost,
       requestStatus: 'success',
-      modelName: 'gpt-4o-mini',
+      modelName: OPENAI_CHAT_MODEL,
       inputTokens: openaiData.usage?.prompt_tokens ?? null,
       outputTokens: openaiData.usage?.completion_tokens ?? null,
       metadata: {

@@ -4,6 +4,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
+import { OPENAI_IMAGE_MODEL } from '../_shared/openaiModels.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -174,7 +175,7 @@ serve(async (req) => {
     console.log('[AI Label] ✅ Authorization verified');
 
     // ── Credit pre-flight check ──────────────────────────────────────────────
-    // DALL-E 3 is the most expensive AI call. Check BEFORE the AI call.
+    // Image generation is the most expensive AI call. Check BEFORE the AI call.
     // Skip pre-flight if this will be served from cache (no AI cost).
     const willUseCache = wine.generated_image_prompt_hash === promptHash && wine.generated_image_path;
     if (!willUseCache) {
@@ -225,8 +226,10 @@ serve(async (req) => {
       );
     }
 
-    // Call OpenAI to generate image
-    console.log('[AI Label] 🎨 Calling OpenAI DALL-E 3 to generate label art...');
+    // Call OpenAI Images API (gpt-image-* returns b64_json; dall-e-3 retired 2026-05-12)
+    const imageModel = OPENAI_IMAGE_MODEL;
+    const imageSize = Deno.env.get('AI_IMAGE_SIZE') || '1024x1024';
+    console.log('[AI Label] 🎨 Calling OpenAI Images API...', imageModel);
     const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -234,12 +237,11 @@ serve(async (req) => {
         'Authorization': `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: Deno.env.get('AI_IMAGE_MODEL') || 'dall-e-3',
+        model: imageModel,
         prompt: prompt,
         n: 1,
-        size: Deno.env.get('AI_IMAGE_SIZE') || '1024x1024',
-        quality: 'standard',
-        response_format: 'url',
+        size: imageSize,
+        quality: Deno.env.get('AI_IMAGE_QUALITY') || 'medium',
       }),
     });
 
@@ -252,7 +254,7 @@ serve(async (req) => {
         actionType: 'label_art_generation',
         creditsRequired: 5,
         requestStatus: 'failed',
-        modelName: Deno.env.get('AI_IMAGE_MODEL') || 'dall-e-3',
+        modelName: imageModel,
         metadata: { openai_status: openaiResponse.status, wine_id: wineId, style },
       });
       
@@ -280,15 +282,39 @@ serve(async (req) => {
     }
 
     const openaiData = await openaiResponse.json();
-    const generatedImageUrl = openaiData.data[0].url;
-    console.log('[AI Label] ✅ OpenAI generated image');
+    const imageItem = openaiData.data?.[0];
+    let imageBuffer: ArrayBuffer;
 
-    // Download the generated image
-    console.log('[AI Label] ⬇️ Downloading image from OpenAI...');
-    const imageResponse = await fetch(generatedImageUrl);
-    const imageBlob = await imageResponse.blob();
-    const imageBuffer = await imageBlob.arrayBuffer();
-    console.log('[AI Label] ✅ Image downloaded, size:', imageBuffer.byteLength, 'bytes');
+    if (imageItem?.b64_json) {
+      const binary = atob(imageItem.b64_json);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      imageBuffer = bytes.buffer;
+      console.log('[AI Label] ✅ OpenAI generated image (b64), size:', imageBuffer.byteLength, 'bytes');
+    } else if (imageItem?.url) {
+      console.log('[AI Label] ⬇️ Downloading image from OpenAI URL...');
+      const imageResponse = await fetch(imageItem.url);
+      const imageBlob = await imageResponse.blob();
+      imageBuffer = await imageBlob.arrayBuffer();
+      console.log('[AI Label] ✅ Image downloaded, size:', imageBuffer.byteLength, 'bytes');
+    } else {
+      console.error('[AI Label] ❌ No image data in OpenAI response');
+      await logCreditUsage(supabaseAdmin, {
+        userId: user.id,
+        actionType: 'label_art_generation',
+        creditsRequired: 5,
+        requestStatus: 'failed',
+        modelName: imageModel,
+        metadata: { error: 'empty_image_payload', wine_id: wineId, style },
+      });
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate image', details: 'Empty image payload' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
 
     // Upload to Supabase Storage (use admin client)
     const filename = `${wineId}-${style}-${promptHash.slice(0, 8)}.png`;
@@ -352,12 +378,12 @@ serve(async (req) => {
       actionType: 'label_art_generation',
       creditsRequired: 5,
       requestStatus: 'success',
-      modelName: Deno.env.get('AI_IMAGE_MODEL') || 'dall-e-3',
+      modelName: imageModel,
       metadata: {
         wine_id: wineId,
         bottle_id: bottleId ?? null,
         style,
-        image_size: Deno.env.get('AI_IMAGE_SIZE') || '1024x1024',
+        image_size: imageSize,
         storage_path: storagePath,
       },
     });

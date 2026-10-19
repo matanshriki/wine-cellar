@@ -15,6 +15,7 @@ import {
   normalizeAnalysisDataLang,
 } from '../_shared/bottleAnalysisData.ts'
 import { generateWineAnalysisWithOpenAi, type WineDataForAnalysis } from '../_shared/wineAnalysisGenerationOpenAi.ts'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -289,7 +290,7 @@ serve(withSentry('analyze-wine', async (req) => {
         actionType: creditActionType,
         creditsRequired: creditCost,
         requestStatus: 'failed',
-        modelName: 'gpt-4o-mini',
+        modelName: OPENAI_CHAT_MODEL,
         metadata: { error: msg.slice(0, 500), trigger_source: trigger_source ?? 'user' },
       })
       throw openAiErr
@@ -376,7 +377,7 @@ serve(withSentry('analyze-wine', async (req) => {
       actionType: creditActionType,
       creditsRequired: creditCost,
       requestStatus: 'success',
-      modelName: 'gpt-4o-mini',
+      modelName: OPENAI_CHAT_MODEL,
       inputTokens: openaiUsage.prompt_tokens,
       outputTokens: openaiUsage.completion_tokens,
       metadata: {

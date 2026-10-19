@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -135,7 +136,7 @@ RESPOND ONLY WITH JSON. NO OTHER TEXT.`
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_CHAT_MODEL,
         messages: [
           {
             role: 'system',

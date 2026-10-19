@@ -52,7 +52,7 @@ export const ACTION_CREDIT_COSTS: Record<AiActionType, number> = {
   label_scan:                  2,   // parse-label-image: single label vision scan
   receipt_scan:                8,   // parse-label-image: multi-bottle / receipt mode
   wine_profile_generation:     1,   // generate-wine-profile: taste vector generation
-  label_art_generation:        5,   // generate-label-art: DALL-E 3 (expensive)
+  label_art_generation:        5,   // generate-label-art: GPT Image (expensive)
   voice_transcription:         0,   // transcribe: supporting feature, no charge
   // Edge function — food pairing (distinct from agent 'food_pairing' for analytics)
   food_pairing_generation:     1,   // generate-food-pairing: background pairing generation
@@ -117,6 +117,10 @@ export function estimateCostUsd(
 
   // Per-million-token pricing (approximate)
   const pricing: Record<string, { input: number; output: number }> = {
+    'gpt-6-luna':      { input: 0.10, output: 0.5  },
+    'gpt-6.1-sol':     { input: 2.0,  output: 10.0 },
+    'gpt-6-sol':       { input: 2.0,  output: 10.0 },
+    'gpt-5.6-sol':     { input: 4.0,  output: 20.0 },
     'gpt-5':           { input: 1.25, output: 10.0 },
     'gpt-4o':          { input: 2.5,  output: 10.0 },
     'gpt-4o-mini':     { input: 0.15, output: 0.6  },

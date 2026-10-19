@@ -14,6 +14,7 @@ import {
   type WineAnalysisInput,
   type WineAnalysisMode,
 } from './wineAiAnalysis.ts'
+import { OPENAI_CHAT_MODEL } from './openaiModels.ts'
 
 export interface WineDataForAnalysis {
   wine_name: string
@@ -104,7 +105,7 @@ export async function generateWineAnalysisWithOpenAi(params: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

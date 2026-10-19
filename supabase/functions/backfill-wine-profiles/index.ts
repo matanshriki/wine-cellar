@@ -2,7 +2,7 @@
  * backfill-wine-profiles
  *
  * Admin-only Edge Function that enriches wines.wine_profile with AI-generated
- * profiles for ALL users using OpenAI gpt-4o-mini.
+ * profiles for ALL users using OpenAI (default gpt-6-luna).
  *
  * Designed to be called in a loop (via curl or a cron job) until hasMore = false.
  *
@@ -29,6 +29,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL           = Deno.env.get('SUPABASE_URL')!
@@ -82,7 +83,7 @@ async function generateProfile(wine: any): Promise<any> {
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       temperature: 0.2,
       max_tokens: 400,
       messages: [

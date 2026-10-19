@@ -725,7 +725,7 @@ export function CellarPage() {
        * This generates a unique, bottle-specific sommelier note using:
        * - Wine name, producer, vintage, region, grapes, style
        * - User notes (if any)
-       * - ChatGPT (gpt-4o-mini) with structured JSON output
+       * - ChatGPT (gpt-6-luna) with structured JSON output
        * 
        * Results are cached for 30 days to:
        * - Avoid repeated API calls

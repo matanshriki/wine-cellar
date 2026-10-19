@@ -47,7 +47,7 @@ export const ACTION_CREDIT_COSTS: Record<AiActionType, number> = {
   label_scan:                  2,   // parse-label-image: single label vision scan
   receipt_scan:                8,   // parse-label-image: multi-bottle / receipt mode
   wine_profile_generation:     1,   // generate-wine-profile: taste vector generation
-  label_art_generation:        5,   // generate-label-art: DALL-E 3 (expensive)
+  label_art_generation:        5,   // generate-label-art: GPT Image (expensive)
   voice_transcription:         0,   // transcribe: supporting feature, no charge
   // Edge function — food pairing (distinct from agent 'food_pairing' for analytics)
   food_pairing_generation:     1,   // generate-food-pairing: background pairing generation

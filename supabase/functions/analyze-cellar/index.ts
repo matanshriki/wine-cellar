@@ -23,6 +23,7 @@ import {
   type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
+import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts';
 import {
   buildAnalysisDataSlice,
   mergeAnalysisDataJson,
@@ -250,7 +251,7 @@ serve(withSentry('analyze-cellar', async (req) => {
       actionType: 'cellar_analysis',
       creditsRequired: 10,
       requestStatus: successCount > 0 ? 'success' : 'failed',
-      modelName: 'gpt-4o-mini',
+      modelName: OPENAI_CHAT_MODEL,
       metadata: {
         mode,
         bottlesSucceeded: successCount,
@@ -440,7 +441,7 @@ async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Pr
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_CHAT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
