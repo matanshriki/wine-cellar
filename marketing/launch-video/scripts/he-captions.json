@@ -1,0 +1,59 @@
+{
+  "locale": "he",
+  "dir": "rtl",
+  "totalDurationSec": 24,
+  "voiceover": [
+    {
+      "startSec": 0,
+      "endSec": 3.5,
+      "text": "הארוחה מוכנה. המדף מלא באפשרויות."
+    },
+    {
+      "startSec": 3.5,
+      "endSec": 9,
+      "text": "מוסיפים את היינות שכבר יש לכם—מרתף פרטי, במקום אחד."
+    },
+    {
+      "startSec": 9,
+      "endSec": 14,
+      "text": "שואלים את סומי מה לפתוח לארוחה הערב."
+    },
+    {
+      "startSec": 14,
+      "endSec": 20,
+      "text": "מקבלים בחירה מהמרתף שלכם—עם הנחיית חלון שתייה, לא קטלוג גנרי."
+    },
+    {
+      "startSec": 20,
+      "endSec": 24,
+      "text": "סומי. הסומלייה האישי שלכם. התחילו בחינם ב־sommi-ai.com."
+    }
+  ],
+  "onScreen": [
+    {
+      "startSec": 0,
+      "endSec": 3.5,
+      "line": "החלטת יין מוכרת"
+    },
+    {
+      "startSec": 3.5,
+      "endSec": 9,
+      "line": "המרתף שלכם"
+    },
+    {
+      "startSec": 9,
+      "endSec": 14,
+      "line": "שאלו את סומי"
+    },
+    {
+      "startSec": 14,
+      "endSec": 20,
+      "line": "מהאוסף שלכם"
+    },
+    {
+      "startSec": 20,
+      "endSec": 24,
+      "line": "התחילו בחינם"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "locale": "en",
+  "dir": "ltr",
+  "totalDurationSec": 24,
+  "voiceover": [
+    {
+      "startSec": 0,
+      "endSec": 3.5,
+      "text": "Dinner is ready. The rack is full of maybes."
+    },
+    {
+      "startSec": 3.5,
+      "endSec": 9,
+      "text": "Add the wines you already own—your private cellar, in one place."
+    },
+    {
+      "startSec": 9,
+      "endSec": 14,
+      "text": "Ask Sommi what to open for tonight’s meal."
+    },
+    {
+      "startSec": 14,
+      "endSec": 20,
+      "text": "Get a pick from your cellar—with drink-window guidance, not a generic catalog."
+    },
+    {
+      "startSec": 20,
+      "endSec": 24,
+      "text": "Sommi. Your personal AI sommelier. Start free at sommi-ai.com."
+    }
+  ],
+  "onScreen": [
+    {
+      "startSec": 0,
+      "endSec": 3.5,
+      "line": "A familiar wine decision"
+    },
+    {
+      "startSec": 3.5,
+      "endSec": 9,
+      "line": "Your cellar"
+    },
+    {
+      "startSec": 9,
+      "endSec": 14,
+      "line": "Ask Sommi"
+    },
+    {
+      "startSec": 14,
+      "endSec": 20,
+      "line": "From your collection"
+    },
+    {
+      "startSec": 20,
+      "endSec": 24,
+      "line": "Start free"
+    }
+  ]
+}

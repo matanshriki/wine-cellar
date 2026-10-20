@@ -1,0 +1,25 @@
+{
+  "name": "@sommi/launch-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Programmatic Sommi launch / social video (Remotion). Standalone — not part of the web app build.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts --port=3415",
+    "render:en": "remotion render src/index.ts SommiLaunchEn out/sommi-launch-en.mp4 --port=3415",
+    "render:he": "remotion render src/index.ts SommiLaunchHe out/sommi-launch-he.mp4 --port=3415",
+    "render:both": "npm run render:en && npm run render:he",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.286",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.286"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}
