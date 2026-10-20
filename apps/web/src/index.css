@@ -3,13 +3,19 @@
 /* This ensures theme-specific [data-theme] rules override :root defaults */
 @import './styles/luxury-theme.css';
 @import './styles/design-tokens.css';
+@import './styles/landing.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Public landing: in-page anchor clears sticky marketing nav */
-#sommi-demo {
+/* Public landing: in-page anchors clear sticky marketing nav */
+#sommi-demo,
+#how-it-works,
+#faq,
+#problem,
+#benefits,
+#app-video {
   scroll-margin-top: 5.75rem;
 }
 

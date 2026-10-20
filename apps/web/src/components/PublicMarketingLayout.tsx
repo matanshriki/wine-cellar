@@ -3,7 +3,7 @@
  * No cellar FAB, camera, or logged-in-only UI — keeps crawlers and guests focused.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -13,29 +13,46 @@ import { trackPageView } from '../lib/metaPixel';
 export function PublicMarketingLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const landingStickyClearance = pathname === '/';
+  const isLanding = pathname === '/';
+  const landingStickyClearance = isLanding;
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     void trackPageView();
   }, [pathname]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   return (
-    <div className="min-h-screen" style={{ position: 'relative', overflow: 'visible' }}>
-      <div className="luxury-background" aria-hidden="true" />
+    <div
+      className={`min-h-screen ${isLanding ? 'landing-page' : ''}`}
+      style={{ position: 'relative', overflow: 'visible' }}
+    >
+      {!isLanding ? <div className="luxury-background" aria-hidden="true" /> : null}
       <nav
-        className="sticky top-0 z-40 safe-area-top border-b"
-        style={{
-          background: 'var(--bg-nav, rgba(255, 255, 255, 0.95))',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderColor: 'var(--border-subtle)',
-        }}
+        className={`sticky top-0 z-40 safe-area-top border-b ${isLanding ? 'landing-marketing-nav' : ''}`}
+        style={
+          isLanding
+            ? undefined
+            : {
+                background: 'var(--bg-nav, rgba(255, 255, 255, 0.95))',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderColor: 'var(--border-subtle)',
+              }
+        }
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between min-h-[3.5rem] gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between min-h-[3.5rem] gap-3">
           <Link
             to="/"
-            className="flex items-center gap-2 font-bold tracking-wide text-lg"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--wine-700)' }}
+            className={`flex items-center gap-2 font-bold tracking-wide text-lg ${isLanding ? 'lp-brand' : ''}`}
+            style={
+              isLanding
+                ? undefined
+                : { fontFamily: 'var(--font-display)', color: 'var(--wine-700)' }
+            }
           >
             <img
               src={APP_ICON_URL}
@@ -50,41 +67,165 @@ export function PublicMarketingLayout({ children }: { children: React.ReactNode 
             Sommi
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end text-sm">
+          <div className="hidden md:flex items-center gap-3 lg:gap-5 text-sm">
+            {isLanding ? (
+              <>
+                <a href="#how-it-works" className="font-medium" style={{ color: 'var(--lp-stone)' }}>
+                  {t('landing.navHow')}
+                </a>
+                <a href="#app-video" className="font-medium" style={{ color: 'var(--lp-stone)' }}>
+                  {t('landing.navDemo')}
+                </a>
+                <a href="#faq" className="font-medium" style={{ color: 'var(--lp-stone)' }}>
+                  {t('landing.navFaq')}
+                </a>
+              </>
+            ) : (
+              <Link to="/about" className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+                {t('nav.about')}
+              </Link>
+            )}
             <Link
-              to="/about"
-              className="font-medium hidden sm:inline"
-              style={{ color: 'var(--text-secondary)' }}
+              to="/privacy"
+              className="font-medium hidden lg:inline"
+              style={{ color: isLanding ? 'var(--lp-stone)' : 'var(--text-secondary)' }}
             >
-              {t('nav.about')}
-            </Link>
-            <Link to="/privacy" className="font-medium" style={{ color: 'var(--text-secondary)' }}>
               Privacy
             </Link>
-            <Link to="/terms" className="font-medium hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
+            <Link
+              to="/terms"
+              className="font-medium hidden lg:inline"
+              style={{ color: isLanding ? 'var(--lp-stone)' : 'var(--text-secondary)' }}
+            >
               Terms
             </Link>
             <LanguageSwitcher />
             <Link
               to="/login"
-              className="px-3 py-1.5 rounded-full text-sm font-semibold text-white"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-              }}
+              className={isLanding ? 'lp-cta-primary !min-h-[40px] !py-2 !px-4 !text-sm' : ''}
+              style={
+                isLanding
+                  ? undefined
+                  : {
+                      padding: '0.375rem 0.75rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    }
+              }
             >
               {t('auth.login.signIn')}
             </Link>
           </div>
+
+          <div className="flex md:hidden items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              type="button"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border"
+              style={{
+                borderColor: 'rgba(74, 23, 34, 0.15)',
+                color: isLanding ? 'var(--lp-burgundy)' : 'var(--wine-700)',
+              }}
+              aria-expanded={mobileOpen}
+              aria-controls="marketing-mobile-menu"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMobileOpen((o) => !o)}
+            >
+              <span className="sr-only">{mobileOpen ? 'Close' : 'Menu'}</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                {mobileOpen ? (
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {mobileOpen ? (
+          <div
+            id="marketing-mobile-menu"
+            className="md:hidden border-t px-4 py-3 flex flex-col gap-1"
+            style={{
+              borderColor: 'rgba(74, 23, 34, 0.08)',
+              background: isLanding ? 'rgba(247, 241, 232, 0.98)' : 'var(--bg-nav, #fff)',
+            }}
+          >
+            {isLanding ? (
+              <>
+                <a
+                  href="#how-it-works"
+                  className="py-3 font-medium"
+                  style={{ color: 'var(--lp-ink)' }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {t('landing.navHow')}
+                </a>
+                <a
+                  href="#app-video"
+                  className="py-3 font-medium"
+                  style={{ color: 'var(--lp-ink)' }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {t('landing.navDemo')}
+                </a>
+                <a
+                  href="#faq"
+                  className="py-3 font-medium"
+                  style={{ color: 'var(--lp-ink)' }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {t('landing.navFaq')}
+                </a>
+              </>
+            ) : (
+              <Link to="/about" className="py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('nav.about')}
+              </Link>
+            )}
+            <Link to="/privacy" className="py-3 font-medium" style={{ color: isLanding ? 'var(--lp-ink)' : 'var(--text-primary)' }}>
+              Privacy
+            </Link>
+            <Link to="/terms" className="py-3 font-medium" style={{ color: isLanding ? 'var(--lp-ink)' : 'var(--text-primary)' }}>
+              Terms
+            </Link>
+            <Link
+              to="/login"
+              className={`mt-2 text-center ${isLanding ? 'lp-cta-primary' : ''}`}
+              style={
+                isLanding
+                  ? undefined
+                  : {
+                      padding: '0.75rem',
+                      borderRadius: '9999px',
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    }
+              }
+              onClick={() => setMobileOpen(false)}
+            >
+              {t('auth.login.signIn')}
+            </Link>
+          </div>
+        ) : null}
       </nav>
 
       {children}
 
       <footer
         className={`border-t mt-auto px-4 pt-8 ${landingStickyClearance ? 'pb-28 md:pb-8' : 'pb-8'}`}
-        style={{ borderColor: 'var(--border-subtle)' }}
+        style={{
+          borderColor: isLanding ? 'rgba(74, 23, 34, 0.1)' : 'var(--border-subtle)',
+          background: isLanding ? 'var(--lp-ivory-deep)' : undefined,
+          color: isLanding ? 'var(--lp-stone-muted)' : 'var(--text-tertiary)',
+        }}
       >
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-4 justify-between items-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 justify-between items-center text-sm">
           <p>© {new Date().getFullYear()} Sommi</p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/about" className="hover:underline">

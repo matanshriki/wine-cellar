@@ -194,6 +194,22 @@ export function landingFaqSchema(): Record<string, unknown> {
           text: 'Yes. Sommi can be installed directly to your iPhone, Android, or desktop home screen from the browser — no App Store required. Once installed, it works like a native app with offline support for previously loaded cellar data.',
         },
       },
+      {
+        '@type': 'Question',
+        name: 'Is Sommi free?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Sommi is free to start with a monthly credit allotment for AI features. Premium plans with additional credits are available in the app. See in-app pricing for current plan details.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'How do I import my wine collection into Sommi?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'You can import a Vivino-compatible CSV, add bottles manually, or scan labels with AI. Sommi builds a private cellar from the bottles you add so recommendations stay grounded in what you own.',
+        },
+      },
     ],
   };
 }
