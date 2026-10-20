@@ -1,0 +1,99 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
+  "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
+  "paths": {
+    "blocks": "compositions",
+    "components": "compositions/components",
+    "assets": "assets"
+  },
+  "media": {
+    "autoProxy": true
+  },
+  "registryItems": [
+    {
+      "name": "mk-callout-highlight",
+      "type": "hyperframes:block",
+      "target": "compositions/mk-callout-highlight.html"
+    },
+    {
+      "name": "caption-camera-follow",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-camera-follow.html"
+    },
+    {
+      "name": "caption-clip-wipe",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-clip-wipe.html"
+    },
+    {
+      "name": "caption-editorial-emphasis",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-editorial-emphasis.html"
+    },
+    {
+      "name": "caption-emoji-pop",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-emoji-pop.html"
+    },
+    {
+      "name": "caption-glitch-rgb",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-glitch-rgb.html"
+    },
+    {
+      "name": "caption-gradient-fill",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-gradient-fill.html"
+    },
+    {
+      "name": "caption-highlight",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-highlight.html"
+    },
+    {
+      "name": "caption-kinetic-slam",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-kinetic-slam.html"
+    },
+    {
+      "name": "caption-matrix-decode",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-matrix-decode.html"
+    },
+    {
+      "name": "caption-neon-accent",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-neon-accent.html"
+    },
+    {
+      "name": "caption-neon-glow",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-neon-glow.html"
+    },
+    {
+      "name": "caption-parallax-layers",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-parallax-layers.html"
+    },
+    {
+      "name": "caption-particle-burst",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-particle-burst.html"
+    },
+    {
+      "name": "caption-pill-karaoke",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-pill-karaoke.html"
+    },
+    {
+      "name": "caption-texture",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-texture.html"
+    },
+    {
+      "name": "caption-weight-shift",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-weight-shift.html"
+    }
+  ]
+}

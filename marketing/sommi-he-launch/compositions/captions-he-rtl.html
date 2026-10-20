@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>captions.karaoke.hebrew-rtl</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 900;
+        font-display: block;
+        src: url("../assets/fonts/Rubik-900.ttf") format("truetype");
+      }
+      @font-face {
+        font-family: "Assistant";
+        font-style: normal;
+        font-weight: 400;
+        font-display: block;
+        src: url("../assets/fonts/Assistant-400.ttf") format("truetype");
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        direction: rtl;
+      }
+      #captions-he-rtl {
+        pointer-events: none;
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: transparent;
+      }
+      .caption-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+      }
+      .safe-zone {
+        position: absolute;
+        inset-block-end: 120px;
+        inset-inline: 48px;
+        height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .caption-group {
+        position: absolute;
+        inset-inline-start: 0;
+        inset-block-start: 0;
+        width: 100%;
+        height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+      }
+      .caption-pill {
+        width: auto;
+        max-width: 984px;
+        padding-block: 18px 20px;
+        padding-inline: 36px;
+        border-radius: 22px;
+        background: rgba(247, 241, 232, 0.94);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+        text-align: center;
+      }
+      .caption-copy {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        color: #8a8078;
+        font-family: "Rubik", "Assistant", sans-serif;
+        font-size: 48px;
+        font-weight: 900;
+        line-height: 1.25;
+        direction: rtl;
+        unicode-bidi: plaintext;
+      }
+      .caption-line {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        direction: rtl;
+      }
+      .caption-word {
+        display: inline-block;
+        color: #8a8078;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="captions-he-rtl"
+      data-composition-id="captions-he-rtl"
+      data-timeline-locked
+      data-start="0"
+      data-duration="20"
+      data-fps="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div class="caption-layer" aria-hidden="true">
+        <div id="caption-stage" class="safe-zone"></div>
+      </div>
+    </div>
+
+    <script>
+      var DURATION = 20;
+      var PILL_MAX_WIDTH = 920;
+      var PILL_MIN_PADDING_X = 24;
+      var PILL_MAX_PADDING_X = 40;
+      var FONT_WIDTH_SAFETY = 1.12;
+      var FONT_FAMILY = "Rubik";
+      var FONT_WEIGHT = "900";
+      var BASE_FONT_SIZE = 48;
+      var MIN_FONT_SIZE = 36;
+      var MAX_WORDS_PER_GROUP = 5;
+      var WORD_SPACING = 12;
+      var PAUSE_THRESHOLD = 0.12;
+      var GROUP_END_BUFFER = 0.28;
+      var COLOR_INACTIVE = "#8A8078";
+      var COLOR_ACTIVE = "#4A1722";
+      var COLOR_FADE_DURATION = 0.08;
+      var WORD_FADE_LEAD = 0.04;
+
+      /* Word timings from Edge-TTS VTT (proportional within cues) */
+      var TRANSCRIPT = [
+        { text: "מתלבטים", start: 0.1, end: 0.742 },
+        { text: "איזה", start: 0.742, end: 1.384 },
+        { text: "יין", start: 1.384, end: 2.026 },
+        { text: "לפתוח", start: 2.026, end: 2.668 },
+        { text: "הערב?", start: 2.668, end: 3.31 },
+        { text: "הסומלייה", start: 3.26, end: 3.809 },
+        { text: "האישי", start: 3.809, end: 4.358 },
+        { text: "שלכם", start: 4.358, end: 4.907 },
+        { text: "יתאים", start: 4.907, end: 5.456 },
+        { text: "את", start: 5.456, end: 6.006 },
+        { text: "הבקבוק", start: 6.006, end: 6.555 },
+        { text: "המושלם", start: 6.555, end: 7.104 },
+        { text: "לכל", start: 7.104, end: 7.653 },
+        { text: "ארוחה.", start: 7.653, end: 8.202 },
+        { text: "דעו", start: 8.202, end: 8.787 },
+        { text: "בדיוק", start: 8.787, end: 9.372 },
+        { text: "מתי", start: 9.372, end: 9.957 },
+        { text: "היין", start: 9.957, end: 10.541 },
+        { text: "שלכם", start: 10.541, end: 11.126 },
+        { text: "בשיאו.", start: 11.126, end: 11.711 },
+        { text: "סומי", start: 11.711, end: 12.367 },
+        { text: "—", start: 12.367, end: 13.023 },
+        { text: "אוסף", start: 13.023, end: 13.679 },
+        { text: "היין", start: 13.679, end: 14.336 },
+        { text: "שלכם,", start: 14.336, end: 14.992 },
+        { text: "חכם", start: 14.992, end: 15.648 },
+        { text: "יותר.", start: 15.648, end: 16.304 },
+        { text: "הורידו", start: 16.304, end: 17.389 },
+        { text: "עכשיו.", start: 17.389, end: 18.475 },
+      ];
+
+      function normalizeWords(rawWords) {
+        return rawWords
+          .map(function (item) {
+            var text = String(item.word || item.text || "").trim();
+            return {
+              text: text,
+              start: Math.max(0, Number(item.start) || 0),
+              end: Math.min(DURATION, Math.max(Number(item.start) || 0, Number(item.end) || 0)),
+            };
+          })
+          .filter(function (w) {
+            return w.text.length > 0 && w.text !== "-";
+          });
+      }
+
+      var measureCanvas = document.createElement("canvas");
+      var measureContext = measureCanvas.getContext("2d");
+
+      function measureWordWidth(text, fontSize) {
+        measureContext.font = FONT_WEIGHT + " " + fontSize + "px " + FONT_FAMILY;
+        return measureContext.measureText(text).width * FONT_WIDTH_SAFETY;
+      }
+
+      function measureLineWidth(words, fontSize) {
+        return words.reduce(function (total, word, index) {
+          return total + measureWordWidth(word.text, fontSize) + (index ? WORD_SPACING : 0);
+        }, 0);
+      }
+
+      function splitLinesForGroup(words, fontSize) {
+        var maxLineWidth = PILL_MAX_WIDTH - PILL_MIN_PADDING_X * 2;
+        if (
+          words.some(function (w) {
+            return measureWordWidth(w.text, fontSize) > maxLineWidth;
+          })
+        ) {
+          return null;
+        }
+        if (measureLineWidth(words, fontSize) <= maxLineWidth) return [words];
+        var bestSplit = null;
+        var bestImbalance = Infinity;
+        for (var split = 1; split < words.length; split++) {
+          var firstLine = words.slice(0, split);
+          var secondLine = words.slice(split);
+          var firstWidth = measureLineWidth(firstLine, fontSize);
+          var secondWidth = measureLineWidth(secondLine, fontSize);
+          if (firstWidth <= maxLineWidth && secondWidth <= maxLineWidth) {
+            var imbalance = Math.abs(firstWidth - secondWidth);
+            if (imbalance < bestImbalance) {
+              bestSplit = [firstLine, secondLine];
+              bestImbalance = imbalance;
+            }
+          }
+        }
+        return bestSplit;
+      }
+
+      function fitsInTwoLinesAtSize(words, fontSize) {
+        return splitLinesForGroup(words, fontSize) !== null;
+      }
+
+      function planPillLayout(words, fontSize) {
+        var lines = splitLinesForGroup(words, fontSize) || [words];
+        var widestLine = lines.reduce(function (max, lineWords) {
+          return Math.max(max, measureLineWidth(lineWords, fontSize));
+        }, 0);
+        var availablePadding = Math.floor((PILL_MAX_WIDTH - widestLine) / 2);
+        var padX = Math.max(PILL_MIN_PADDING_X, Math.min(PILL_MAX_PADDING_X, availablePadding));
+        var pillWidth = Math.min(PILL_MAX_WIDTH, Math.ceil(widestLine + padX * 2));
+        return { lines: lines, padX: padX, pillWidth: pillWidth };
+      }
+
+      function makeGroups(words) {
+        var groups = [];
+        var current = [];
+        words.forEach(function (word, index) {
+          var testGroup = current.concat([word]);
+          var nextWord = words[index + 1];
+          var wouldExceedMaxWords = testGroup.length > MAX_WORDS_PER_GROUP;
+          var wouldExceedTwoLines = !fitsInTwoLinesAtSize(testGroup, BASE_FONT_SIZE);
+          if (wouldExceedMaxWords || wouldExceedTwoLines) {
+            if (current.length) {
+              groups.push({
+                words: current.slice(),
+                start: current[0].start,
+                end: current[current.length - 1].end,
+              });
+            }
+            current = [word];
+            return;
+          }
+          current.push(word);
+          var hasPunctuation = /[,.:!?]$/.test(word.text);
+          var pauseDuration = nextWord ? nextWord.start - word.end : 0;
+          var hasNaturalPause = pauseDuration >= PAUSE_THRESHOLD;
+          var maxWordsReached = current.length >= MAX_WORDS_PER_GROUP;
+          if (maxWordsReached || !nextWord || hasPunctuation || hasNaturalPause) {
+            groups.push({
+              words: current.slice(),
+              start: current[0].start,
+              end: current[current.length - 1].end,
+            });
+            current = [];
+          }
+        });
+        if (current.length)
+          groups.push({
+            words: current.slice(),
+            start: current[0].start,
+            end: current[current.length - 1].end,
+          });
+        return groups;
+      }
+
+      function fontSizeForGroup(words) {
+        var size = BASE_FONT_SIZE;
+        while (size > MIN_FONT_SIZE && !fitsInTwoLinesAtSize(words, size)) {
+          size -= 2;
+        }
+        return size;
+      }
+
+      function buildCaptions(groups) {
+        var stage = document.getElementById("caption-stage");
+        groups.forEach(function (group, groupIndex) {
+          var groupEl = document.createElement("div");
+          var pillEl = document.createElement("div");
+          var copyEl = document.createElement("div");
+          var fontSize = fontSizeForGroup(group.words);
+          groupEl.id = "caption-group-" + groupIndex;
+          groupEl.className = "caption-group";
+          pillEl.className = "caption-pill";
+          copyEl.className = "caption-copy";
+          copyEl.style.fontSize = fontSize + "px";
+          var indexedWords = group.words.map(function (word, wordIndex) {
+            return { text: word.text, start: word.start, end: word.end, wordIndex: wordIndex };
+          });
+          var layout = planPillLayout(indexedWords, fontSize);
+          pillEl.style.width = layout.pillWidth + "px";
+          pillEl.style.paddingInline = layout.padX + "px";
+          layout.lines.slice(0, 2).forEach(function (lineWords) {
+            var lineEl = document.createElement("div");
+            lineEl.className = "caption-line";
+            lineWords.forEach(function (word) {
+              var wordEl = document.createElement("span");
+              wordEl.id = "caption-word-" + groupIndex + "-" + word.wordIndex;
+              wordEl.className = "caption-word";
+              wordEl.textContent = word.text;
+              lineEl.appendChild(wordEl);
+            });
+            copyEl.appendChild(lineEl);
+          });
+          pillEl.appendChild(copyEl);
+          groupEl.appendChild(pillEl);
+          stage.appendChild(groupEl);
+        });
+      }
+
+      var WORDS = normalizeWords(TRANSCRIPT);
+      var GROUPS = makeGroups(WORDS);
+      buildCaptions(GROUPS);
+
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      GROUPS.forEach(function (group, groupIndex) {
+        var groupEl = document.getElementById("caption-group-" + groupIndex);
+        var nextGroup = GROUPS[groupIndex + 1];
+        var isLastGroup = groupIndex === GROUPS.length - 1;
+        var effectiveEnd = isLastGroup
+          ? DURATION
+          : Math.min(nextGroup.start, group.end + GROUP_END_BUFFER);
+        var visibleStart = Math.max(0, group.start);
+        var visibleEnd = Math.max(visibleStart + 0.01, effectiveEnd);
+
+        tl.set(groupEl, { opacity: 1 }, visibleStart);
+        tl.set(groupEl, { opacity: 0 }, visibleEnd);
+
+        group.words.forEach(function (word, wordIndex) {
+          var wordEl = document.getElementById("caption-word-" + groupIndex + "-" + wordIndex);
+          var isFirstWord = wordIndex === 0;
+          var wordStart = Math.max(visibleStart, word.start - WORD_FADE_LEAD);
+          tl.set(wordEl, { color: isFirstWord ? COLOR_ACTIVE : COLOR_INACTIVE }, visibleStart);
+          if (isFirstWord) return;
+          tl.to(
+            wordEl,
+            { color: COLOR_ACTIVE, duration: COLOR_FADE_DURATION, ease: "none" },
+            wordStart,
+          );
+        });
+      });
+
+      window.__timelines["captions-he-rtl"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

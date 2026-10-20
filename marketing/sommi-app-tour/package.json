@@ -1,0 +1,17 @@
+{
+  "name": "sommi-app-tour",
+  "version": "1.0.0",
+  "scripts": {
+    "capture:en": "node capture/record.mjs en",
+    "capture:he": "node capture/record.mjs he",
+    "timeline": "python3 scripts/build_timeline.py",
+    "compositions": "python3 scripts/gen_compositions.py",
+    "check": "npx --yes hyperframes@0.8.181 check",
+    "render": "npx --yes hyperframes@0.8.181 render"
+  },
+  "type": "module",
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  },
+  "private": true
+}

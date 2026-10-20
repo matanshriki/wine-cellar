@@ -1,0 +1,130 @@
+{
+  "voices": {
+    "en": "en-US-AndrewNeural",
+    "he": "he-IL-AvriNeural"
+  },
+  "rates": {
+    "en": "-4%",
+    "he": "+10%"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "clip": null,
+      "minDur": 3.6,
+      "en": {
+        "eyebrow": "Sommi",
+        "headline": "Not sure which bottle to open tonight?",
+        "vo": "Not sure which bottle to open tonight?"
+      },
+      "he": {
+        "eyebrow": "סומי",
+        "headline": "מתלבטים איזה יין לפתוח הערב?",
+        "vo": "מתלבטים איזה יין לפתוח הערב?"
+      }
+    },
+    {
+      "id": "cellar",
+      "clip": "cellar",
+      "en": {
+        "eyebrow": "01 · Your cellar",
+        "headline": "Your whole cellar, organized.",
+        "vo": "Sommi keeps your whole cellar in one place, and tracks every drink window, so you always know what's ready now."
+      },
+      "he": {
+        "eyebrow": "01 · המרתף שלכם",
+        "headline": "כל המרתף, מסודר.",
+        "vo": "סומי מרכזת את כל המרתף במקום אחד, ועוקבת אחרי חלון השתייה, כדי שתדעו מה מוכן עכשיו."
+      }
+    },
+    {
+      "id": "scan",
+      "clip": "scan",
+      "en": {
+        "eyebrow": "02 · Add bottles",
+        "headline": "Snap the label. That's it.",
+        "vo": "Adding a bottle takes a second. Snap the label, and the AI reads it for you."
+      },
+      "he": {
+        "eyebrow": "02 · הוספת בקבוק",
+        "headline": "מצלמים תווית. זהו.",
+        "vo": "מצלמים את התווית, והבינה המלאכותית קוראת אותה בשבילכם."
+      }
+    },
+    {
+      "id": "details",
+      "clip": "details",
+      "en": {
+        "eyebrow": "03 · Bottle profile",
+        "headline": "Know every bottle inside out.",
+        "vo": "Every bottle gets a full profile: grapes, aging, serving tips, and what to eat with it."
+      },
+      "he": {
+        "eyebrow": "03 · פרופיל בקבוק",
+        "headline": "מכירים כל בקבוק לעומק.",
+        "vo": "לכל בקבוק יש פרופיל מלא: זנים, יישון, הוראות הגשה, ומה לאכול לצידו."
+      }
+    },
+    {
+      "id": "tonight",
+      "clip": "tonight",
+      "en": {
+        "eyebrow": "04 · Tonight?",
+        "headline": "The right bottle for dinner.",
+        "vo": "Planning dinner? Pick steak, set the mood, and Sommi chooses the right bottle from your own cellar."
+      },
+      "he": {
+        "eyebrow": "04 · מה לפתוח הערב?",
+        "headline": "הבקבוק הנכון לארוחה.",
+        "vo": "מתכננים ארוחה? בוחרים סטייק ואווירה, וסומי בוחרת בקבוק מהמרתף שלכם."
+      }
+    },
+    {
+      "id": "ask",
+      "clip": "ask",
+      "en": {
+        "eyebrow": "05 · Ask Sommi",
+        "headline": "Your personal sommelier.",
+        "vo": "Or just ask. Your personal sommelier answers in seconds, with a bottle you already own."
+      },
+      "he": {
+        "eyebrow": "05 · שאלו את סומי",
+        "headline": "הסומלייה האישי שלכם.",
+        "vo": "או פשוט שואלים. הסומלייה האישי שלכם עונה תוך שניות, עם בקבוק שכבר יש לכם."
+      }
+    },
+    {
+      "id": "history",
+      "clip": "history",
+      "en": {
+        "eyebrow": "06 · History & wishlist",
+        "headline": "Every bottle, remembered.",
+        "vo": "Track every bottle you open, and keep a wishlist for the next one."
+      },
+      "he": {
+        "eyebrow": "06 · היסטוריה ומשאלות",
+        "headline": "כל בקבוק נשמר בזיכרון.",
+        "vo": "עוקבים אחרי כל בקבוק שפתחתם, ושומרים רשימת משאלות."
+      }
+    },
+    {
+      "id": "end",
+      "clip": null,
+      "minDur": 4.6,
+      "en": {
+        "eyebrow": "sommi-ai.com",
+        "headline": "Sommi",
+        "sub": "Your wine collection, smarter.",
+        "cta": "Start free",
+        "vo": "Sommi. Your wine collection, smarter. Start free today."
+      },
+      "he": {
+        "eyebrow": "sommi-ai.com",
+        "headline": "סומי",
+        "sub": "אוסף היין שלכם, חכם יותר.",
+        "cta": "התחילו בחינם",
+        "vo": "סומי. אוסף היין שלכם, חכם יותר. התחילו בחינם."
+      }
+    }
+  ]
+}
