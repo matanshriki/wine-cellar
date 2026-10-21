@@ -129,7 +129,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
           animate={reduceMotion ? false : { opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
           onClick={onClose}
-          className="absolute right-4 w-12 h-12 rounded-full flex items-center justify-center z-20"
+          className="absolute end-4 w-12 h-12 rounded-full flex items-center justify-center z-20"
           style={{
             top: 'max(16px, env(safe-area-inset-top, 16px))',
             background: 'rgba(255, 255, 255, 0.15)',
@@ -177,7 +177,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
               <div
                 className="w-64 h-96 rounded-lg flex items-center justify-center"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
                 }}
               >

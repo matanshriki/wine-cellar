@@ -157,7 +157,7 @@ export function AdminImageBackfill() {
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-heading)' }}>
+          <h3 className="app-section-title">
             Image Path Backfill
           </h3>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>

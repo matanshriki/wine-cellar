@@ -129,6 +129,6 @@ function applyTheme(theme: Theme) {
   // Update meta theme-color for mobile browsers
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    metaTheme.setAttribute('content', theme === 'red' ? '#0B0B0D' : '#FFFFFF');
+    metaTheme.setAttribute('content', theme === 'red' ? '#171113' : '#f7f1e8');
   }
 }

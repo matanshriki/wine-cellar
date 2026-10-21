@@ -46,7 +46,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
+          style={{ backgroundColor: 'var(--bg-overlay)', backdropFilter: 'blur(4px)' }}
         >
           {/* Backdrop */}
           <motion.div
@@ -134,7 +134,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
                 }}
                 className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-all"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: 'var(--text-inverse)',
                   border: '1px solid var(--wine-700)',
                   boxShadow: 'var(--shadow-md)',
@@ -156,7 +156,7 @@ export function DemoActionModal({ isOpen, onClose, onAddBottle, action }: DemoAc
               {/* Secondary CTA */}
               <button
                 onClick={onClose}
-                className="w-full py-3 px-6 rounded-xl font-medium text-sm sm:text-base transition-all"
+                className="w-full py-3 px-6 rounded-full font-medium text-sm sm:text-base transition-all"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   color: 'var(--text-secondary)',

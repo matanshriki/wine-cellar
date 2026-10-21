@@ -220,7 +220,7 @@ export function SommiMemoryCard() {
               <span className="text-lg">✦</span>
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="app-section-title">
                 {t('sommiMemory.title', 'What Sommi remembers about me')}
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -418,11 +418,11 @@ function MemoryManageOverlay(props: {
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-[1.5rem] overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: 'var(--shadow-modal)',
           maxHeight: '100%',
         }}
       >
@@ -591,7 +591,7 @@ function WineTermSection(props: {
             <button
               type="button"
               className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium"
-              style={{ color: '#B91C1C' }}
+              style={{ color: 'var(--text-error)' }}
               disabled={props.busy}
               aria-label={t('sommiMemory.removeAria', {
                 label: item.label,
@@ -638,7 +638,7 @@ function TermSection(props: {
             <button
               type="button"
               className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium"
-              style={{ color: '#B91C1C' }}
+              style={{ color: 'var(--text-error)' }}
               disabled={props.busy}
               aria-label={t('sommiMemory.removeAria', {
                 label: item.label,
@@ -682,7 +682,7 @@ function LuxuryConfirm(props: {
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'tween', duration: 0.2 }}
         onClick={(e) => e.stopPropagation()}
-        className="rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+        className="rounded-[1.5rem] shadow-[var(--shadow-modal)] w-full max-w-md overflow-hidden"
         style={{
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-soft)',
@@ -715,7 +715,7 @@ function LuxuryConfirm(props: {
             type="button"
             className="flex-1 min-h-[44px] rounded-xl text-white font-semibold disabled:opacity-50"
             style={{
-              background: 'linear-gradient(135deg, #DC2626, #991B1B)',
+              background: 'linear-gradient(135deg, #c0392b, #9b2c22)',
             }}
             disabled={props.busy}
             onClick={props.onConfirm}

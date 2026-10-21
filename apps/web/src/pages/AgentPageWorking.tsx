@@ -28,6 +28,7 @@ import {
 import { createConversationEnsureGate } from '../services/ensurePersistedConversation';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { BottleCarousel, type BottleRecommendation } from '../components/BottleCarousel';
 import { BotRichResultCard } from '../components/BotRichResultCard';
@@ -173,11 +174,12 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
           disabled={adding || added}
           style={{
             fontSize: '13px',
-            color: added ? '#16a34a' : '#FFFFFF',
-            backgroundColor: added ? '#f0fdf4' : 'var(--wine-600)',
-            border: added ? '1px solid #86efac' : 'none',
+            color: added ? 'var(--text-success)' : '#FFFFFF',
+            background: added ? 'var(--color-success-light)' : 'var(--sommi-gradient-primary)',
+            border: added ? '1px solid var(--border-subtle)' : 'none',
             padding: '6px 14px',
-            borderRadius: '8px',
+            minHeight: '36px',
+            borderRadius: '9999px',
             cursor: adding || added ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -243,7 +245,7 @@ export function AgentPageWorking() {
   const { theme } = useTheme();
   const isDark = theme === 'red';
   /** Tagline / editorial accent: champagne gold on dark, classic gold on light */
-  const taglineAccent = isDark ? '#C9A962' : '#8b6914';
+  const taglineAccent = isDark ? '#e3c26a' : '#8a6a12';
   // Always-current ref so handleSend never reads a stale closure value
   const chatCreditBlockedRef = useRef(false);
   chatCreditBlockedRef.current = isBelowActionCost(
@@ -757,7 +759,7 @@ export function AgentPageWorking() {
         .sidebar-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.35);
+          background: var(--bg-overlay);
           z-index: 40;
           opacity: 0;
           transition: opacity 0.25s ease;
@@ -818,7 +820,7 @@ export function AgentPageWorking() {
           border-radius: 4px;
           flex-shrink: 0;
         }
-        .sommi-conv-delete-btn:hover { color: #dc3545; background: rgba(220, 53, 69, 0.12); }
+        .sommi-conv-delete-btn:hover { color: var(--text-error); background: var(--color-error-light); }
         .sommi-conv-item:hover .sommi-conv-delete-btn { opacity: 1; }
       `}</style>
 
@@ -844,10 +846,8 @@ export function AgentPageWorking() {
           </h2>
           <button
             onClick={() => setSidebarOpen(false)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-tertiary)', padding: '4px', borderRadius: '6px',
-            }}
+            className="app-icon-btn -me-2"
+            aria-label={t('common.close')}
           >
             <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -862,10 +862,10 @@ export function AgentPageWorking() {
             style={{
               width: '100%',
               padding: '12px',
-              borderRadius: '10px',
+              borderRadius: '9999px',
               border: '1.5px dashed var(--border-medium)',
               background: 'transparent',
-              color: 'var(--wine-600)',
+              color: 'var(--accent-text)',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -923,6 +923,7 @@ export function AgentPageWorking() {
                   <button
                     className="sommi-conv-delete-btn"
                     title={t('cellarSommelier.deleteConversation', 'Delete')}
+                    aria-label={t('cellarSommelier.deleteConversation', 'Delete')}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteConversation(conv.id);
@@ -1023,9 +1024,11 @@ export function AgentPageWorking() {
             <button
               onClick={openSidebar}
               title={t('cellarSommelier.conversationHistory', 'Conversations')}
+              aria-label={t('cellarSommelier.conversationHistory', 'Conversations')}
               style={{
-                padding: '8px',
-                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '9999px',
                 border: '1px solid var(--border-subtle)',
                 backgroundColor: 'var(--bg-surface)',
                 color: 'var(--text-secondary)',
@@ -1046,9 +1049,11 @@ export function AgentPageWorking() {
               onClick={startNewConversation}
               disabled={messages.length === 0 || (messages.length === 1 && messages[0].isGreeting)}
               title={t('cellarSommelier.newConversation', 'New conversation')}
+              aria-label={t('cellarSommelier.newConversation', 'New conversation')}
               style={{
-                padding: '8px',
-                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '9999px',
                 border: '1px solid var(--border-subtle)',
                 backgroundColor: 'var(--bg-surface)',
                 color: 'var(--text-secondary)',
@@ -1086,39 +1091,17 @@ export function AgentPageWorking() {
             textAlign: 'center',
             padding: '24px',
           }}>
-            <div style={{
-              padding: '24px',
-              backgroundColor: '#fff3cd',
-              border: '1px solid #ffc107',
-              borderRadius: '12px',
-              maxWidth: '400px',
-            }}>
-              <svg style={{ width: '48px', height: '48px', color: '#ff9800', margin: '0 auto 16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#f57c00' }}>
-                {t('cellarSommelier.emptyCellarTitle')}
-              </h3>
-              <p style={{ fontSize: '14px', marginBottom: '16px', color: '#666' }}>
-                {t('cellarSommelier.emptyCellarMessage')}
-              </p>
-              <button
-                onClick={() => navigate('/cellar')}
-                style={{
-                  width: '100%',
-                  padding: '12px 24px',
-                  backgroundColor: '#7c3030',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {t('cellarSommelier.emptyCellarButton')}
-              </button>
-            </div>
+            <EmptyState
+              className="max-w-md"
+              art="/assets/app/empty-cellar.jpg"
+              title={t('cellarSommelier.emptyCellarTitle')}
+              body={t('cellarSommelier.emptyCellarMessage')}
+              actions={
+                <button onClick={() => navigate('/cellar')} className="btn-luxury-primary">
+                  {t('cellarSommelier.emptyCellarButton')}
+                </button>
+              }
+            />
           </div>
         )}
 
@@ -1221,7 +1204,7 @@ export function AgentPageWorking() {
                           maxWidth: '75%',
                         }}
                       >
-                        <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                        <p dir="auto" style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap', textAlign: 'start' }}>{msg.content}</p>
                       </div>
                     )}
 
@@ -1245,14 +1228,16 @@ export function AgentPageWorking() {
                   <div
                     style={{
                       padding: '12px 16px',
-                      borderRadius: '16px',
-                      backgroundColor: isUser ? 'var(--wine-600)' : 'var(--bg-surface)',
+                      borderRadius: '20px',
+                      borderEndEndRadius: isUser ? '6px' : '20px',
+                      borderEndStartRadius: isUser ? '20px' : '6px',
+                      background: isUser ? 'var(--sommi-gradient-primary)' : 'var(--bg-surface)',
                       color: isUser ? '#FFFFFF' : 'var(--text-primary)',
                       border: !isUser ? '1px solid var(--border-subtle)' : 'none',
                       boxShadow: 'var(--shadow-card)',
                     }}
                   >
-                    <p style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                    <p dir="auto" style={{ fontSize: '14px', margin: 0, whiteSpace: 'pre-wrap', textAlign: 'start' }}>{msg.content}</p>
                   </div>
                 )}
 
@@ -1441,6 +1426,7 @@ export function AgentPageWorking() {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           {/* Text input */}
           <textarea
+            dir={inputValue ? 'auto' : undefined}
             ref={inputRef}
             value={inputValue}
             onChange={(e) => {
@@ -1490,6 +1476,8 @@ export function AgentPageWorking() {
               }}
               disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isTranscribing}
               title={isRecording ? t('cellarSommelier.micButtonStop') : t('cellarSommelier.micButton')}
+              aria-label={isRecording ? t('cellarSommelier.micButtonStop') : t('cellarSommelier.micButton')}
+              aria-pressed={isRecording}
               style={{
                 width: '48px',
                 height: '48px',
@@ -1497,10 +1485,10 @@ export function AgentPageWorking() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: isRecording ? '2px solid #dc3545' : '1px solid var(--border-medium)',
+                border: isRecording ? '2px solid var(--text-error)' : '1px solid var(--border-medium)',
                 cursor: isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isTranscribing ? 'not-allowed' : 'pointer',
-                backgroundColor: isRecording ? '#ffe5e5' : 'var(--bg-surface)',
-                color: isRecording ? '#dc3545' : 'var(--text-secondary)',
+                backgroundColor: isRecording ? 'var(--color-error-light)' : 'var(--bg-surface)',
+                color: isRecording ? 'var(--text-error)' : 'var(--text-secondary)',
                 transition: 'all 0.2s',
                 flexShrink: 0,
                 animation: isRecording ? 'pulse 1.5s infinite' : 'none',
@@ -1525,6 +1513,7 @@ export function AgentPageWorking() {
               handleSend(inputValue);
             }}
             disabled={isSubmitting || !inputValue.trim() || bottles.filter(b => b.quantity > 0).length === 0 || isRecording}
+            aria-label={t('cellarSommelier.sendButton')}
             style={{
               width: '48px',
               height: '48px',
@@ -1534,7 +1523,7 @@ export function AgentPageWorking() {
               justifyContent: 'center',
               border: 'none',
               cursor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'pointer' : 'not-allowed',
-              backgroundColor: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'var(--wine-600)' : 'var(--border-strong)',
+              background: inputValue.trim() && !isSubmitting && bottles.filter(b => b.quantity > 0).length > 0 && !isRecording ? 'var(--sommi-gradient-primary)' : 'var(--border-strong)',
               color: '#FFFFFF',
               transition: 'all 0.2s',
               flexShrink: 0,

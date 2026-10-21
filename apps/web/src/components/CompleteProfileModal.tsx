@@ -46,13 +46,13 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 ios-modal-scroll"
+      className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-4 z-50 ios-modal-scroll"
       style={{
         height: '100dvh',
       }}
     >
       <div 
-        className="rounded-lg max-w-md w-full p-6 shadow-xl touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="rounded-[1.5rem] max-w-md w-full p-6 sm:p-8 shadow-[var(--shadow-modal)] touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
           background: 'var(--bg-surface)',
           overflowY: 'auto',

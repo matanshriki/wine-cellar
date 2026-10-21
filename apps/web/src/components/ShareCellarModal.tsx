@@ -95,7 +95,7 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 'max(env(safe-area-inset-top), 1rem) max(env(safe-area-inset-right), 1rem) max(env(safe-area-inset-bottom), 1rem) max(env(safe-area-inset-left), 1rem)',
-        background: 'rgba(0, 0, 0, 0.5)',
+        background: 'var(--bg-overlay)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         overflow: 'auto',
@@ -143,7 +143,7 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
                 minHeight: '44px',
                 WebkitTapHighlightColor: 'transparent',
               }}
-              aria-label="Close modal"
+              aria-label={t('common.close')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -237,7 +237,7 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
                     {t('cellar.shareCellar.generated')}
                   </p>
                 </div>
-                <p className="text-xs mb-2" style={{ color: 'var(--color-emerald-700)' }}>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-success)' }}>
                   {t('cellar.shareCellar.sharedAs', { name: userName })}
                 </p>
               </div>

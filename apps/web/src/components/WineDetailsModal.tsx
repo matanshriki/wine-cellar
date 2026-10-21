@@ -678,7 +678,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
           {/* Backdrop */}
           <div
             onClick={onClose}
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm"
             style={{ 
               backdropFilter: 'blur(4px)',
               WebkitBackdropFilter: 'blur(4px)',
@@ -752,7 +752,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       color: 'var(--text-secondary)',
                       WebkitTapHighlightColor: 'transparent',
                     }}
-                    aria-label="Close wine details"
+                    aria-label={t('common.close')}
                   >
                     <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -890,7 +890,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             cursor: isGenerating ? 'not-allowed' : 'pointer',
                             WebkitTapHighlightColor: 'transparent',
                           }}
-                          aria-label="Generate AI label art"
+                          aria-label={t('a11y.generateLabelArt')}
                         >
                           {isGenerating ? (
                             <>
@@ -1148,7 +1148,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           type="button"
                           onClick={() => void handleRefreshAnalysis()}
                           disabled={isRefreshing}
-                          className="text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+                          className="text-xs font-medium px-3 py-2 rounded-full transition-colors disabled:opacity-50"
                           style={{
                             background: 'var(--bg-muted)',
                             border: '1px solid var(--border-base)',
@@ -1248,7 +1248,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         <button
                           onClick={handleRemoveKeep}
                           disabled={isRemovingKeep}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-150"
+                          className="text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-150"
                           style={{
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border-base)',
@@ -1294,7 +1294,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             WebkitTapHighlightColor: 'transparent',
                             touchAction: 'manipulation',
                           }}
-                          aria-label="Mark this bottle as opened"
+                          aria-label={t('a11y.markOpened')}
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1314,7 +1314,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           rel="noopener noreferrer"
                           className="vivino-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200"
                           style={{
-                            background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                            background: 'var(--sommi-gradient-primary)',
                             color: 'white',
                             minHeight: '48px',
                             boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
@@ -1322,7 +1322,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             WebkitTapHighlightColor: 'transparent',
                             touchAction: 'manipulation',
                           }}
-                          aria-label="View this wine on Vivino"
+                          aria-label={t('a11y.viewOnVivino')}
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
@@ -1420,7 +1420,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowGenerateDialog(false)}
-            className="fixed inset-0 bg-black bg-opacity-50 z-[60]"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm z-[60]"
             style={{ backdropFilter: 'blur(4px)' }}
           />
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -1432,14 +1432,14 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
-                <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="app-section-title mb-4">
                   {t('labelArt.selectStyle')}
                 </h3>
                 
                 <div className="space-y-3 mb-4">
                   <button
                     onClick={() => handleGenerateLabelArt('classic')}
-                    className="w-full p-4 rounded-lg text-left transition-all border-2"
+                    className="w-full p-4 rounded-lg text-start transition-all border-2"
                     style={{
                       borderColor: 'var(--border-base)',
                       background: 'var(--bg-surface)',
@@ -1455,7 +1455,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   
                   <button
                     onClick={() => handleGenerateLabelArt('modern')}
-                    className="w-full p-4 rounded-lg text-left transition-all border-2"
+                    className="w-full p-4 rounded-lg text-start transition-all border-2"
                     style={{
                       borderColor: 'var(--border-base)',
                       background: 'var(--bg-surface)',

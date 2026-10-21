@@ -35,7 +35,6 @@ export function SommelierCreditsDisplay({
     creditEnforcementEnabled,
     effectiveBalance,
     isLowBalance,
-    balanceLabel,
     monthlyLimit,
     creditsLoading,
   } = useMonetizationAccess();
@@ -47,9 +46,9 @@ export function SommelierCreditsDisplay({
     if (compact) {
       return (
         <div
-          className="inline-flex items-center rounded-xl px-2.5 animate-pulse"
+          className="inline-flex items-center rounded-full px-2.5 animate-pulse"
           style={{
-            height: '36px',
+            height: '40px',
             width: '56px',
             background: 'var(--bg-muted)',
             border: '1px solid var(--border-subtle)',
@@ -71,9 +70,9 @@ export function SommelierCreditsDisplay({
   // Uses CSS variables so it's visible in both light (white nav) and dark themes.
   if (compact) {
     const badgeStyle: React.CSSProperties = isBlocked
-      ? { background: 'rgba(220,38,38,0.1)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.18)' }
+      ? { background: 'var(--bg-error-subtle)', color: 'var(--color-error)', border: '1px solid var(--border-error)' }
       : isLowBalance
-      ? { background: 'rgba(217,119,6,0.1)', color: '#d97706', border: '1px solid rgba(217,119,6,0.18)' }
+      ? { background: 'var(--bg-warning-subtle)', color: 'var(--text-warning)', border: '1px solid var(--border-warning)' }
       : {
           background: 'var(--bg-surface)',
           color: 'var(--text-secondary)',
@@ -84,11 +83,11 @@ export function SommelierCreditsDisplay({
       <button
         type="button"
         onClick={onUpgradeClick}
-        className="inline-flex items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-opacity hover:opacity-80 active:opacity-60"
-        style={{ ...badgeStyle, height: '36px' }}
-        aria-label={balanceLabel}
+        className="inline-flex items-center gap-1.5 rounded-full px-3 text-xs font-semibold tabular-nums transition-colors hover:bg-[var(--interactive-hover)]"
+        style={{ ...badgeStyle, height: '40px' }}
+        aria-label={t('sommelierCredits.balance.ariaLabel', { count: effectiveBalance })}
       >
-        <Sparkles size={13} />
+        <Sparkles size={13} strokeWidth={1.75} style={{ color: isBlocked || isLowBalance ? undefined : 'var(--color-gold-500)' }} />
         <span>{effectiveBalance}</span>
       </button>
     );
@@ -141,7 +140,7 @@ export function SommelierCreditsDisplay({
           {effectiveBalance}
         </span>
         {monthlyLimit > 0 && (
-          <span className="ml-1 text-sm text-white/40">/ {monthlyLimit}</span>
+          <span className="ms-1 text-sm text-white/40">/ {monthlyLimit}</span>
         )}
       </div>
 

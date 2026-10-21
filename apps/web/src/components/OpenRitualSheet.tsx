@@ -307,7 +307,7 @@ function DurationPreset({
       className="px-4 py-2 rounded-full text-sm font-medium transition-all"
       style={{
         background: selected
-          ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))'
+          ? 'var(--sommi-gradient-primary)'
           : 'var(--bg-surface-elevated)',
         color: selected ? 'white' : 'var(--text-secondary)',
         border: selected ? '1px solid var(--wine-700)' : '1px solid var(--border-medium)',
@@ -326,10 +326,11 @@ function InlineStarRating({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(0);
 
   return (
-    <div className="flex gap-1 justify-center" role="group" aria-label="Star rating">
+    <div className="flex gap-1 justify-center" role="group" aria-label={t('a11y.starRating')}>
       {[1, 2, 3, 4, 5].map(star => {
         const filled = star <= (hovered || value);
         return (
@@ -644,11 +645,11 @@ export function OpenRitualSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'tween', duration: reduce ? 0 : 0.3, ease: [0.4, 0, 0.2, 1] }}
             onClick={e => e.stopPropagation()}
-            className="fixed left-0 right-0 z-50 flex flex-col"
+            className="fixed start-0 end-0 z-50 flex flex-col"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
-              boxShadow: 'var(--shadow-xl)',
+              boxShadow: 'var(--shadow-modal)',
               bottom: 'max(0px, var(--safe-bottom))',
               maxHeight: 'calc(90dvh - max(0px, var(--safe-bottom)))',
               borderTopLeftRadius: 'var(--radius-2xl)',
@@ -1046,7 +1047,7 @@ export function OpenRitualSheet({
                     disabled={loading}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm transition-opacity"
                     style={{
-                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      background: 'var(--sommi-gradient-primary)',
                       color: 'white',
                       border: '1px solid var(--wine-700)',
                       opacity: loading ? 0.7 : 1,
@@ -1109,7 +1110,7 @@ export function OpenRitualSheet({
                     onClick={() => goTo('rate')}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm"
                     style={{
-                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      background: 'var(--sommi-gradient-primary)',
                       color: 'white',
                       border: '1px solid var(--wine-700)',
                     }}
@@ -1156,7 +1157,7 @@ export function OpenRitualSheet({
                       background:
                         rating === 0
                           ? 'var(--bg-muted)'
-                          : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                          : 'var(--sommi-gradient-primary)',
                       color: rating === 0 ? 'var(--text-tertiary)' : 'white',
                       border: rating === 0 ? '1px solid var(--border-medium)' : '1px solid var(--wine-700)',
                       opacity: ratingSaving ? 0.7 : 1,
@@ -1184,7 +1185,7 @@ export function OpenRitualSheet({
                   onClick={onClose}
                   className="w-full py-3.5 rounded-xl font-semibold text-sm"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                     border: '1px solid var(--wine-700)',
                   }}

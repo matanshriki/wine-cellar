@@ -169,7 +169,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
       className={
         appShell
           ? 'max-w-2xl mx-auto pb-8 sm:pb-10'
-          : 'max-w-2xl mx-auto pb-8 sm:pb-10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]'
+          : 'max-w-2xl mx-auto pb-8 sm:pb-10 ps-[max(1rem,env(safe-area-inset-left))] pe-[max(1rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))]'
       }
       {...container}
     >
@@ -184,17 +184,13 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <motion.header className="pt-2 pb-10 sm:pb-12" {...item}>
         {/* App name eyebrow */}
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-5"
-          style={{ color: 'var(--wine-500)' }}
-        >
-          Sommi
+        <p className="app-eyebrow mb-5">
+          <bdi>Sommi</bdi>
         </p>
 
         {/* Title */}
         <h1
-          className="text-[2.6rem] sm:text-5xl font-bold tracking-tight leading-[1.1] mb-4"
-          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
+          className="app-display text-[2.6rem] sm:text-5xl leading-[1.1] mb-4"
         >
           {t('about.title')}
         </h1>
@@ -267,7 +263,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
                   <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
                 )}
                 <button
-                  className="w-full flex items-center justify-between gap-3 py-5 px-1 text-left"
+                  className="w-full flex items-center justify-between gap-3 py-5 px-1 text-start rounded-xl"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                   onClick={() => setOpenFaq(isOpen ? null : i)}
                   aria-expanded={isOpen}
@@ -282,7 +278,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
                     className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
                     style={{
                       background: isOpen ? 'var(--wine-100)' : 'var(--bg-subtle)',
-                      color: isOpen ? 'var(--wine-600)' : 'var(--text-tertiary)',
+                      color: isOpen ? 'var(--accent-text)' : 'var(--text-tertiary)',
                       transition: rm ? 'none' : 'background 0.2s, color 0.2s',
                     }}
                   >
@@ -365,18 +361,18 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
       >
         <a
           href="/privacy"
-          className="text-xs underline hover:opacity-70 transition-opacity"
+          className="text-xs underline hover:opacity-70 transition-opacity inline-flex items-center min-h-[44px]"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          Privacy Policy
+          {t('common.privacyPolicy')}
         </a>
         <span className="text-xs" style={{ color: 'var(--border-medium)' }}>·</span>
         <a
           href="/terms"
-          className="text-xs underline hover:opacity-70 transition-opacity"
+          className="text-xs underline hover:opacity-70 transition-opacity inline-flex items-center min-h-[44px]"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          Terms &amp; Conditions
+          {t('common.termsAndConditions')}
         </a>
       </motion.div>
 
@@ -420,11 +416,7 @@ function ActionRow({ href, icon, label, desc }: ActionRowProps) {
     >
       {/* Icon badge */}
       <div
-        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-        style={{
-          background: 'var(--wine-50)',
-          color: 'var(--wine-600)',
-        }}
+        className="lp-blob lp-blob-burgundy app-blob flex-shrink-0 !w-11 !h-11"
       >
         {icon}
       </div>

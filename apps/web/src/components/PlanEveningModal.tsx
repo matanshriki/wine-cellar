@@ -363,11 +363,11 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-2xl rounded-[1.5rem] overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-xl)',
+            boxShadow: 'var(--shadow-modal)',
             maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
@@ -395,12 +395,9 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEven
                 </p>
               </div>
               <button
+                aria-label={t('common.close')}
                 onClick={handleClose}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                style={{
-                  background: 'var(--bg-surface-elevated)',
-                  color: 'var(--text-tertiary)',
-                }}
+                className="app-icon-btn"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -535,11 +532,11 @@ function SwapPickerModal({
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-lg rounded-[1.5rem] overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-xl)',
+            boxShadow: 'var(--shadow-modal)',
             maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
@@ -562,12 +559,9 @@ function SwapPickerModal({
                 </p>
               </div>
               <button
+                aria-label={t('common.close')}
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                style={{
-                  background: 'var(--bg-surface-elevated)',
-                  color: 'var(--text-tertiary)',
-                }}
+                className="app-icon-btn"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -596,7 +590,7 @@ function SwapPickerModal({
               <motion.button
                 key={bottle.id}
                 onClick={() => onSelect(bottle)}
-                className="w-full p-4 rounded-xl flex gap-4 items-center text-left transition-all"
+                className="w-full p-4 rounded-xl flex gap-4 items-center text-start transition-all"
                 style={{
                   background: 'var(--bg-surface-elevated)',
                   border: '1px solid var(--border-medium)',
@@ -664,7 +658,7 @@ function SwapPickerModal({
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >
@@ -741,16 +735,16 @@ function InputStep({
             <button
               key={occ.value}
               onClick={() => setOccasion(occ.value)}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              className="px-4 py-2.5 rounded-full text-sm font-medium transition-all"
               style={{
                 background: occasion === occ.value
-                  ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                  ? 'var(--sommi-gradient-primary)'
                   : 'var(--bg-surface-elevated)',
                 color: occasion === occ.value ? 'white' : 'var(--text-primary)',
                 border: `1px solid ${occasion === occ.value ? 'var(--wine-600)' : 'var(--border-medium)'}`,
               }}
             >
-              <span className="mr-1.5">{occ.icon}</span>
+              <span className="me-1.5">{occ.icon}</span>
               {occ.label}
             </button>
           ))}
@@ -767,10 +761,10 @@ function InputStep({
             <button
               key={size}
               onClick={() => setGroupSize(size as GroupSize)}
-              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+              className="flex-1 px-4 py-3 rounded-full text-sm font-medium transition-all"
               style={{
                 background: groupSize === size
-                  ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                  ? 'var(--sommi-gradient-primary)'
                   : 'var(--bg-surface-elevated)',
                 color: groupSize === size ? 'white' : 'var(--text-primary)',
                 border: `1px solid ${groupSize === size ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -847,7 +841,7 @@ function InputStep({
                 className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
                 style={{
                   background: selectedProtein === protein 
-                    ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                    ? 'var(--sommi-gradient-primary)'
                     : 'var(--bg-surface-elevated)',
                   color: selectedProtein === protein ? 'white' : 'var(--text-secondary)',
                   border: `1px solid ${selectedProtein === protein ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -874,7 +868,7 @@ function InputStep({
                   className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
                   style={{
                     background: selectedSauce === sauce 
-                      ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                      ? 'var(--sommi-gradient-primary)'
                       : 'var(--bg-surface-elevated)',
                     color: selectedSauce === sauce ? 'white' : 'var(--text-secondary)',
                     border: `1px solid ${selectedSauce === sauce ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -904,7 +898,7 @@ function InputStep({
                     className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={{
                       background: selectedSpice === spice 
-                        ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                        ? 'var(--sommi-gradient-primary)'
                         : 'var(--bg-surface-elevated)',
                       color: selectedSpice === spice ? 'white' : 'var(--text-secondary)',
                       border: `1px solid ${selectedSpice === spice ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -930,7 +924,7 @@ function InputStep({
                     className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={{
                       background: selectedSmoke === smoke 
-                        ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                        ? 'var(--sommi-gradient-primary)'
                         : 'var(--bg-surface-elevated)',
                       color: selectedSmoke === smoke ? 'white' : 'var(--text-secondary)',
                       border: `1px solid ${selectedSmoke === smoke ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -959,10 +953,10 @@ function InputStep({
             <button
               key={time.value}
               onClick={() => setStartTime(time.value as StartTime)}
-              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+              className="flex-1 px-4 py-3 rounded-full text-sm font-medium transition-all"
               style={{
                 background: startTime === time.value
-                  ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                  ? 'var(--sommi-gradient-primary)'
                   : 'var(--bg-surface-elevated)',
                 color: startTime === time.value ? 'white' : 'var(--text-primary)',
                 border: `1px solid ${startTime === time.value ? 'var(--wine-600)' : 'var(--border-medium)'}`,
@@ -1020,7 +1014,7 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'white',
               }}
             >
@@ -1077,7 +1071,7 @@ function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
             {/* Swap Button */}
             <button
               onClick={() => onSwap(slot.position)}
-              className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="px-3 py-2 rounded-full text-sm font-medium transition-colors"
               style={{
                 background: 'var(--bg-surface)',
                 color: 'var(--text-secondary)',

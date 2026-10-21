@@ -11,6 +11,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { useTimerManager } from '../hooks/useTimerManager';
 import { OpenRitualSheet } from '../components/OpenRitualSheet';
@@ -78,6 +79,7 @@ function readPushParams(search: string): {
 }
 
 export function OpenRitualProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const timerManager = useTimerManager();
   const location = useLocation();
   const navigate = useNavigate();
@@ -145,7 +147,7 @@ export function OpenRitualProvider({ children }: { children: React.ReactNode }) 
       {/* Nudge to enable Web Push while a timer is running */}
       {hasActiveTimers && (
         <div
-          className="fixed left-4 right-4 z-[54]"
+          className="fixed start-4 end-4 z-[54]"
           style={{
             bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 0px) + 148px)',
           }}
@@ -172,7 +174,7 @@ export function OpenRitualProvider({ children }: { children: React.ReactNode }) 
             type="button"
             className="absolute inset-0"
             style={{ background: 'rgba(0,0,0,0.55)' }}
-            aria-label="Close"
+            aria-label={t('common.close')}
             onClick={() => setPushDecant(null)}
           />
           <div

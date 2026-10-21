@@ -8,14 +8,14 @@ import { WineLoader } from '../WineLoader';
 // ── AI / chatbot source detection ────────────────────────────────────────────
 
 const AI_SOURCE_MAP: Record<string, { label: string; emoji: string; color: string }> = {
-  'chat.openai.com':        { label: 'ChatGPT',    emoji: '🤖', color: '#10a37f' },
-  'chatgpt.com':            { label: 'ChatGPT',    emoji: '🤖', color: '#10a37f' },
+  'chat.openai.com':        { label: 'ChatGPT',    emoji: '🤖', color: 'var(--text-success)' },
+  'chatgpt.com':            { label: 'ChatGPT',    emoji: '🤖', color: 'var(--text-success)' },
   'gemini.google.com':      { label: 'Gemini',     emoji: '✨', color: '#4285f4' },
   'bard.google.com':        { label: 'Gemini',     emoji: '✨', color: '#4285f4' },
   'perplexity.ai':          { label: 'Perplexity', emoji: '🔍', color: '#20b2aa' },
-  'claude.ai':              { label: 'Claude',     emoji: '🧠', color: '#d97706' },
-  'copilot.microsoft.com':  { label: 'Copilot',    emoji: '🪟', color: '#0078d4' },
-  'bing.com':               { label: 'Bing/Copilot', emoji: '🪟', color: '#0078d4' },
+  'claude.ai':              { label: 'Claude',     emoji: '🧠', color: 'var(--text-warning)' },
+  'copilot.microsoft.com':  { label: 'Copilot',    emoji: '🪟', color: 'var(--accent-text)' },
+  'bing.com':               { label: 'Bing/Copilot', emoji: '🪟', color: 'var(--accent-text)' },
   'you.com':                { label: 'You.com',    emoji: '🔎', color: '#6366f1' },
   'phind.com':              { label: 'Phind',      emoji: '🔎', color: '#8b5cf6' },
   'poe.com':                { label: 'Poe',        emoji: '🤖', color: '#e879f9' },
@@ -456,7 +456,7 @@ function Not_Configured() {
             href="https://console.cloud.google.com/apis/credentials"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--color-wine, #9b2247)' }}
+            style={{ color: 'var(--accent-text)' }}
           >
             GCP Console → APIs &amp; Services → Credentials
           </a>
@@ -469,7 +469,7 @@ function Not_Configured() {
             href="https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--color-wine, #9b2247)' }}
+            style={{ color: 'var(--accent-text)' }}
           >
             Google Analytics Data API v1
           </a>.
@@ -642,7 +642,7 @@ export function AdminGoogleAnalytics() {
             display: 'inline-flex', alignItems: 'center', gap: '6px',
             background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e',
             borderRadius: '20px', padding: '4px 12px',
-            fontSize: '0.78rem', fontWeight: 700, color: '#22c55e',
+            fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-success)',
           }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
             {rt?.activeUsers ?? '—'} active now
@@ -831,7 +831,7 @@ export function AdminGoogleAnalytics() {
       <SectionTitle>
         Where users come from (30 days)
         {hasAiTraffic && (
-          <span style={{ marginLeft: 8, fontSize: '0.65rem', color: '#10a37f', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+          <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'var(--text-success)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
             🤖 AI traffic detected
           </span>
         )}
@@ -856,7 +856,7 @@ export function AdminGoogleAnalytics() {
               }} />
               <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--text-primary)', position: 'relative', zIndex: 1 }}>
                 {item.label}
-                {item.isAI && <span style={{ marginLeft: 6, fontSize: '0.65rem', color: '#10a37f', fontWeight: 600 }}>AI</span>}
+                {item.isAI && <span style={{ marginLeft: 6, fontSize: '0.65rem', color: 'var(--text-success)', fontWeight: 600 }}>AI</span>}
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', position: 'relative', zIndex: 1, flexShrink: 0 }}>{item.sub}</span>
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-heading)', minWidth: 40, textAlign: 'right', position: 'relative', zIndex: 1 }}>

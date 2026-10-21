@@ -378,14 +378,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
        * Top Navigation Bar - Sticky with translucent glass effect
        * safe-area-top: Ensures proper spacing for iPhone notch/status bar in PWA mode
        */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[60] btn-luxury-primary"
+      >
+        {t('nav.skipToContent')}
+      </a>
       <nav 
-        className="fixed top-0 left-0 right-0 z-40 safe-area-top"
+        aria-label={t('nav.primary')}
+        className="fixed top-0 start-0 end-0 z-40 safe-area-top"
         style={{ 
-          background: 'var(--bg-nav, rgba(255, 255, 255, 0.95))',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          background: 'var(--bg-nav)',
+          backdropFilter: 'blur(14px) saturate(1.2)',
+          WebkitBackdropFilter: 'blur(14px) saturate(1.2)',
           borderBottom: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-nav, 0 2px 8px rgba(0, 0, 0, 0.04))',
+          boxShadow: 'var(--shadow-nav)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -437,7 +444,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   position: 'relative',
                   zIndex: 10,
                 }}
-                aria-label="Scroll to top"
+                aria-label={t('a11y.scrollToTop')}
                 tabIndex={0}
               >
                 <img
@@ -453,19 +460,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
                 {/* Title + tagline — visible from smallest phones; compact type for PWA */}
                 <div className="flex flex-col leading-tight pointer-events-none gap-0.5 min-w-0 text-start">
-                  <span
-                    className="text-base sm:text-lg md:text-xl font-bold tracking-wide truncate"
+                  <bdi
+                    className="text-[1.2rem] sm:text-[1.35rem] truncate"
                     style={{
                       fontFamily: 'var(--font-display)',
-                      color: 'var(--wine-700)',
-                      letterSpacing: '0.04em',
+                      fontWeight: 650,
+                      color: 'var(--accent-text)',
+                      letterSpacing: '-0.01em',
                     }}
                   >
                     {t('app.title')}
-                  </span>
+                  </bdi>
                   <span
-                    className="text-[8px] sm:text-[9px] font-medium uppercase tracking-[0.12em] sm:tracking-[0.16em] max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
-                    style={{ color: 'var(--wine-400)' }}
+                    className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.18em] rtl:tracking-normal max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
+                    style={{ color: 'var(--text-eyebrow)' }}
                   >
                     {t('app.tagline')}
                   </span>
@@ -490,37 +498,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       key={item.path}
                       to={item.path}
                       onClick={handleClick}
-                      className={`
-                        px-4 py-2 rounded-full text-sm font-medium transition-all
-                        ${
-                          isActive
-                            ? ''
-                            : 'hover:bg-opacity-80'
-                        }
-                      `}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`inline-flex items-center min-h-[40px] px-4 rounded-full text-sm font-semibold transition-colors ${
+                        isActive ? '' : 'hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]'
+                      }`}
                       style={{
-                        background: isActive 
-                          ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))' 
-                          : 'var(--bg-surface-2)',
-                      color: isActive 
-                        ? 'var(--text-inverse)' 
-                        : 'var(--text-secondary)',
-                      boxShadow: isActive 
-                        ? 'var(--shadow-sm)' 
-                        : 'none',
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                );
+                        background: isActive ? 'var(--sommi-gradient-primary)' : 'transparent',
+                        color: isActive ? '#fff' : 'var(--text-secondary)',
+                        boxShadow: isActive ? '0 6px 16px -6px rgba(107, 31, 47, 0.5)' : 'none',
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
                 })}
               </div>
             </div>
 
             {/* End side actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <CompactThemeToggle />
-              <LanguageSwitcher />
+              <LanguageSwitcher variant="pill" />
               {/* Sommi credits badge — only renders for monetization-enabled users */}
               <SommelierCreditsDisplay
                 compact
@@ -541,7 +539,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* On iPad the md: CSS rule resets pb-bottom-nav to 2rem, but we're showing the footer
           there too, so override it back to the dynamic nav layout + extra buffer. */}
       <main
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav"
+        id="main-content"
+        tabIndex={-1}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav focus:outline-none"
         style={{
           paddingTop: 'calc(4rem + 1.5rem)',
           ...(isIpad
@@ -571,7 +571,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
         onChange={handleCameraFileSelect}
         className="hidden"
-        aria-label="Capture bottle photo"
+        aria-label={t('a11y.captureBottle')}
       />
 
       {/* Global Add Bottle Sheet - Accessible from Camera FAB on any page (desktop) */}

@@ -243,7 +243,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+      className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center z-[100]"
       role="dialog"
       aria-modal="true"
       onClick={handleClose}
@@ -259,7 +259,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col"
+        className="rounded-[1.5rem] shadow-[var(--shadow-modal)] w-full max-w-2xl overflow-hidden flex flex-col"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-soft)',
@@ -288,7 +288,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 -mr-2"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors p-2 -me-2"
               style={{ minWidth: '44px', minHeight: '44px' }}
               aria-label={t('common.close')}
             >
@@ -455,7 +455,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
                     key={color}
                     type="button"
                     onClick={() => handleChange('color', color)}
-                    className="py-2 px-4 rounded-lg border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm font-medium"
+                    className="py-2 px-4 rounded-full border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm font-medium"
                     style={{
                       borderColor: isSelected ? 'var(--wine-600)' : 'var(--border-input)',
                       backgroundColor: isSelected ? 'var(--wine-50)' : 'var(--bg-input)',
@@ -496,9 +496,9 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
                   type="button"
                   onClick={handleFetchFromVivino}
                   disabled={fetchingVivino}
-                  className="px-4 py-2 rounded-lg font-medium transition-all"
+                  className="px-4 py-2 rounded-full font-medium transition-all"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'var(--text-inverse)',
                     cursor: fetchingVivino ? 'wait' : 'pointer',
                   }}
@@ -510,7 +510,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
               <p 
                 className="text-xs mt-1"
-                style={{ color: 'var(--color-emerald-700)' }}
+                style={{ color: 'var(--text-success)' }}
               >
                 ✨ {t('bottleForm.vivinoFetchHint')}
               </p>
@@ -591,7 +591,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] border-2"
+            className="px-4 py-3 rounded-full font-medium transition-colors min-h-[44px] border-2"
             style={{
               backgroundColor: 'var(--bg-secondary)',
               borderColor: 'var(--border-medium)',
@@ -607,11 +607,11 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px] flex-1 sm:flex-none"
+            className="px-6 py-3 rounded-full font-medium transition-all min-h-[44px] flex-1 sm:flex-none"
             style={{
               background: loading 
                 ? 'var(--bg-muted)' 
-                : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                : 'var(--sommi-gradient-primary)',
               color: 'var(--text-inverse)',
               opacity: loading ? 0.6 : 1,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -632,7 +632,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[110]"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-4 z-[110]"
             onClick={() => setShowConfirmClose(false)}
             style={{ backdropFilter: 'blur(4px)' }}
           >
@@ -642,7 +642,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'tween', duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-[var(--bg-surface)] rounded-[1.5rem] shadow-[var(--shadow-modal)] w-full max-w-md overflow-hidden"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-soft)',
@@ -684,7 +684,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
               >
                 <button
                   onClick={() => setShowConfirmClose(false)}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-colors min-h-[44px]"
                   style={{
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-medium)',
@@ -695,9 +695,9 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
                 </button>
                 <button
                   onClick={confirmClose}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-all min-h-[44px]"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >

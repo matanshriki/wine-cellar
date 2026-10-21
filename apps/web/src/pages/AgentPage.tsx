@@ -266,7 +266,7 @@ export function AgentPage() {
             <div 
               className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
               style={{ 
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'white',
               }}
             >
@@ -385,6 +385,7 @@ export function AgentPage() {
             {/* Voice button (dev-only) */}
             {isDevEnvironment() && (
               <button
+                aria-label={isRecording ? t('agent.stopRecording', 'Stop recording') : t('agent.startRecording', 'Start recording')}
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isSubmitting}
                 className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all"
@@ -431,7 +432,7 @@ export function AgentPage() {
               className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: inputValue.trim() && !isSubmitting 
-                  ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))'
+                  ? 'var(--sommi-gradient-primary)'
                   : 'var(--bg-tertiary)',
                 color: inputValue.trim() && !isSubmitting ? 'white' : 'var(--text-tertiary)',
                 cursor: inputValue.trim() && !isSubmitting ? 'pointer' : 'not-allowed',

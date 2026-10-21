@@ -139,7 +139,7 @@ export function BottleCarousel({
           style={{
             fontSize: '16px',
             fontWeight: 600,
-            color: '#333',
+            color: 'var(--text-heading)',
             marginBottom: '16px',
             textAlign: isRTL ? 'right' : 'left',
           }}
@@ -153,6 +153,7 @@ export function BottleCarousel({
         {/* Desktop Arrow - Previous */}
         {bottles.length > 1 && (
           <button
+            aria-label={t('common.previous')}
             onClick={goToPrevious}
             disabled={currentIndex === 0}
             style={{
@@ -164,8 +165,8 @@ export function BottleCarousel({
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: 'white',
-              border: '1px solid #e0e0e0',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -225,9 +226,9 @@ export function BottleCarousel({
             >
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--bg-surface)',
                   borderRadius: '16px',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid var(--border-subtle)',
                   padding: '16px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   transition: 'all 0.3s',
@@ -255,7 +256,7 @@ export function BottleCarousel({
                       borderRadius: '12px',
                       overflow: 'hidden',
                       marginBottom: '12px',
-                      backgroundColor: '#f5f5f5',
+                      backgroundColor: 'var(--bg-muted)',
                     }}
                   >
                     <img
@@ -276,7 +277,7 @@ export function BottleCarousel({
                     style={{
                       fontSize: '16px',
                       fontWeight: 700,
-                      color: '#333',
+                      color: 'var(--text-heading)',
                       marginBottom: '4px',
                       lineHeight: '1.3',
                     }}
@@ -286,16 +287,19 @@ export function BottleCarousel({
                   <p
                     style={{
                       fontSize: '14px',
-                      color: '#666',
+                      color: 'var(--text-secondary)',
                       marginBottom: '8px',
                       lineHeight: '1.4',
                     }}
                   >
                     {bottle.name}
                     {bottle.vintage && (
-                      <span style={{ fontWeight: 600, marginLeft: '4px' }}>
-                        {bottle.vintage}
-                      </span>
+                      <>
+                        {' '}
+                        <span style={{ fontWeight: 600 }}>
+                          {bottle.vintage}
+                        </span>
+                      </>
                     )}
                   </p>
 
@@ -304,7 +308,7 @@ export function BottleCarousel({
                     <p
                       style={{
                         fontSize: '12px',
-                        color: '#999',
+                        color: 'var(--text-tertiary)',
                         marginBottom: '8px',
                       }}
                     >
@@ -323,7 +327,7 @@ export function BottleCarousel({
                   <p
                     style={{
                       fontSize: '13px',
-                      color: '#555',
+                      color: 'var(--text-primary)',
                       lineHeight: '1.5',
                       marginTop: '8px',
                       fontStyle: 'italic',
@@ -345,8 +349,8 @@ export function BottleCarousel({
                       padding: '10px',
                       borderRadius: '8px',
                       border: '1px solid #7c3030',
-                      backgroundColor: 'white',
-                      color: '#7c3030',
+                      backgroundColor: 'var(--bg-surface)',
+                      color: 'var(--accent-text)',
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -364,6 +368,7 @@ export function BottleCarousel({
         {/* Desktop Arrow - Next */}
         {bottles.length > 1 && (
           <button
+            aria-label={t('common.next')}
             onClick={goToNext}
             disabled={currentIndex === bottles.length - 1}
             style={{
@@ -375,8 +380,8 @@ export function BottleCarousel({
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: 'white',
-              border: '1px solid #e0e0e0',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -430,7 +435,7 @@ export function BottleCarousel({
                 width: currentIndex === index ? '24px' : '8px',
                 height: '8px',
                 borderRadius: '4px',
-                backgroundColor: currentIndex === index ? '#7c3030' : '#ddd',
+                backgroundColor: currentIndex === index ? 'var(--wine-600)' : 'var(--border-medium)',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.3s',

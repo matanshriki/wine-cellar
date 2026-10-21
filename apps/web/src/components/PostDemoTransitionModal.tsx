@@ -47,7 +47,7 @@ export function PostDemoTransitionModal({
           aria-modal="true"
           style={{
             height: '100dvh',
-            background: 'rgba(0, 0, 0, 0.82)',
+            background: 'var(--bg-overlay)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
@@ -66,7 +66,7 @@ export function PostDemoTransitionModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 30 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative max-w-md w-full shadow-2xl touch-scroll safe-area-inset-bottom max-h-mobile-modal overflow-y-auto rounded-2xl"
+            className="relative max-w-md w-full shadow-[var(--shadow-modal)] touch-scroll safe-area-inset-bottom max-h-mobile-modal overflow-y-auto rounded-2xl"
             style={{
               background: 'linear-gradient(180deg, #1e1e1e 0%, #161616 100%)',
               border: '1px solid rgba(139, 21, 56, 0.3)',
@@ -187,7 +187,7 @@ export function PostDemoTransitionModal({
                 onClick={onScanBottle}
                 className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg mb-3 transition-all min-h-[52px] sm:min-h-[56px] flex items-center justify-center gap-2.5"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: '#ffffff',
                   border: '1px solid var(--wine-700)',
                   boxShadow: '0 8px 24px rgba(139, 21, 56, 0.3)',

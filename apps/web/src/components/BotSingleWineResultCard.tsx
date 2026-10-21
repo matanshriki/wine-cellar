@@ -47,23 +47,23 @@ export function BotSingleWineResultCard({
     const badges: Record<string, { text: string; color: string; bg: string }> = {
       ready: {
         text: t('cellar.readiness.ready', 'Ready'),
-        color: 'var(--color-emerald-700)',
-        bg: 'var(--color-emerald-50)',
+        color: 'var(--text-success)',
+        bg: 'var(--color-success-light)',
       },
       peak: {
         text: t('cellar.readiness.peak', 'Peak'),
-        color: 'var(--gold-700)',
-        bg: 'var(--gold-50)',
+        color: 'var(--text-warning)',
+        bg: 'var(--color-warning-light)',
       },
       aging: {
         text: t('cellar.readiness.aging', 'Hold'),
-        color: 'var(--wine-700)',
+        color: 'var(--accent-text)',
         bg: 'var(--wine-50)',
       },
       drink_soon: {
         text: t('cellar.readiness.drinkSoon', 'Drink Soon'),
-        color: 'var(--color-rose-700)',
-        bg: 'var(--color-rose-50)',
+        color: 'var(--text-error)',
+        bg: 'var(--color-error-light)',
       },
     };
 
@@ -143,7 +143,7 @@ export function BotSingleWineResultCard({
           cursor: onViewDetails ? 'pointer' : 'default',
           display: 'flex',
           gap: '16px',
-          backgroundColor: 'white',
+          backgroundColor: 'var(--bg-surface)',
           transition: 'background-color 0.2s',
         }}
         whileHover={reduceMotion || !onViewDetails ? {} : { backgroundColor: 'var(--bg-subtle)' }}
@@ -211,6 +211,7 @@ export function BotSingleWineResultCard({
               margin: 0,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              unicodeBidi: 'plaintext',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -235,15 +236,17 @@ export function BotSingleWineResultCard({
               </span>
             )}
             {bottle.vintage && (
-              <span
-                style={{
-                  fontWeight: 600,
-                  marginLeft: '6px',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {bottle.vintage}
-              </span>
+              <>
+                {' '}
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {bottle.vintage}
+                </span>
+              </>
             )}
           </p>
 
@@ -443,7 +446,7 @@ export function BotSingleWineResultCard({
               padding: '12px 20px',
               borderRadius: '12px',
               border: 'none',
-              background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+              background: 'var(--sommi-gradient-primary)',
               color: 'white',
               fontSize: '14px',
               fontWeight: 600,

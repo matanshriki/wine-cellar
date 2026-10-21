@@ -153,7 +153,7 @@ export function CookieConsent() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed left-0 right-0 z-[100] p-4"
+          className="fixed start-0 end-0 z-[100] p-4"
           style={{
             bottom: 0,
             paddingBottom: 'max(5.5rem, calc(env(safe-area-inset-bottom) + 5rem))',
@@ -250,7 +250,7 @@ export function CookieConsent() {
                   handleReject();
                 }}
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 rounded-lg font-medium text-sm sm:text-base transition-all"
+                className="flex-1 px-4 py-3 rounded-full font-medium text-sm sm:text-base transition-all"
                 style={{
                   background: 'white',
                   color: 'var(--color-stone-700)',
@@ -270,7 +270,7 @@ export function CookieConsent() {
                   handleAccept();
                 }}
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 rounded-lg font-medium text-sm sm:text-base transition-all"
+                className="flex-1 px-4 py-3 rounded-full font-medium text-sm sm:text-base transition-all"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-wine-500) 0%, var(--color-wine-600) 100%)',
                   color: 'white',
@@ -286,7 +286,7 @@ export function CookieConsent() {
                   t('common.loading', 'Loading...')
                 ) : (
                   <>
-                    <span className="mr-2">✓</span>
+                    <span className="me-2">✓</span>
                     {t('cookieConsent.accept', 'Accept & Continue')}
                   </>
                 )}

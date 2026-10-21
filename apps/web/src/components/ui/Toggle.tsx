@@ -104,8 +104,8 @@ export const Toggle: React.FC<ToggleProps> = ({
         `}
         style={{
           backgroundColor: checked
-            ? 'var(--color-wine-500)'
-            : 'var(--color-stone-300)',
+            ? 'var(--wine-600)'
+            : 'var(--text-muted)',
         }}
       >
         <span className="sr-only">{label || 'Toggle'}</span>
@@ -130,9 +130,8 @@ export const Toggle: React.FC<ToggleProps> = ({
               id={`${toggleId}-label`}
               className={`
                 block font-medium text-base leading-snug
-                ${disabled ? 'text-gray-400' : 'text-gray-900'}
               `}
-              style={{ color: disabled ? 'var(--color-stone-400)' : 'var(--color-stone-900)' }}
+              style={{ color: disabled ? 'var(--text-muted)' : 'var(--text-primary)' }}
             >
               {label}
             </div>
@@ -141,7 +140,7 @@ export const Toggle: React.FC<ToggleProps> = ({
             <p
               id={`${toggleId}-helper`}
               className="mt-1 text-xs leading-tight"
-              style={{ color: 'var(--color-stone-600)' }}
+              style={{ color: 'var(--text-secondary)' }}
             >
               {helperText}
             </p>

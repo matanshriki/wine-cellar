@@ -111,9 +111,9 @@ export function UserMenu() {
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity px-1.5 rounded-xl"
+        className="flex items-center gap-2 transition-colors px-1 lg:pe-2.5 rounded-full hover:bg-[var(--interactive-hover)]"
         style={{
-          height: '36px',
+          height: '40px',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
         }}
@@ -121,7 +121,10 @@ export function UserMenu() {
         aria-expanded={isOpen}
       >
         {/* Avatar */}
-        <div className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm overflow-hidden">
+        <div
+          className="w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-semibold overflow-hidden"
+          style={{ background: 'var(--sommi-gradient-primary)' }}
+        >
           {profile?.avatar_url ? (
             <img
               src={profile.avatar_url}
@@ -156,7 +159,7 @@ export function UserMenu() {
       {/* Dropdown Menu */}
       {isOpen && (
         <div 
-          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 sm:w-72 rounded-lg py-2 z-50"
+          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 sm:w-72 rounded-2xl py-2 z-50 overflow-hidden animate-fadeIn"
           style={{
             background: 'var(--bg-dropdown)',
             boxShadow: 'var(--shadow-dropdown)',
@@ -182,14 +185,14 @@ export function UserMenu() {
                   style={
                     planKey === 'premium'
                       ? {
-                          background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(217,119,6,0.08))',
-                          color: '#F59E0B',
-                          border: '1px solid rgba(251,191,36,0.25)',
+                          background: 'var(--bg-warning-subtle)',
+                          color: 'var(--text-warning)',
+                          border: '1px solid var(--border-warning)',
                         }
                       : {
-                          background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(109,40,217,0.08))',
-                          color: '#A78BFA',
-                          border: '1px solid rgba(167,139,250,0.25)',
+                          background: 'var(--wine-50)',
+                          color: 'var(--accent-text)',
+                          border: '1px solid var(--wine-200)',
                         }
                   }
                 >
@@ -212,11 +215,11 @@ export function UserMenu() {
             <Link
               to="/profile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              className="flex items-center gap-3 px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]"
               style={{ color: 'var(--text-secondary)' }}
             >
               <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span>{t('profile.menu.viewProfile')}</span>
             </Link>
@@ -226,7 +229,7 @@ export function UserMenu() {
               <Link
                 to="/agent"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                className="flex items-center gap-3 px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,7 +243,7 @@ export function UserMenu() {
             {betaFlags.canShareCellar && bottles.length > 0 && (
               <button
                 onClick={handleShareCellar}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+                className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)]"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +257,7 @@ export function UserMenu() {
             <Link
               to="/about"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              className="flex items-center gap-3 px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]"
               style={{ color: 'var(--text-secondary)' }}
             >
               <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -268,11 +271,11 @@ export function UserMenu() {
                 setIsOpen(false);
                 handleLogout();
               }}
-              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+              className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)]"
               style={{ color: 'var(--color-error)' }}
             >
               <svg className="w-5 h-5 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span>{t('nav.logout')}</span>
             </button>

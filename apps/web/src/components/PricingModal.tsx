@@ -40,8 +40,8 @@ export interface PricingModalProps {
 
 const PLAN_ICONS: Record<string, React.ReactNode> = {
   free:      <Sparkles size={16} className="text-white/50" />,
-  premium:   <Star size={16} className="text-amber-400" />,
-  collector: <TrendingUp size={16} className="text-violet-400" />,
+  premium:   <Star size={16} className="text-[#f0cd6a]" />,
+  collector: <TrendingUp size={16} className="text-[#e895aa]" />,
 };
 
 const PLAN_CTA: Record<string, string> = {
@@ -52,8 +52,8 @@ const PLAN_CTA: Record<string, string> = {
 
 const PLAN_GRADIENT: Record<string, string> = {
   free:      '',
-  premium:   'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.04))',
-  collector: 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04))',
+  premium:   'linear-gradient(135deg, rgba(240,205,106,0.12), rgba(240,205,106,0.04))',
+  collector: 'linear-gradient(135deg, rgba(232,149,170,0.12), rgba(232,149,170,0.04))',
 };
 
 // ── Checkout helpers ──────────────────────────────────────────────────────────
@@ -109,13 +109,13 @@ function PlanCard({
         background: isHighlighted ? PLAN_GRADIENT[plan.key] : 'rgba(255,255,255,0.03)',
         borderColor: isHighlighted
           ? plan.key === 'premium'
-            ? 'rgba(251,191,36,0.35)'
-            : 'rgba(167,139,250,0.35)'
+            ? 'rgba(240,205,106,0.35)'
+            : 'rgba(232,149,170,0.35)'
           : 'rgba(255,255,255,0.1)',
         boxShadow: isHighlighted
           ? plan.key === 'premium'
-            ? '0 0 0 1px rgba(251,191,36,0.15), 0 8px 32px rgba(0,0,0,0.3)'
-            : '0 0 0 1px rgba(167,139,250,0.15), 0 8px 32px rgba(0,0,0,0.3)'
+            ? '0 0 0 1px rgba(240,205,106,0.15), 0 8px 32px rgba(0,0,0,0.3)'
+            : '0 0 0 1px rgba(232,149,170,0.15), 0 8px 32px rgba(0,0,0,0.3)'
           : '0 4px 16px rgba(0,0,0,0.2)',
       }}
     >
@@ -125,9 +125,9 @@ function PlanCard({
           className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wider"
           style={{
             background: plan.key === 'premium'
-              ? 'linear-gradient(135deg, #F59E0B, #D97706)'
-              : 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-            color: '#fff',
+              ? 'linear-gradient(135deg, #f0cd6a, #d9a93a)'
+              : 'linear-gradient(135deg, #a63552, #6b1f2f)',
+            color: plan.key === 'premium' ? '#2d1810' : '#fff',
           }}
         >
           {isRecommended ? t('sommelierCredits.badges.recommended') : t('sommelierCredits.badges.mostPopular')}
@@ -147,14 +147,14 @@ function PlanCard({
               isHighlighted
                 ? plan.key === 'premium'
                   ? {
-                      background: 'rgba(251,191,36,0.15)',
-                      color: '#F59E0B',
-                      border: '1px solid rgba(251,191,36,0.3)',
+                      background: 'rgba(240,205,106,0.15)',
+                      color: '#f0cd6a',
+                      border: '1px solid rgba(240,205,106,0.3)',
                     }
                   : {
-                      background: 'rgba(167,139,250,0.15)',
-                      color: '#A78BFA',
-                      border: '1px solid rgba(167,139,250,0.3)',
+                      background: 'rgba(232,149,170,0.15)',
+                      color: '#e895aa',
+                      border: '1px solid rgba(232,149,170,0.3)',
                     }
                 : {
                     background: 'rgba(255,255,255,0.08)',
@@ -210,9 +210,9 @@ function PlanCard({
               className="mt-0.5 shrink-0"
               style={{
                 color: plan.key === 'premium'
-                  ? 'rgba(251,191,36,0.7)'
+                  ? 'rgba(240,205,106,0.7)'
                   : plan.key === 'collector'
-                  ? 'rgba(167,139,250,0.7)'
+                  ? 'rgba(232,149,170,0.7)'
                   : 'rgba(255,255,255,0.3)',
               }}
             />
@@ -234,9 +234,9 @@ function PlanCard({
             ? {
                 background:
                   plan.key === 'premium'
-                    ? 'linear-gradient(135deg, #F59E0B, #D97706)'
-                    : 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                color: '#fff',
+                    ? 'linear-gradient(135deg, #f0cd6a, #d9a93a)'
+                    : 'linear-gradient(135deg, #a63552, #6b1f2f)',
+                color: plan.key === 'premium' ? '#2d1810' : '#fff',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
               }
             : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }
@@ -371,7 +371,7 @@ export function PricingModal({
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl overflow-y-auto rounded-t-3xl max-h-[92vh] sm:inset-0 sm:my-auto sm:max-h-[90vh] sm:rounded-3xl"
             style={{
-              background: 'linear-gradient(160deg, #0e0c1b 0%, #13101f 60%, #0e0c1b 100%)',
+              background: 'linear-gradient(160deg, #170d11 0%, #13101f 60%, #170d11 100%)',
               boxShadow: '0 -8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07)',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -386,7 +386,7 @@ export function PricingModal({
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <Sparkles size={16} className="text-amber-400" />
+                    <Sparkles size={16} className="text-[#f0cd6a]" />
                     <h2
                       id="pricing-modal-title"
                       className="text-lg font-semibold text-white sm:text-xl"
@@ -401,8 +401,8 @@ export function PricingModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="ml-4 shrink-0 rounded-full p-2 text-white/35 transition-colors hover:bg-white/8 hover:text-white/70"
-                  aria-label="Close"
+                  className="ms-4 shrink-0 rounded-full p-2 text-white/35 transition-colors hover:bg-white/8 hover:text-white/70"
+                  aria-label={t('common.close')}
                 >
                   <X size={18} />
                 </button>
@@ -413,14 +413,14 @@ export function PricingModal({
                 <div
                   className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/8 px-4 py-3"
                 >
-                  <Sparkles size={14} className="mt-0.5 shrink-0 text-amber-400" />
+                  <Sparkles size={14} className="mt-0.5 shrink-0 text-[#f0cd6a]" />
                   <div>
                     <p className="text-sm font-medium text-amber-300">
                       {monthlyLimit > 0
                         ? t('sommelierCredits.plan.creditsRemainingOf', { count: effectiveBalance, limit: monthlyLimit })
                         : t('sommelierCredits.plan.creditsRemaining', { count: effectiveBalance })}
                     </p>
-                    <p className="mt-0.5 text-xs text-amber-400/60">
+                    <p className="mt-0.5 text-xs text-[#f0cd6a]/60">
                       {t('sommelierCredits.upgradeSubtitle')}
                     </p>
                   </div>
@@ -428,7 +428,7 @@ export function PricingModal({
               )}
 
               {/* Tab switcher */}
-              <div className="mt-5 flex gap-1 rounded-xl bg-white/5 p-1">
+              <div className="mt-5 flex gap-1 rounded-full bg-white/5 p-1">
                 <button
                   type="button"
                   onClick={() => setActiveTab('plans')}
@@ -469,13 +469,13 @@ export function PricingModal({
                   >
                     {/* Billing period toggle — only shown when yearly prices are configured */}
                     {yearlyEnabled && <div className="mb-4 flex justify-center">
-                      <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
+                      <div className="flex items-center gap-1 rounded-full bg-white/5 p-1">
                         {(['monthly', 'yearly'] as const).map((p) => (
                           <button
                             key={p}
                             type="button"
                             onClick={() => setBillingPeriod(p)}
-                            className="relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
+                            className="relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all"
                             style={
                               billingPeriod === p
                                 ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
@@ -486,7 +486,7 @@ export function PricingModal({
                             {p === 'yearly' && (
                               <span
                                 className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                                style={{ background: 'rgba(52,211,153,0.18)', color: '#34d399' }}
+                                style={{ background: 'rgba(154,171,140,0.18)', color: '#a9bd99' }}
                               >
                                 {t('sommelierCredits.billing.savePercent', { percent: savePercent })}
                               </span>
@@ -529,11 +529,11 @@ export function PricingModal({
                           type="button"
                           onClick={() => handleTopUp(opt.credits, opt.price)}
                           disabled={!!checkoutLoading}
-                          className="group relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-5 py-4 text-left transition-all hover:border-white/20 hover:bg-white/7 active:scale-[0.98] disabled:opacity-60"
+                          className="group relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/4 px-5 py-4 text-start transition-all hover:border-white/20 hover:bg-white/7 active:scale-[0.98] disabled:opacity-60"
                         >
                           <div>
                             <div className="flex items-center gap-2">
-                              <Zap size={14} className="text-white/40 group-hover:text-amber-400 transition-colors" />
+                              <Zap size={14} className="text-white/40 group-hover:text-[#f0cd6a] transition-colors" />
                               <span className="text-base font-semibold text-white">
                                 {t('sommelierCredits.topUp.credits', { credits: opt.credits })}
                               </span>
@@ -542,11 +542,11 @@ export function PricingModal({
                               {t('sommelierCredits.topUp.oneTimePurchase')}
                             </p>
                           </div>
-                          <div className="shrink-0 text-right">
+                          <div className="shrink-0 text-end">
                             <span className="text-xl font-bold text-white">${opt.price}</span>
                             <ArrowRight
                               size={14}
-                              className="ml-1.5 inline text-white/30 group-hover:text-white/60 transition-colors"
+                              className="ms-1.5 inline text-white/30 group-hover:text-white/60 transition-colors"
                             />
                           </div>
                         </button>

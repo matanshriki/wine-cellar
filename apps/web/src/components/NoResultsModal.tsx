@@ -112,7 +112,7 @@ export function NoResultsModal({
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="rounded-3xl shadow-2xl overflow-hidden"
+              className="rounded-[1.5rem] shadow-[var(--shadow-modal)] overflow-hidden"
               style={{
                 background: 'linear-gradient(180deg, var(--color-stone-50) 0%, white 100%)',
                 border: '1px solid var(--color-stone-200)',

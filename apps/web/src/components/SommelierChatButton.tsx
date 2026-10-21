@@ -183,7 +183,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
       className="fixed z-[45]"
       style={{
         bottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px) + 1rem)',
-        right: '1rem',
+        insetInlineEnd: '1rem',
       }}
     >
       {/* ── First-visit CTA tooltip (tablet/desktop only) ───────────────────── */}
@@ -200,10 +200,9 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
             <div
               className="relative rounded-2xl p-4"
               style={{
-                background: 'linear-gradient(135deg, #d4af37 0%, #c49b30 55%, #9e7c28 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.38)',
-                boxShadow:
-                  '0 12px 40px rgba(180, 140, 30, 0.5), 0 0 0 1px rgba(255,255,255,0.15)',
+                background: 'var(--sommi-gradient-gold)',
+                border: '1px solid rgba(255, 255, 255, 0.45)',
+                boxShadow: '0 14px 36px rgba(217, 169, 58, 0.4)',
               }}
             >
               {/* Dismiss */}
@@ -212,9 +211,9 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
                   e.stopPropagation();
                   dismissGoldIntro();
                 }}
-                className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full transition-opacity opacity-60 hover:opacity-100"
-                style={{ color: 'rgba(255,255,255,0.9)' }}
-                aria-label="Dismiss"
+                className="absolute top-1 end-1 w-9 h-9 flex items-center justify-center rounded-full transition-opacity opacity-70 hover:opacity-100"
+                style={{ color: 'var(--sommi-ink)' }}
+                aria-label={t('common.close')}
               >
                 <svg
                   className="w-3.5 h-3.5"
@@ -233,8 +232,6 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
               {/* Sparkle icon */}
               <motion.div
-                animate={{ rotate: [0, 18, -12, 18, 0], scale: [1, 1.18, 1, 1.18, 1] }}
-                transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.6 }}
                 className="text-xl mb-2 select-none"
                 aria-hidden="true"
               >
@@ -244,7 +241,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
               <p
                 className="text-sm font-bold leading-tight mb-1 pe-5"
                 style={{
-                  color: 'rgba(255,255,255,0.97)',
+                  color: 'var(--sommi-ink)',
                   fontFamily: 'var(--font-display)',
                   letterSpacing: '-0.01em',
                 }}
@@ -253,7 +250,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
               </p>
               <p
                 className="text-xs leading-snug"
-                style={{ color: 'rgba(255,255,255,0.76)' }}
+                style={{ color: 'rgba(45, 24, 16, 0.78)' }}
               >
                 {t(
                   'sommelierFab.introSubtitle',
@@ -263,10 +260,8 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
               {/* Tap CTA */}
               <motion.div
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 1.6, repeat: Infinity }}
                 className="mt-3 flex items-center gap-1.5"
-                style={{ color: 'rgba(255,255,255,0.9)' }}
+                style={{ color: 'var(--sommi-burgundy-mid)' }}
               >
                 <svg
                   className="w-3.5 h-3.5 flex-shrink-0"
@@ -288,13 +283,13 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
 
               {/* Arrow caret pointing down-right toward button */}
               <div
-                className="absolute -bottom-[7px] right-6"
+                className="absolute -bottom-[7px] end-6"
                 style={{
                   width: 14,
                   height: 14,
-                  background: '#9e7c28',
+                  background: '#dcae42',
                   transform: 'rotate(45deg)',
-                  borderRight: '1px solid rgba(255,255,255,0.18)',
+                  borderInlineEnd: '1px solid rgba(255,255,255,0.18)',
                   borderBottom: '1px solid rgba(255,255,255,0.18)',
                 }}
               />
@@ -323,9 +318,9 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
                   style={{
                     fontFamily: 'var(--font-display)',
                     background: 'var(--bg-surface)',
-                    color: 'var(--wine-700)',
-                    border: '1px solid var(--wine-300)',
-                    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                    color: 'var(--accent-text)',
+                    border: '1px solid var(--border-medium)',
+                    boxShadow: 'var(--shadow-dropdown)',
                   }}
                 >
                   {t('sommelierFab.mobileHint', 'Meet Sommi')}
@@ -342,11 +337,11 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
               initial={{ scale: 1, opacity: 0.6 }}
               animate={{ scale: [1, 1.7, 1], opacity: [0.55, 0, 0.55] }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 1.9, repeat: 3, ease: 'easeInOut' }}
               className="absolute inset-0 rounded-full pointer-events-none"
               style={{
                 background:
-                  'radial-gradient(circle, rgba(212,175,55,0.65) 0%, transparent 70%)',
+                  'radial-gradient(circle, rgba(217,169,58,0.6) 0%, transparent 70%)',
               }}
             />
           )}
@@ -361,18 +356,16 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
           onClick={handleClick}
           className="relative flex h-14 w-14 min-h-[3.5rem] min-w-[3.5rem] items-center justify-center gap-2 rounded-full p-0.5 shadow-2xl sm:h-auto sm:min-h-0 sm:w-auto sm:min-w-0 sm:justify-start sm:gap-2.5 sm:p-0 sm:px-5 sm:py-3"
           style={{
-            background: showIntro
-              ? 'linear-gradient(135deg, #d4af37, #b8963d)'
-              : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-            color: 'white',
+            background: showIntro ? 'var(--sommi-gradient-gold)' : 'var(--sommi-gradient-primary)',
+            color: showIntro ? 'var(--sommi-ink)' : 'white',
             border: showIntro
               ? '2px solid rgba(255,255,255,0.42)'
               : '2px solid rgba(255,255,255,0.38)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
             boxShadow: showIntro
-              ? '0 8px 36px rgba(180,140,30,0.55), 0 0 0 1px rgba(255,255,255,0.15)'
-              : '0 8px 32px rgba(139,21,56,0.4), 0 0 0 1px rgba(255,255,255,0.1)',
+              ? '0 12px 32px rgba(217,169,58,0.45)'
+              : '0 12px 32px rgba(107,31,47,0.42)',
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
             transition: 'background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease',
@@ -381,16 +374,8 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
         >
           {/* Sommi agent mark — matches chat /agent avatar */}
           <motion.div
-            animate={
-              showIntro
-                ? { rotate: [0, -10, 10, -10, 0], scale: [1, 1.12, 1] }
-                : { rotate: [0, -10, 10, -10, 0] }
-            }
-            transition={{
-              duration: showIntro ? 1.4 : 2,
-              repeat: Infinity,
-              repeatDelay: showIntro ? 0.9 : 3,
-            }}
+            animate={showIntro ? { rotate: [0, -10, 10, -10, 0] } : { rotate: 0 }}
+            transition={{ duration: 1.4, repeat: showIntro ? 2 : 0 }}
             className="h-full w-full flex-shrink-0 overflow-hidden rounded-full ring-1 ring-inset ring-white/70 shadow-none sm:h-7 sm:w-7 sm:ring-1"
           >
             <img
@@ -414,15 +399,6 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
             {t('cellarSommelier.askSommelier', 'Ask Sommelier')}
           </span>
 
-          {/* Subtle ping — only shown after intro is dismissed */}
-          {!showIntro && (
-            <span
-              className="absolute inset-0 rounded-full animate-ping opacity-10 pointer-events-none"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-              }}
-            />
-          )}
         </motion.button>
       </div>
     </div>

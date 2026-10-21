@@ -45,7 +45,7 @@ function AdminMonitoringPanel() {
         Sentry Monitoring
       </h2>
       <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
-        Status: <strong style={{ color: active ? '#22c55e' : '#ef4444' }}>{active ? 'Active' : 'Not configured (no VITE_SENTRY_DSN)'}</strong>
+        Status: <strong style={{ color: active ? 'var(--text-success)' : 'var(--text-error)' }}>{active ? 'Active' : 'Not configured (no VITE_SENTRY_DSN)'}</strong>
       </p>
       <button
         onClick={handleTestError}

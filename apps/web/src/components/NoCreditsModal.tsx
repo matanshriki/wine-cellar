@@ -12,6 +12,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { X, Sparkles, ArrowRight, Zap } from 'lucide-react';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { trackEvent } from '../services/analytics';
@@ -54,16 +55,16 @@ function WineGlassIcon({ className }: { className?: string }) {
       />
       <defs>
         <linearGradient id="glass-gradient" x1="12" y1="4" x2="52" y2="40" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FDE68A" stopOpacity="0.15" />
-          <stop offset="1" stopColor="#F59E0B" stopOpacity="0.05" />
+          <stop stopColor="#f6dc8f" stopOpacity="0.15" />
+          <stop offset="1" stopColor="#f0cd6a" stopOpacity="0.05" />
         </linearGradient>
         <linearGradient id="wine-gradient" x1="15" y1="18" x2="49" y2="38" gradientUnits="userSpaceOnUse">
           <stop stopColor="#7C3030" />
           <stop offset="1" stopColor="#5B1A1A" />
         </linearGradient>
         <linearGradient id="stem-gradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
-          <stop stopColor="#FDE68A" stopOpacity="0.25" />
-          <stop offset="1" stopColor="#F59E0B" stopOpacity="0.1" />
+          <stop stopColor="#f6dc8f" stopOpacity="0.25" />
+          <stop offset="1" stopColor="#f0cd6a" stopOpacity="0.1" />
         </linearGradient>
       </defs>
     </svg>
@@ -95,6 +96,7 @@ export function NoCreditsModal({
   context = 'chat',
   shortfall = null,
 }: NoCreditsModalProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { monetizationEnabled, effectiveBalance, monthlyLimit, planKey } = useMonetizationAccess();
 
@@ -159,7 +161,7 @@ export function NoCreditsModal({
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-4 bottom-0 z-[61] mx-auto w-full max-w-sm rounded-t-3xl pb-safe sm:inset-0 sm:my-auto sm:max-h-fit sm:rounded-3xl"
             style={{
-              background: 'linear-gradient(160deg, #100e1f 0%, #0d0b1a 60%, #120c1e 100%)',
+              background: 'linear-gradient(160deg, #24141a 0%, #1a0f13 60%, #1d1014 100%)',
               boxShadow: '0 -4px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -173,8 +175,8 @@ export function NoCreditsModal({
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 rounded-full p-2 text-white/30 transition-colors hover:bg-white/8 hover:text-white/60"
-              aria-label="Close"
+              className="absolute end-4 top-4 rounded-full p-2 text-white/30 transition-colors hover:bg-white/8 hover:text-white/60"
+              aria-label={t('common.close')}
             >
               <X size={18} />
             </button>
@@ -187,24 +189,24 @@ export function NoCreditsModal({
                 {/* Glow ring */}
                 <div
                   className="absolute inset-0 rounded-full blur-2xl"
-                  style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.22) 0%, transparent 70%)' }}
+                  style={{ background: 'radial-gradient(circle, rgba(217,169,58,0.22) 0%, transparent 70%)' }}
                 />
                 {/* Wine glass */}
                 <div
                   className="relative flex h-24 w-24 items-center justify-center rounded-full"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(120,53,15,0.12))',
-                    border: '1px solid rgba(251,191,36,0.18)',
+                    background: 'linear-gradient(135deg, rgba(240,205,106,0.1), rgba(107,31,47,0.12))',
+                    border: '1px solid rgba(240,205,106,0.18)',
                   }}
                 >
                   <WineGlassIcon className="h-14 w-14" />
                 </div>
                 {/* Empty badge */}
                 <div
-                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+                  className="absolute -bottom-1 -end-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
                   style={{
-                    background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
-                    boxShadow: '0 2px 8px rgba(220,38,38,0.4)',
+                    background: 'linear-gradient(135deg, #c0392b, #9b2c22)',
+                    boxShadow: '0 2px 8px rgba(192,57,43,0.4)',
                     color: '#fff',
                   }}
                 >
@@ -222,7 +224,7 @@ export function NoCreditsModal({
               </h2>
 
               {shortfall && (
-                <p className="mt-3 max-w-xs text-sm leading-relaxed text-amber-200/85">
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-[#f6dc8f]/85">
                   This action needs {shortfall.required} credits; you have {shortfall.balance}.
                 </p>
               )}
@@ -237,8 +239,8 @@ export function NoCreditsModal({
               <div
                 className="mt-5 flex items-center gap-2 rounded-full px-4 py-2 text-sm"
                 style={{
-                  background: 'rgba(220,38,38,0.1)',
-                  border: '1px solid rgba(220,38,38,0.2)',
+                  background: 'rgba(192,57,43,0.1)',
+                  border: '1px solid rgba(192,57,43,0.2)',
                 }}
               >
                 <Sparkles size={13} className="text-red-400" />
@@ -253,10 +255,10 @@ export function NoCreditsModal({
                 type="button"
                 onClick={handleUpgrade}
                 whileTap={{ scale: 0.97 }}
-                className="mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-sm font-semibold text-white"
+                className="mt-7 flex w-full items-center justify-center gap-2.5 rounded-full py-4 min-h-[52px] text-sm font-semibold text-[#2d1810]"
                 style={{
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                  boxShadow: '0 4px 20px rgba(245,158,11,0.35), 0 1px 0 rgba(255,255,255,0.15) inset',
+                  background: 'linear-gradient(135deg, #f0cd6a 0%, #d9a93a 100%)',
+                  boxShadow: '0 4px 20px rgba(217,169,58,0.35), 0 1px 0 rgba(255,255,255,0.15) inset',
                 }}
               >
                 <Zap size={16} />

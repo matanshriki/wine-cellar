@@ -52,12 +52,8 @@ export function TonightSommiCard() {
   return (
     <div className="mb-6">
       <section
-        className="rounded-2xl p-4 sm:p-5"
-        style={{
-          background: 'var(--bg-surface)',
-          border: '2px solid var(--wine-500)',
-          boxShadow: 'var(--shadow-card)',
-        }}
+        className="app-band p-5 sm:p-6"
+        style={{ boxShadow: 'var(--shadow-card)' }}
         aria-labelledby="tonight-sommi-card-title"
       >
         <div className="flex items-start gap-3 sm:gap-4">
@@ -67,24 +63,20 @@ export function TonightSommiCard() {
             width={48}
             height={48}
             className="h-11 w-11 sm:h-12 sm:w-12 flex-shrink-0 rounded-full object-cover"
-            style={{ border: '1px solid var(--border-subtle)' }}
+            style={{ border: '2px solid rgba(240, 205, 106, 0.6)' }}
           />
 
           <div className="min-w-0 flex-1 text-start">
             <h2
               id="tonight-sommi-card-title"
               className="text-lg sm:text-xl font-semibold leading-snug"
-              style={{
-                fontFamily: 'var(--font-display)',
-                color: 'var(--text-heading)',
-              }}
+              style={{ fontFamily: 'var(--font-display)' }}
             >
               {t('recommendation.sommiCard.title')}
             </h2>
 
             <p
-              className="mt-1.5 text-sm sm:text-[15px] leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
+              className="app-band-muted mt-1.5 text-sm sm:text-[15px] leading-relaxed"
             >
               {t('recommendation.sommiCard.body')}
             </p>
@@ -92,7 +84,7 @@ export function TonightSommiCard() {
             <button
               type="button"
               onClick={handleTalkToSommi}
-              className="btn btn-primary mt-3 min-h-[44px] w-full sm:w-auto px-5"
+              className="app-cta-gold mt-4 w-full sm:w-auto"
               data-testid="tonight-sommi-card-cta"
             >
               {t('recommendation.sommiCard.cta')}

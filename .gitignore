@@ -17,3 +17,6 @@ apps/api/.env
 apps/api/.env.local
 **/.env.backup
 .local/
+
+# Local Cursor skill (design playbook)
+.cursor/skills/sommi-design/

@@ -170,7 +170,7 @@ export function AddWineImageDialog({
               e.stopPropagation();
               onClose();
             }}
-            className="fixed inset-0 bg-black bg-opacity-50"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm"
             style={{ backdropFilter: 'blur(4px)', zIndex: backdropZ }}
           />
 
@@ -201,7 +201,7 @@ export function AddWineImageDialog({
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                    <h2 className="app-section-title mb-1">
                       {currentImageUrl
                         ? t('wineImage.updateTitle', 'Update Wine Image')
                         : t('wineImage.addTitle', 'Add Wine Image')}
@@ -212,6 +212,7 @@ export function AddWineImageDialog({
                   </div>
 
                   <button
+                    aria-label={t('common.close')}
                     onClick={onClose}
                     className="flex-shrink-0 w-10 h-10 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition-colors"
                     style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-secondary)' }}
@@ -229,7 +230,7 @@ export function AddWineImageDialog({
                 >
                   <button
                     onClick={() => setActiveTab('upload')}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-full text-sm font-medium transition-all"
                     style={{
                       background: activeTab === 'upload' ? 'var(--bg-surface)' : 'transparent',
                       color: activeTab === 'upload' ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -245,7 +246,7 @@ export function AddWineImageDialog({
 
                   <button
                     onClick={() => setActiveTab('url')}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-full text-sm font-medium transition-all"
                     style={{
                       background: activeTab === 'url' ? 'var(--bg-surface)' : 'transparent',
                       color: activeTab === 'url' ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -300,9 +301,9 @@ export function AddWineImageDialog({
                               setUploadPreview(null);
                               if (fileInputRef.current) fileInputRef.current.value = '';
                             }}
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+                            className="absolute top-2 end-2 w-8 h-8 rounded-full flex items-center justify-center"
                             style={{ background: 'rgba(0,0,0,0.55)', color: 'white' }}
-                            aria-label="Remove selected photo"
+                            aria-label={t('a11y.removePhoto')}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

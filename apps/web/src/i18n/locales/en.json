@@ -137,7 +137,9 @@
     "profile": "Profile",
     "logout": "Logout",
     "wishlist": "Wishlist",
-    "about": "About"
+    "about": "About",
+    "primary": "Main navigation",
+    "skipToContent": "Skip to main content"
   },
   "auth": {
     "login": {
@@ -162,7 +164,14 @@
         "title": "Demo credentials:",
         "email": "Email: demo@winecellarbrain.com",
         "password": "Password: demo123"
-      }
+      },
+      "eyebrow": "Welcome back",
+      "heroTitle": "Your cellar is waiting.",
+      "heroBody": "Sign in to see what's ready to open tonight.",
+      "reassurance": "Free to start · Private cellar",
+      "privacy": "Privacy Policy",
+      "terms": "Terms & Conditions",
+      "signingIn": "Signing in…"
     },
     "welcome": "Welcome back!",
     "accountCreated": "Account created successfully!",
@@ -243,6 +252,13 @@
       "upgradePlan": "Upgrade plan",
       "manageBilling": "Manage billing",
       "manageBillingLoading": "Loading…"
+    },
+    "eyebrow": "Your account",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "switchToDark": "Switch to dark theme",
+      "switchToLight": "Switch to light theme"
     }
   },
   "dashboard": {
@@ -541,7 +557,9 @@
       "barrelAging": "Barrel aging (estimate)",
       "barrelMonthsEst": "~{{months}} months in barrel (estimate)",
       "barrelDisclaimer": "From public wine knowledge — not verified for this bottle."
-    }
+    },
+    "eyebrow": "Your collection",
+    "emptyEyebrow": "A fresh start"
   },
   "wineDetails": {
     "country": "Country",
@@ -764,7 +782,8 @@
       "affinityRichOaky": "Matches your taste: rich & oaky",
       "affinityDryBalanced": "Matches your taste: dry & balanced",
       "affinityGreatMatch": "Great match for your palate"
-    }
+    },
+    "eyebrow": "Tonight with Sommi"
   },
   "history": {
     "title": "History & Stats",
@@ -798,7 +817,8 @@
     "openingHistory": "Opening History",
     "empty": {
       "title": "No bottles opened yet",
-      "subtitle": "Mark bottles as opened from the Cellar or Recommendations page"
+      "subtitle": "Mark bottles as opened from the Cellar or Recommendations page",
+      "cta": "Go to your cellar"
     },
     "error": {
       "title": "Unable to Load History",
@@ -808,8 +828,10 @@
       "noBottleData": "No bottle data available",
       "loadBottleFailed": "Failed to load bottle details",
       "ratingFailed": "Failed to update rating",
-      "notesFailed": "Failed to save notes"
-    }
+      "notesFailed": "Failed to save notes",
+      "eyebrow": "Something went sideways"
+    },
+    "eyebrow": "Your story in wine"
   },
   "csvImport": {
     "title": "Import from CSV",
@@ -880,7 +902,8 @@
   },
   "loading": {
     "importing": "Importing your wines...",
-    "pleaseWait": "Please wait, this may take a moment"
+    "pleaseWait": "Please wait, this may take a moment",
+    "app": "Pouring your cellar…"
   },
   "languageSwitcher": {
     "changeLanguage": "Change Language",
@@ -1016,7 +1039,12 @@
     "remove": "Remove",
     "readMore": "Read more",
     "readLess": "Read less",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "dialogConfirmTitle": "Are you sure?",
+    "privacyPolicy": "Privacy Policy",
+    "termsAndConditions": "Terms & Conditions",
+    "previous": "Previous",
+    "dismiss": "Dismiss"
   },
   "wineImage": {
     "addTitle": "Add Wine Image",
@@ -1062,7 +1090,11 @@
     "unauthorized": "You need to be logged in",
     "notFound": "Not found",
     "bottleNotFound": "Bottle not found",
-    "serverError": "Server error. Please try again later."
+    "serverError": "Server error. Please try again later.",
+    "boundaryTitle": "This pour didn't go as planned.",
+    "boundaryBody": "Something unexpected happened. Your cellar data is safe — reload and we'll pick up where you left off.",
+    "boundaryDetails": "Error details",
+    "boundaryReload": "Reload Sommi"
   },
   "cookieConsent": {
     "title": "🍷 We Value Your Privacy",
@@ -1306,6 +1338,14 @@
       "restaurantPlaceholder": "e.g. La Trattoria",
       "note": "My Note",
       "notePlaceholder": "Why I want to buy this..."
+    },
+    "eyebrow": "Bottles to remember",
+    "draft": {
+      "title": "You have an unsaved draft",
+      "body": "Continue where you left off",
+      "delete": "Delete",
+      "resume": "Resume draft",
+      "deleted": "Draft deleted"
     }
   },
   "wineEvents": {
@@ -1320,7 +1360,8 @@
     "viewMatches": "Show My Bottles",
     "learnMore": "Learn More",
     "source": "Source",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "goToEvent": "Go to event {{index}}"
   },
   "tasteProfile": {
     "title": "Your Taste Profile",
@@ -1622,7 +1663,9 @@
       "resetsMonthly": "Credits reset monthly",
       "actionCost": "This action uses {{count}} credit",
       "actionCost_plural": "This action uses {{count}} credits",
-      "upgradeCta": "Upgrade for deeper cellar insights and more time with Sommi"
+      "upgradeCta": "Upgrade for deeper cellar insights and more time with Sommi",
+      "ariaLabel_one": "You have {{count}} Sommi credit left this month",
+      "ariaLabel_other": "You have {{count}} Sommi credits left this month"
     },
     "planFeatures": {
       "free": [
@@ -1762,5 +1805,63 @@
       "naturalWine": "Natural wine is made with minimal intervention in the cellar",
       "organic": "Organic grapes grown without synthetic pesticides or fertilisers"
     }
+  },
+  "sharedCellar": {
+    "loading": "Loading shared cellar…",
+    "eyebrow": "A shared cellar",
+    "title": "{{name}}'s cellar",
+    "readOnly": "Read-only view",
+    "bottles_one": "{{count}} bottle",
+    "bottles_other": "{{count}} bottles",
+    "wines_one": "{{count}} wine",
+    "wines_other": "{{count}} wines",
+    "stats": {
+      "red": "Red",
+      "white": "White",
+      "rose": "Rosé",
+      "sparkling": "Sparkling"
+    },
+    "topRegions": "Top regions",
+    "collection": "The collection ({{count}})",
+    "errors": {
+      "invalid": "This share link is invalid or has expired",
+      "missing": "This share link is missing its data",
+      "failed": "We couldn't load this shared cellar"
+    },
+    "notFoundBody": "The link may be invalid, expired, or incomplete. Ask your friend to share it again.",
+    "goToCellar": "Go to my cellar",
+    "ctaTitle": "Start your own cellar",
+    "ctaBody": "Track your bottles, know when to open them, and share with friends."
+  },
+  "guestEvening": {
+    "title": "Tonight's lineup",
+    "subtitle": "Vote for your favorite",
+    "votes_one": "{{count}} vote so far",
+    "votes_other": "{{count}} votes so far",
+    "favorite": "Favorite",
+    "favorited": "Favorited",
+    "markFavorite": "Mark as favorite",
+    "removeFavorite": "Remove favorite",
+    "unavailableTitle": "Link unavailable",
+    "invalidLink": "This link is invalid or has expired.",
+    "emptyLineup": "No wines in the lineup yet",
+    "footerSaved": "Your vote is saved on this device",
+    "footerPrivacy": "No account required · No personal data collected"
+  },
+  "a11y": {
+    "generateLabelArt": "Generate AI label art",
+    "markOpened": "Mark this bottle as opened",
+    "viewOnVivino": "View on Vivino",
+    "scrollToTop": "Scroll to top",
+    "captureBottle": "Capture bottle photo",
+    "starRating": "Star rating",
+    "retryScan": "Retry scan",
+    "aiLabelArt": "AI-generated label art",
+    "camera": "Camera",
+    "removePhoto": "Remove selected photo"
+  },
+  "agent": {
+    "startRecording": "Start recording",
+    "stopRecording": "Stop recording"
   }
 }

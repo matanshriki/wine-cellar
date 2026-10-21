@@ -344,9 +344,9 @@ function ReminderCard({
         <button
           onClick={handleOpen}
           disabled={opening || removing}
-          className="w-full py-3.5 px-5 rounded-xl font-semibold text-base transition-all duration-200"
+          className="w-full py-3.5 px-5 rounded-full font-semibold text-base transition-all duration-200"
           style={{
-            background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+            background: 'var(--sommi-gradient-primary)',
             color: 'white',
             boxShadow: '0 4px 16px rgba(164,77,90,0.3)',
             minHeight: '52px',
@@ -362,7 +362,7 @@ function ReminderCard({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={handleSnooze}
-            className="py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-150"
+            className="py-2.5 px-3 rounded-full text-sm font-medium transition-all duration-150"
             style={{
               background: 'var(--bg-muted)',
               border: '1px solid var(--border-base)',
@@ -376,7 +376,7 @@ function ReminderCard({
           <button
             onClick={handleRemove}
             disabled={removing}
-            className="py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-150"
+            className="py-2.5 px-3 rounded-full text-sm font-medium transition-all duration-150"
             style={{
               background: 'var(--bg-muted)',
               border: '1px solid var(--border-base)',

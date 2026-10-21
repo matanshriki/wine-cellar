@@ -15,6 +15,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Wine } from 'lucide-react';
 import * as eveningShareService from '../services/eveningShareService';
 import type { GuestShareData } from '../services/eveningShareService';
 import type { QueuedWine } from '../services/eveningPlanService';
@@ -44,16 +46,17 @@ function colorDot(color: string) {
 }
 
 function WineCard({ wine, voteCount, hasVoted, onToggle, votePending }: WineCardProps) {
+  const { t } = useTranslation();
   return (
     <motion.article
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl overflow-hidden flex flex-col"
+      className="rounded-[1.5rem] overflow-hidden flex flex-col"
       style={{
         background: 'var(--bg-surface)',
         border: `1px solid ${hasVoted ? 'var(--wine-300)' : 'var(--border-subtle)'}`,
-        boxShadow: hasVoted ? '0 4px 24px rgba(164,77,90,0.15)' : 'var(--shadow-sm)',
+        boxShadow: hasVoted ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
         transition: 'border-color 0.2s, box-shadow 0.2s',
       }}
     >
@@ -70,11 +73,11 @@ function WineCard({ wine, voteCount, hasVoted, onToggle, votePending }: WineCard
       ) : (
         <div
           className="w-full h-48 flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))' }}
+          style={{ background: 'var(--bg-muted)' }}
         >
-          <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-400)' }}>
-            <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z" />
-          </svg>
+          <span className="lp-blob lp-blob-burgundy app-blob app-blob-lg" aria-hidden>
+            <Wine className="w-8 h-8" strokeWidth={1.75} />
+          </span>
         </div>
       )}
 
@@ -92,7 +95,7 @@ function WineCard({ wine, voteCount, hasVoted, onToggle, votePending }: WineCard
             </span>
           </div>
 
-          <h3 className="font-bold text-base leading-tight mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+          <h3 className="font-semibold text-lg leading-tight mb-1" style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}>
             {wine.wine_name}
           </h3>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -106,16 +109,16 @@ function WineCard({ wine, voteCount, hasVoted, onToggle, votePending }: WineCard
           whileTap={{ scale: votePending ? 1 : 0.93 }}
           onClick={onToggle}
           disabled={votePending}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3 min-h-[48px] rounded-full font-semibold text-sm transition-all"
           style={{
             background: hasVoted
-              ? 'linear-gradient(135deg, var(--wine-600), var(--wine-700))'
+              ? 'var(--sommi-gradient-primary)'
               : 'var(--bg-surface-elevated)',
             color: hasVoted ? '#fff' : 'var(--text-secondary)',
             border: hasVoted ? 'none' : '1px solid var(--border-medium)',
             opacity: votePending ? 0.7 : 1,
           }}
-          aria-label={hasVoted ? 'Remove favorite' : 'Mark as favorite'}
+          aria-label={hasVoted ? t('guestEvening.removeFavorite') : t('guestEvening.markFavorite')}
           aria-pressed={hasVoted}
         >
           <AnimatePresence mode="wait" initial={false}>
@@ -135,14 +138,14 @@ function WineCard({ wine, voteCount, hasVoted, onToggle, votePending }: WineCard
             </motion.svg>
           </AnimatePresence>
 
-          {hasVoted ? 'Favorited' : 'Favorite'}
+          {hasVoted ? t('guestEvening.favorited') : t('guestEvening.favorite')}
 
           {voteCount > 0 && (
             <span
-              className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
+              className="ms-1 px-2 py-0.5 rounded-full text-xs font-bold"
               style={{
                 background: hasVoted ? 'rgba(255,255,255,0.2)' : 'var(--wine-100)',
-                color: hasVoted ? '#fff' : 'var(--wine-700)',
+                color: hasVoted ? '#fff' : 'var(--accent-text)',
               }}
             >
               {voteCount}
@@ -172,8 +175,11 @@ function SkeletonCard() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+const INVALID_LINK = 'invalid-link';
+
 export function GuestEveningPage() {
   const { shortCode } = useParams<{ shortCode: string }>();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,7 +196,7 @@ export function GuestEveningPage() {
   // ── Load share data ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!shortCode) {
-      setError('Invalid link');
+      setError(INVALID_LINK);
       setLoading(false);
       return;
     }
@@ -213,7 +219,7 @@ export function GuestEveningPage() {
       })
       .catch((err) => {
         console.error('[GuestEveningPage] Failed to load share:', err);
-        setError(err.message ?? 'This link is invalid or has expired.');
+        setError(err.message ?? INVALID_LINK);
       })
       .finally(() => setLoading(false));
   }, [shortCode, sessionVoteKey]);
@@ -312,22 +318,19 @@ export function GuestEveningPage() {
           className="text-center mb-8"
         >
           {/* Wordmark */}
-          <p className="text-xs uppercase tracking-widest mb-4 font-medium" style={{ color: 'var(--wine-500)' }}>
-            Sommi
+          <p className="app-eyebrow mb-4">
+            <bdi>Sommi</bdi>
           </p>
 
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-          >
+          <h1 className="app-display text-3xl sm:text-4xl mb-2 break-words">
             {loading
-              ? 'Tonight\'s Lineup'
+              ? t('guestEvening.title')
               : shareData?.share.plan_name
               ? shareData.share.plan_name
-              : "Tonight's Lineup"}
+              : t('guestEvening.title')}
           </h1>
           <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-            Vote for your favorite
+            {t('guestEvening.subtitle')}
           </p>
 
           {/* Occasion chip */}
@@ -335,7 +338,7 @@ export function GuestEveningPage() {
             <div className="mt-3 flex justify-center">
               <span
                 className="inline-block px-3 py-1.5 rounded-full text-xs font-medium capitalize"
-                style={{ background: 'var(--wine-100)', color: 'var(--wine-700)' }}
+                style={{ background: 'var(--wine-50)', color: 'var(--accent-text)', border: '1px solid var(--wine-200)' }}
               >
                 {shareData.share.occasion}
               </span>
@@ -350,7 +353,7 @@ export function GuestEveningPage() {
               className="mt-3 text-sm font-medium"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              {totalVotes} vote{totalVotes !== 1 ? 's' : ''} so far
+              {t('guestEvening.votes', { count: totalVotes })}
             </motion.p>
           )}
         </motion.header>
@@ -360,14 +363,14 @@ export function GuestEveningPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16"
+            className="app-empty px-6 py-12"
           >
-            <p className="text-5xl mb-4">🍷</p>
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              Link unavailable
+            <p className="text-5xl mb-4" aria-hidden>🍷</p>
+            <h2 className="app-section-title mb-2">
+              {t('guestEvening.unavailableTitle')}
             </h2>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {error}
+              {error === INVALID_LINK ? t('guestEvening.invalidLink') : error}
             </p>
           </motion.div>
         )}
@@ -404,10 +407,10 @@ export function GuestEveningPage() {
 
         {/* ── Empty lineup ─────────────────────────────────────────────── */}
         {!loading && !error && lineup.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-4">🍾</p>
+          <div className="app-empty px-6 py-12">
+            <p className="text-4xl mb-4" aria-hidden>🍾</p>
             <p className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>
-              No wines in the lineup yet
+              {t('guestEvening.emptyLineup')}
             </p>
           </div>
         )}
@@ -421,10 +424,10 @@ export function GuestEveningPage() {
             className="mt-10 text-center space-y-1"
           >
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Your vote is saved on this device
+              {t('guestEvening.footerSaved')}
             </p>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              No account required · No personal data collected
+              {t('guestEvening.footerPrivacy')}
             </p>
           </motion.footer>
         )}

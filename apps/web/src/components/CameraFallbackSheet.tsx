@@ -102,7 +102,7 @@ export function CameraFallbackSheet({
               mass: 0.8,
             }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed left-0 right-0 z-[70] bottom-0"
+            className="fixed start-0 end-0 z-[70] bottom-0"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
@@ -161,7 +161,7 @@ export function CameraFallbackSheet({
                   }}
                   className="w-full p-4 rounded-xl flex items-center gap-4"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     border: '1px solid var(--wine-700)',
                     color: 'var(--text-inverse)',
                     boxShadow: 'var(--shadow-sm)',

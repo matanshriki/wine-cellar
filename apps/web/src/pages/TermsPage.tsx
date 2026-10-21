@@ -20,7 +20,7 @@ export default function TermsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+          <h1 className="app-display text-4xl sm:text-5xl mb-2">
             Terms & Conditions
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -42,7 +42,7 @@ export default function TermsPage() {
 
           {/* 1. Acceptance of Terms */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               1. Acceptance of Terms
             </h2>
             <p className="leading-relaxed">
@@ -58,13 +58,13 @@ export default function TermsPage() {
 
           {/* 2. Description of Service */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               2. Description of Service
             </h2>
             <p className="leading-relaxed mb-3">
               Sommi is a personal wine collection management application that provides:
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>Wine cellar cataloguing and bottle tracking</li>
               <li>AI-powered wine recommendations and pairing suggestions</li>
               <li>Drink window estimation and vintage analysis</li>
@@ -79,13 +79,13 @@ export default function TermsPage() {
 
           {/* 3. Accounts */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               3. User Accounts
             </h2>
             <p className="leading-relaxed mb-3">
               To use Sommi you must create an account. You are responsible for:
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>Providing accurate and up-to-date registration information</li>
               <li>Maintaining the confidentiality of your login credentials</li>
               <li>All activity that occurs under your account</li>
@@ -100,7 +100,7 @@ export default function TermsPage() {
 
           {/* 4. Subscription Plans */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               4. Subscription Plans &amp; Pricing
             </h2>
 
@@ -143,13 +143,13 @@ export default function TermsPage() {
 
           {/* 5. Payment & Billing */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               5. Payment &amp; Billing
             </h2>
             <p className="leading-relaxed mb-3">
               When you subscribe to a paid plan:
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>You authorise us to charge your payment method on a recurring basis (monthly or annually, as selected)</li>
               <li>Payments are processed securely through our third-party payment provider</li>
               <li>All prices are listed in USD unless otherwise stated; applicable taxes may apply</li>
@@ -164,13 +164,13 @@ export default function TermsPage() {
 
           {/* 6. Cancellation & Refunds */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               6. Cancellation &amp; Refunds
             </h2>
             <p className="leading-relaxed mb-3">
               You may cancel your subscription at any time from the account settings page.
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>Cancellation takes effect at the end of the current billing period; you retain access to premium features until then</li>
               <li>We do not offer pro-rated refunds for partial billing periods unless required by applicable law</li>
               <li>Refund requests within 7 days of initial subscription, where the service has not been substantially used, will be considered on a case-by-case basis — contact us at{' '}
@@ -184,13 +184,13 @@ export default function TermsPage() {
 
           {/* 7. Acceptable Use */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               7. Acceptable Use
             </h2>
             <p className="leading-relaxed mb-3">
               You agree not to use the Service to:
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>Violate any applicable law or regulation</li>
               <li>Upload malicious content or interfere with the Service's infrastructure</li>
               <li>Attempt to gain unauthorised access to other users' data</li>
@@ -205,7 +205,7 @@ export default function TermsPage() {
 
           {/* 8. Intellectual Property */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               8. Intellectual Property
             </h2>
             <p className="leading-relaxed mb-3">
@@ -223,14 +223,14 @@ export default function TermsPage() {
 
           {/* 9. Disclaimers */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               9. Disclaimers
             </h2>
             <p className="leading-relaxed mb-3">
               The Service is provided on an "as is" and "as available" basis without warranties of any
               kind, either express or implied. We do not warrant that:
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-2">
+            <ul className="list-disc list-inside ms-4 space-y-2">
               <li>The Service will be uninterrupted, secure, or error-free</li>
               <li>AI-generated recommendations are accurate or suitable for your specific needs</li>
               <li>Drink window estimates are guaranteed to be correct — they are indicative only</li>
@@ -244,7 +244,7 @@ export default function TermsPage() {
 
           {/* 10. Limitation of Liability */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               10. Limitation of Liability
             </h2>
             <p className="leading-relaxed">
@@ -259,7 +259,7 @@ export default function TermsPage() {
 
           {/* 11. Privacy */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               11. Privacy
             </h2>
             <p className="leading-relaxed">
@@ -274,7 +274,7 @@ export default function TermsPage() {
 
           {/* 12. Changes to Terms */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               12. Changes to These Terms
             </h2>
             <p className="leading-relaxed">
@@ -287,7 +287,7 @@ export default function TermsPage() {
 
           {/* 13. Governing Law */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               13. Governing Law
             </h2>
             <p className="leading-relaxed">
@@ -300,7 +300,7 @@ export default function TermsPage() {
 
           {/* 14. Contact */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               14. Contact Us
             </h2>
             <p className="leading-relaxed">

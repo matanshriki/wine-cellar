@@ -181,7 +181,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                   duration: 0.4,
                   ease: [0.4, 0, 0.2, 1]
                 }}
-                className="relative w-full text-left p-3 -mx-3 rounded-lg transition-colors"
+                className="relative w-full text-start p-3 -mx-3 rounded-lg transition-colors"
                 style={{
                   background: 'transparent',
                   cursor: 'pointer',
@@ -277,7 +277,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
             onClick={handleTonightSignalClick}
-            className="w-full mt-6 pt-4 text-left"
+            className="w-full mt-6 pt-4 text-start"
             style={{
               borderTop: '1px solid var(--border-subtle)',
               cursor: 'pointer',

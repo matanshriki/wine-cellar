@@ -137,7 +137,9 @@
     "wishlist": "רשימת משאלות",
     "profile": "פרופיל",
     "logout": "התנתק",
-    "about": "אודות"
+    "about": "אודות",
+    "primary": "ניווט ראשי",
+    "skipToContent": "דילוג לתוכן הראשי"
   },
   "auth": {
     "login": {
@@ -162,7 +164,14 @@
         "title": "פרטי כניסה להדגמה:",
         "email": "דוא״ל: demo@winecellarbrain.com",
         "password": "סיסמה: demo123"
-      }
+      },
+      "eyebrow": "טוב שחזרתם",
+      "heroTitle": "המרתף שלכם מחכה.",
+      "heroBody": "התחברו כדי לראות מה מוכן לפתיחה הערב.",
+      "reassurance": "אפשר להתחיל בחינם · מרתף פרטי",
+      "privacy": "מדיניות פרטיות",
+      "terms": "תנאי שימוש",
+      "signingIn": "מתחברים…"
     },
     "welcome": "ברוך שובך!",
     "accountCreated": "החשבון נוצר בהצלחה!",
@@ -243,6 +252,13 @@
       "upgradePlan": "שדרג מנוי",
       "manageBilling": "נהל חיוב",
       "manageBillingLoading": "טוען…"
+    },
+    "eyebrow": "החשבון שלכם",
+    "theme": {
+      "light": "בהיר",
+      "dark": "כהה",
+      "switchToDark": "מעבר לערכת נושא כהה",
+      "switchToLight": "מעבר לערכת נושא בהירה"
     }
   },
   "dashboard": {
@@ -388,7 +404,8 @@
       "manualEntryDesc": "מלא את הפרטים בעצמך",
       "multiBottleDesc": "סרוק מספר בקבוקים בבת אחת",
       "addToWishlist": "הוסף לרשימת משאלות",
-      "addToWishlistDesc": "שמור יינות לקנייה בעתיד"
+      "addToWishlistDesc": "שמור יינות לקנייה בעתיד",
+      "subtitle": "ככל שאדע יותר, אמליץ טוב יותר."
     },
     "camera": {
       "fallbackTitle": "הוסף בקבוק",
@@ -540,7 +557,9 @@
       "barrelAging": "יישון בחבית (הערכה)",
       "barrelMonthsEst": "~{{months}} חודשים בחבית (הערכה)",
       "barrelDisclaimer": "מידע כללי — לא מאומת באופן ספציפי לבקבוק זה."
-    }
+    },
+    "eyebrow": "האוסף שלכם",
+    "emptyEyebrow": "התחלה חדשה"
   },
   "wineDetails": {
     "country": "מדינה",
@@ -638,7 +657,10 @@
       "notifyPast": "התאריך כבר הגיע — תופיע תזכורת באפליקציה כשתפתח/י את המרתף (בלי דחיפה לתאריכים שעברו).",
       "notifyNeedsDate": "בחרו תאריך ונזכיר בבוקר ב־10:00 לפי השעון המקומי.",
       "notifySyncFailed": "השמירה נשמרה, אבל לא הצלחנו לתזמן את ההתראה. נסו לערוך שוב את תאריך ה־Keep."
-    }
+    },
+    "color": "צבע",
+    "wineName": "שם היין",
+    "wineNamePlaceholder": "לדוגמה: Grand Vin"
   },
   "recommendation": {
     "title": "מה לפתוח הערב?",
@@ -743,6 +765,11 @@
       "affinityRichOaky": "מתאים לטעם שלך: עשיר ואלוני",
       "affinityDryBalanced": "מתאים לטעם שלך: יבש ומאוזן",
       "affinityGreatMatch": "התאמה מצוינת לחיך שלך"
+    },
+    "eyebrow": "הערב עם Sommi",
+    "noResults": {
+      "message": "לא מצאנו יינות שמתאימים להעדפות הנוכחיות שלך.",
+      "title": "לא נמצאו התאמות"
     }
   },
   "history": {
@@ -777,7 +804,8 @@
     "openingHistory": "היסטוריית פתיחות",
     "empty": {
       "title": "עדיין לא נפתחו בקבוקים",
-      "subtitle": "סמן בקבוקים כנפתחים מעמוד המרתף או ההמלצות"
+      "subtitle": "סמן בקבוקים כנפתחים מעמוד המרתף או ההמלצות",
+      "cta": "למרתף שלכם"
     },
     "error": {
       "title": "לא ניתן לטעון היסטוריה",
@@ -786,8 +814,11 @@
       "loadFailed": "טעינת ההיסטוריה נכשלה",
       "noBottleData": "אין נתוני בקבוק זמינים",
       "loadBottleFailed": "טעינת פרטי הבקבוק נכשלה",
-      "ratingFailed": "עדכון הדירוג נכשל"
-    }
+      "ratingFailed": "עדכון הדירוג נכשל",
+      "eyebrow": "משהו השתבש",
+      "notesFailed": "שמירת ההערות נכשלה"
+    },
+    "eyebrow": "הסיפור שלכם ביין"
   },
   "csvImport": {
     "title": "ייבוא מ-CSV",
@@ -858,7 +889,8 @@
   },
   "loading": {
     "importing": "מייבא את היינות שלך...",
-    "pleaseWait": "אנא המתן, זה עשוי לקחת רגע"
+    "pleaseWait": "אנא המתן, זה עשוי לקחת רגע",
+    "app": "מוזגים את המרתף שלכם…"
   },
   "languageSwitcher": {
     "changeLanguage": "שנה שפה",
@@ -993,7 +1025,13 @@
     "tip": "טיפ",
     "readMore": "קרא עוד",
     "readLess": "קרא פחות",
-    "viewAll": "צפה בהכל"
+    "viewAll": "צפה בהכל",
+    "dialogConfirmTitle": "בטוחים?",
+    "privacyPolicy": "מדיניות פרטיות",
+    "termsAndConditions": "תנאי שימוש",
+    "previous": "הקודם",
+    "dismiss": "סגירה",
+    "moving": "מעביר..."
   },
   "wineImage": {
     "addTitle": "הוסף תמונת יין",
@@ -1039,7 +1077,11 @@
     "unauthorized": "עליך להיות מחובר",
     "notFound": "לא נמצא",
     "bottleNotFound": "בקבוק לא נמצא",
-    "serverError": "שגיאת שרת. אנא נסה שוב מאוחר יותר."
+    "serverError": "שגיאת שרת. אנא נסה שוב מאוחר יותר.",
+    "boundaryTitle": "המזיגה הזאת לא הלכה כמתוכנן.",
+    "boundaryBody": "קרה משהו לא צפוי. הנתונים של המרתף שלכם בטוחים — טענו מחדש ונמשיך מאיפה שעצרתם.",
+    "boundaryDetails": "פרטי השגיאה",
+    "boundaryReload": "טענו מחדש את Sommi"
   },
   "cookieConsent": {
     "title": "🍷 אנחנו מעריכים את הפרטיות שלך",
@@ -1194,6 +1236,14 @@
       "restaurantPlaceholder": "למשל: לה טרטוריה",
       "note": "הערה שלי",
       "notePlaceholder": "למה אני רוצה לקנות את זה..."
+    },
+    "eyebrow": "בקבוקים לזכור",
+    "draft": {
+      "title": "יש לכם טיוטה שלא נשמרה",
+      "body": "המשיכו מאיפה שעצרתם",
+      "delete": "מחיקה",
+      "resume": "המשך טיוטה",
+      "deleted": "הטיוטה נמחקה"
     }
   },
   "wineEvents": {
@@ -1208,7 +1258,8 @@
     "viewMatches": "הצג את הבקבוקים שלי",
     "learnMore": "למד עוד",
     "source": "מקור",
-    "dismiss": "סגור"
+    "dismiss": "סגור",
+    "goToEvent": "מעבר לאירוע {{index}}"
   },
   "planEvening": {
     "title": "תכנן ערב",
@@ -1688,7 +1739,10 @@
       "resetsMonthly": "הקרדיטים מתאפסים כל חודש",
       "actionCost": "פעולה זו משתמשת ב-{{count}} קרדיט",
       "actionCost_plural": "פעולה זו משתמשת ב-{{count}} קרדיטים",
-      "upgradeCta": "שדרגו לתובנות מרתף מעמיקות יותר וזמן נוסף עם Sommi"
+      "upgradeCta": "שדרגו לתובנות מרתף מעמיקות יותר וזמן נוסף עם Sommi",
+      "ariaLabel_one": "נותר לך קרדיט Sommi אחד החודש",
+      "ariaLabel_two": "נותרו לך {{count}} קרדיטי Sommi החודש",
+      "ariaLabel_other": "נותרו לך {{count}} קרדיטי Sommi החודש"
     },
     "planFeatures": {
       "free": [
@@ -1828,5 +1882,66 @@
       "naturalWine": "יין טבעי מיוצר עם התערבות מינימלית",
       "organic": "ענבים אורגניים גדלים ללא חומרי הדברה סינתטיים"
     }
+  },
+  "sharedCellar": {
+    "loading": "טוענים מרתף משותף…",
+    "eyebrow": "מרתף משותף",
+    "title": "המרתף של {{name}}",
+    "readOnly": "צפייה בלבד",
+    "bottles_one": "בקבוק אחד",
+    "bottles_other": "{{count}} בקבוקים",
+    "wines_one": "יין אחד",
+    "wines_other": "{{count}} יינות",
+    "stats": {
+      "red": "אדום",
+      "white": "לבן",
+      "rose": "רוזה",
+      "sparkling": "מבעבע"
+    },
+    "topRegions": "אזורים מובילים",
+    "collection": "האוסף ({{count}})",
+    "errors": {
+      "invalid": "קישור השיתוף לא תקין או שפג תוקפו",
+      "missing": "חסרים נתונים בקישור השיתוף",
+      "failed": "לא הצלחנו לטעון את המרתף המשותף"
+    },
+    "notFoundBody": "ייתכן שהקישור לא תקין, פג תוקפו או לא הועתק במלואו. בקשו מהחבר לשתף שוב.",
+    "goToCellar": "למרתף שלי",
+    "ctaTitle": "פתחו מרתף משלכם",
+    "ctaBody": "עקבו אחרי הבקבוקים, דעו מתי לפתוח אותם ושתפו עם חברים.",
+    "bottles_two": "שני בקבוקים",
+    "wines_two": "שני יינות"
+  },
+  "guestEvening": {
+    "title": "הליינאפ של הערב",
+    "subtitle": "הצביעו ליין האהוב עליכם",
+    "votes_one": "הצבעה אחת עד עכשיו",
+    "votes_two": "שתי הצבעות עד עכשיו",
+    "votes_other": "{{count}} הצבעות עד עכשיו",
+    "favorite": "אהבתי",
+    "favorited": "אהבתם",
+    "markFavorite": "סמנו כאהוב",
+    "removeFavorite": "הסירו מהאהובים",
+    "unavailableTitle": "הקישור לא זמין",
+    "invalidLink": "הקישור לא תקין או שפג תוקפו.",
+    "emptyLineup": "עדיין אין יינות בליינאפ",
+    "footerSaved": "ההצבעה שלכם נשמרת במכשיר הזה",
+    "footerPrivacy": "בלי חשבון · בלי איסוף מידע אישי"
+  },
+  "a11y": {
+    "generateLabelArt": "יצירת תווית באמצעות AI",
+    "markOpened": "סימון הבקבוק כפתוח",
+    "viewOnVivino": "צפייה ב-Vivino",
+    "scrollToTop": "חזרה למעלה",
+    "captureBottle": "צילום בקבוק",
+    "starRating": "דירוג בכוכבים",
+    "retryScan": "ניסיון סריקה חוזר",
+    "aiLabelArt": "תווית שנוצרה באמצעות AI",
+    "camera": "מצלמה",
+    "removePhoto": "הסרת התמונה שנבחרה"
+  },
+  "agent": {
+    "startRecording": "התחלת הקלטה",
+    "stopRecording": "עצירת הקלטה"
   }
 }

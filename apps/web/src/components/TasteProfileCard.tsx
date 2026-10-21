@@ -151,14 +151,14 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{
-              background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+              background: 'var(--sommi-gradient-primary)',
               boxShadow: '0 4px 12px rgba(164, 77, 90, 0.3)',
             }}
           >
             <span className="text-xl">🍷</span>
           </div>
           <div>
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-section-title">
               {t('tasteProfile.title', 'Your Taste Profile')}
             </h2>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -208,7 +208,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
       {!profile && (
         <div className="text-center py-8">
           <div className="text-4xl mb-4">🎯</div>
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="app-section-title mb-2">
             {t('tasteProfile.empty.title', 'Build Your Taste Profile')}
           </h3>
           <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-secondary)' }}>
@@ -445,11 +445,11 @@ function CalibrationModal({
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-md rounded-[1.5rem] overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: 'var(--shadow-modal)',
           maxHeight: '100%',
         }}
       >
@@ -457,7 +457,7 @@ function CalibrationModal({
         <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 id="calibrate-taste-title" className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h3 id="calibrate-taste-title" className="app-section-title">
                 {t('tasteProfile.calibration.title', 'Calibrate Your Taste')}
               </h3>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -465,9 +465,9 @@ function CalibrationModal({
               </p>
             </div>
             <button
+              aria-label={t('common.close')}
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-tertiary)' }}
+              className="app-icon-btn"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -531,9 +531,9 @@ function CalibrationModal({
               <button
                 onClick={onReset}
                 disabled={saving}
-                className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 px-3 text-sm font-medium rounded-full border transition-colors disabled:opacity-50"
                 style={{
-                  color: 'var(--color-error, #dc2626)',
+                  color: 'var(--text-error)',
                   borderColor: 'var(--border-base)',
                   background: 'var(--bg-surface)',
                 }}
@@ -544,7 +544,7 @@ function CalibrationModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 px-3 text-sm font-medium rounded-full border transition-colors disabled:opacity-50"
               style={{
                 color: 'var(--text-primary)',
                 borderColor: 'var(--border-base)',
@@ -556,9 +556,9 @@ function CalibrationModal({
             <button
               onClick={() => onSave(values)}
               disabled={saving}
-              className="flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 px-3 text-sm font-semibold rounded-full transition-colors disabled:opacity-50"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'white',
               }}
             >

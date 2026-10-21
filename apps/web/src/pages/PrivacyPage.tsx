@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+          <h1 className="app-display text-4xl sm:text-5xl mb-2">
             Privacy Policy
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           
           {/* Introduction */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Introduction
             </h2>
             <p>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
 
           {/* Information We Collect */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Information We Collect
             </h2>
             <div className="space-y-3">
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
                 <p>
                   When you create an account, we collect:
                 </p>
-                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
                   <li>Email address</li>
                   <li>Name (first and last name)</li>
                   <li>Profile picture (optional, from Google OAuth)</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
                 <p>
                   To provide our core service, we store:
                 </p>
-                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
                   <li>Wine details (name, producer, vintage, region, etc.)</li>
                   <li>Bottle quantities and storage locations</li>
                   <li>Tasting notes and ratings</li>
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
                 <p>
                   We collect anonymous usage data via Google Analytics 4:
                 </p>
-                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
                   <li>Pages visited and features used</li>
                   <li>Device type and browser information</li>
                   <li>General location (country/city level only)</li>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
 
           {/* How We Use Your Information */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               How We Use Your Information
             </h2>
             <ul className="list-disc list-inside space-y-2">
@@ -113,13 +113,13 @@ export default function PrivacyPage() {
 
           {/* Data Storage and Security */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Data Storage and Security
             </h2>
             <p>
               Your data is stored securely using Supabase (PostgreSQL database) with:
             </p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+            <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
               <li>Encrypted connections (HTTPS/TLS)</li>
               <li>Row-level security policies</li>
               <li>Regular backups</li>
@@ -129,11 +129,11 @@ export default function PrivacyPage() {
 
           {/* Third-Party Services */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Third-Party Services
             </h2>
             <p>We use the following third-party services:</p>
-            <div className="ml-4 mt-2 space-y-3">
+            <div className="ms-4 mt-2 space-y-3">
               <div>
                 <strong>• Supabase:</strong> Database and authentication hosting
                 <br />
@@ -191,13 +191,13 @@ export default function PrivacyPage() {
 
           {/* Cookies and Tracking */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Cookies and Tracking
             </h2>
             <p>
               We use cookies for:
             </p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+            <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
               <li><strong>Essential cookies:</strong> Authentication and session management (required)</li>
               <li><strong>Analytics cookies:</strong> Google Analytics 4 for usage insights (optional)</li>
             </ul>
@@ -208,11 +208,11 @@ export default function PrivacyPage() {
 
           {/* Your Rights */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Your Rights
             </h2>
             <p>You have the right to:</p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+            <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
               <li>Access your personal data</li>
               <li>Correct inaccurate data</li>
               <li>Delete your account and all associated data</li>
@@ -226,13 +226,13 @@ export default function PrivacyPage() {
 
           {/* Data Retention */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Data Retention
             </h2>
             <p>
               We retain your data as long as your account is active. When you delete your account:
             </p>
-            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+            <ul className="list-disc list-inside ms-4 mt-2 space-y-1">
               <li>Your wine collection data is permanently deleted</li>
               <li>Your profile information is removed</li>
               <li>Anonymous analytics data may be retained for statistical purposes</li>
@@ -241,7 +241,7 @@ export default function PrivacyPage() {
 
           {/* Children's Privacy */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Children's Privacy
             </h2>
             <p>
@@ -252,7 +252,7 @@ export default function PrivacyPage() {
 
           {/* Changes to This Policy */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Changes to This Policy
             </h2>
             <p>
@@ -263,7 +263,7 @@ export default function PrivacyPage() {
 
           {/* Contact Us */}
           <section>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="app-display text-2xl mb-3">
               Contact Us
             </h2>
             <p>

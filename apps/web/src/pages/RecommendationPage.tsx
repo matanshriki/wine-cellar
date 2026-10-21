@@ -13,7 +13,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Sparkles, Wine, GlassWater } from 'lucide-react';
 import { toast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { CelebrationModal } from '../components/CelebrationModal';
@@ -29,6 +29,8 @@ import type { InsightType } from '../services/insightService';
 import { useOpenRitual } from '../contexts/OpenRitualContext';
 import { OfflineCellarScreen } from '../components/OfflineCellarScreen';
 import { WineLoader } from '../components/WineLoader';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
@@ -314,26 +316,18 @@ export function RecommendationPage() {
               e.stopPropagation();
               setStep('form');
             }}
-            className="btn btn-ghost mb-4 -ms-2 min-h-[44px]"
-            style={{
-              color: 'var(--color-wine-600)',
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-            }}
+            className="btn-luxury-ghost mb-4 -ms-3 text-sm"
+            style={{ color: 'var(--accent-text)' }}
           >
-            <svg className="w-5 h-5 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-4 h-4 rtl:-scale-x-100" strokeWidth={1.75} aria-hidden />
             {t('recommendation.results.backToForm')}
           </button>
-
-        <h1
-          className="text-3xl sm:text-4xl font-bold mb-2"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
-        >
-          {t('recommendation.results.title')}
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>{t('recommendation.results.subtitle')}</p>
+          <PageHeader
+            className="!mb-0"
+            eyebrow={t('recommendation.eyebrow')}
+            title={t('recommendation.results.title')}
+            subtitle={t('recommendation.results.subtitle')}
+          />
         </div>
 
         <div className="space-y-6">
@@ -343,8 +337,7 @@ export function RecommendationPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05, duration: 0.2 }}
-              className="card-hover card"
-              style={{ border: '2px solid var(--border-medium)' }}
+              className="app-card p-5 sm:p-6"
             >
               <div className="flex items-start gap-4 mb-4">
                 {rec.bottle?.imageUrl && (
@@ -352,7 +345,7 @@ export function RecommendationPage() {
                     <img
                       src={rec.bottle.imageUrl}
                       alt={rec.bottle.name}
-                      className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-md"
+                      className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-2xl"
                       style={{
                         border: '1px solid var(--border-medium)',
                         boxShadow: 'var(--shadow-card)',
@@ -368,23 +361,16 @@ export function RecommendationPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start gap-3 mb-3">
                     <div
-                      className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-                      style={{
-                        background:
-                          'linear-gradient(135deg, var(--color-wine-500) 0%, var(--color-wine-600) 100%)',
-                        color: 'white',
-                      }}
+                      className="lp-blob lp-blob-burgundy app-blob-sm shrink-0 text-lg font-semibold"
+                      style={{ fontFamily: 'var(--font-display)' }}
+                      aria-hidden
                     >
                       {index + 1}
                     </div>
                     {rec.bottle && (
                       <div className="flex-1 min-w-0">
                         <h3
-                          className="text-xl sm:text-2xl font-bold mb-1"
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            color: 'var(--text-heading)',
-                          }}
+                          className="app-display text-xl sm:text-2xl mb-1 break-words"
                         >
                           {rec.bottle.name}
                         </h3>
@@ -410,7 +396,7 @@ export function RecommendationPage() {
                                     style={{
                                       color:
                                         filled || halfFilled
-                                          ? 'var(--wine-500)'
+                                          ? 'var(--color-gold-500)'
                                           : 'var(--border-medium)',
                                     }}
                                     aria-hidden
@@ -431,15 +417,15 @@ export function RecommendationPage() {
                                 href={rec.bottle.vivinoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs px-2 py-1 rounded transition-colors"
+                                className="text-xs font-medium px-3 py-1 rounded-full transition-colors hover:bg-[var(--wine-100)]"
                                 style={{
-                                  color: 'var(--color-wine-600)',
-                                  backgroundColor: 'var(--color-wine-50)',
-                                  border: '1px solid var(--color-wine-200)',
+                                  color: 'var(--accent-text)',
+                                  backgroundColor: 'var(--wine-50)',
+                                  border: '1px solid var(--wine-200)',
                                 }}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                Vivino
+                                <bdi>Vivino</bdi>
                               </a>
                             )}
                           </div>
@@ -456,12 +442,12 @@ export function RecommendationPage() {
                   <div 
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
                     style={{ 
-                      background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                      color: 'var(--wine-700)',
+                      background: 'var(--wine-50)',
+                      color: 'var(--accent-text)',
                       border: '1px solid var(--wine-200)',
                     }}
                   >
-                    <span>✨</span>
+                    <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} style={{ color: 'var(--color-gold-500)' }} aria-hidden />
                     {rec.affinityReason}
                   </div>
                 )}
@@ -469,26 +455,26 @@ export function RecommendationPage() {
                 <div>
                   <h4
                     className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--wine-700)' }}
+                    style={{ color: 'var(--accent-text)' }}
                   >
-                    <span>🍷</span>
+                    <Wine className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                     {t('recommendation.results.whyThisBottle')}
                   </h4>
                   <p style={{ color: 'var(--text-primary)' }}>{rec.explanation}</p>
                 </div>
 
                 <div
-                  className="p-4 rounded-xl"
+                  className="p-4 rounded-2xl"
                   style={{
-                    backgroundColor: 'var(--wine-50)',
-                    borderLeft: '4px solid var(--wine-500)',
+                    backgroundColor: 'var(--bg-muted)',
+                    borderInlineStart: '4px solid var(--color-gold-500)',
                   }}
                 >
                   <h4
                     className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--wine-700)' }}
+                    style={{ color: 'var(--text-heading)' }}
                   >
-                    <span>🍷</span>
+                    <GlassWater className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                     {t('recommendation.results.servingInstructions')}
                   </h4>
                   <p style={{ color: 'var(--text-primary)' }}>{rec.servingInstructions}</p>
@@ -496,25 +482,12 @@ export function RecommendationPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleViewBottleDetails(rec.bottleId)}
                     disabled={loadingDetails}
-                    className="flex-1 btn btn-secondary"
-                    style={{
-                      background: 'var(--bg-muted)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-medium)',
-                    }}
+                    className="flex-1 btn-luxury-secondary"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <Info className="w-4 h-4" strokeWidth={1.75} aria-hidden />
                     {loadingDetails
                       ? t('common.loading', 'Loading...')
                       : t('recommendation.results.viewDetails', 'View Details')}
@@ -522,12 +495,11 @@ export function RecommendationPage() {
 
                   {rec.bottle && rec.bottle.quantity > 0 && (
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleMarkOpened(rec)}
-                      className="flex-1 btn btn-primary btn-lg"
+                      className="flex-1 btn-luxury-primary"
                     >
-                      <span className="text-xl">🍾</span>
+                      <span className="text-lg" aria-hidden>🍾</span>
                       {t('recommendation.results.markAsOpened')}
                     </motion.button>
                   )}
@@ -565,45 +537,21 @@ export function RecommendationPage() {
   // Empty Cellar
   if (!hasCellarBottles) {
     return (
-      <div className="max-w-2xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="luxury-card text-center py-12 px-6"
+      <div className="max-w-2xl mx-auto">
+        <EmptyState
+          art="/assets/app/empty-cellar.jpg"
+          title={t('recommendation.emptyCellar.title')}
+          body={t('recommendation.emptyCellar.message')}
+          actions={
+            <button onClick={() => navigate('/cellar')} className="btn-luxury-primary">
+              {t('recommendation.emptyCellar.goToCellar')}
+            </button>
+          }
         >
-          <div className="text-8xl mb-6">🍾</div>
-
-          <h2
-            className="text-2xl sm:text-3xl mb-3"
-            style={{
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 'var(--font-bold)',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {t('recommendation.emptyCellar.title')}
-          </h2>
-
-          <p
-            className="text-base sm:text-lg mb-2 max-w-md mx-auto"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {t('recommendation.emptyCellar.message')}
-          </p>
-
-          <p
-            className="text-sm mb-8 max-w-md mx-auto"
-            style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}
-          >
+          <p className="mt-5 text-sm italic" style={{ color: 'var(--text-tertiary)' }}>
             {t('recommendation.emptyCellar.hint')}
           </p>
-
-          <button onClick={() => navigate('/cellar')} className="btn-luxury-primary">
-            {t('recommendation.emptyCellar.goToCellar')}
-          </button>
-        </motion.div>
+        </EmptyState>
       </div>
     );
   }
@@ -614,27 +562,20 @@ export function RecommendationPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15 }}
-      className="max-w-3xl mx-auto px-4"
+      className="max-w-3xl mx-auto"
     >
-      <div className="mb-8">
-        <h1
-          className="text-3xl sm:text-4xl font-bold mb-2"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-heading)' }}
-        >
-          {t('recommendation.title')}
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>{t('recommendation.subtitle')}</p>
-      </div>
+      <PageHeader
+        eyebrow={t('recommendation.eyebrow')}
+        title={t('recommendation.title')}
+        subtitle={t('recommendation.subtitle')}
+      />
 
       {!flagsLoading && flags?.cellarAgentEnabled && <TonightSommiCard />}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="card space-y-5">
+        <div className="app-card p-5 sm:p-6 space-y-6">
           <div>
-            <h3
-              className="text-base font-semibold mb-3"
-              style={{ color: 'var(--text-heading)' }}
-            >
+            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
               {t('recommendation.form.mealType')}
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
@@ -644,23 +585,23 @@ export function RecommendationPage() {
                   type="button"
                   onClick={() => setContext({ ...context, mealType: meal.value })}
                   whileTap={{ scale: 0.95 }}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
+                  aria-pressed={context.mealType === meal.value}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 min-h-[76px] rounded-2xl transition-colors hover:border-[var(--wine-300)]"
                   style={{
                     backgroundColor:
                       context.mealType === meal.value ? 'var(--wine-50)' : 'var(--bg-surface)',
-                    border: `2px solid ${
-                      context.mealType === meal.value ? 'var(--wine-500)' : 'var(--border-medium)'
+                    border: `1.5px solid ${
+                      context.mealType === meal.value ? 'var(--wine-500)' : 'var(--border-subtle)'
                     }`,
-                    boxShadow: context.mealType === meal.value ? 'var(--glow)' : 'none',
                   }}
                 >
-                  <span className="text-2xl">{meal.icon}</span>
+                  <span className="text-2xl" aria-hidden>{meal.icon}</span>
                   <span
                     className="text-xs font-medium text-center leading-tight"
                     style={{
                       color:
                         context.mealType === meal.value
-                          ? 'var(--wine-700)'
+                          ? 'var(--accent-text)'
                           : 'var(--text-secondary)',
                     }}
                   >
@@ -672,10 +613,7 @@ export function RecommendationPage() {
           </div>
 
           <div>
-            <h3
-              className="text-base font-semibold mb-3"
-              style={{ color: 'var(--text-heading)' }}
-            >
+            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
               {t('recommendation.form.occasion')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -685,23 +623,23 @@ export function RecommendationPage() {
                   type="button"
                   onClick={() => setContext({ ...context, occasion: occ.value })}
                   whileTap={{ scale: 0.95 }}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
+                  aria-pressed={context.occasion === occ.value}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 min-h-[76px] rounded-2xl transition-colors hover:border-[var(--wine-300)]"
                   style={{
                     backgroundColor:
                       context.occasion === occ.value ? 'var(--wine-50)' : 'var(--bg-surface)',
-                    border: `2px solid ${
-                      context.occasion === occ.value ? 'var(--wine-500)' : 'var(--border-medium)'
+                    border: `1.5px solid ${
+                      context.occasion === occ.value ? 'var(--wine-500)' : 'var(--border-subtle)'
                     }`,
-                    boxShadow: context.occasion === occ.value ? 'var(--glow)' : 'none',
                   }}
                 >
-                  <span className="text-2xl">{occ.icon}</span>
+                  <span className="text-2xl" aria-hidden>{occ.icon}</span>
                   <span
                     className="text-xs font-medium text-center leading-tight"
                     style={{
                       color:
                         context.occasion === occ.value
-                          ? 'var(--wine-700)'
+                          ? 'var(--accent-text)'
                           : 'var(--text-secondary)',
                     }}
                   >
@@ -713,10 +651,7 @@ export function RecommendationPage() {
           </div>
 
           <div>
-            <h3
-              className="text-base font-semibold mb-3"
-              style={{ color: 'var(--text-heading)' }}
-            >
+            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
               {t('recommendation.form.vibe')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -726,22 +661,22 @@ export function RecommendationPage() {
                   type="button"
                   onClick={() => setContext({ ...context, vibe: v.value })}
                   whileTap={{ scale: 0.95 }}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
+                  aria-pressed={context.vibe === v.value}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 min-h-[76px] rounded-2xl transition-colors hover:border-[var(--wine-300)]"
                   style={{
                     backgroundColor:
                       context.vibe === v.value ? 'var(--wine-50)' : 'var(--bg-surface)',
-                    border: `2px solid ${
-                      context.vibe === v.value ? 'var(--wine-500)' : 'var(--border-medium)'
+                    border: `1.5px solid ${
+                      context.vibe === v.value ? 'var(--wine-500)' : 'var(--border-subtle)'
                     }`,
-                    boxShadow: context.vibe === v.value ? 'var(--glow)' : 'none',
                   }}
                 >
-                  <span className="text-2xl">{v.icon}</span>
+                  <span className="text-2xl" aria-hidden>{v.icon}</span>
                   <span
                     className="text-xs font-medium text-center leading-tight"
                     style={{
                       color:
-                        context.vibe === v.value ? 'var(--wine-700)' : 'var(--text-secondary)',
+                        context.vibe === v.value ? 'var(--accent-text)' : 'var(--text-secondary)',
                     }}
                   >
                     {t(`recommendation.form.vibes.${v.value}`)}
@@ -755,15 +690,13 @@ export function RecommendationPage() {
 
         {/* Wine Preferences - Expandable Section */}
         <div
-          className="card overflow-hidden"
-          style={{
-            border: '1px solid var(--border-medium)',
-          }}
+          className="app-card overflow-hidden"
         >
           <button
             type="button"
             onClick={() => setPreferencesExpanded(!preferencesExpanded)}
-            className="w-full flex items-center justify-between p-4 min-h-[56px] transition-colors"
+            aria-expanded={preferencesExpanded}
+            className="w-full flex items-center justify-between px-5 sm:px-6 py-4 min-h-[56px] transition-colors hover:bg-[var(--interactive-hover)]"
             style={{
               backgroundColor: preferencesExpanded ? 'var(--bg-muted)' : 'transparent',
             }}
@@ -775,9 +708,9 @@ export function RecommendationPage() {
               {t('recommendation.form.winePreferences')}
             </span>
             {preferencesExpanded ? (
-              <ChevronUp className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
+              <ChevronUp className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={1.75} aria-hidden />
             ) : (
-              <ChevronDown className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
+              <ChevronDown className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} strokeWidth={1.75} aria-hidden />
             )}
           </button>
 
@@ -791,7 +724,7 @@ export function RecommendationPage() {
                 className="overflow-hidden"
               >
                 <div
-                  className="px-4 pb-4 space-y-5"
+                  className="px-5 sm:px-6 pb-5 space-y-5"
                   style={{ borderTop: '1px solid var(--border-subtle)' }}
                 >
                   {/* Avoid too young toggle with clock icon */}
@@ -822,10 +755,11 @@ export function RecommendationPage() {
                       {t('recommendation.form.wineType')}
                     </label>
                     <div
-                      className="flex rounded-xl p-1 gap-1"
+                      className="flex rounded-full p-1 gap-1"
+                      role="group"
                       style={{
                         backgroundColor: 'var(--bg-muted)',
-                        border: '1px solid var(--border-medium)',
+                        border: '1px solid var(--border-subtle)',
                       }}
                     >
                       {(['red', 'white', 'rose', 'mixed'] as WineType[]).map((type) => {
@@ -835,9 +769,10 @@ export function RecommendationPage() {
                             key={type}
                             type="button"
                             onClick={() => setContext({ ...context, wineType: type })}
-                            className="flex-1 min-h-[44px] rounded-lg font-medium text-sm transition-all duration-150"
+                            aria-pressed={selected}
+                            className="flex-1 min-h-[44px] rounded-full font-medium text-sm transition-colors duration-150"
                             style={{
-                              backgroundColor: selected ? 'var(--wine-600)' : 'transparent',
+                              background: selected ? 'var(--sommi-gradient-primary)' : 'transparent',
                               color: selected ? '#fff' : 'var(--text-secondary)',
                             }}
                           >
@@ -857,10 +792,11 @@ export function RecommendationPage() {
                       {t('recommendation.form.priceRange')}
                     </label>
                     <div
-                      className="flex rounded-xl p-1 gap-1"
+                      className="flex rounded-full p-1 gap-1"
+                      role="group"
                       style={{
                         backgroundColor: 'var(--bg-muted)',
-                        border: '1px solid var(--border-medium)',
+                        border: '1px solid var(--border-subtle)',
                       }}
                     >
                       {[
@@ -876,9 +812,10 @@ export function RecommendationPage() {
                             key={value}
                             type="button"
                             onClick={() => setContext({ ...context, priceRange: value as PriceRange })}
-                            className="flex-1 min-h-[44px] rounded-lg font-medium text-sm transition-all duration-150"
+                            aria-pressed={selected}
+                            className="flex-1 min-h-[44px] rounded-full font-medium text-sm transition-colors duration-150"
                             style={{
-                              backgroundColor: selected ? 'var(--wine-600)' : 'transparent',
+                              background: selected ? 'var(--sommi-gradient-primary)' : 'transparent',
                               color: selected ? '#fff' : 'var(--text-secondary)',
                             }}
                           >
@@ -906,14 +843,14 @@ export function RecommendationPage() {
           <motion.button
             type="submit"
             disabled={loading}
-            className="w-full min-h-[52px] rounded-2xl font-semibold text-base flex items-center justify-center gap-2 shadow-lg"
+            className="w-full min-h-[52px] rounded-full font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-80"
             style={{
-              background: 'linear-gradient(135deg, var(--color-wine-500) 0%, var(--color-wine-600) 100%)',
+              background: 'var(--sommi-gradient-primary)',
               color: '#fff',
-              boxShadow: '0 4px 14px rgba(166, 53, 82, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+              boxShadow: 'var(--shadow-cta)',
               border: 'none',
             }}
-            whileHover={!loading ? { scale: 1.02 } : {}}
+            whileHover={!loading ? { y: -1 } : {}}
             whileTap={!loading ? { scale: 0.98 } : {}}
           >
             {loading ? (
@@ -924,7 +861,7 @@ export function RecommendationPage() {
             ) : (
               <>
                 <span>{t('recommendation.form.getRecommendations')}</span>
-                <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
+                <ChevronRight className="w-5 h-5 rtl:-scale-x-100" strokeWidth={2} aria-hidden />
               </>
             )}
           </motion.button>

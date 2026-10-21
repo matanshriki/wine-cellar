@@ -41,20 +41,14 @@ export function CommunityPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
-            <h1 
-              className="text-3xl font-bold"
-              style={{ 
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-              }}
-            >
+            <h1 className="app-page-title">
               🌍 Community Cellars
             </h1>
             <span 
-              className="px-2 py-0.5 text-xs font-semibold rounded"
+              className="px-2.5 py-0.5 text-xs font-semibold rounded-full"
               style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: 'white',
+                background: 'var(--sommi-gradient-gold)',
+                color: 'var(--sommi-ink)',
               }}
             >
               DEV
@@ -67,16 +61,16 @@ export function CommunityPage() {
 
         {/* Info Banner */}
         <div 
-          className="p-4 rounded-lg mb-6"
+          className="p-4 rounded-2xl mb-6"
           style={{
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
-            border: '1px solid var(--color-blue-200)',
+            background: 'var(--color-info-light)',
+            border: '1px solid var(--border-subtle)',
           }}
         >
           <div className="flex items-start gap-3">
             <span className="text-2xl">ℹ️</span>
             <div>
-              <p className="text-sm" style={{ color: 'var(--color-blue-800)' }}>
+              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
                 <strong>Dev-only community feature</strong> - This page uses mock data to test community UX before building real social features.
               </p>
             </div>
@@ -91,7 +85,7 @@ export function CommunityPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="luxury-card cursor-pointer hover:shadow-lg transition-shadow"
+              className="app-card p-5 cursor-pointer hover:shadow-[var(--shadow-card-hover)] transition-shadow"
               onClick={() => handleViewCellar(cellar)}
             >
               {/* User Header */}
@@ -99,7 +93,7 @@ export function CommunityPage() {
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-400) 0%, var(--wine-600) 100%)',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >
@@ -153,10 +147,10 @@ export function CommunityPage() {
                     {cellar.stats.topRegions.slice(0, 3).map((region) => (
                       <span
                         key={region}
-                        className="px-2 py-1 rounded text-xs"
+                        className="px-2.5 py-1 rounded-full text-xs"
                         style={{
                           background: 'var(--wine-50)',
-                          color: 'var(--wine-700)',
+                          color: 'var(--accent-text)',
                         }}
                       >
                         {region}
@@ -182,14 +176,10 @@ export function CommunityPage() {
 
         {/* Bottom CTA */}
         <div 
-          className="mt-8 p-6 rounded-lg text-center"
-          style={{
-            background: 'linear-gradient(135deg, rgba(164, 77, 90, 0.08) 0%, rgba(212, 175, 55, 0.12) 100%)',
-            border: '1px solid var(--wine-200)',
-          }}
+          className="app-card-muted mt-8 p-6 sm:p-8 text-center"
         >
           <div className="text-4xl mb-3">🍷🔗</div>
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="app-section-title mb-2">
             Share Your Collection
           </h3>
           <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>

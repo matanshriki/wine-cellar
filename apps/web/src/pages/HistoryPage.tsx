@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, ChevronRight, NotebookPen, Star, Undo2, Wine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { WineDetailsModal } from '../components/WineDetailsModal';
 import { RateRitualSheet, MOOD_CHIPS } from '../components/RateRitualSheet';
 import * as historyService from '../services/historyService';
@@ -79,6 +83,7 @@ interface HistoryEvent {
 
 export function HistoryPage() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [events, setEvents] = useState<HistoryEvent[]>([]);
   const [stats, setStats] = useState<historyService.ConsumptionStats | null>(null);
   const [loading, setLoading] = useState(true); // Keep true for proper data loading
@@ -239,77 +244,58 @@ export function HistoryPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center max-w-md">
-          <div 
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'var(--color-error-light)' }}
-          >
-            <svg className="w-8 h-8" style={{ color: 'var(--color-error)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>{t('history.error.title')}</h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{t('history.error.subtitle')}</p>
-          <button
-            onClick={loadData}
-            className="btn btn-primary"
-          >
+      <EmptyState
+        icon={<AlertCircle className="h-7 w-7" strokeWidth={1.75} aria-hidden />}
+        title={t('history.error.title')}
+        body={t('history.error.subtitle')}
+        actions={
+          <button onClick={loadData} className="btn-luxury-primary">
             {t('history.error.retry')}
           </button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
     <div>
-      <div className="mb-4 sm:mb-6">
-        <h1 
-          className="text-2xl sm:text-3xl font-bold"
-          style={{ color: 'var(--text-heading)' }}
-        >
-          {t('history.title')}
-        </h1>
-        <p 
-          className="text-sm sm:text-base mt-1"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          {t('history.subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={t('history.eyebrow')}
+        title={t('history.title')}
+        subtitle={t('history.subtitle')}
+      />
 
       {stats && stats.total_opens > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="card">
-            <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.totalOpens')}</div>
-            <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>{stats.total_opens}</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="app-card p-4 sm:p-5">
+            <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.totalOpens')}</div>
+            <div className="app-display text-2xl sm:text-3xl">{stats.total_opens}</div>
           </div>
 
           {Number.isFinite(stats.average_rating) && stats.average_rating > 0 && (
-            <div className="card">
-              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.averageRating')}</div>
-              <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>
+            <div className="app-card p-4 sm:p-5">
+              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.averageRating')}</div>
+              <div className="app-display text-2xl sm:text-3xl">
                 {Number(stats.average_rating).toFixed(1)}/5
               </div>
             </div>
           )}
 
           {stats.favorite_color && (
-            <div className="card">
-              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteStyle')}</div>
+            <div className="app-card p-4 sm:p-5">
+              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.favoriteStyle')}</div>
               {/* Note: color value is NOT translated - translate the label */}
-              <div className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-heading)' }}>
+              <div className="app-display text-2xl sm:text-3xl">
                 {t(`cellar.wineStyles.${stats.favorite_color}`)}
               </div>
             </div>
           )}
 
           {stats.favorite_region && (
-            <div className="card">
-              <div className="text-xs sm:text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteRegion')}</div>
+            <div className="app-card p-4 sm:p-5">
+              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.favoriteRegion')}</div>
               {/* Note: region name is NOT translated - it's actual geographic data */}
-              <div className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-heading)' }}>
+              <div className="app-display text-lg sm:text-xl break-words">
                 {stats.favorite_region}
               </div>
             </div>
@@ -318,11 +304,8 @@ export function HistoryPage() {
       )}
 
       {stats && Array.isArray(stats.top_regions) && stats.top_regions.length > 1 && (
-        <div className="card mb-6 sm:mb-8">
-          <h2 
-            className="text-lg sm:text-xl font-bold mb-3 sm:mb-4"
-            style={{ color: 'var(--text-heading)' }}
-          >
+        <div className="app-card p-5 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="app-section-title mb-3 sm:mb-4">
             {t('history.stats.topRegions')}
           </h2>
           <div className="space-y-2">
@@ -337,36 +320,30 @@ export function HistoryPage() {
         </div>
       )}
 
-      <div className="card">
-        <h2 
-          className="text-lg sm:text-xl font-bold mb-3 sm:mb-4"
-          style={{ color: 'var(--text-heading)' }}
-        >
+      {events.length === 0 ? (
+        <EmptyState
+          art="/assets/app/empty-history.jpg"
+          title={t('history.empty.title')}
+          body={t('history.empty.subtitle')}
+          actions={
+            <button onClick={() => navigate('/cellar')} className="btn-luxury-primary">
+              <Wine className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              {t('history.empty.cta')}
+            </button>
+          }
+        />
+      ) : (
+      <section aria-labelledby="history-list-title">
+        <h2 id="history-list-title" className="app-section-title mb-3 sm:mb-4">
           {t('history.openingHistory')}
         </h2>
-
-        {events.length === 0 ? (
-          <div className="text-center py-8 sm:py-12">
-            <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ background: 'var(--bg-muted)' }}
-            >
-              <svg className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-base sm:text-lg font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>{t('history.empty.title')}</p>
-            <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {t('history.empty.subtitle')}
-            </p>
-          </div>
-        ) : (
+        {(
           <div className="space-y-3 sm:space-y-4">
             {events.map((event) => (
               <div 
                 key={event.id} 
-                className="group relative border-l-4 border-primary-500 pl-3 sm:pl-4 py-3 sm:py-4 rounded-r-lg transition-all duration-200 cursor-pointer"
-                style={{ background: 'var(--bg-surface)' }}
+                className="app-card group relative border-s-4 ps-4 pe-10 sm:ps-5 py-4 sm:py-5 transition-shadow duration-200 cursor-pointer hover:shadow-[var(--shadow-card-hover)]"
+                style={{ borderInlineStartColor: 'var(--wine-600)' }}
                 onClick={() => handleWineClick(event)}
                 role="button"
                 tabIndex={0}
@@ -379,11 +356,11 @@ export function HistoryPage() {
               >
                 {/* Wine Info Section */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
-                  <div className="flex-1 pr-2">
+                  <div className="flex-1 min-w-0 pe-2">
                     {/* Note: Wine name, producer, vintage are NOT translated - they're actual wine data */}
                     <h3 
-                      className="font-semibold text-base sm:text-lg group-hover:text-primary-600 transition-colors"
-                      style={{ color: 'var(--text-heading)' }}
+                      className="font-semibold text-base sm:text-lg transition-colors group-hover:text-[var(--accent-text)]"
+                      style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
                     >
                       {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
                     </h3>
@@ -435,7 +412,7 @@ export function HistoryPage() {
                                 className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
                                 style={{
                                   background: 'var(--wine-50)',
-                                  color: 'var(--wine-700)',
+                                  color: 'var(--accent-text)',
                                   border: '1px solid var(--wine-200)',
                                 }}
                               >
@@ -447,7 +424,7 @@ export function HistoryPage() {
                       )}
                       {noteText && (
                         <p
-                          className="text-xs sm:text-sm italic mb-3 pl-3 border-l-2"
+                          className="text-xs sm:text-sm italic mb-3 ps-3 border-s-2"
                           style={{ color: 'var(--text-primary)', borderColor: 'var(--border-medium)' }}
                         >
                           "{noteText}"
@@ -468,8 +445,7 @@ export function HistoryPage() {
                       <StarDisplay rating={Number(event.user_rating)} />
                       <button
                         onClick={() => openRateSheet(event)}
-                        className="text-xs font-medium"
-                        style={{ color: 'var(--wine-600)' }}
+                        className="app-link text-xs inline-flex items-center min-h-[44px] px-2 -me-2"
                       >
                         {t('history.editRating', 'Edit rating')}
                       </button>
@@ -477,14 +453,14 @@ export function HistoryPage() {
                   ) : (
                     <button
                       onClick={() => openRateSheet(event)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                      className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-full text-sm font-medium transition-colors hover:bg-[var(--wine-100)]"
                       style={{
                         background: 'var(--wine-50)',
-                        color: 'var(--wine-700)',
+                        color: 'var(--accent-text)',
                         border: '1px solid var(--wine-200)',
                       }}
                     >
-                      <span>⭐</span>
+                      <Star className="h-4 w-4" strokeWidth={1.75} style={{ color: 'var(--color-gold-500)' }} aria-hidden />
                       <span>{t('history.rateWine', 'Rate this wine')}</span>
                     </button>
                   )}
@@ -501,7 +477,7 @@ export function HistoryPage() {
                     /* Editing Mode */
                     <div className="space-y-2">
                       <label className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
-                        <span>📝</span>
+                        <NotebookPen className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                         <span>{t('history.personalNotes')}</span>
                       </label>
                       <textarea
@@ -510,11 +486,7 @@ export function HistoryPage() {
                         placeholder={t('history.notesPlaceholder')}
                         maxLength={1000}
                         rows={3}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                        style={{
-                          backgroundColor: 'var(--bg-surface)',
-                          color: 'var(--text-primary)',
-                        }}
+                        className="input-luxury w-full text-sm resize-none"
                       />
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -523,7 +495,7 @@ export function HistoryPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleCancelNotes()}
-                            className="px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px]"
+                            className="px-4 text-sm font-medium rounded-full transition-colors min-h-[44px]"
                             style={{ 
                               color: 'var(--text-secondary)', 
                               background: 'var(--bg-muted)' 
@@ -534,7 +506,8 @@ export function HistoryPage() {
                           <button
                             onClick={() => handleSaveNotes(event.id)}
                             disabled={notesSaving === event.id}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 rounded-md transition-colors min-h-[36px] flex items-center gap-1"
+                            className="px-4 text-sm font-medium rounded-full transition-opacity min-h-[44px] flex items-center gap-1 disabled:opacity-60"
+                            style={{ background: 'var(--sommi-gradient-primary)', color: 'var(--text-inverse)' }}
                           >
                             {notesSaving === event.id ? (
                               <>
@@ -557,15 +530,15 @@ export function HistoryPage() {
                       {event.notes ? (
                         <div>
                           <div className="text-xs font-medium mb-1 flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
-                            <span>📝</span>
+                            <NotebookPen className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                             <span>{t('history.personalNotes')}:</span>
                           </div>
-                          <p className="text-sm mb-2 pl-4 whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
+                          <p className="text-sm mb-2 ps-5 whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
                             {event.notes}
                           </p>
                           <button
                             onClick={() => handleEditNotes(event.id, event.notes)}
-                            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                            className="app-link text-xs inline-flex items-center min-h-[44px]"
                           >
                             {t('common.edit')}
                           </button>
@@ -573,9 +546,9 @@ export function HistoryPage() {
                       ) : (
                         <button
                           onClick={() => handleEditNotes(event.id, null)}
-                          className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                          className="app-link text-xs flex items-center gap-1.5 min-h-[44px]"
                         >
-                          <span>📝</span>
+                          <NotebookPen className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                           <span>{t('history.addNote')}</span>
                         </button>
                       )}
@@ -592,11 +565,11 @@ export function HistoryPage() {
                   <button
                     onClick={() => handleUndoClick(event)}
                     disabled={undoingId === event.id}
-                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg transition-all min-h-[44px] flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-full transition-all min-h-[44px] flex items-center justify-center gap-2"
                     style={{
                       backgroundColor: undoingId === event.id ? 'var(--bg-muted)' : 'var(--bg-secondary)',
                       border: '1px solid var(--border-medium)',
-                      color: undoingId === event.id ? 'var(--text-tertiary)' : 'var(--wine-600)',
+                      color: undoingId === event.id ? 'var(--text-tertiary)' : 'var(--accent-text)',
                       cursor: undoingId === event.id ? 'not-allowed' : 'pointer',
                     }}
                   >
@@ -610,9 +583,7 @@ export function HistoryPage() {
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
+                        <Undo2 className="w-4 h-4 rtl:-scale-x-100" strokeWidth={1.75} aria-hidden />
                         <span>{t('history.sendBackToCellar')}</span>
                       </>
                     )}
@@ -620,16 +591,15 @@ export function HistoryPage() {
                 </div>
 
                 {/* Click Indicator */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-tertiary)' }}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <div className="absolute end-3 top-6 opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-tertiary)' }} aria-hidden>
+                  <ChevronRight className="w-5 h-5 rtl:-scale-x-100" strokeWidth={1.75} />
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
+      )}
 
       {/* Rate Ritual Sheet — same rich experience as after opening a bottle */}
       {ratingTarget && (() => {
@@ -664,7 +634,7 @@ export function HistoryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[110]"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-4 z-[110]"
             role="dialog"
             aria-modal="true"
             onClick={() => setShowUndoConfirm(false)}
@@ -676,10 +646,11 @@ export function HistoryPage() {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'tween', duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="rounded-[1.5rem] w-full max-w-md overflow-hidden"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-soft)',
+                boxShadow: 'var(--shadow-modal)',
               }}
             >
               {/* Header */}
@@ -687,14 +658,8 @@ export function HistoryPage() {
                 className="px-6 py-5 border-b"
                 style={{ borderColor: 'var(--border-soft)' }}
               >
-                <h3 
-                  className="text-xl font-bold"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  {t('common.confirm')}
+                <h3 className="app-section-title">
+                  {t('common.dialogConfirmTitle')}
                 </h3>
               </div>
 
@@ -724,7 +689,7 @@ export function HistoryPage() {
               >
                 <button
                   onClick={() => setShowUndoConfirm(false)}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-colors min-h-[44px]"
                   style={{
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-medium)',
@@ -735,9 +700,9 @@ export function HistoryPage() {
                 </button>
                 <button
                   onClick={confirmUndo}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-all min-h-[44px]"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >

@@ -95,7 +95,7 @@ export function WelcomeModal({ isOpen, onShowDemo, onSkip }: WelcomeModalProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="luxury-card relative max-w-md w-full p-6 sm:p-8 shadow-xl touch-scroll safe-area-inset-bottom max-h-mobile-modal overflow-y-auto"
+            className="luxury-card relative max-w-md w-full p-6 sm:p-8 shadow-[var(--shadow-modal)] touch-scroll safe-area-inset-bottom max-h-mobile-modal overflow-y-auto"
             style={{
               WebkitOverflowScrolling: 'touch',
             }}
@@ -148,7 +148,7 @@ export function WelcomeModal({ isOpen, onShowDemo, onSkip }: WelcomeModalProps) 
               onClick={onShowDemo}
               className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg mb-3 transition-all min-h-[52px] sm:min-h-[56px]"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'var(--text-inverse)',
                 border: '1px solid var(--wine-700)',
                 boxShadow: 'var(--shadow-lg)',

@@ -297,7 +297,7 @@ export function AdminReadinessBackfill() {
                 onClick={() => resumeBackfill(progress.jobId!)}
                 className="px-4 py-2 rounded-lg font-medium transition-all"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: 'white',
                   border: '1px solid var(--wine-600)',
                 }}
@@ -311,7 +311,7 @@ export function AdminReadinessBackfill() {
               onClick={startBackfill}
               className="px-4 py-2 rounded-lg font-medium transition-all"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'white',
                 border: '1px solid var(--wine-700)',
               }}

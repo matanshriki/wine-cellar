@@ -492,16 +492,17 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 ios-modal-scroll"
+      className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 ios-modal-scroll"
       style={{
         height: '100dvh',
       }}
     >
       <div 
         ref={modalContentRef}
-        className="rounded-lg max-w-4xl w-full touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="rounded-[1.5rem] max-w-4xl w-full touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
           background: 'var(--bg-surface)',
+          boxShadow: 'var(--shadow-modal)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
@@ -513,10 +514,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
             borderBottom: '1px solid var(--border-subtle)',
           }}
         >
-          <h2 
-            className="text-xl sm:text-2xl font-bold"
-            style={{ color: 'var(--text-heading)' }}
-          >
+          <h2 className="app-display text-xl sm:text-2xl">
             {t('csvImport.title')}
           </h2>
         </div>
@@ -525,31 +523,31 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
           {step === 'upload' && (
             <div className="space-y-3 sm:space-y-4">
               <div>
-                <p className="text-sm sm:text-base text-gray-600 mb-3">
+                <p className="text-sm sm:text-base text-[var(--text-secondary)] mb-3">
                   {t('csvImport.upload.subtitle')}
                 </p>
                 
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 sm:p-4 mb-4">
-                  <h3 className="font-semibold text-sm sm:text-base text-purple-900 mb-2 flex items-center gap-2">
+                <div className="bg-[var(--wine-50)] border border-[var(--wine-200)] rounded-2xl p-3 sm:p-4 mb-4">
+                  <h3 className="font-semibold text-sm sm:text-base text-[var(--text-heading)] mb-2 flex items-center gap-2">
                     🍷 {t('csvImport.upload.vivino.title')}
                   </h3>
-                  <p className="text-xs sm:text-sm text-purple-700 mb-3">
+                  <p className="text-xs sm:text-sm text-[var(--accent-text)] mb-3">
                     {t('csvImport.upload.vivino.description')}
                   </p>
                   
                   {/* Connect Vivino - Stub with explanation */}
-                  <div className="bg-gray-100 border border-gray-300 rounded-md p-3 mb-3 opacity-75">
+                  <div className="bg-[var(--bg-muted)] border border-[var(--border-medium)] rounded-xl p-3 mb-3 opacity-75">
                     <button
                       disabled
                       className="w-full sm:w-auto btn-luxury-secondary text-sm mb-2 opacity-50 cursor-not-allowed"
                       title={t('csvImport.upload.vivino.connectUnavailable')}
                     >
-                      <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 inline-block me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
                       {t('csvImport.upload.vivino.connectButton')}
                     </button>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       <span className="font-semibold">❌ {t('csvImport.upload.vivino.whyUnavailable.title')}:</span>{' '}
                       {t('csvImport.upload.vivino.whyUnavailable.description')}
                     </p>
@@ -557,7 +555,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                   
                   <button
                     onClick={() => setShowVivinoGuide(true)}
-                    className="text-xs sm:text-sm text-purple-600 hover:text-purple-700 font-medium underline flex items-center gap-1 min-h-[44px] py-2"
+                    className="text-xs sm:text-sm text-[var(--accent-text)] hover:opacity-80 font-medium underline flex items-center gap-1 min-h-[44px] py-2"
                     style={{
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
@@ -570,31 +568,31 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 <div className="mb-4">
                   <button
                     onClick={downloadTemplate}
-                    className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-xs sm:text-sm text-[var(--accent-text)] hover:opacity-80 font-medium"
                   >
                     📥 {t('csvImport.upload.downloadTemplate')}
                   </button>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
                     {t('csvImport.upload.templateDescription')}
                   </p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                   {t('csvImport.upload.chooseFile')}
                 </label>
                 <input
                   type="file"
                   accept=".csv"
                   onChange={handleFileUpload}
-                  className="block w-full text-xs sm:text-sm text-gray-500 file:mr-3 sm:file:mr-4 file:py-2 file:px-3 sm:file:px-4 file:rounded-lg file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  className="block w-full text-xs sm:text-sm text-[var(--text-secondary)] file:me-3 sm:file:me-4 file:py-2 file:px-3 sm:file:px-4 file:rounded-full file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-[var(--wine-50)] file:text-[var(--accent-text)] hover:file:bg-[var(--wine-100)] file:min-h-[40px] file:cursor-pointer"
                 />
               </div>
 
               {csvText && (
-                <div className="p-3 sm:p-4 bg-green-50 rounded-lg">
-                  <p className="text-xs sm:text-sm text-green-800">✅ {t('csvImport.upload.fileLoaded')}</p>
+                <div className="p-3 sm:p-4 bg-[var(--color-success-light)] rounded-2xl">
+                  <p className="text-xs sm:text-sm text-[var(--text-success)]">✅ {t('csvImport.upload.fileLoaded')}</p>
                 </div>
               )}
 
@@ -616,17 +614,17 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
           {step === 'map' && (
             <div className="space-y-3 sm:space-y-4">
               {isVivino && (
-                <div className="p-3 sm:p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
+                <div className="p-3 sm:p-4 bg-[var(--wine-50)] border border-[var(--wine-200)] rounded-2xl mb-4">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <div className="text-xl sm:text-2xl flex-shrink-0">🍷</div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm sm:text-base text-purple-900 mb-1">
+                      <h3 className="font-semibold text-sm sm:text-base text-[var(--text-heading)] mb-1">
                         {t('csvImport.mapping.vivinoDetected.title')}
                       </h3>
-                      <p className="text-xs sm:text-sm text-purple-700">
+                      <p className="text-xs sm:text-sm text-[var(--accent-text)]">
                         {t('csvImport.mapping.vivinoDetected.description')}
                       </p>
-                      <p className="text-xs text-purple-600 mt-2">
+                      <p className="text-xs text-[var(--accent-text)] mt-2">
                         {t('csvImport.mapping.vivinoDetected.confidence', { percent: Math.round(vivinoConfidence * 100) })}
                       </p>
                     </div>
@@ -634,13 +632,13 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
               )}
               
-              <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+              <p className="text-sm sm:text-base text-[var(--text-secondary)] mb-3 sm:mb-4">
                 {t('csvImport.mapping.instructions')}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.name')} *
                   </label>
                   <select
@@ -658,7 +656,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.style')} *
                   </label>
                   <select
@@ -676,7 +674,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.producer')}
                   </label>
                   <select
@@ -694,7 +692,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.vintage')}
                   </label>
                   <select
@@ -712,7 +710,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.region')}
                   </label>
                   <select
@@ -730,7 +728,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.regionalWineStyle')}
                   </label>
                   <select
@@ -748,7 +746,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.country')}
                   </label>
                   <select
@@ -766,7 +764,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.grapes')}
                   </label>
                   <select
@@ -784,7 +782,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.rating')}
                   </label>
                   <select
@@ -802,7 +800,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.quantity')}
                   </label>
                   <select
@@ -820,7 +818,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     Link to Wine / Vivino URL (optional)
                   </label>
                   <select
@@ -838,7 +836,7 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     Wine Image URL (optional)
                   </label>
                   <select
@@ -857,26 +855,26 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
               </div>
 
               <div className="mt-4 sm:mt-6">
-                <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-2">
+                <h3 className="font-medium text-sm sm:text-base text-[var(--text-heading)] mb-2">
                   {t('csvImport.mapping.preview')}
                 </h3>
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle">
-                    <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-                      <thead className="bg-white border-b-2 border-gray-200">
+                    <table className="min-w-full divide-y divide-[var(--border-subtle)] text-xs sm:text-sm">
+                      <thead className="bg-[var(--bg-surface)] border-b-2 border-[var(--border-subtle)]">
                         <tr>
                           {headers.map((h) => (
-                            <th key={h} className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">
+                            <th key={h} className="px-2 sm:px-3 py-2 text-start text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap">
                               {h}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)]">
                         {rows.slice(0, 5).map((row, i) => (
                           <tr key={i}>
                             {row.map((cell, j) => (
-                              <td key={j} className="px-2 sm:px-3 py-2 whitespace-nowrap text-gray-600">
+                              <td key={j} className="px-2 sm:px-3 py-2 whitespace-nowrap text-[var(--text-secondary)]">
                                 {cell}
                               </td>
                             ))}
@@ -914,12 +912,12 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
       {/* Import Loading Overlay */}
       {importing && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] backdrop-blur-sm"
+          className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center z-[60] backdrop-blur-sm"
           style={{
             height: '100dvh',
           }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full mx-4 safe-area-inset-bottom">
+          <div className="bg-[var(--bg-surface)] rounded-[1.5rem] shadow-[var(--shadow-modal)] p-6 sm:p-8 max-w-md w-full mx-4 safe-area-inset-bottom">
             <WineLoadingAnimation
               message={importMessage}
               showProgress={true}

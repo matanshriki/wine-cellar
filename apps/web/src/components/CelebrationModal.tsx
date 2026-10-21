@@ -271,7 +271,7 @@ export function CelebrationModal({
       {/* Modal Content */}
       <div
         ref={modalRef}
-        className="relative rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom max-h-mobile-modal"
+        className="relative rounded-[1.5rem] shadow-[var(--shadow-modal)] max-w-md w-full p-6 sm:p-8 animate-fadeIn touch-scroll safe-area-inset-bottom max-h-mobile-modal"
         style={{
           background: 'var(--bg-surface)',
           overflowY: 'auto',

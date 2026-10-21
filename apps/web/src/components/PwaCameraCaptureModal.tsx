@@ -233,7 +233,7 @@ export function PwaCameraCaptureModal({
         style={{ background: '#000' }}
         role="dialog"
         aria-modal="true"
-        aria-label="Camera"
+        aria-label={t('a11y.camera')}
       >
         {/* Video Preview */}
         <video
@@ -287,9 +287,9 @@ export function PwaCameraCaptureModal({
               </p>
               <button
                 onClick={handleClose}
-                className="px-6 py-3 rounded-xl text-white font-semibold"
+                className="px-6 py-3 rounded-full text-white font-semibold"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   boxShadow: 'var(--shadow-sm)',
                 }}
               >
@@ -303,7 +303,7 @@ export function PwaCameraCaptureModal({
         {!isLoading && !error && (
           <>
             {/* Top Bar - Close Button */}
-            <div className="absolute top-0 left-0 right-0 z-10 p-4 safe-area-inset-top">
+            <div className="absolute top-0 start-0 end-0 z-10 p-4 safe-area-inset-top">
               <button
                 onClick={handleClose}
                 className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -321,7 +321,7 @@ export function PwaCameraCaptureModal({
             </div>
 
             {/* Bottom Bar - Gallery | Shutter | Flip */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 pb-8 safe-area-inset-bottom">
+            <div className="absolute bottom-0 start-0 end-0 z-10 pb-8 safe-area-inset-bottom">
               <div className="flex items-center justify-center gap-8 px-8">
                 {/* Gallery Button — always shown on the left */}
                 <label
@@ -360,7 +360,7 @@ export function PwaCameraCaptureModal({
                   <div 
                     className="w-16 h-16 rounded-full"
                     style={{
-                      background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                      background: 'var(--sommi-gradient-primary)',
                     }}
                   />
                 </motion.button>
@@ -391,7 +391,7 @@ export function PwaCameraCaptureModal({
             </div>
 
             {/* Hint Text */}
-            <div className="absolute bottom-24 left-0 right-0 z-10 px-8 text-center safe-area-inset-bottom">
+            <div className="absolute bottom-24 start-0 end-0 z-10 px-8 text-center safe-area-inset-bottom">
               <p 
                 className="text-sm font-medium"
                 style={{

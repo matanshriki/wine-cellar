@@ -696,7 +696,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
               {t('bottleForm.photo', 'Wine Photo')}
-              <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+              <span className="text-xs ms-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
                 ({t('bottleForm.optional')})
               </span>
             </label>
@@ -776,7 +776,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <div className="text-left">
+                <div className="text-start">
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                     {t('bottleForm.photoAdd', 'Add Photo')}
                   </p>
@@ -917,7 +917,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {t('bottleForm.vivinoUrl')}
-                  <span className="text-xs ml-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
+                  <span className="text-xs ms-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
                     ({t('bottleForm.optional')})
                   </span>
                 </label>
@@ -987,7 +987,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
                 <p 
                   className="text-xs mt-1"
-                  style={{ color: 'var(--color-emerald-700)' }}
+                  style={{ color: 'var(--text-success)' }}
                 >
                   ✨ {t('bottleForm.vivinoFetchHint', 'Click "Fetch Data" to auto-fill wine details and rating from Vivino')}
                 </p>
@@ -1032,7 +1032,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               </label>
               <div className="relative">
                 <span 
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-10"
+                  className="absolute start-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none z-10"
                   style={{ fontSize: '1rem' }}
                 >
                   {currencySymbol}
@@ -1042,7 +1042,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   value={formData.purchase_price}
                   onChange={(e) => handleChange('purchase_price', e.target.value)}
                   className="input-luxury w-full"
-                  style={{ paddingLeft: '2.5rem' }}
+                  style={{ paddingInlineStart: '2.5rem' }}
                   placeholder={t('bottleForm.purchasePricePlaceholder', { currencySymbol })}
                   min="0"
                   step="0.01"

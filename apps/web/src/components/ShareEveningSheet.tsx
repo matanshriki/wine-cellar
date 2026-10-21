@@ -164,7 +164,7 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[120]"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'var(--bg-overlay)', backdropFilter: 'blur(4px)' }}
             onClick={onClose}
           />
 
@@ -174,11 +174,11 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-0 left-0 right-0 z-[121] rounded-t-3xl overflow-hidden"
+            className="fixed bottom-0 start-0 end-0 z-[121] rounded-t-3xl overflow-hidden"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              boxShadow: 'var(--shadow-xl)',
+              boxShadow: 'var(--shadow-modal)',
               paddingBottom: 'max(1.5rem, var(--safe-bottom))',
               maxHeight: '90dvh',
             }}
@@ -203,9 +203,8 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
                   </div>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ml-3"
-                    style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-tertiary)' }}
-                    aria-label="Close"
+                    className="app-icon-btn flex-shrink-0 ms-3"
+                    aria-label={t('common.close')}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -244,7 +243,7 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
                         style={{
                           background: copied
                             ? 'linear-gradient(135deg, #16a34a, #15803d)'
-                            : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                            : 'var(--sommi-gradient-primary)',
                           color: '#fff',
                         }}
                       >

@@ -95,11 +95,11 @@ export function DuplicateBottleModal({
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md rounded-2xl overflow-hidden"
+          className="relative w-full max-w-md rounded-[1.5rem] overflow-hidden"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-xl)',
+            boxShadow: 'var(--shadow-modal)',
             maxHeight: '90vh',
           }}
         >
@@ -213,6 +213,7 @@ export function DuplicateBottleModal({
               <div className="flex items-center gap-4">
                 {/* Decrement Button */}
                 <button
+                  aria-label={t('common.decrease')}
                   onClick={handleDecrement}
                   disabled={quantityToAdd <= 1}
                   className="w-12 h-12 rounded-xl flex items-center justify-center transition-all"
@@ -247,7 +248,7 @@ export function DuplicateBottleModal({
                   disabled={quantityToAdd >= 99}
                   className="w-12 h-12 rounded-xl flex items-center justify-center transition-all"
                   style={{
-                    background: quantityToAdd >= 99 ? 'var(--bg-surface-elevated)' : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: quantityToAdd >= 99 ? 'var(--bg-surface-elevated)' : 'var(--sommi-gradient-primary)',
                     border: '1px solid var(--wine-700)',
                     color: 'white',
                     cursor: quantityToAdd >= 99 ? 'not-allowed' : 'pointer',

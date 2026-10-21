@@ -128,9 +128,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                   </div>
                   {displayImage.isGenerated && (
                     <div
-                      className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 z-10"
+                      className="absolute top-1 start-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 z-10"
                       style={{ background: 'rgba(0, 0, 0, 0.7)', color: 'white', backdropFilter: 'blur(4px)' }}
-                      title="AI-generated label art"
+                      title={t('a11y.aiLabelArt')}
                     >
                       <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
@@ -290,7 +290,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                     alignItems: 'center',
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  aria-label="View on Vivino"
+                  aria-label={t('a11y.viewOnVivino')}
                 >
                   Vivino
                 </a>
@@ -360,10 +360,10 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span 
-              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2"
+              className="px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
               style={{
                 backgroundColor: 'var(--wine-50)',
-                color: 'var(--wine-700)',
+                color: 'var(--accent-text)',
                 border: '1px solid var(--wine-200)',
               }}
             >
@@ -402,10 +402,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
               }
             }}
             disabled={isDemo}
-            className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
-            style={{
-              backgroundColor: 'transparent',
-            }}
+            className="app-icon-btn disabled:opacity-50"
             aria-label={t('cellar.sommelier.refresh', 'Refresh analysis')}
             title={t('cellar.sommelier.refresh', 'Refresh analysis')}
           >
@@ -431,18 +428,16 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           }}
           disabled={isDemo}
           title={isDemo ? t('onboarding.demoRecommendation.demoOnly') : undefined}
-          className="w-full mb-3 py-3 px-4 text-sm md:text-base font-medium rounded-lg md:rounded-xl transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
+          className="w-full mb-3 py-3 px-4 text-sm md:text-base font-semibold rounded-full transition-all min-h-[44px] md:min-h-[48px] group analyze-button-hover"
           style={{
             backgroundColor: isDemo ? 'var(--bg-muted)' : 'var(--bg-subtle)',
-            color: isDemo ? 'var(--text-tertiary)' : 'var(--wine-700)',
-            border: '1px solid var(--border-base)',
-            boxShadow: 'var(--shadow-xs)',
+            color: isDemo ? 'var(--text-tertiary)' : 'var(--accent-text)',
+            border: '1px solid var(--border-medium)',
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
             cursor: isDemo ? 'not-allowed' : 'pointer',
             opacity: isDemo ? 0.6 : 1,
           }}
-          aria-label="Generate sommelier notes"
         >
           <div className="flex items-center justify-center gap-2">
             <svg 
@@ -473,15 +468,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 onMarkOpened();
               }
             }}
-            className="w-full py-2.5 px-4 md:py-3 md:px-5 text-sm md:text-base font-semibold rounded-lg transition-all min-h-[44px] group mark-opened-hover"
+            className="w-full py-2.5 px-4 md:py-3 md:px-5 text-sm md:text-base font-semibold rounded-full transition-all min-h-[44px] md:min-h-[48px] group mark-opened-hover"
             style={{
-              background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-              color: 'var(--text-inverse)',
-              boxShadow: 'var(--shadow-sm)',
+              background: 'var(--sommi-gradient-primary)',
+              color: '#fff',
+              boxShadow: '0 8px 20px -10px rgba(107, 31, 47, 0.6)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
-            aria-label="Mark bottle as opened"
           >
             <div className="flex items-center justify-center gap-2">
               <span className="text-base md:text-lg">🍷</span>
@@ -500,16 +494,15 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 onShowDetails();
               }
             }}
-            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] flex items-center justify-center gap-1 details-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-semibold rounded-full transition-all min-h-[44px] flex items-center justify-center gap-1 details-button-hover"
             style={{
               backgroundColor: 'var(--wine-50)',
-              color: 'var(--wine-700)',
+              color: 'var(--accent-text)',
               border: '1px solid var(--wine-200)',
-              boxShadow: 'var(--shadow-xs)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
-            aria-label="View bottle details"
+            aria-label={t('cellar.bottle.details')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -524,16 +517,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
               e.stopPropagation();
               onEdit();
             }}
-            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] edit-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-semibold rounded-full transition-all min-h-[44px] edit-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border-base)',
-              boxShadow: 'var(--shadow-xs)',
+              border: '1px solid var(--border-medium)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
-            aria-label="Edit bottle"
           >
             {t('cellar.bottle.edit')}
           </button>
@@ -549,16 +540,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 onDelete();
               }
             }}
-            className="py-2 px-2 text-xs md:text-sm font-medium rounded-lg transition-all min-h-[40px] delete-button-hover"
+            className="py-2 px-2 text-xs md:text-sm font-semibold rounded-full transition-all min-h-[44px] delete-button-hover"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--color-error)',
-              border: '1px solid var(--border-base)',
-              boxShadow: 'var(--shadow-xs)',
+              border: '1px solid var(--border-medium)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
-            aria-label="Delete bottle"
           >
             {t('cellar.bottle.delete')}
           </button>
@@ -591,8 +580,8 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         @media (hover: hover) and (pointer: fine) {
           /* Card hover effect */
           .luxury-card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-card-hover);
           }
           
           /* Wine image zoom on card hover */
@@ -618,7 +607,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           /* Mark opened button hover */
           .mark-opened-hover:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(164, 77, 90, 0.3);
+            box-shadow: 0 12px 28px -10px rgba(107, 31, 47, 0.6);
           }
           
           /* Details button hover */
@@ -637,7 +626,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           
           /* Delete button hover */
           .delete-button-hover:hover {
-            background-color: rgba(239, 68, 68, 0.1);
+            background-color: var(--bg-error-subtle);
             border-color: var(--color-error);
             transform: translateY(-1px);
           }

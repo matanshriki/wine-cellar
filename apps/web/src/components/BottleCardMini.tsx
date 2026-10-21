@@ -25,23 +25,23 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
     const badges: Record<string, { text: string; color: string; bg: string }> = {
       ready: {
         text: t('cellar.readiness.ready', 'Ready'),
-        color: 'var(--color-emerald-700)',
-        bg: 'var(--color-emerald-50)',
+        color: 'var(--text-success)',
+        bg: 'var(--color-success-light)',
       },
       peak: {
         text: t('cellar.readiness.peak', 'Peak'),
-        color: 'var(--gold-700)',
-        bg: 'var(--gold-50)',
+        color: 'var(--text-warning)',
+        bg: 'var(--color-warning-light)',
       },
       aging: {
         text: t('cellar.readiness.aging', 'Hold'),
-        color: 'var(--wine-700)',
+        color: 'var(--accent-text)',
         bg: 'var(--wine-50)',
       },
       drink_soon: {
         text: t('cellar.readiness.drinkSoon', 'Drink Soon'),
-        color: 'var(--color-rose-700)',
-        bg: 'var(--color-rose-50)',
+        color: 'var(--text-error)',
+        bg: 'var(--color-error-light)',
       },
     };
 
@@ -52,7 +52,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
       <span
         style={{
           padding: '4px 10px',
-          borderRadius: '6px',
+          borderRadius: '999px',
           fontSize: '11px',
           fontWeight: 600,
           backgroundColor: badge.bg,
@@ -72,7 +72,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
       transition={{ delay: index * 0.08, duration: 0.3 }}
       onClick={onClick}
       style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--bg-surface)',
         borderRadius: '16px',
         border: '1px solid var(--border-light)',
         overflow: 'hidden',
@@ -154,6 +154,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
             margin: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            unicodeBidi: 'plaintext',
             display: '-webkit-box',
             WebkitLineClamp: 1,
             WebkitBoxOrient: 'vertical',
@@ -171,20 +172,23 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
             margin: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            unicodeBidi: 'plaintext',
             whiteSpace: 'nowrap',
           }}
         >
           {bottle.producer}
           {bottle.vintage && (
-            <span
-              style={{
-                fontWeight: 600,
-                marginLeft: '6px',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {bottle.vintage}
-            </span>
+            <>
+              {' '}
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {bottle.vintage}
+              </span>
+            </>
           )}
         </p>
 
@@ -231,6 +235,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
               paddingTop: '8px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              unicodeBidi: 'plaintext',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',

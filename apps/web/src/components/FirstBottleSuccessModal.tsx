@@ -83,7 +83,7 @@ export function FirstBottleSuccessModal({
               damping: 20,
               stiffness: 300,
             }}
-            className="luxury-card relative max-w-md w-full p-6 sm:p-8 shadow-xl text-center"
+            className="luxury-card relative max-w-md w-full p-6 sm:p-8 shadow-[var(--shadow-modal)] text-center"
           >
             {/* Success icon with animation */}
             <motion.div
@@ -97,7 +97,7 @@ export function FirstBottleSuccessModal({
               }}
               className="mx-auto w-20 h-20 rounded-full mb-6 flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                background: 'var(--sommi-gradient-primary)',
                 boxShadow: '0 8px 24px rgba(139, 21, 56, 0.3)',
               }}
             >
@@ -149,7 +149,7 @@ export function FirstBottleSuccessModal({
               onClick={onClose}
               className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-all min-h-[52px] sm:min-h-[56px]"
               style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                background: 'var(--sommi-gradient-primary)',
                 color: 'var(--text-inverse)',
                 border: '1px solid var(--wine-700)',
                 boxShadow: 'var(--shadow-lg)',

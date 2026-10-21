@@ -211,30 +211,10 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
   };
 
   const styles = {
-    success: {
-      bg: 'var(--color-success-light)',
-      border: 'var(--color-success)',
-      text: 'var(--color-success)',
-      progressBg: 'var(--color-success)',
-    },
-    error: {
-      bg: 'var(--color-error-light)',
-      border: 'var(--color-error)',
-      text: 'var(--color-error)',
-      progressBg: 'var(--color-error)',
-    },
-    warning: {
-      bg: 'var(--color-warning-light)',
-      border: '#9d7b23',
-      text: '#9d7b23',
-      progressBg: 'var(--color-gold-500)',
-    },
-    info: {
-      bg: 'var(--color-info-light)',
-      border: 'var(--color-info)',
-      text: 'var(--color-info)',
-      progressBg: 'var(--color-info)',
-    },
+    success: { accent: 'var(--color-success)', tint: 'var(--color-success-light)' },
+    error: { accent: 'var(--color-error)', tint: 'var(--color-error-light)' },
+    warning: { accent: 'var(--text-warning)', tint: 'var(--color-warning-light)' },
+    info: { accent: 'var(--accent-text)', tint: 'var(--wine-50)' },
   };
 
   const style = styles[toast.type];
@@ -250,37 +230,37 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
       aria-live="assertive"
     >
       <div
-        className="relative overflow-hidden rounded-xl shadow-xl backdrop-blur-sm"
+        className="relative overflow-hidden rounded-2xl"
         style={{
-          backgroundColor: style.bg,
-          borderLeft: isRTL ? 'none' : `4px solid ${style.border}`,
-          borderRight: isRTL ? `4px solid ${style.border}` : 'none',
+          background: 'var(--bg-surface-elevated)',
+          border: '1px solid var(--border-subtle)',
+          borderInlineStart: `4px solid ${style.accent}`,
+          boxShadow: 'var(--shadow-dropdown)',
         }}
       >
-        <div className="p-4 flex items-start gap-3">
-          <div style={{ color: style.text }} className="flex-shrink-0 mt-0.5">
+        <div className="p-3.5 sm:p-4 flex items-start gap-3">
+          <div
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full"
+            style={{ color: style.accent, background: style.tint }}
+          >
             {icons[toast.type]}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pt-1.5">
             {toast.title && (
-              <h4
-                className="font-semibold text-sm mb-1"
-                style={{ color: style.text }}
-              >
+              <h4 className="font-semibold text-sm mb-1" style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-body)', letterSpacing: 0 }}>
                 {toast.title}
               </h4>
             )}
-            <p className="text-sm" style={{ color: 'var(--color-stone-800)' }}>
+            <p className="text-sm leading-snug" style={{ color: 'var(--text-primary)' }}>
               {toast.message}
             </p>
           </div>
 
           <button
             onClick={() => onRemove(toast.id)}
-            className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 transition-colors"
+            className="app-icon-btn flex-shrink-0 !min-w-[36px] !min-h-[36px] -me-1.5 -mt-1"
             aria-label={t('common.close')}
-            style={{ color: style.text }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -296,8 +276,8 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
         {/* Progress bar */}
         {toast.duration && (
           <motion.div
-            className="h-1"
-            style={{ backgroundColor: style.progressBg, opacity: 0.3 }}
+            className="h-[3px]"
+            style={{ backgroundColor: style.accent, opacity: 0.35 }}
             initial={{ width: '100%' }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.1, ease: 'linear' }}

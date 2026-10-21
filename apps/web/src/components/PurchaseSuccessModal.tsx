@@ -36,7 +36,7 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            style={{ background: 'rgba(5,4,14,0.85)', backdropFilter: 'blur(12px)' }}
+            style={{ background: 'rgba(23,13,17,0.85)', backdropFilter: 'blur(12px)' }}
           />
 
           {/* Card */}
@@ -52,7 +52,7 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
             <div
               className="relative w-full max-w-sm overflow-hidden rounded-3xl border p-8 text-center"
               style={{
-                background: 'linear-gradient(160deg, #16142a 0%, #0e0c1b 100%)',
+                background: 'linear-gradient(160deg, #2a171d 0%, #170d11 100%)',
                 borderColor: 'rgba(255,255,255,0.08)',
                 boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
               }}
@@ -60,7 +60,7 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
               {/* Ambient glow */}
               <div
                 className="pointer-events-none absolute -top-16 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full opacity-40"
-                style={{ background: 'radial-gradient(ellipse, #F59E0B 0%, transparent 70%)' }}
+                style={{ background: 'radial-gradient(ellipse, #f0cd6a 0%, transparent 70%)' }}
               />
 
               {/* Icon */}
@@ -68,9 +68,9 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
                 <div
                   className="flex h-20 w-20 items-center justify-center rounded-full text-4xl"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(217,119,6,0.1) 100%)',
-                    border: '1px solid rgba(245,158,11,0.3)',
-                    boxShadow: '0 0 24px rgba(245,158,11,0.25)',
+                    background: 'linear-gradient(135deg, rgba(217,169,58,0.2) 0%, rgba(185,140,40,0.1) 100%)',
+                    border: '1px solid rgba(217,169,58,0.3)',
+                    boxShadow: '0 0 24px rgba(217,169,58,0.25)',
                   }}
                 >
                   ✦
@@ -92,13 +92,13 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
               <div
                 className="mx-auto mb-6 inline-flex flex-col items-center rounded-2xl px-8 py-4"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(217,119,6,0.06) 100%)',
-                  border: '1px solid rgba(245,158,11,0.2)',
+                  background: 'linear-gradient(135deg, rgba(217,169,58,0.12) 0%, rgba(185,140,40,0.06) 100%)',
+                  border: '1px solid rgba(217,169,58,0.2)',
                 }}
               >
                 <span
                   className="text-5xl font-bold tabular-nums"
-                  style={{ color: '#F59E0B' }}
+                  style={{ color: '#f0cd6a' }}
                 >
                   +{credits}
                 </span>
@@ -118,10 +118,10 @@ export function PurchaseSuccessModal({ open, credits, price, newBalance, onClose
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full rounded-xl py-3 text-sm font-semibold tracking-wide text-white transition-all active:scale-[0.97]"
+                className="w-full rounded-full py-3 min-h-[48px] text-sm font-semibold tracking-wide text-[#2d1810] transition-all active:scale-[0.97]"
                 style={{
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                  boxShadow: '0 4px 16px rgba(245,158,11,0.35)',
+                  background: 'linear-gradient(135deg, #f0cd6a 0%, #d9a93a 100%)',
+                  boxShadow: '0 4px 16px rgba(217,169,58,0.35)',
                 }}
               >
                 {t('purchaseSuccess.cta')}

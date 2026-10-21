@@ -19,7 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { languages, changeLanguage, type LanguageCode } from '../i18n/config';
 import { trackLocalization } from '../services/analytics';
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' | 'pill' } = {}) {
+  const isPill = variant === 'pill';
   // Get i18n utilities
   const { i18n, t } = useTranslation();
   
@@ -80,9 +81,13 @@ export function LanguageSwitcher() {
        */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        className={
+          isPill
+            ? 'flex items-center gap-1.5 px-3 rounded-full transition-colors hover:bg-[var(--interactive-hover)]'
+            : 'flex items-center gap-1.5 px-2.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+        }
         style={{
-          height: '36px',
+          height: isPill ? '40px' : '36px',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
         }}
@@ -134,7 +139,7 @@ export function LanguageSwitcher() {
        */}
       {isOpen && (
         <div
-          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 sm:w-56 rounded-lg py-1 z-50 animate-fadeIn"
+          className={`absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 sm:w-56 py-1 z-50 animate-fadeIn ${isPill ? 'rounded-2xl overflow-hidden' : 'rounded-lg'}`}
           style={{
             background: 'var(--bg-dropdown)',
             boxShadow: 'var(--shadow-dropdown)',

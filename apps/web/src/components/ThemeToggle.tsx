@@ -6,6 +6,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useWinePour } from './WinePourTransition';
 
@@ -15,6 +16,7 @@ import { useWinePour } from './WinePourTransition';
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <div className="inline-flex rounded-full p-1" style={{
@@ -24,14 +26,14 @@ export function ThemeToggle() {
       {/* White Theme Button */}
       <motion.button
         onClick={() => setTheme('white')}
-        className="relative px-6 py-2 rounded-full text-sm font-medium transition-colors"
+        className="relative px-5 min-h-[40px] rounded-full text-sm font-semibold transition-colors"
         style={{
           background: theme === 'white' ? 'var(--bg-surface)' : 'transparent',
-          color: theme === 'white' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: theme === 'white' ? 'var(--shadow-sm)' : 'none',
+          color: theme === 'white' ? 'var(--text-heading)' : 'var(--text-secondary)',
+          boxShadow: theme === 'white' ? 'var(--shadow-card)' : 'none',
         }}
         whileTap={{ scale: 0.95 }}
-        aria-label="White theme (light mode)"
+        aria-pressed={theme === 'white'}
       >
         {/* Sun icon */}
         <div className="flex items-center gap-2">
@@ -46,28 +48,28 @@ export function ThemeToggle() {
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
-          <span>White</span>
+          <span>{t('profile.theme.light')}</span>
         </div>
       </motion.button>
 
       {/* Red Theme Button */}
       <motion.button
         onClick={() => setTheme('red')}
-        className="relative px-6 py-2 rounded-full text-sm font-medium transition-colors"
+        className="relative px-5 min-h-[40px] rounded-full text-sm font-semibold transition-colors"
         style={{
           background: theme === 'red' ? 'var(--bg-surface)' : 'transparent',
-          color: theme === 'red' ? 'var(--text-primary)' : 'var(--text-secondary)',
-          boxShadow: theme === 'red' ? 'var(--shadow-sm)' : 'none',
+          color: theme === 'red' ? 'var(--text-heading)' : 'var(--text-secondary)',
+          boxShadow: theme === 'red' ? 'var(--shadow-card)' : 'none',
         }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Red theme (luxury dark mode)"
+        aria-pressed={theme === 'red'}
       >
         {/* Moon icon */}
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
-          <span>Red</span>
+          <span>{t('profile.theme.dark')}</span>
         </div>
       </motion.button>
     </div>
@@ -81,12 +83,10 @@ export function ThemeToggle() {
 export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme();
   const winePour = useWinePour();
+  const { t } = useTranslation();
 
   const handleClick = () => {
     const newTheme = theme === 'white' ? 'red' : 'white';
-    console.log('[CompactThemeToggle] ===== BUTTON CLICKED =====');
-    console.log('[CompactThemeToggle] Current theme:', theme);
-    console.log('[CompactThemeToggle] Switching to:', newTheme);
 
     if (winePour) {
       winePour.triggerPour(newTheme, () => setTheme(newTheme));
@@ -98,16 +98,16 @@ export function CompactThemeToggle() {
   return (
     <motion.button
       onClick={handleClick}
-      className="relative flex items-center justify-center rounded-xl"
+      className="relative flex items-center justify-center rounded-full transition-colors hover:bg-[var(--interactive-hover)]"
       style={{
-        width: '36px',
-        height: '36px',
+        width: '40px',
+        height: '40px',
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         color: 'var(--text-secondary)',
       }}
       whileTap={{ scale: 0.9 }}
-      aria-label={`Switch to ${theme === 'white' ? 'red' : 'white'} theme`}
+      aria-label={theme === 'white' ? t('profile.theme.switchToDark') : t('profile.theme.switchToLight')}
     >
       {theme === 'white' ? (
         // Moon icon for white mode (click to go red/dark)

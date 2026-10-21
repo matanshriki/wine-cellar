@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/SupabaseAuthContext';
 // import { useTheme } from '../contexts/ThemeContext'; // Dark mode disabled
 import { toast } from '../lib/toast';
 import { WineLoader } from '../components/WineLoader';
+import { PageHeader } from '../components/ui/PageHeader';
 import * as profileService from '../services/profileService';
 import { AvatarUpload } from '../components/AvatarUpload';
 // import { ThemeToggle } from '../components/ThemeToggle'; // Dark mode disabled
@@ -120,15 +121,20 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('profile.title')}</h1>
-        <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{t('profile.subtitle')}</p>
-      </div>
+      <PageHeader eyebrow={t('profile.eyebrow')} title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
-      <div className="card">
+      <div className="app-card p-5 sm:p-7">
         {/* Avatar Section */}
         <div className="flex flex-col items-center mb-6 pb-6" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-          <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4" style={{ backgroundColor: 'var(--wine-100)', color: 'var(--wine-600)' }}>
+          <div
+            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-semibold mb-4 overflow-hidden"
+            style={{
+              background: 'var(--sommi-gradient-primary)',
+              color: '#fff',
+              fontFamily: 'var(--font-display)',
+              boxShadow: '0 0 0 3px var(--bg-surface), 0 0 0 5px rgba(201, 162, 39, 0.55)',
+            }}
+          >
             {profile.avatar_url ? (
               <img
                 src={profile.avatar_url || ''}
@@ -139,7 +145,7 @@ export function ProfilePage() {
               profile.display_name?.charAt(0).toUpperCase() || '?'
             )}
           </div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{profile.display_name}</h2>
+          <h2 className="app-display text-2xl text-center break-words">{profile.display_name}</h2>
           {profile.email && (
             <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{profile.email}</p>
           )}
@@ -265,7 +271,7 @@ export function ProfilePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 btn btn-primary"
+                className="flex-1 btn-luxury-primary"
               >
                 {loading ? t('common.saving') : t('common.save')}
               </button>
@@ -273,7 +279,7 @@ export function ProfilePage() {
                 type="button"
                 onClick={handleCancel}
                 disabled={loading}
-                className="flex-1 btn btn-secondary"
+                className="flex-1 btn-luxury-secondary"
               >
                 {t('common.cancel')}
               </button>
@@ -283,34 +289,34 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.firstName')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.firstName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.first_name || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.lastName')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.lastName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.last_name || t('profile.notProvided')}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.displayName')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.displayName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.display_name}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.email')}</h3>
-                <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.email || t('profile.notProvided')}</p>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.email')}</h3>
+                <p className="text-base break-all" style={{ color: 'var(--text-primary)' }}>{profile.email || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredLanguage')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredLanguage')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_language === 'he' ? 'עברית (Hebrew)' : 'English'}
                 </p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredCurrency')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredCurrency')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_currency === 'ILS' ? 'NIS ₪' : 'USD $'}
                 </p>
@@ -323,7 +329,7 @@ export function ProfilePage() {
               </div> */}
 
               <div>
-                <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('profile.memberSince')}</h3>
+                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.memberSince')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {new Date(profile.created_at).toLocaleDateString()}
                 </p>
@@ -333,7 +339,7 @@ export function ProfilePage() {
             <div className="pt-4">
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full btn btn-primary"
+                className="w-full btn-luxury-secondary"
               >
                 {t('profile.editProfile')}
               </button>
@@ -352,14 +358,14 @@ export function ProfilePage() {
       <WeeklySummaryCard />
 
       {/* Account Information */}
-      <div className="card mt-6">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{t('profile.accountInfo')}</h2>
+      <div className="app-card p-5 sm:p-7 mt-6">
+        <h2 className="app-section-title mb-4">{t('profile.accountInfo')}</h2>
         <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-4">
             <span style={{ color: 'var(--text-secondary)' }}>{t('profile.userId')}</span>
             <span className="font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{user?.id.slice(0, 8)}...</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-4">
             <span style={{ color: 'var(--text-secondary)' }}>{t('profile.authProvider')}</span>
             <span style={{ color: 'var(--text-primary)' }}>{user?.app_metadata?.provider || 'email'}</span>
           </div>
@@ -368,8 +374,8 @@ export function ProfilePage() {
 
       {/* Subscription */}
       {monetizationEnabled && isFreshFromDB && (
-        <div className="card mt-6">
-          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{t('profile.billing.title')}</h2>
+        <div className="app-card p-5 sm:p-7 mt-6">
+          <h2 className="app-section-title mb-4">{t('profile.billing.title')}</h2>
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('profile.billing.currentPlan')}</span>
             {planKey && planKey !== 'free' ? (
@@ -378,18 +384,18 @@ export function ProfilePage() {
                 style={
                   planKey === 'premium'
                     ? {
-                        background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(217,119,6,0.08))',
-                        color: '#F59E0B',
-                        border: '1px solid rgba(251,191,36,0.25)',
+                        background: 'var(--color-warning-light)',
+                        color: 'var(--text-warning)',
+                        border: '1px solid var(--border-warning)',
                       }
                     : {
-                        background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(109,40,217,0.08))',
-                        color: '#A78BFA',
-                        border: '1px solid rgba(167,139,250,0.25)',
+                        background: 'var(--wine-50)',
+                        color: 'var(--accent-text)',
+                        border: '1px solid var(--wine-200)',
                       }
                 }
               >
-                ✦ {planKey === 'premium' ? 'Premium' : 'Collector'}
+                ✦ <bdi>{planKey === 'premium' ? 'Premium' : 'Collector'}</bdi>
               </span>
             ) : (
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -401,12 +407,12 @@ export function ProfilePage() {
             <button
               onClick={handleManageBilling}
               disabled={portalLoading}
-              className="w-full btn btn-secondary text-sm"
+              className="w-full btn-luxury-secondary text-sm"
             >
               {portalLoading ? t('profile.billing.manageBillingLoading') : t('profile.billing.manageBilling')}
             </button>
           ) : (
-            <Link to="/upgrade" className="w-full btn btn-primary text-sm text-center block">
+            <Link to="/upgrade" className="w-full btn-luxury-primary text-sm">
               {t('profile.billing.upgradePlan')}
             </Link>
           )}

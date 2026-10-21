@@ -309,7 +309,7 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="mt-2 pl-4 border-l-2"
+                className="mt-2 ps-4 border-s-2"
                 style={{ borderColor: 'var(--wine-300)' }}
               >
                 <ul className="space-y-1.5">

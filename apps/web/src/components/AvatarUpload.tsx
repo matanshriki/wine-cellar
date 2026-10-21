@@ -263,10 +263,10 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
             <img
               src={currentAvatarUrl}
               alt="Avatar"
-              className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+              className="w-24 h-24 rounded-full object-cover border-2 border-[var(--border-subtle)]"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold border-2 border-gray-200">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--wine-500)] to-[var(--wine-700)] flex items-center justify-center text-white text-2xl font-bold border-2 border-[var(--border-subtle)]">
               {getInitials()}
             </div>
           )}
@@ -280,7 +280,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
         </div>
 
         <div className="flex-1">
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-sm text-[var(--text-secondary)] mb-2">
             {t('profile.avatar.description')}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -316,9 +316,9 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
       {/* Progress Bar */}
       {uploading && (
         <div className="w-full">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-2 bg-[var(--bg-muted-hover)] rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[var(--wine-500)] to-[var(--wine-700)] transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -326,7 +326,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
       )}
 
       {/* Helper Text */}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-[var(--text-secondary)]">
         {t('profile.avatar.requirements')}
       </p>
     </div>

@@ -7,6 +7,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../lib/toast';
@@ -324,10 +325,10 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
             <button
               onClick={handleClose}
               disabled={step === 'analyzing' || step === 'saving'}
-              className="text-2xl opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--text-primary)' }}
+              className="app-icon-btn disabled:opacity-40"
+              aria-label={t('common.close')}
             >
-              ×
+              <X className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -351,7 +352,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
                 exit={{ opacity: 0, y: -20 }}
                 className="text-center py-12 px-4"
               >
-                <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="app-section-title mb-2">
                   {t('cellar.multiBottle.uploadTitle')}
                 </h3>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
@@ -403,7 +404,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
                 className="text-center py-12"
               >
                 <WineLoader size={80} variant="default" />
-                <h3 className="text-lg font-semibold mt-6" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="app-section-title mt-6">
                   {t('cellar.multiBottle.analyzing')}
                 </h3>
                 <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
@@ -496,7 +497,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
                                     ? 'var(--color-emerald-100)' 
                                     : 'var(--color-amber-100)',
                                   color: bottle.confidence >= 0.7 
-                                    ? 'var(--color-emerald-700)' 
+                                    ? 'var(--text-success)' 
                                     : 'var(--color-amber-700)',
                                 }}
                               >
@@ -562,7 +563,7 @@ export function MultiBottleImport({ isOpen, onClose, onSuccess, existingBottles,
                 className="text-center py-12"
               >
                 <WineLoader size={80} variant="default" />
-                <h3 className="text-lg font-semibold mt-6" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="app-section-title mt-6">
                   {t('cellar.multiBottle.saving')}
                 </h3>
                 <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>

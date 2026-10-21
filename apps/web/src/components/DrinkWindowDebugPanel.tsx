@@ -142,7 +142,7 @@ export function DrinkWindowDebugPanel() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-50 p-3 rounded-full shadow-lg"
+        className="fixed bottom-20 end-4 z-50 p-3 rounded-full shadow-lg"
         style={{
           background: 'linear-gradient(135deg, #a44d5a, #d4af37)',
           color: 'white',
@@ -167,29 +167,29 @@ export function DrinkWindowDebugPanel() {
           initial={{ scale: 0.95, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.95, y: 20 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-[var(--text-heading)]">
                 🔧 Drink Window Debug Panel
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
                 Validate and debug drink window classifications (DEV ONLY)
               </p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-2xl leading-none"
             >
               ×
             </button>
           </div>
           
           {/* Actions */}
-          <div className="px-6 py-3 border-b border-gray-200 flex gap-2">
+          <div className="px-6 py-3 border-b border-[var(--border-subtle)] flex gap-2">
             <button
               onClick={validateConsistency}
               disabled={isValidating}
@@ -204,7 +204,7 @@ export function DrinkWindowDebugPanel() {
             
             <button
               onClick={loadBottles}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--bg-muted)] hover:bg-[var(--interactive-active)] transition-colors"
             >
               🔄 Refresh
             </button>
@@ -226,7 +226,7 @@ export function DrinkWindowDebugPanel() {
                   {!validationResults.valid && (
                     <ul className="mt-2 space-y-1">
                       {validationResults.issues.map((issue: any, idx: number) => (
-                        <li key={idx} className="text-xs text-gray-700">
+                        <li key={idx} className="text-xs text-[var(--text-primary)]">
                           <strong>{issue.wine}</strong> ({issue.producer}): {issue.issue}
                         </li>
                       ))}
@@ -241,7 +241,7 @@ export function DrinkWindowDebugPanel() {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-4">
               {sortedGroups.length === 0 && (
-                <p className="text-center text-gray-500 py-8">
+                <p className="text-center text-[var(--text-secondary)] py-8">
                   No wines in cellar
                 </p>
               )}
@@ -263,17 +263,17 @@ export function DrinkWindowDebugPanel() {
                     {/* Wine Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{name}</h3>
-                        <p className="text-sm text-gray-600">{producer}</p>
+                        <h3 className="font-semibold text-[var(--text-heading)]">{name}</h3>
+                        <p className="text-sm text-[var(--text-secondary)]">{producer}</p>
                         {hasIssue && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-[var(--color-error-light)] text-[var(--text-error)] text-xs rounded">
                             ⚠️ Vintage Inconsistency
                           </span>
                         )}
                       </div>
                       <button
                         onClick={() => recomputeWineGroup(wineKey)}
-                        className="px-3 py-1.5 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="px-3 py-1.5 text-xs rounded-lg bg-[var(--bg-muted)] hover:bg-[var(--interactive-active)] transition-colors"
                       >
                         🔄 Recompute
                       </button>
@@ -290,14 +290,14 @@ export function DrinkWindowDebugPanel() {
                         return (
                           <div
                             key={bottle.id}
-                            className="flex items-center gap-3 p-2 bg-white rounded border border-gray-200"
+                            className="flex items-center gap-3 p-2 bg-[var(--bg-surface)] rounded border border-[var(--border-subtle)]"
                           >
                             {/* Vintage */}
                             <div className="w-16 text-center">
                               <div className="font-mono text-sm font-semibold">
                                 {bottle.wine.vintage || 'NV'}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-[var(--text-secondary)]">
                                 {age}y
                               </div>
                             </div>
@@ -314,7 +314,7 @@ export function DrinkWindowDebugPanel() {
                                 {analysis.readiness_label || 'UNANALYZED'}
                               </div>
                               {analysis.confidence && (
-                                <span className="ml-2 text-xs text-gray-500">
+                                <span className="ms-2 text-xs text-[var(--text-secondary)]">
                                   {analysis.confidence} confidence
                                 </span>
                               )}
@@ -322,7 +322,7 @@ export function DrinkWindowDebugPanel() {
                             
                             {/* Window */}
                             {analysis.drink_window_start && analysis.drink_window_end && (
-                              <div className="text-xs text-gray-600">
+                              <div className="text-xs text-[var(--text-secondary)]">
                                 📅 {analysis.drink_window_start}-{analysis.drink_window_end}
                               </div>
                             )}
@@ -337,8 +337,8 @@ export function DrinkWindowDebugPanel() {
           </div>
           
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <p className="text-xs text-gray-600">
+          <div className="px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-muted)]">
+            <p className="text-xs text-[var(--text-secondary)]">
               💡 <strong>Tip:</strong> Vintages should follow a monotonic pattern (older vintages should never be less ready than younger ones).
               Use "Validate Consistency" to check for issues.
             </p>

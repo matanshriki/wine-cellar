@@ -19,7 +19,7 @@ interface BottleCarouselLuxuryProps {
 }
 
 export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselLuxuryProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isRTL = i18n.language === 'he';
@@ -77,7 +77,7 @@ export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselL
           <button
             onClick={goToPrevious}
             disabled={currentIndex === 0}
-            aria-label="Previous bottle"
+            aria-label={t('common.previous')}
             className="hidden md:flex"
             style={{
               position: 'absolute',
@@ -88,7 +88,7 @@ export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselL
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: 'white',
+              backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
               alignItems: 'center',
               justifyContent: 'center',
@@ -126,7 +126,7 @@ export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselL
           <button
             onClick={goToNext}
             disabled={currentIndex === bottles.length - 1}
-            aria-label="Next bottle"
+            aria-label={t('common.next')}
             className="hidden md:flex"
             style={{
               position: 'absolute',
@@ -137,7 +137,7 @@ export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselL
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: 'white',
+              backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
               alignItems: 'center',
               justifyContent: 'center',

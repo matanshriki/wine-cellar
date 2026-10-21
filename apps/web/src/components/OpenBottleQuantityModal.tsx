@@ -73,7 +73,7 @@ export function OpenBottleQuantityModal({
           role="dialog"
           aria-modal="true"
           style={{
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: 'var(--bg-overlay)',
             backdropFilter: 'blur(8px)',
           }}
           onClick={onClose}
@@ -84,7 +84,7 @@ export function OpenBottleQuantityModal({
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl p-8 shadow-2xl relative overflow-hidden"
+            className="w-full max-w-md rounded-[1.5rem] p-8 shadow-[var(--shadow-modal)] relative overflow-hidden"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-base)',
@@ -92,7 +92,7 @@ export function OpenBottleQuantityModal({
           >
             {/* Decorative gradient overlay */}
             <div 
-              className="absolute top-0 left-0 right-0 h-1"
+              className="absolute top-0 start-0 end-0 h-1"
               style={{
                 background: 'linear-gradient(90deg, var(--wine-400), var(--gold-500), var(--wine-400))',
               }}
@@ -101,13 +101,13 @@ export function OpenBottleQuantityModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              className="absolute top-4 end-4 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
               style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 color: 'rgba(255, 255, 255, 0.7)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
               }}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -172,7 +172,7 @@ export function OpenBottleQuantityModal({
                   className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                   style={{
                     background: quantity > 1 
-                      ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))' 
+                      ? 'var(--sommi-gradient-primary)' 
                       : 'var(--bg-muted)',
                     color: quantity > 1 ? 'white' : 'var(--text-tertiary)',
                     boxShadow: quantity > 1 ? '0 4px 12px rgba(164, 76, 104, 0.25)' : 'none',
@@ -228,7 +228,7 @@ export function OpenBottleQuantityModal({
                   className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                   style={{
                     background: quantity < maxQuantity
-                      ? 'linear-gradient(135deg, var(--wine-500), var(--wine-600))'
+                      ? 'var(--sommi-gradient-primary)'
                       : 'var(--bg-muted)',
                     color: quantity < maxQuantity ? 'white' : 'var(--text-tertiary)',
                     boxShadow: quantity < maxQuantity ? '0 4px 12px rgba(164, 76, 104, 0.25)' : 'none',
@@ -250,7 +250,7 @@ export function OpenBottleQuantityModal({
                 onClick={handleConfirm}
                 className="w-full py-4 px-6 rounded-xl font-semibold text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: 'white',
                   boxShadow: '0 6px 20px rgba(164, 76, 104, 0.4)',
                 }}

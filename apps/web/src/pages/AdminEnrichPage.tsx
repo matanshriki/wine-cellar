@@ -1087,17 +1087,17 @@ export const AdminEnrichPage: React.FC = () => {
       <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
         <h1>🍷 Admin enrichment</h1>
         <div style={{
-          backgroundColor: '#f8d7da',
-          border: '1px solid #f5c6cb',
+          backgroundColor: 'var(--color-error-light)',
+          border: '1px solid var(--border-error)',
           borderRadius: '8px',
           padding: '1.5rem',
           marginTop: '2rem',
-          color: '#721c24'
+          color: 'var(--text-error)'
         }}>
           <h3 style={{ marginTop: 0 }}>🚫 Access Denied</h3>
           <p>{adminError}</p>
           <p style={{ fontSize: '0.875rem', marginBottom: 0 }}>
-            <strong>Your User ID:</strong> <code style={{ backgroundColor: '#fff', padding: '2px 6px', borderRadius: '3px' }}>{user?.id}</code>
+            <strong>Your User ID:</strong> <code style={{ backgroundColor: 'var(--bg-surface)', padding: '2px 6px', borderRadius: '3px' }}>{user?.id}</code>
           </p>
           <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '1rem' }}>
             To become an admin, run this SQL in Supabase:
@@ -1127,11 +1127,11 @@ VALUES ('${user?.id}');`}
       </p>
 
       <div style={{
-        backgroundColor: '#e7f3ff',
+        backgroundColor: 'var(--color-info-light)',
         padding: '1.5rem',
         borderRadius: '8px',
         marginBottom: '2rem',
-        border: '1px solid #b8daff',
+        border: '1px solid var(--border-subtle)',
       }}>
         <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Rule-based wine metadata (grapes / style)</h2>
         <p style={{ color: '#444', fontSize: '0.9rem', marginBottom: '1rem' }}>
@@ -1199,7 +1199,7 @@ VALUES ('${user?.id}');`}
         {rulesLog.length > 0 && (
           <details style={{ marginTop: '1rem' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Server log</summary>
-            <pre style={{ fontSize: '0.72rem', maxHeight: 420, overflow: 'auto', background: '#fff', padding: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <pre style={{ fontSize: '0.72rem', maxHeight: 420, overflow: 'auto', background: 'var(--bg-surface)', padding: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {rulesLog.join('\n')}
             </pre>
           </details>
@@ -1220,7 +1220,7 @@ VALUES ('${user?.id}');`}
                 </thead>
                 <tbody>
                   {rulesNoChangeDetails.map((row, ri) => (
-                    <tr key={`${row.wine_id}-nc-${ri}`} style={{ borderBottom: '1px solid #dee2e6', background: ri % 2 ? '#fffbf0' : '#fff' }}>
+                    <tr key={`${row.wine_id}-nc-${ri}`} style={{ borderBottom: '1px solid var(--border-subtle)', background: ri % 2 ? 'var(--color-warning-light)' : 'var(--bg-surface)' }}>
                       <td style={{ padding: '0.35rem', maxWidth: 200, verticalAlign: 'top' }}>
                         <div style={{ fontWeight: 600 }}>{row.wine_name}</div>
                         <div style={{ color: '#666' }}>{row.producer}</div>
@@ -1229,7 +1229,7 @@ VALUES ('${user?.id}');`}
                       <td style={{ padding: '0.35rem', verticalAlign: 'top', maxWidth: 140 }}>
                         {(row.grapes_current ?? []).join(', ') || '(none)'}
                         {row.suspicion_flagged ? (
-                          <div style={{ color: '#721c24', marginTop: '0.25rem' }}>⚠ {row.suspicion_reasons.join('; ')}</div>
+                          <div style={{ color: 'var(--text-error)', marginTop: '0.25rem' }}>⚠ {row.suspicion_reasons.join('; ')}</div>
                         ) : null}
                       </td>
                       <td style={{ padding: '0.35rem', verticalAlign: 'top', color: '#333' }}>
@@ -1261,7 +1261,7 @@ VALUES ('${user?.id}');`}
                 </thead>
                 <tbody>
                   {rulesDetails.map((row, ri) => (
-                    <tr key={`${row.wine_id}-${ri}`} style={{ borderBottom: '1px solid #dee2e6' }}>
+                    <tr key={`${row.wine_id}-${ri}`} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       <td style={{ padding: '0.35rem', maxWidth: 180 }}>
                         <div style={{ fontWeight: 600 }}>{row.wine_name}</div>
                         <div style={{ color: '#666' }}>{row.producer}</div>
@@ -1277,11 +1277,11 @@ VALUES ('${user?.id}');`}
                       <td style={{ padding: '0.35rem' }}>
                         <span style={{ color: '#999' }}>{(row.before_grapes ?? []).join(', ') || '—'}</span>
                         {' → '}
-                        <span style={{ color: '#155724' }}>{(row.after_grapes ?? []).join(', ') || '—'}</span>
+                        <span style={{ color: 'var(--text-success)' }}>{(row.after_grapes ?? []).join(', ') || '—'}</span>
                       </td>
                       <td style={{ padding: '0.35rem', maxWidth: 280, fontSize: '0.68rem' }}>
                         {(row.suspicion_reasons ?? []).length ? (
-                          <div style={{ marginBottom: '0.35rem', color: '#721c24' }}>{row.suspicion_reasons.join('; ')}</div>
+                          <div style={{ marginBottom: '0.35rem', color: 'var(--text-error)' }}>{row.suspicion_reasons.join('; ')}</div>
                         ) : null}
                         {(row.mechanism_lines ?? []).slice(0, 2).map((l, i) => (
                           <div key={i} style={{ color: '#444' }}>{l}</div>
@@ -1297,7 +1297,7 @@ VALUES ('${user?.id}');`}
         )}
       </div>
 
-      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
 
       <h2 style={{ fontSize: '1.15rem' }}>Batch Vivino enrichment</h2>
       <p style={{ color: '#666', marginBottom: '1.5rem' }}>
@@ -1306,7 +1306,7 @@ VALUES ('${user?.id}');`}
       </p>
 
       <div style={{
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'var(--bg-muted)',
         padding: '1.5rem',
         borderRadius: '8px',
         marginBottom: '2rem',
@@ -1385,7 +1385,7 @@ VALUES ('${user?.id}');`}
 
       {isRunning && (
         <div style={{
-          backgroundColor: '#fff3cd',
+          backgroundColor: 'var(--color-warning-light)',
           padding: '1rem',
           borderRadius: '8px',
           marginBottom: '2rem',
@@ -1400,13 +1400,13 @@ VALUES ('${user?.id}');`}
 
       {progress && (
         <div style={{
-          backgroundColor: '#d4edda',
-          border: '1px solid #c3e6cb',
+          backgroundColor: 'var(--color-success-light)',
+          border: '1px solid var(--border-subtle)',
           borderRadius: '8px',
           padding: '1.5rem',
           marginBottom: '2rem',
         }}>
-          <h3 style={{ marginTop: 0, color: '#155724' }}>
+          <h3 style={{ marginTop: 0, color: 'var(--text-success)' }}>
             {isDryRun ? '🔍 Preview Results' : '✅ Enrichment Complete!'}
           </h3>
           
@@ -1421,19 +1421,19 @@ VALUES ('${user?.id}');`}
               <div style={{ fontSize: '0.875rem', color: '#666' }}>Total Wines</div>
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#28a745' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-success)' }}>
                 {progress.enriched}
               </div>
               <div style={{ fontSize: '0.875rem', color: '#666' }}>Enriched</div>
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6c757d' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
                 {progress.skipped}
               </div>
               <div style={{ fontSize: '0.875rem', color: '#666' }}>Skipped</div>
             </div>
             <div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#dc3545' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-error)' }}>
                 {progress.failed}
               </div>
               <div style={{ fontSize: '0.875rem', color: '#666' }}>Failed</div>
@@ -1492,15 +1492,15 @@ VALUES ('${user?.id}');`}
                   marginBottom: '0.75rem',
                   padding: '0.25rem 0.75rem',
                   borderRadius: '999px',
-                  border: '1px solid #dee2e6',
+                  border: '1px solid var(--border-subtle)',
                   cursor: 'pointer',
                   fontWeight: detailFilter === filter ? 'bold' : 'normal',
                   backgroundColor: detailFilter === filter
-                    ? (filter === 'enriched' ? '#d4edda' : filter === 'skipped' ? '#e2e3e5' : filter === 'failed' ? '#f8d7da' : '#343a40')
-                    : '#fff',
+                    ? (filter === 'enriched' ? 'var(--color-success-light)' : filter === 'skipped' ? 'var(--bg-muted)' : filter === 'failed' ? 'var(--color-error-light)' : '#343a40')
+                    : 'var(--bg-surface)',
                   color: detailFilter === filter
-                    ? (filter === 'enriched' ? '#155724' : filter === 'skipped' ? '#383d41' : filter === 'failed' ? '#721c24' : '#fff')
-                    : '#495057',
+                    ? (filter === 'enriched' ? 'var(--text-success)' : filter === 'skipped' ? 'var(--text-secondary)' : filter === 'failed' ? 'var(--text-error)' : '#fff')
+                    : 'var(--text-primary)',
                 }}
               >
                 {filter === 'all' ? '🔢' : filter === 'enriched' ? '✅' : filter === 'skipped' ? '⏭' : '❌'}{' '}
@@ -1523,14 +1523,14 @@ VALUES ('${user?.id}');`}
                   .filter(row => detailFilter === 'all' || row.status === detailFilter)
                   .map((row, i) => {
                     const statusIcon = row.status === 'enriched' ? '✅' : row.status === 'failed' ? '❌' : '⏭';
-                    const rowBg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                    const rowBg = i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-muted)';
                     const info = row.status === 'enriched'
-                      ? <span style={{ color: '#28a745' }}>Updated: {row.fields_updated?.join(', ') ?? '—'}</span>
+                      ? <span style={{ color: 'var(--text-success)' }}>Updated: {row.fields_updated?.join(', ') ?? '—'}</span>
                       : row.status === 'failed'
-                      ? <span style={{ color: '#dc3545' }}>{row.error}</span>
-                      : <span style={{ color: '#6c757d' }}>{row.skip_reason}</span>;
+                      ? <span style={{ color: 'var(--text-error)' }}>{row.error}</span>
+                      : <span style={{ color: 'var(--text-secondary)' }}>{row.skip_reason}</span>;
                     return (
-                      <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid #dee2e6' }}>
+                      <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid var(--border-subtle)' }}>
                         <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{statusIcon} {row.status}</td>
                         <td style={{ padding: '0.4rem 0.75rem', fontWeight: 500 }}>{row.wine_name}</td>
                         <td style={{ padding: '0.4rem 0.75rem' }}>{row.producer || '—'}</td>
@@ -1544,7 +1544,7 @@ VALUES ('${user?.id}');`}
                         </td>
                         <td style={{ padding: '0.4rem 0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {row.vivino_url
-                            ? <a href={row.vivino_url} target="_blank" rel="noreferrer" style={{ color: '#007bff' }} title={row.vivino_url}>
+                            ? <a href={row.vivino_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)' }} title={row.vivino_url}>
                                 {row.vivino_url.replace('https://www.vivino.com', '…')}
                               </a>
                             : <span style={{ color: '#999' }}>—</span>
@@ -1561,7 +1561,7 @@ VALUES ('${user?.id}');`}
       )}
 
       <div style={{
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'var(--bg-muted)',
         padding: '1rem',
         borderRadius: '8px',
         fontSize: '0.875rem',
@@ -1582,14 +1582,14 @@ VALUES ('${user?.id}');`}
           </li>
           <li>~1 second delay between each Vivino fetch inside a chunk (stays within edge time limits)</li>
         </ul>
-        <p style={{ fontSize: '0.875rem', color: '#856404', backgroundColor: '#fff3cd', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-warning)', backgroundColor: 'var(--color-warning-light)', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
           <strong>💡 Tip:</strong> This only enriches wines with existing Vivino URLs. 
           Use the "Fetch Data" button in the bottle form to add Vivino URLs first.
         </p>
       </div>
 
       {/* ── Find Missing Vivino IDs ──────────────────────────────────────────── */}
-      <hr style={{ margin: '2rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '2rem 0', borderColor: 'var(--border-subtle)' }} />
       <h2 style={{ fontSize: '1.15rem' }}>Find Missing Vivino IDs</h2>
       <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
         For wines that have no <code>vivino_wine_id</code> yet (e.g. added before auto-match, or with a
@@ -1598,7 +1598,7 @@ VALUES ('${user?.id}');`}
         Run the SQL migration first to handle easy cases automatically, then use this for the rest.
       </p>
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '0' }}>
           <input
             type="checkbox"
@@ -1633,8 +1633,8 @@ VALUES ('${user?.id}');`}
 
       {(missingIdsRunning || missingIdsDone) && (
         <div style={{
-          backgroundColor: missingIdsDone ? '#d4edda' : '#fff3cd',
-          border: `1px solid ${missingIdsDone ? '#c3e6cb' : '#ffc107'}`,
+          backgroundColor: missingIdsDone ? 'var(--color-success-light)' : 'var(--color-warning-light)',
+          border: `1px solid ${missingIdsDone ? 'var(--border-subtle)' : 'var(--border-warning)'}`,
           borderRadius: '8px',
           padding: '1rem',
           marginBottom: '1rem',
@@ -1642,11 +1642,11 @@ VALUES ('${user?.id}');`}
           <strong>{missingIdsDone ? '✅ Complete!' : '⏳ In progress…'}</strong>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginTop: '0.75rem' }}>
             {[
-              { label: 'Pages',     value: missingIdsTotals.pages,     color: '#495057' },
-              { label: 'Processed', value: missingIdsTotals.processed,  color: '#495057' },
-              { label: 'Found',     value: missingIdsTotals.enriched,   color: '#28a745' },
-              { label: 'Skipped',   value: missingIdsTotals.skipped,    color: '#6c757d' },
-              { label: 'Failed',    value: missingIdsTotals.failed,     color: '#dc3545' },
+              { label: 'Pages',     value: missingIdsTotals.pages,     color: 'var(--text-primary)' },
+              { label: 'Processed', value: missingIdsTotals.processed,  color: 'var(--text-primary)' },
+              { label: 'Found',     value: missingIdsTotals.enriched,   color: 'var(--text-success)' },
+              { label: 'Skipped',   value: missingIdsTotals.skipped,    color: 'var(--text-secondary)' },
+              { label: 'Failed',    value: missingIdsTotals.failed,     color: 'var(--text-error)' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>{value}</div>
@@ -1668,7 +1668,7 @@ VALUES ('${user?.id}');`}
       )}
 
       {/* ── Fetch Vivino Images ──────────────────────────────────────────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>🖼️ Fetch Vivino Images</h1>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
@@ -1678,7 +1678,7 @@ VALUES ('${user?.id}');`}
         Runs in small chunks to avoid timeouts.
       </p>
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
         <h3 style={{ marginTop: 0 }}>Settings</h3>
         <label style={{ display: 'block', marginBottom: '0' }}>
           <strong>Wines per chunk:</strong>
@@ -1720,8 +1720,8 @@ VALUES ('${user?.id}');`}
       {/* Image enrich totals */}
       {(imageRunning || imageDone) && (
         <div style={{
-          backgroundColor: imageDone ? '#d4edda' : '#fff3cd',
-          border: `1px solid ${imageDone ? '#c3e6cb' : '#ffc107'}`,
+          backgroundColor: imageDone ? 'var(--color-success-light)' : 'var(--color-warning-light)',
+          border: `1px solid ${imageDone ? 'var(--border-subtle)' : 'var(--border-warning)'}`,
           borderRadius: '8px',
           padding: '1.5rem',
           marginBottom: '1.5rem',
@@ -1729,11 +1729,11 @@ VALUES ('${user?.id}');`}
           <h3 style={{ marginTop: 0 }}>{imageDone ? '✅ Complete!' : '⏳ In progress…'}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
             {[
-              { label: 'Chunks',    value: imageTotals.pages,     color: '#495057' },
-              { label: 'Processed', value: imageTotals.processed,  color: '#495057' },
-              { label: 'Uploaded',  value: imageTotals.uploaded,   color: '#28a745' },
-              { label: 'Skipped',   value: imageTotals.skipped,    color: '#6c757d' },
-              { label: 'Failed',    value: imageTotals.failed,     color: '#dc3545' },
+              { label: 'Chunks',    value: imageTotals.pages,     color: 'var(--text-primary)' },
+              { label: 'Processed', value: imageTotals.processed,  color: 'var(--text-primary)' },
+              { label: 'Uploaded',  value: imageTotals.uploaded,   color: 'var(--text-success)' },
+              { label: 'Skipped',   value: imageTotals.skipped,    color: 'var(--text-secondary)' },
+              { label: 'Failed',    value: imageTotals.failed,     color: 'var(--text-error)' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
@@ -1782,14 +1782,14 @@ VALUES ('${user?.id}');`}
               <tbody>
                 {imageDetails.map((row, i) => {
                   const statusIcon = row.status === 'uploaded' ? '✅' : row.status === 'failed' ? '❌' : '⏭';
-                  const rowBg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                  const rowBg = i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-muted)';
                   const info = row.status === 'uploaded'
-                    ? <a href={row.image_url!} target="_blank" rel="noreferrer" style={{ color: '#007bff', wordBreak: 'break-all' }}>View image</a>
+                    ? <a href={row.image_url!} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)', wordBreak: 'break-all' }}>View image</a>
                     : row.status === 'failed'
-                    ? <span style={{ color: '#dc3545' }}>{row.error}</span>
-                    : <span style={{ color: '#6c757d' }}>{row.skip_reason}</span>;
+                    ? <span style={{ color: 'var(--text-error)' }}>{row.error}</span>
+                    : <span style={{ color: 'var(--text-secondary)' }}>{row.skip_reason}</span>;
                   return (
-                    <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid #dee2e6' }}>
+                    <tr key={row.wine_id} style={{ backgroundColor: rowBg, borderBottom: '1px solid var(--border-subtle)' }}>
                       <td style={{ padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}>{statusIcon} {row.status}</td>
                       <td style={{ padding: '0.4rem 0.75rem' }}>{row.wine_name}</td>
                       <td style={{ padding: '0.4rem 0.75rem' }}>{row.producer ?? '—'}</td>
@@ -1805,7 +1805,7 @@ VALUES ('${user?.id}');`}
         </div>
       )}
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '1rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '1rem' }}>
         <h4 style={{ marginTop: 0 }}>ℹ️ How it works</h4>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li>Finds wines with a Vivino URL that have <strong>no image at all</strong> (image_path, label_image_path, and image_url all null)</li>
@@ -1818,7 +1818,7 @@ VALUES ('${user?.id}');`}
       </div>
 
       {/* ── Analyze All Cellars ─────────────────────────────────────────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>🤖 Analyze All Cellars (AI Sommelier)</h1>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
@@ -1826,7 +1826,7 @@ VALUES ('${user?.id}');`}
         Processes in pages — you can leave this running; progress is logged below.
       </p>
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
         <h3 style={{ marginTop: 0 }}>Settings</h3>
 
         <label style={{ display: 'block', marginBottom: '1rem' }}>
@@ -1878,8 +1878,8 @@ VALUES ('${user?.id}');`}
       {/* Totals */}
       {(analysisRunning || analysisDone) && (
         <div style={{
-          backgroundColor: analysisDone ? '#d4edda' : '#fff3cd',
-          border: `1px solid ${analysisDone ? '#c3e6cb' : '#ffc107'}`,
+          backgroundColor: analysisDone ? 'var(--color-success-light)' : 'var(--color-warning-light)',
+          border: `1px solid ${analysisDone ? 'var(--border-subtle)' : 'var(--border-warning)'}`,
           borderRadius: '8px',
           padding: '1.5rem',
           marginBottom: '1.5rem',
@@ -1887,10 +1887,10 @@ VALUES ('${user?.id}');`}
           <h3 style={{ marginTop: 0 }}>{analysisDone ? '✅ Complete!' : '⏳ In progress…'}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
             {[
-              { label: 'Pages',     value: analysisTotals.pages,     color: '#495057' },
-              { label: 'Analyzed',  value: analysisTotals.processed, color: '#28a745' },
-              { label: 'Skipped',   value: analysisTotals.skipped,   color: '#6c757d' },
-              { label: 'Failed',    value: analysisTotals.failed,    color: '#dc3545' },
+              { label: 'Pages',     value: analysisTotals.pages,     color: 'var(--text-primary)' },
+              { label: 'Analyzed',  value: analysisTotals.processed, color: 'var(--text-success)' },
+              { label: 'Skipped',   value: analysisTotals.skipped,   color: 'var(--text-secondary)' },
+              { label: 'Failed',    value: analysisTotals.failed,    color: 'var(--text-error)' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
@@ -1921,7 +1921,7 @@ VALUES ('${user?.id}');`}
         </div>
       )}
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginTop: '1.5rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginTop: '1.5rem' }}>
         <h4 style={{ marginTop: 0 }}>ℹ️ Notes</h4>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li><strong>missing_only</strong> is cheapest — skips bottles that already have analysis</li>
@@ -1933,7 +1933,7 @@ VALUES ('${user?.id}');`}
       </div>
 
       {/* ── Queued modern re-analysis (barrel + current app prompts) ─────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>🔄 Queued modern sommelier refresh</h1>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
@@ -1942,7 +1942,7 @@ VALUES ('${user?.id}');`}
         ), in small pages with pauses so OpenAI and the database are not overwhelmed.
       </p>
 
-      <div style={{ backgroundColor: '#e8f4fd', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #b8daff' }}>
+      <div style={{ backgroundColor: 'var(--color-info-light)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid var(--border-subtle)' }}>
         <h3 style={{ marginTop: 0 }}>Settings</h3>
 
         <label style={{ display: 'block', marginBottom: '1rem' }}>
@@ -2027,8 +2027,8 @@ VALUES ('${user?.id}');`}
       {(modernQueueRunning || modernQueueDone) && (
         <div
           style={{
-            backgroundColor: modernQueueDone ? '#d4edda' : '#fff3cd',
-            border: `1px solid ${modernQueueDone ? '#c3e6cb' : '#ffc107'}`,
+            backgroundColor: modernQueueDone ? 'var(--color-success-light)' : 'var(--color-warning-light)',
+            border: `1px solid ${modernQueueDone ? 'var(--border-subtle)' : 'var(--border-warning)'}`,
             borderRadius: '8px',
             padding: '1.5rem',
             marginBottom: '1.5rem',
@@ -2037,10 +2037,10 @@ VALUES ('${user?.id}');`}
           <h3 style={{ marginTop: 0 }}>{modernQueueDone ? '✅ Queue finished' : '⏳ In progress…'}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
             {[
-              { label: 'Pages', value: modernQueueTotals.pages, color: '#495057' },
-              { label: 'Processed', value: modernQueueTotals.processed, color: '#28a745' },
-              { label: 'Skipped', value: modernQueueTotals.skipped, color: '#6c757d' },
-              { label: 'Failed', value: modernQueueTotals.failed, color: '#dc3545' },
+              { label: 'Pages', value: modernQueueTotals.pages, color: 'var(--text-primary)' },
+              { label: 'Processed', value: modernQueueTotals.processed, color: 'var(--text-success)' },
+              { label: 'Skipped', value: modernQueueTotals.skipped, color: 'var(--text-secondary)' },
+              { label: 'Failed', value: modernQueueTotals.failed, color: 'var(--text-error)' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
@@ -2072,7 +2072,7 @@ VALUES ('${user?.id}');`}
         </div>
       )}
 
-      <div style={{ backgroundColor: '#f8f9fa', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '2rem' }}>
+      <div style={{ backgroundColor: 'var(--bg-muted)', padding: '1rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '2rem' }}>
         <h4 style={{ marginTop: 0 }}>ℹ️ How the queue behaves</h4>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li>Server runs up to <strong>2 bottles in parallel</strong> per page (modern pipeline).</li>
@@ -2086,7 +2086,7 @@ VALUES ('${user?.id}');`}
       </div>
 
       {/* ── Missing analysis_data locale (admin, no user credits) ───────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>🌐 Missing localized analysis (analysis_data)</h1>
       <p style={{ color: '#666', marginBottom: '1rem' }}>
@@ -2230,7 +2230,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
           <summary style={{ cursor: 'pointer' }}>Last response (JSON)</summary>
           <pre
             style={{
-              backgroundColor: '#f8f9fa',
+              backgroundColor: 'var(--bg-muted)',
               padding: '1rem',
               borderRadius: '6px',
               fontSize: '0.7rem',
@@ -2245,7 +2245,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
       )}
 
       {/* ── Kosher enrichment backfill (Perplexity, wines) ─────────────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>✡️ Kosher enrichment backfill</h1>
       <p style={{ color: '#666', marginBottom: '1rem' }}>
@@ -2256,11 +2256,11 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
 
       <div
         style={{
-          backgroundColor: '#f8fff4',
+          backgroundColor: 'var(--color-success-light)',
           padding: '1.5rem',
           borderRadius: '8px',
           marginBottom: '1.5rem',
-          border: '1px solid #c3e6cb',
+          border: '1px solid var(--border-subtle)',
         }}
       >
         <h3 style={{ marginTop: 0 }}>Run backfill</h3>
@@ -2331,7 +2331,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
           </label>
         </div>
         {kosherBfError && (
-          <p style={{ color: '#c0392b', fontSize: '0.9rem', marginBottom: '0.75rem' }}>{kosherBfError}</p>
+          <p style={{ color: 'var(--text-error)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>{kosherBfError}</p>
         )}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
@@ -2392,7 +2392,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
           <summary style={{ cursor: 'pointer' }}>Last kosher backfill response (JSON)</summary>
           <pre
             style={{
-              backgroundColor: '#f8f9fa',
+              backgroundColor: 'var(--bg-muted)',
               padding: '1rem',
               borderRadius: '6px',
               fontSize: '0.7rem',
@@ -2407,7 +2407,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
       )}
 
       {/* ── Food pairing backfill (wines.food_pairing) ─────────────────────── */}
-      <hr style={{ margin: '3rem 0', borderColor: '#dee2e6' }} />
+      <hr style={{ margin: '3rem 0', borderColor: 'var(--border-subtle)' }} />
 
       <h1>🍽️ Food pairing backfill</h1>
       <p style={{ color: '#666', marginBottom: '1.5rem' }}>
@@ -2419,11 +2419,11 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
       {/* ── Step 1: pg_cron setup ─────────────────────────────────────────── */}
       <div
         style={{
-          backgroundColor: '#e8f4fd',
+          backgroundColor: 'var(--color-info-light)',
           padding: '1.5rem',
           borderRadius: '8px',
           marginBottom: '1.5rem',
-          border: '1px solid #b8daff',
+          border: '1px solid var(--border-subtle)',
         }}
       >
         <h3 style={{ marginTop: 0 }}>🕒 Step 1 — Set up automatic queue (pg_cron)</h3>
@@ -2507,11 +2507,11 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
       {/* ── Run full backfill (all languages, all wines) ─────────────────── */}
       <div
         style={{
-          backgroundColor: '#fff8f0',
+          backgroundColor: 'var(--color-warning-light)',
           padding: '1.5rem',
           borderRadius: '8px',
           marginBottom: '1.5rem',
-          border: '1px solid #ffd8b8',
+          border: '1px solid var(--border-warning)',
         }}
       >
         <h3 style={{ marginTop: 0 }}>🌍 Run full backfill — English + Hebrew for all wines</h3>
@@ -2568,7 +2568,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
         </div>
 
         {fpError && (
-          <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f8d7da', borderRadius: '6px', color: '#721c24', fontSize: '0.875rem' }}>
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--color-error-light)', borderRadius: '6px', color: 'var(--text-error)', fontSize: '0.875rem' }}>
             ❌ {fpError}
           </div>
         )}
@@ -2576,8 +2576,8 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
         {/* Progress per language */}
         {(fpRunning || fpDone) && (
           <div style={{
-            backgroundColor: fpDone ? '#d4edda' : '#fff3cd',
-            border: `1px solid ${fpDone ? '#c3e6cb' : '#ffc107'}`,
+            backgroundColor: fpDone ? 'var(--color-success-light)' : 'var(--color-warning-light)',
+            border: `1px solid ${fpDone ? 'var(--border-subtle)' : 'var(--border-warning)'}`,
             borderRadius: '8px',
             padding: '1rem',
             marginBottom: '1rem',
@@ -2589,7 +2589,7 @@ WHERE b.quantity > 0 AND NOT (b.id::text LIKE 'demo-%')
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#555', marginBottom: '0.25rem' }}>
                     {lang === 'en' ? '🇬🇧 English' : '🇮🇱 Hebrew'}
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#28a745' }}>{fpTotals[lang].processed}</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-success)' }}>{fpTotals[lang].processed}</div>
                   <div style={{ fontSize: '0.7rem', color: '#666' }}>
                     paired · {fpTotals[lang].skipped} skipped · {fpTotals[lang].failed} failed
                   </div>

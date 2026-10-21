@@ -101,7 +101,7 @@ export function WishlistDetailsModal({
           aria-modal="true"
           onClick={onClose}
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: 'var(--bg-overlay)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
           }}
@@ -112,7 +112,7 @@ export function WishlistDetailsModal({
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full sm:max-w-2xl sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
+            className="w-full sm:max-w-2xl sm:rounded-[1.5rem] rounded-t-3xl overflow-hidden shadow-[var(--shadow-modal)]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               maxHeight: '90vh',
@@ -149,7 +149,7 @@ export function WishlistDetailsModal({
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
+                className="absolute top-4 end-4 w-10 h-10 rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
                 style={{
                   backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   color: 'white',
@@ -163,9 +163,9 @@ export function WishlistDetailsModal({
 
               {/* Wine Title - Overlaid on image if image exists */}
               <div 
-                className={`${item.imageUrl ? 'absolute bottom-0 left-0 right-0' : 'relative'} p-6`}
+                className={`${item.imageUrl ? 'absolute bottom-0 start-0 right-0' : 'relative'} p-6`}
                 style={item.imageUrl ? {} : { 
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                 }}
               >
                 <div className="flex items-start gap-3">
@@ -192,7 +192,10 @@ export function WishlistDetailsModal({
                     >
                       {item.wineName}
                       {item.vintage && (
-                        <span className="ml-2 font-semibold">{item.vintage}</span>
+                        <>
+                          {' '}
+                          <span className="font-semibold">{item.vintage}</span>
+                        </>
                       )}
                     </p>
                     <div 
@@ -267,7 +270,7 @@ export function WishlistDetailsModal({
                       <button
                         type="button"
                         onClick={() => setShowImageDialog(true)}
-                        className="w-full sm:w-auto py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                        className="w-full sm:w-auto py-2.5 px-4 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
                         style={{
                           background: 'var(--bg-surface)',
                           border: '1px solid var(--border-base)',
@@ -417,7 +420,7 @@ export function WishlistDetailsModal({
                     style={{
                       backgroundColor: 'var(--bg-secondary)',
                       color: 'var(--text-secondary)',
-                      borderLeft: '3px solid var(--wine-500)',
+                      borderInlineStart: '3px solid var(--wine-500)',
                     }}
                   >
                     "{item.note}"
@@ -464,7 +467,7 @@ export function WishlistDetailsModal({
                     onClose();
                   }
                 }}
-                className="px-4 py-3 rounded-lg font-medium transition-colors flex-1 min-h-[44px]"
+                className="px-4 py-3 rounded-full font-medium transition-colors flex-1 min-h-[44px]"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   border: '1px solid var(--border-medium)',
@@ -480,9 +483,9 @@ export function WishlistDetailsModal({
                     onClose();
                   }
                 }}
-                className="px-6 py-3 rounded-lg font-medium transition-all flex-1 min-h-[44px]"
+                className="px-6 py-3 rounded-full font-medium transition-all flex-1 min-h-[44px]"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: 'var(--text-inverse)',
                 }}
               >

@@ -1,0 +1,389 @@
+/**
+ * Sommi in-app design layer.
+ * The landing patterns from landing.css, re-expressed with theme tokens so
+ * they work in both data-theme="white" and data-theme="red".
+ */
+
+/* Landing palette promoted to :root (same values as the .landing-page scope)
+   so in-app components can reference --lp-* safely. */
+:root {
+  --lp-burgundy: #4a1722;
+  --lp-burgundy-mid: #6b1f2f;
+  --lp-burgundy-bright: #8b2741;
+  --lp-ivory: #f7f1e8;
+  --lp-ivory-deep: #ebe4d9;
+  --lp-stone: #3d3530;
+  --lp-stone-muted: #5c534c;
+  --lp-sage: #7a8a6e;
+  --lp-sage-soft: #e4ebe0;
+  --lp-gold: #b8962e;
+  --lp-gold-soft: #c9a227;
+  --lp-ink: #2d1810;
+  --lp-surface: #fffdf9;
+  --lp-font-display: 'Fraunces', 'Rubik', Georgia, 'Times New Roman', serif;
+  --lp-font-body: 'Rubik', 'Assistant', system-ui, sans-serif;
+}
+
+/* The landing nav embeds shared app controls (language switcher). Pin the
+   tokens they read to their previous values so the landing stays unchanged. */
+.landing-page {
+  --bg-surface: #ffffff;
+  --bg-dropdown: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --text-primary: #2d2926;
+  --text-secondary: #57524b;
+  --text-tertiary: #8a8377;
+  --wine-50: #fdf5f7;
+  --wine-600: #a63552;
+  --wine-700: #8b2741;
+  --shadow-dropdown: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+[data-theme="red"] .landing-page {
+  --bg-surface: #28282f;
+  --bg-dropdown: #2f2f38;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --text-primary: #ececef;
+  --text-secondary: #b8b8be;
+  --text-tertiary: #8a8a92;
+  --wine-50: rgba(212, 98, 122, 0.15);
+  --wine-600: #c14463;
+  --wine-700: #a63552;
+  --shadow-dropdown: 0 10px 30px -5px rgb(0 0 0 / 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Typography ===== */
+.app-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--text-eyebrow);
+}
+
+[dir='rtl'] .app-eyebrow {
+  letter-spacing: 0.06em;
+}
+
+@media (min-width: 640px) {
+  .app-eyebrow {
+    font-size: 0.75rem;
+  }
+}
+
+.app-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-heading);
+}
+
+.app-page-title {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  font-size: 2rem;
+  color: var(--text-heading);
+}
+
+@media (min-width: 640px) {
+  .app-page-title {
+    font-size: 2.5rem;
+  }
+}
+
+.app-page-subtitle {
+  font-size: 0.975rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 640px) {
+  .app-page-subtitle {
+    font-size: 1.0625rem;
+  }
+}
+
+.app-section-title {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--text-heading);
+}
+
+@media (min-width: 640px) {
+  .app-section-title {
+    font-size: 1.4rem;
+  }
+}
+
+.app-link {
+  color: var(--accent-text);
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.app-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== Surfaces ===== */
+.app-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.app-card-muted {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+
+/* Burgundy band — works on both themes */
+.app-band {
+  position: relative;
+  overflow: hidden;
+  background: var(--sommi-gradient-band);
+  color: var(--sommi-ivory);
+  border-radius: var(--radius-xl);
+}
+
+.app-band h2,
+.app-band h3 {
+  color: var(--sommi-ivory);
+}
+
+.app-band-muted {
+  color: rgba(247, 241, 232, 0.78);
+}
+
+/* ===== Buttons ===== */
+.app-cta-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1.6rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  color: var(--sommi-ink);
+  background: var(--sommi-gradient-gold);
+  box-shadow: 0 14px 36px rgba(217, 169, 58, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.app-cta-gold:hover:not(:disabled) {
+  box-shadow: 0 18px 44px rgba(217, 169, 58, 0.42);
+}
+
+.app-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.app-icon-btn:hover {
+  background: var(--interactive-hover);
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-cta-gold:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+/* ===== Chips / filters ===== */
+.app-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 36px;
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.app-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.app-chip[aria-pressed='true'],
+.app-chip.is-active {
+  color: #fff;
+  background: var(--sommi-gradient-primary);
+  border-color: transparent;
+}
+
+/* ===== Segmented control (tabs) ===== */
+.app-segmented {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.app-segmented > button,
+.app-segmented > a {
+  min-height: 40px;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.app-segmented > [aria-selected='true'],
+.app-segmented > [aria-current='page'],
+.app-segmented > .is-active {
+  color: var(--text-heading);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* ===== Blob icon tiles (in-app scale) ===== */
+.app-blob {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  box-shadow: 0 10px 22px -10px rgba(45, 24, 16, 0.35);
+}
+
+.app-blob-lg {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.app-blob-sm {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.app-blob,
+.app-blob-sm,
+.app-blob-lg {
+  border-radius: 58% 42% 52% 48% / 46% 56% 44% 54%;
+}
+
+/* ===== Illustrated empty state ===== */
+.app-empty {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.app-empty-art {
+  display: block;
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 1.25rem;
+}
+
+[data-theme='red'] .app-empty-art {
+  filter: brightness(0.9) saturate(0.95);
+}
+
+/* ===== Modal / sheet shell helpers ===== */
+.app-sheet-handle {
+  width: 2.5rem;
+  height: 0.3rem;
+  border-radius: 9999px;
+  background: var(--border-strong);
+  margin-inline: auto;
+}
+
+/* ===== Skeleton shimmer ===== */
+.app-skeleton {
+  background: linear-gradient(90deg, var(--bg-muted) 0%, var(--bg-subtle) 50%, var(--bg-muted) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-skeleton {
+    animation: app-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes app-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ===== Login hero ===== */
+.app-login-hero {
+  background: var(--bg);
+}
+
+.app-login-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: 80% 60%;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 30%);
+}
+
+[data-theme='red'] .app-login-art {
+  filter: brightness(0.72) saturate(0.9);
+}
+
+[dir='rtl'] .app-login-art,
+[dir='rtl'] .app-login-wash {
+  transform: scaleX(-1);
+}
+
+@media (min-width: 1024px) {
+  .app-login-art {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    aspect-ratio: auto;
+    object-position: center;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .app-login-wash {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--bg) 94%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 70%, transparent) 38%,
+      transparent 62%
+    );
+  }
+}

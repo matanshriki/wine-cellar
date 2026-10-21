@@ -37,8 +37,8 @@ import { PurchaseSuccessModal } from '../components/PurchaseSuccessModal';
 
 const PLAN_ICONS: Record<string, React.ReactNode> = {
   free:      <Sparkles size={18} className="text-white/40" />,
-  premium:   <Star     size={18} className="text-amber-400" />,
-  collector: <TrendingUp size={18} className="text-violet-400" />,
+  premium:   <Star     size={18} className="text-[#f0cd6a]" />,
+  collector: <TrendingUp size={18} className="text-[#e895aa]" />,
 };
 
 const PLAN_ACCENT = {
@@ -50,17 +50,17 @@ const PLAN_ACCENT = {
     badge:    undefined as string | undefined,
   },
   premium: {
-    border:   'rgba(251,191,36,0.4)',
-    cardBg:   'linear-gradient(160deg, rgba(251,191,36,0.12) 0%, rgba(251,191,36,0.04) 100%)',
-    check:    '#FBB524',
-    cta:      { background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', boxShadow: '0 4px 14px rgba(245,158,11,0.35)' } as React.CSSProperties,
-    badge:    'linear-gradient(135deg, #F59E0B, #D97706)',
+    border:   'rgba(240,205,106,0.4)',
+    cardBg:   'linear-gradient(160deg, rgba(240,205,106,0.12) 0%, rgba(240,205,106,0.04) 100%)',
+    check:    '#f0cd6a',
+    cta:      { background: 'linear-gradient(135deg, #f0cd6a, #d9a93a)', color: '#2d1810', boxShadow: '0 4px 14px rgba(217,169,58,0.35)' } as React.CSSProperties,
+    badge:    'linear-gradient(135deg, #f0cd6a, #d9a93a)',
   },
   collector: {
-    border:   'rgba(167,139,250,0.4)',
-    cardBg:   'linear-gradient(160deg, rgba(167,139,250,0.12) 0%, rgba(167,139,250,0.04) 100%)',
-    check:    '#A78BFA',
-    cta:      { background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', color: '#fff', boxShadow: '0 4px 14px rgba(139,92,246,0.35)' } as React.CSSProperties,
+    border:   'rgba(232,149,170,0.4)',
+    cardBg:   'linear-gradient(160deg, rgba(232,149,170,0.12) 0%, rgba(232,149,170,0.04) 100%)',
+    check:    '#e895aa',
+    cta:      { background: 'linear-gradient(135deg, #a63552, #6b1f2f)', color: '#fff', boxShadow: '0 4px 14px rgba(139,39,65,0.35)' } as React.CSSProperties,
     badge:    undefined as string | undefined,
   },
 } as const;
@@ -208,27 +208,23 @@ export function UpgradePage() {
         className="mb-6"
       >
         <div className="mb-2 flex items-center gap-2">
-          <Sparkles size={15} className="text-amber-500" />
-          <span
-            className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
+          <Sparkles size={15} strokeWidth={1.75} className="text-[var(--color-gold-500)]" aria-hidden />
+          <span className="app-eyebrow">
             {t('sommelierCredits.title')}
           </span>
         </div>
         <h1
-          className="text-xl font-bold leading-snug sm:text-3xl"
-          style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display, inherit)', letterSpacing: '-0.01em' }}
+          className="app-page-title"
         >
           {t('sommelierCredits.subtitle')}
         </h1>
-        <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="app-page-subtitle mt-2">
           {t('sommelierCredits.upgradeSubtitle')}
         </p>
 
         {isLowBalance && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm font-medium text-amber-600">
-            <Sparkles size={12} className="text-amber-500" />
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-warning)] bg-[var(--color-warning-light)] px-4 py-1.5 text-sm font-medium text-[var(--text-eyebrow)]">
+            <Sparkles size={12} className="text-[var(--color-gold-500)]" />
             {monthlyLimit > 0
               ? t('sommelierCredits.plan.creditsRemainingOf', { count: effectiveBalance, limit: monthlyLimit })
               : t('sommelierCredits.plan.creditsRemaining', { count: effectiveBalance })}
@@ -238,19 +234,22 @@ export function UpgradePage() {
 
       {/* ── Tab switcher ──────────────────────────────────────────────────── */}
       <div
-        className="mb-6 flex gap-1 rounded-xl p-1 w-fit"
-        style={{ background: 'var(--bg-muted)' }}
+        className="mb-6 flex gap-1 rounded-full p-1 w-fit"
+        role="tablist"
+        style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}
       >
         {(['plans', 'topup'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className="rounded-lg px-4 py-2 text-sm font-medium transition-all"
+            role="tab"
+            aria-selected={activeTab === tab}
+            className="rounded-full px-5 min-h-[40px] text-sm font-medium transition-colors"
             style={
               activeTab === tab
-                ? { background: 'var(--bg-surface)', color: 'var(--text-primary)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
-                : { color: 'var(--text-tertiary)' }
+                ? { background: 'var(--sommi-gradient-primary)', color: '#fff', boxShadow: 'var(--shadow-sm)' }
+                : { color: 'var(--text-secondary)' }
             }
           >
             {tab === 'plans' ? t('sommelierCredits.tabs.monthlyPlans') : t('sommelierCredits.tabs.topUp')}
@@ -278,17 +277,17 @@ export function UpgradePage() {
              */}
             <div
               className="-mx-4 rounded-none px-4 py-6 sm:mx-0 sm:rounded-3xl sm:px-8 sm:py-8"
-              style={{ background: 'linear-gradient(160deg, #11101e 0%, #0e0c1b 100%)' }}
+              style={{ background: 'linear-gradient(160deg, #24141a 0%, #170d11 100%)' }}
             >
               {/* Billing period toggle — only shown when yearly prices are configured */}
               {yearlyEnabled && <div className="mb-5 flex justify-center">
-                <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
+                <div className="flex items-center gap-1 rounded-full bg-white/5 p-1">
                   {(['monthly', 'yearly'] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setBillingPeriod(p)}
-                      className="relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
+                      className="relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all"
                       style={
                         billingPeriod === p
                           ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
@@ -299,7 +298,7 @@ export function UpgradePage() {
                       {p === 'yearly' && (
                         <span
                           className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                          style={{ background: 'rgba(52,211,153,0.18)', color: '#34d399' }}
+                          style={{ background: 'rgba(154,171,140,0.18)', color: '#a9bd99' }}
                         >
                           {t('sommelierCredits.billing.savePercent', { percent: savePercent })}
                         </span>
@@ -326,8 +325,8 @@ export function UpgradePage() {
                       {/* Popular badge */}
                       {plan.highlight && (
                         <span
-                          className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white"
-                          style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
+                          className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider"
+                          style={{ background: 'linear-gradient(135deg, #f0cd6a, #d9a93a)', color: '#2d1810' }}
                         >
                           {t('sommelierCredits.badges.mostPopular')}
                         </span>
@@ -345,8 +344,8 @@ export function UpgradePage() {
                             style={
                               plan.highlight
                                 ? plan.key === 'premium'
-                                  ? { background: 'rgba(251,191,36,0.15)', color: '#F59E0B', border: '1px solid rgba(251,191,36,0.3)' }
-                                  : { background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }
+                                  ? { background: 'rgba(240,205,106,0.15)', color: '#f0cd6a', border: '1px solid rgba(240,205,106,0.3)' }
+                                  : { background: 'rgba(232,149,170,0.15)', color: '#e895aa', border: '1px solid rgba(232,149,170,0.3)' }
                                 : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.1)' }
                             }
                           >
@@ -471,7 +470,7 @@ export function UpgradePage() {
                   transition={{ duration: 0.22, delay: i * 0.07 }}
                   onClick={() => handleTopUp(opt.credits, opt.price)}
                   disabled={!!checkoutLoading}
-                  className="group flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition-all active:scale-[0.98] disabled:opacity-60"
+                  className="group flex items-center justify-between rounded-2xl border px-5 py-4 text-start transition-all active:scale-[0.98] disabled:opacity-60"
                   style={{ borderColor: 'var(--border-medium)', background: 'var(--bg-muted)' }}
                 >
                   <div>
@@ -485,11 +484,11 @@ export function UpgradePage() {
                       {t('sommelierCredits.topUp.oneTimePurchase')}
                     </p>
                   </div>
-                  <div className="shrink-0 pl-4">
+                  <div className="shrink-0 ps-4">
                     <span className="text-xl font-bold" style={{ color: 'var(--text-heading)' }}>
                       ${opt.price}
                     </span>
-                    <ArrowRight size={13} className="ml-1 inline" style={{ color: 'var(--text-tertiary)' }} />
+                    <ArrowRight size={13} className="ms-1 inline" style={{ color: 'var(--text-tertiary)' }} />
                   </div>
                 </motion.button>
               ))}

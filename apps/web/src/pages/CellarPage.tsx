@@ -1,4 +1,7 @@
+import { Camera, Moon, Search, Sparkles, Wine, X } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { MetaHead } from '../components/MetaHead';
 import { isIPad } from '../utils/deviceDetection';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../utils/safeLocalStorage';
@@ -1385,71 +1388,57 @@ export function CellarPage() {
        * - Reduced text sizes on mobile
        * - Better spacing and alignment
        */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-          <div>
-            <h1 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ 
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 'var(--font-bold)',
-                lineHeight: 'var(--leading-tight)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('cellar.title')}
-            </h1>
-            <p 
-              className="text-sm sm:text-base mt-1"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {filteredBottles.length === bottlesInCellar.length
-                ? t('cellar.bottleCount', { count: totalBottleCount })
-                : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
-            </p>
-          </div>
-
+      <PageHeader
+        eyebrow={t('cellar.eyebrow')}
+        title={t('cellar.title')}
+        subtitle={
+          filteredBottles.length === bottlesInCellar.length
+            ? t('cellar.bottleCount', { count: totalBottleCount })
+            : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })
+        }
+        actions={
+          <>
           {/* Action Buttons - Always show Add Bottle, others only when cellar has bottles */}
-          {/* Mobile Fix: Wrap buttons in motion.div to prevent tap issues during page load/switch */}
-          <motion.div
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15 }}
-            className="flex flex-col xs:flex-row gap-2 sm:gap-2"
-            style={{ pointerEvents: 'auto' }} // Ensure buttons work immediately
-          >
-            {/* Import CSV - Only show when cellar has bottles AND user has permission */}
-            {bottlesInCellar.length > 0 && csvImportEnabled && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowImport(true);
-                }}
-                className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
-              >
-                <span className="hidden xs:inline">{t('cellar.importCsv')}</span>
-                <span className="xs:hidden">{t('cellar.importCsv')}</span>
-              </button>
-            )}
-            {/* Add Bottle - Desktop only (mobile + iPad use the floating Camera FAB) */}
-            {bottlesInCellar.length > 0 && !isIPad() && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  guardedOpenAddSheet();
-                }}
-                className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
-                style={{ pointerEvents: 'auto' }}
-              >
-                <span>+ {t('cellar.addBottleButton')}</span>
-              </button>
-            )}
-          </motion.div>
-        </div>
-      </div>
+            {/* Mobile Fix: Wrap buttons in motion.div to prevent tap issues during page load/switch */}
+            <motion.div
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col xs:flex-row gap-2"
+              style={{ pointerEvents: 'auto' }} // Ensure buttons work immediately
+            >
+              {/* Import CSV - Only show when cellar has bottles AND user has permission */}
+              {bottlesInCellar.length > 0 && csvImportEnabled && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowImport(true);
+                  }}
+                  className="btn-luxury-secondary text-sm sm:text-base w-full xs:w-auto"
+                >
+                  <span className="hidden xs:inline">{t('cellar.importCsv')}</span>
+                  <span className="xs:hidden">{t('cellar.importCsv')}</span>
+                </button>
+              )}
+              {/* Add Bottle - Desktop only (mobile + iPad use the floating Camera FAB) */}
+              {bottlesInCellar.length > 0 && !isIPad() && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    guardedOpenAddSheet();
+                  }}
+                  className="btn-luxury-primary text-sm sm:text-base w-full xs:w-auto hidden md:flex"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <span>+ {t('cellar.addBottleButton')}</span>
+                </button>
+              )}
+            </motion.div>
+          </>
+        }
+      />
 
       {/* Search and Filters - Only show when cellar has bottles */}
       {bottlesInCellar.length > 0 && (
@@ -1462,7 +1451,7 @@ export function CellarPage() {
         >
           {/* Search Bar */}
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
               <svg
                 className="w-5 h-5"
                 style={{ color: 'var(--text-tertiary)' }}
@@ -1483,9 +1472,10 @@ export function CellarPage() {
               value={searchDisplay}
               onChange={(e) => handleSearchInput(e.target.value)}
               placeholder={t('cellar.search.placeholder')}
-              className="input-luxury w-full pl-11 pr-11 py-3 text-sm sm:text-base"
+              className="input-luxury w-full ps-11 pe-11 py-3 text-sm sm:text-base"
               style={{
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: '9999px',
+                minHeight: '48px',
               }}
             />
             {searchDisplay && (
@@ -1495,7 +1485,7 @@ export function CellarPage() {
                   e.stopPropagation();
                   clearSearch();
                 }}
-                className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors min-w-[44px] min-h-[44px]"
+                className="absolute inset-y-0 end-0 flex items-center justify-center pe-2 transition-colors min-w-[44px] min-h-[44px]"
                 style={{
                   color: 'var(--text-tertiary)',
                   WebkitTapHighlightColor: 'transparent',
@@ -1522,18 +1512,9 @@ export function CellarPage() {
                   e.stopPropagation();
                   toggleFilter(type);
                 }}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-                style={{
-                  backgroundColor: activeFilters.includes(type)
-                    ? 'var(--wine-500)'
-                    : 'var(--bg-surface)',
-                  color: activeFilters.includes(type) ? 'white' : 'var(--text-secondary)',
-                  border: `2px solid ${
-                    activeFilters.includes(type) ? 'var(--wine-500)' : 'var(--border-medium)'
-                  }`,
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
+                className="app-chip flex-shrink-0"
+                aria-pressed={activeFilters.includes(type)}
+                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
               >
                 {t(`cellar.wineStyles.${type}`)}
               </button>
@@ -1546,18 +1527,9 @@ export function CellarPage() {
                 e.stopPropagation();
                 toggleFilter('ready');
               }}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-              style={{
-                backgroundColor: activeFilters.includes('ready')
-                  ? 'var(--wine-500)'
-                  : 'var(--bg-surface)',
-                color: activeFilters.includes('ready') ? 'white' : 'var(--text-secondary)',
-                border: `2px solid ${
-                  activeFilters.includes('ready') ? 'var(--wine-500)' : 'var(--border-medium)'
-                }`,
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="app-chip flex-shrink-0"
+              aria-pressed={activeFilters.includes('ready')}
+              style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
               ✓ {t('cellar.filters.ready')}
             </button>
@@ -1568,18 +1540,9 @@ export function CellarPage() {
                 e.stopPropagation();
                 toggleFilter('aging');
               }}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-              style={{
-                backgroundColor: activeFilters.includes('aging')
-                  ? 'var(--wine-500)'
-                  : 'var(--bg-surface)',
-                color: activeFilters.includes('aging') ? 'white' : 'var(--text-secondary)',
-                border: `2px solid ${
-                  activeFilters.includes('aging') ? 'var(--wine-500)' : 'var(--border-medium)'
-                }`,
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="app-chip flex-shrink-0"
+              aria-pressed={activeFilters.includes('aging')}
+              style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
               ⏳ {t('cellar.filters.aging')}
             </button>
@@ -1590,18 +1553,9 @@ export function CellarPage() {
                 e.stopPropagation();
                 toggleFilter('analyzed');
               }}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-              style={{
-                backgroundColor: activeFilters.includes('analyzed')
-                  ? 'var(--wine-500)'
-                  : 'var(--bg-surface)',
-                color: activeFilters.includes('analyzed') ? 'white' : 'var(--text-secondary)',
-                border: `2px solid ${
-                  activeFilters.includes('analyzed') ? 'var(--wine-500)' : 'var(--border-medium)'
-                }`,
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="app-chip flex-shrink-0"
+              aria-pressed={activeFilters.includes('analyzed')}
+              style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
               🔍 {t('cellar.filters.analyzed')}
             </button>
@@ -1613,18 +1567,9 @@ export function CellarPage() {
                   e.stopPropagation();
                   toggleFilter(CELLAR_KOSHER_FILTER_KEY);
                 }}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-                style={{
-                  backgroundColor: activeFilters.includes(CELLAR_KOSHER_FILTER_KEY)
-                    ? 'var(--wine-500)'
-                    : 'var(--bg-surface)',
-                  color: activeFilters.includes(CELLAR_KOSHER_FILTER_KEY) ? 'white' : 'var(--text-secondary)',
-                  border: `2px solid ${
-                    activeFilters.includes(CELLAR_KOSHER_FILTER_KEY) ? 'var(--wine-500)' : 'var(--border-medium)'
-                  }`,
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
+                className="app-chip flex-shrink-0"
+                aria-pressed={activeFilters.includes(CELLAR_KOSHER_FILTER_KEY)}
+                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
               >
                 {t('cellar.filters.kosher')}
               </button>
@@ -1637,18 +1582,9 @@ export function CellarPage() {
                 e.stopPropagation();
                 toggleFilter('pastPeak');
               }}
-              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 min-h-[36px]"
-              style={{
-                backgroundColor: activeFilters.includes('pastPeak')
-                  ? 'var(--wine-500)'
-                  : 'var(--bg-surface)',
-                color: activeFilters.includes('pastPeak') ? 'white' : 'var(--text-secondary)',
-                border: `2px solid ${
-                  activeFilters.includes('pastPeak') ? 'var(--wine-500)' : 'var(--border-medium)'
-                }`,
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
+              className="app-chip flex-shrink-0"
+              aria-pressed={activeFilters.includes('pastPeak')}
+              style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
               🍷 {t('cellar.filters.pastPeak')}
             </button>
@@ -1657,8 +1593,8 @@ export function CellarPage() {
             {(searchQuery || activeFilters.length > 0) && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 underline"
-                style={{ color: 'var(--text-secondary)' }}
+                className="px-3 min-h-[36px] rounded-full text-sm font-semibold transition-all flex-shrink-0 underline underline-offset-4"
+                style={{ color: 'var(--accent-text)' }}
               >
                 {t('cellar.filters.clear')}
               </button>
@@ -1680,19 +1616,18 @@ export function CellarPage() {
           {/* Sort Button */}
           <button
             onClick={() => setShowSortMenu(true)}
-            className="flex-1 md:flex-none px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 min-h-[40px]"
+            className="flex-1 md:flex-none px-4 rounded-full text-sm font-medium transition-colors flex items-center gap-2 min-h-[44px] hover:border-[var(--border-strong)]"
             style={{
               backgroundColor: 'var(--bg-surface)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border-subtle)',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+              border: '1px solid var(--border-medium)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
           >
             <span className="text-sm">{currentSortOption.icon}</span>
             <span style={{ color: 'var(--text-primary)' }}>{currentSortOption.label}</span>
-            <span className="ml-auto md:ml-2" style={{ color: 'var(--text-tertiary)' }}>›</span>
+            <span className="ms-auto md:ms-2 rtl:-scale-x-100" style={{ color: 'var(--text-tertiary)' }} aria-hidden>›</span>
           </button>
 
           {/* Analyze Cellar Button */}
@@ -1700,16 +1635,14 @@ export function CellarPage() {
             onClick={handleBulkAnalysis}
             disabled={bulkAnalysisCooldown}
             title={bulkAnalysisCooldown ? t('bulkAnalysis.cooldownTooltip') : t('bulkAnalysis.buttonLabel')}
-            className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wine-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface)] enabled:hover:brightness-[0.97] enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[44px] flex-shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wine-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface)] enabled:hover:brightness-[0.97] enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               backgroundColor: bulkAnalysisCooldown ? 'var(--bg-muted)' : 'var(--wine-50)',
-              color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--wine-600)',
+              color: bulkAnalysisCooldown ? 'var(--text-tertiary)' : 'var(--accent-text)',
               border: bulkAnalysisCooldown
                 ? '1px solid var(--border-subtle)'
-                : '1px solid var(--wine-500)',
+                : '1px solid var(--wine-200)',
               cursor: bulkAnalysisCooldown ? 'not-allowed' : 'pointer',
-              boxShadow:
-                '0 1px 2px rgba(0, 0, 0, 0.04), inset 0 0 0 1px var(--border-subtle)',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
             }}
@@ -1718,7 +1651,7 @@ export function CellarPage() {
             {unanalyzedCount > 0 && (
               <span
                 className="px-1.5 py-0.5 rounded-full text-xs font-semibold"
-                style={{ background: 'var(--wine-500)', color: 'white' }}
+                style={{ background: 'var(--sommi-burgundy-bright)', color: 'white' }}
               >
                 {unanalyzedCount}
               </span>
@@ -1788,224 +1721,92 @@ export function CellarPage() {
       )}
 
       {bottlesInCellar.length === 0 ? (
-        <motion.div
-          key="empty-cellar-state"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="space-y-4"
-        >
-          {/* Hero card */}
-          <div
-            className="luxury-card text-center py-8 sm:py-10 px-5 sm:px-8 rounded-2xl overflow-hidden relative"
-          >
-            {/* Top accent */}
-            <div
-              className="absolute top-0 left-0 right-0"
-              style={{
-                height: '3px',
-                background: 'linear-gradient(90deg, var(--wine-400), var(--wine-600), var(--wine-400))',
-              }}
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-full text-5xl mb-5"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
-                boxShadow: '0 0 40px rgba(139, 21, 56, 0.12)',
-              }}
-            >
-              🍷
-            </motion.div>
-
-            <motion.h2
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.3 }}
-              className="text-2xl sm:text-3xl mb-2"
-              style={{
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 'var(--font-bold)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('onboarding.emptyState.title')}
-            </motion.h2>
-
-            <motion.p
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.3 }}
-              className="text-base mb-7 max-w-sm mx-auto"
-              style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}
-            >
-              {t('onboarding.emptyState.subtitle')}
-            </motion.p>
-
-            {/* Primary scan CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="flex flex-col gap-2.5 max-w-xs mx-auto"
-              style={{ pointerEvents: 'auto' }}
-            >
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  guardedOpenLabelCapture('camera');
-                }}
-                className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg transition-all min-h-[52px] flex items-center justify-center gap-2.5"
-                style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                  color: 'var(--text-inverse)',
-                  border: '1px solid var(--wine-700)',
-                  boxShadow: '0 8px 24px rgba(139, 21, 56, 0.25)',
-                  pointerEvents: 'auto',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 21, 56, 0.35)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 21, 56, 0.25)';
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-                {t('onboarding.emptyState.scanCta')}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  guardedOpenAddSheet();
-                }}
-                className="w-full py-3 px-6 rounded-xl font-medium text-sm transition-all min-h-[44px]"
-                style={{
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border-base)',
-                  pointerEvents: 'auto',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--bg-tertiary)';
-                  e.currentTarget.style.borderColor = 'var(--wine-200)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'var(--border-base)';
-                }}
-              >
-                {t('onboarding.emptyState.addManuallyCta')}
-              </button>
-
-              {csvImportEnabled && (
+        <div key="empty-cellar-state" className="space-y-6">
+          <EmptyState
+            art="/assets/app/empty-cellar.jpg"
+            title={t('onboarding.emptyState.title')}
+            body={t('onboarding.emptyState.subtitle')}
+            actions={
+              <div className="flex flex-col gap-2.5 w-full max-w-xs" style={{ pointerEvents: 'auto' }}>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setShowImport(true);
+                    guardedOpenLabelCapture('camera');
                   }}
-                  className="text-xs py-2 transition-all"
-                  style={{
-                    color: 'var(--text-tertiary)',
-                    background: 'transparent',
-                    border: 'none',
-                    pointerEvents: 'auto',
-                  }}
+                  className="btn-luxury-primary w-full !min-h-[52px] text-base sm:text-lg"
+                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
-                  {t('cellar.empty.importButton')}
+                  <Camera className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                  {t('onboarding.emptyState.scanCta')}
                 </button>
-              )}
-            </motion.div>
-          </div>
-
-          {/* Feature preview cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-          >
-            {(['ai', 'tonight', 'cellar'] as const).map((key, i) => (
-              <motion.div
-                key={key}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 + i * 0.08, duration: 0.3 }}
-                className="luxury-card p-4 sm:p-5 rounded-xl text-center"
-                style={{
-                  border: '1px solid var(--border-base)',
-                }}
-              >
-                <div
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-xl mb-3"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                    border: '1px solid var(--wine-200)',
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    guardedOpenAddSheet();
                   }}
+                  className="btn-luxury-secondary w-full text-sm"
+                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
-                  {['🧠', '🌙', '📊'][i]}
-                </div>
-                <p
-                  className="text-sm font-semibold mb-1"
-                  style={{ color: 'var(--text-primary)' }}
+                  {t('onboarding.emptyState.addManuallyCta')}
+                </button>
+                {csvImportEnabled && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowImport(true);
+                    }}
+                    className="app-link text-sm min-h-[44px]"
+                  >
+                    {t('cellar.empty.importButton')}
+                  </button>
+                )}
+              </div>
+            }
+          />
+
+          {/* What you get — feature blobs */}
+          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 list-none m-0 p-0">
+            {(['ai', 'tonight', 'cellar'] as const).map((key, i) => {
+              const Icon = [Sparkles, Moon, Wine][i];
+              const tone = ['lp-blob-burgundy', 'lp-blob-gold', 'lp-blob-sage'][i];
+              return (
+                <motion.li
+                  key={key}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 + i * 0.06, duration: 0.25 }}
+                  className="app-card flex sm:flex-col items-center gap-4 sm:gap-3 p-4 sm:p-6 text-start sm:text-center"
                 >
-                  {t(`onboarding.emptyState.features.${key}.title`)}
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: 'var(--text-tertiary)', lineHeight: '1.5' }}
-                >
-                  {t(`onboarding.emptyState.features.${key}.desc`)}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
+                  <span className={`app-blob lp-blob-shape-${i} ${tone}`} aria-hidden>
+                    <Icon className="h-6 w-6" strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm sm:text-base font-semibold mb-0.5" style={{ color: 'var(--text-heading)' }}>
+                      {t(`onboarding.emptyState.features.${key}.title`)}
+                    </span>
+                    <span className="block text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      {t(`onboarding.emptyState.features.${key}.desc`)}
+                    </span>
+                  </span>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </div>
       ) : filteredBottles.length === 0 ? (
-        /**
-         * No Results State - When search/filters return empty
-         */
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="luxury-card text-center py-8 sm:py-12"
-        >
-          <div className="text-5xl mb-4">🔍</div>
-          <p 
-            className="text-lg sm:text-xl mb-2"
-            style={{ color: 'var(--text-primary)', fontWeight: 'var(--font-semibold)' }}
-          >
-            {t('cellar.search.noResults')}
-          </p>
-          <p 
-            className="text-sm sm:text-base mb-4"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {t('cellar.search.noResultsHint')}
-          </p>
-          <button
-            onClick={clearFilters}
-            className="btn-luxury-secondary"
-          >
-            {t('cellar.filters.clear')}
-          </button>
-        </motion.div>
+        <EmptyState
+          icon={<Search className="h-8 w-8" strokeWidth={1.75} aria-hidden />}
+          title={t('cellar.search.noResults')}
+          body={t('cellar.search.noResultsHint')}
+          actions={
+            <button onClick={clearFilters} className="btn-luxury-secondary">
+              {t('cellar.filters.clear')}
+            </button>
+          }
+        />
       ) : (
         <>
           {/**
@@ -2062,7 +1863,7 @@ export function CellarPage() {
             >
               <WineLoader size="medium" />
               <span 
-                className="ml-3 text-sm"
+                className="ms-3 text-sm"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {t('cellar.loadingMore', { defaultValue: 'Loading more bottles...' })}
@@ -2185,7 +1986,7 @@ export function CellarPage() {
             role="dialog"
             aria-modal="true"
             style={{
-              background: 'rgba(0, 0, 0, 0.4)',
+              background: 'var(--bg-overlay)',
               backdropFilter: 'blur(4px)',
             }}
             onClick={() => setShowSortMenu(false)}
@@ -2208,22 +2009,18 @@ export function CellarPage() {
                 <div
                   className="px-6 py-5 flex-shrink-0 flex items-center justify-between"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(164, 77, 90, 0.05), rgba(212, 175, 55, 0.05))',
                     borderBottom: '1px solid var(--border-subtle)',
                   }}
                 >
-                  <h2
-                    className="text-xl font-semibold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <h2 className="app-section-title">
                     {t('cellar.sort.title', 'Sort Cellar')}
                   </h2>
                   <button
                     onClick={() => setShowSortMenu(false)}
-                    className="text-2xl leading-none opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="app-icon-btn -me-2"
+                    aria-label={t('common.close')}
                   >
-                    ×
+                    <X className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                   </button>
                 </div>
 
@@ -2233,14 +2030,15 @@ export function CellarPage() {
                     <button
                       key={option.key}
                       onClick={() => handleSortChange(option.by, option.dir)}
-                      className="w-full px-4 py-4 rounded-lg text-left transition-all flex items-center gap-3 min-h-[56px]"
+                      aria-pressed={sortBy === option.by && sortDir === option.dir}
+                      className="w-full px-4 py-3 rounded-2xl text-start transition-colors flex items-center gap-3 min-h-[56px] hover:bg-[var(--interactive-hover)]"
                       style={{
                         backgroundColor: sortBy === option.by && sortDir === option.dir
                           ? 'var(--wine-50)'
                           : 'var(--bg-surface)',
                         border: sortBy === option.by && sortDir === option.dir
-                          ? '2px solid var(--wine-200)'
-                          : '1px solid var(--border-base)',
+                          ? '1px solid var(--wine-300)'
+                          : '1px solid var(--border-subtle)',
                         color: 'var(--text-primary)',
                         WebkitTapHighlightColor: 'transparent',
                         touchAction: 'manipulation',
@@ -2251,7 +2049,8 @@ export function CellarPage() {
                       {sortBy === option.by && sortDir === option.dir && (
                         <span
                           className="text-xl font-bold"
-                          style={{ color: 'var(--wine-500)' }}
+                          style={{ color: 'var(--accent-text)' }}
+                          aria-hidden
                         >
                           ✓
                         </span>
@@ -2555,7 +2354,7 @@ export function CellarPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
             role="dialog"
             aria-modal="true"
             onClick={() => setShowConfirmation(false)}
@@ -2567,10 +2366,11 @@ export function CellarPage() {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'tween', duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="rounded-[1.5rem] w-full max-w-md overflow-hidden"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-soft)',
+                boxShadow: 'var(--shadow-modal)',
               }}
             >
               {/* Header */}
@@ -2578,13 +2378,7 @@ export function CellarPage() {
                 className="px-6 py-5 border-b"
                 style={{ borderColor: 'var(--border-soft)' }}
               >
-                <h3 
-                  className="text-xl font-bold"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
+                <h3 className="app-section-title">
                   {confirmationData.title}
                 </h3>
               </div>
@@ -2609,7 +2403,7 @@ export function CellarPage() {
               >
                 <button
                   onClick={() => setShowConfirmation(false)}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-colors min-h-[44px]"
                   style={{
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-medium)',
@@ -2620,11 +2414,11 @@ export function CellarPage() {
                 </button>
                 <button
                   onClick={confirmationData.onConfirm}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-all min-h-[44px]"
                   style={{
                     background: confirmationData.isDanger 
-                      ? 'linear-gradient(135deg, #dc2626, #b91c1c)' 
-                      : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      ? 'linear-gradient(135deg, #c0392b, #9b2c22)' 
+                      : 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >

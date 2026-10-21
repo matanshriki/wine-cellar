@@ -92,11 +92,11 @@ export function ReceiptReviewModal({
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
+            className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[1.5rem] overflow-hidden"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              boxShadow: 'var(--shadow-xl)',
+              boxShadow: 'var(--shadow-modal)',
             }}
           >
             {/* Header */}
@@ -158,7 +158,7 @@ export function ReceiptReviewModal({
                       {/* Remove Button */}
                       <button
                         onClick={() => handleRemoveItem(index)}
-                        className="ml-2 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                        className="ms-2 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                         style={{
                           background: 'var(--bg-surface)',
                           border: '1px solid var(--border-medium)',
@@ -219,9 +219,10 @@ export function ReceiptReviewModal({
                       
                       <div className="flex items-center gap-2">
                         <button
+                          aria-label={t('common.decrease')}
                           onClick={() => handleQuantityChange(index, (item.quantity || 1) - 1)}
                           disabled={(item.quantity || 1) <= 1}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          className="w-11 h-11 rounded-full flex items-center justify-center"
                           style={{
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border-medium)',
@@ -241,11 +242,12 @@ export function ReceiptReviewModal({
                         </span>
                         
                         <button
+                          aria-label={t('common.increase')}
                           onClick={() => handleQuantityChange(index, (item.quantity || 1) + 1)}
                           disabled={(item.quantity || 1) >= 99}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          className="w-11 h-11 rounded-full flex items-center justify-center"
                           style={{
-                            background: (item.quantity || 1) >= 99 ? 'var(--bg-surface)' : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                            background: (item.quantity || 1) >= 99 ? 'var(--bg-surface)' : 'var(--sommi-gradient-primary)',
                             border: '1px solid var(--wine-700)',
                             color: 'white',
                           }}
@@ -290,7 +292,7 @@ export function ReceiptReviewModal({
                 </div>
                 
                 {totalPrice > 0 && (
-                  <div className="text-right">
+                  <div className="text-end">
                     <p 
                       className="text-sm font-medium"
                       style={{ color: 'var(--text-secondary)' }}

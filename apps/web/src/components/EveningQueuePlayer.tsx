@@ -204,11 +204,11 @@ export function EveningQueuePlayer({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-2xl rounded-[1.5rem] overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-xl)',
+            boxShadow: 'var(--shadow-modal)',
             maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
           }}
         >
@@ -245,9 +245,8 @@ export function EveningQueuePlayer({
 
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                  style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-tertiary)' }}
-                  aria-label="Close"
+                  className="app-icon-btn"
+                  aria-label={t('common.close')}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -401,7 +400,7 @@ export function EveningQueuePlayer({
                   <motion.button
                     key={idx}
                     onClick={() => handleJumpTo(idx)}
-                    className="w-full p-3 rounded-xl flex gap-3 items-center text-left transition-all"
+                    className="w-full p-3 rounded-xl flex gap-3 items-center text-start transition-all"
                     style={{
                       background: idx === currentIndex
                         ? 'linear-gradient(135deg, rgba(164, 77, 90, 0.15), rgba(164, 77, 90, 0.08))'
@@ -478,7 +477,7 @@ export function EveningQueuePlayer({
               <button
                 onClick={handlePrevious}
                 disabled={isFirst}
-                className="px-4 py-3 rounded-xl font-medium transition-all flex-shrink-0"
+                className="px-4 py-3 rounded-full font-medium transition-all flex-shrink-0"
                 style={{
                   background: isFirst ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-elevated)',
                   color: isFirst ? 'var(--text-muted)' : 'var(--text-primary)',
@@ -504,7 +503,7 @@ export function EveningQueuePlayer({
                   onClick={handleWrapUp}
                   className="btn-luxury-primary flex-1"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                   }}
                 >
                   {t('planEvening.queue.wrapUp', 'Wrap up evening 🎉')}
@@ -754,11 +753,12 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
                           </label>
                           <div className="flex items-center gap-2 mt-1">
                             <button
+                              aria-label={t('common.decrease')}
                               onClick={() => setWineStates(prev => ({
                                 ...prev,
                                 [idx]: { ...state, quantity: Math.max(1, state.quantity - 1) },
                               }))}
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              className="w-11 h-11 rounded-full flex items-center justify-center"
                               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)' }}
                             >
                               −
@@ -767,11 +767,12 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
                               {state.quantity}
                             </span>
                             <button
+                              aria-label={t('common.increase')}
                               onClick={() => setWineStates(prev => ({
                                 ...prev,
                                 [idx]: { ...state, quantity: state.quantity + 1 },
                               }))}
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              className="w-11 h-11 rounded-full flex items-center justify-center"
                               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)' }}
                             >
                               +

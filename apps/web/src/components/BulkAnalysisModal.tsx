@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -161,7 +162,7 @@ export function BulkAnalysisModal({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{
-          background: 'rgba(0, 0, 0, 0.4)',
+          background: 'var(--bg-overlay)',
           backdropFilter: 'blur(4px)',
           paddingBottom: 'calc(80px + env(safe-area-inset-bottom) + 0.5rem)', // Space for bottom nav - reduced padding
         }}
@@ -209,12 +210,13 @@ export function BulkAnalysisModal({
                   </h2>
                 </div>
                 <button
+                  type="button"
                   onClick={handleClose}
-                  className="text-2xl leading-none opacity-60 hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--text-primary)' }}
+                  className="app-icon-btn"
                   title={isAnalyzing ? t('common.cancel', 'Cancel') : t('common.close', 'Close')}
+                  aria-label={isAnalyzing ? t('common.cancel', 'Cancel') : t('common.close', 'Close')}
                 >
-                  ×
+                  <X className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -352,7 +354,7 @@ export function BulkAnalysisModal({
                     >
                       {t('bulkAnalysis.missingOnly', 'Missing only')}
                       <span
-                        className="ml-2 px-2 py-0.5 rounded text-xs"
+                        className="ms-2 px-2 py-0.5 rounded text-xs"
                         style={{
                           background: 'var(--wine-100)',
                           color: 'var(--wine-600)',

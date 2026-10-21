@@ -18,7 +18,10 @@ import * as wishlistService from '../services/wishlistService';
 import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';
 import { AddBottleSheet } from '../components/AddBottleSheet'; // Wishlist feature (dev only)
+import { Bookmark, FilePen, MapPin, Plus, Search, Utensils, Grape } from 'lucide-react';
 import { WineLoader } from '../components/WineLoader';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WishlistDetailsModal } from '../components/WishlistDetailsModal'; // Wishlist feature - details modal
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
@@ -266,79 +269,60 @@ export function WishlistPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <h1 
-            className="text-3xl font-bold"
-            style={{ 
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-display)',
-            }}
-          >
-            {t('wishlist.title')} {/* "Wishlist" */}
-          </h1>
-        </div>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          {t('wishlist.subtitle')} {/* "Wines you want to buy later" */}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={t('wishlist.eyebrow')}
+        title={t('wishlist.title')}
+        subtitle={t('wishlist.subtitle')}
+        actions={
+          items.length > 0 ? (
+            <button onClick={() => setShowAddSheet(true)} className="btn-luxury-primary hidden sm:inline-flex">
+              <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              {t('wishlist.addWine')}
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Draft Notice */}
       {hasDraft && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 rounded-lg flex items-center justify-between"
-          style={{
-            backgroundColor: 'var(--color-blue-50)',
-            border: '1px solid var(--color-blue-200)',
-          }}
+          className="app-card-muted mb-4 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          role="status"
         >
           <div className="flex items-center gap-3">
-            <div className="text-2xl">📝</div>
+            <span className="lp-blob lp-blob-gold app-blob-sm shrink-0" aria-hidden>
+              <FilePen className="h-5 w-5" strokeWidth={1.75} />
+            </span>
             <div>
-              <div 
-                className="font-semibold text-sm"
-                style={{ color: 'var(--color-blue-900)' }}
-              >
-                You have an unsaved draft
+              <div className="font-semibold text-sm" style={{ color: 'var(--text-heading)' }}>
+                {t('wishlist.draft.title')}
               </div>
-              <div 
-                className="text-xs"
-                style={{ color: 'var(--color-blue-700)' }}
-              >
-                Continue where you left off
+              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {t('wishlist.draft.body')}
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:shrink-0">
             <button
               onClick={() => {
                 sessionStorage.removeItem('wishlist_form_draft');
                 setHasDraft(false);
-                toast.success('Draft deleted');
+                toast.success(t('wishlist.draft.deleted'));
               }}
-              className="px-3 py-1.5 text-sm rounded-lg transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-secondary)',
-              }}
+              className="btn-luxury-ghost text-sm"
             >
-              Delete
+              {t('wishlist.draft.delete')}
             </button>
             <button
               onClick={() => {
                 setShowWishlistForm(true);
                 setHasDraft(false);
               }}
-              className="px-4 py-1.5 text-sm font-medium rounded-lg transition-all"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                color: 'var(--text-inverse)',
-              }}
+              className="btn-luxury-primary text-sm"
             >
-              Resume Draft
+              {t('wishlist.draft.resume')}
             </button>
           </div>
         </motion.div>
@@ -347,21 +331,19 @@ export function WishlistPage() {
       {/* Search */}
       <div className="mb-6">
         <div className="relative">
-          <svg 
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+          <Search
+            className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5"
             style={{ color: 'var(--text-tertiary)' }}
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+            strokeWidth={1.75}
+            aria-hidden
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('wishlist.searchPlaceholder')}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border transition-colors"
+            aria-label={t('wishlist.searchPlaceholder')}
+            className="w-full ps-11 pe-4 min-h-[48px] rounded-full border transition-colors focus:border-[var(--wine-500)]"
             style={{
               backgroundColor: 'var(--bg-input)',
               borderColor: 'var(--border-input)',
@@ -371,52 +353,26 @@ export function WishlistPage() {
         </div>
       </div>
 
-      {/* Empty State */}
       {filteredItems.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
-        >
-          <div 
-            className="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
-            <svg 
-              className="w-12 h-12"
-              style={{ color: 'var(--text-tertiary)' }}
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-          </div>
-          <h3 
-            className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {searchQuery ? t('wishlist.noResults') : t('wishlist.empty')}
-          </h3>
-          <p 
-            className="mb-6"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {searchQuery ? t('wishlist.noResultsDesc') : t('wishlist.emptyDesc')}
-          </p>
-          {!searchQuery && (
-            <button
-              onClick={() => setShowAddSheet(true)} // Wishlist feature - Open add sheet directly
-              className="px-6 py-3 rounded-lg font-medium transition-all min-h-[44px]"
-              style={{
-                background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
-                color: 'var(--text-inverse)',
-              }}
-            >
-              {t('wishlist.addFirst')} {/* "Add Your First Wine" */}
-            </button>
-          )}
-        </motion.div>
+        searchQuery ? (
+          <EmptyState
+            icon={<Search className="h-7 w-7" strokeWidth={1.75} aria-hidden />}
+            title={t('wishlist.noResults')}
+            body={t('wishlist.noResultsDesc')}
+          />
+        ) : (
+          <EmptyState
+            art="/assets/app/empty-wishlist.jpg"
+            title={t('wishlist.empty')}
+            body={t('wishlist.emptyDesc')}
+            actions={
+              <button onClick={() => setShowAddSheet(true)} className="btn-luxury-primary">
+                <Bookmark className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                {t('wishlist.addFirst')}
+              </button>
+            }
+          />
+        )
       )}
 
       {/* Wishlist Items */}
@@ -428,21 +384,26 @@ export function WishlistPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="mb-4 rounded-xl border p-4 sm:p-6 transition-all hover:shadow-md cursor-pointer"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-soft)',
-            }}
+            className="app-card mb-4 p-4 sm:p-6 transition-shadow hover:shadow-[var(--shadow-card-hover)] cursor-pointer"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               setSelectedItem(item);
               setShowDetailsModal(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                setSelectedItem(item);
+                setShowDetailsModal(true);
+              }
             }}
           >
             {/* Mobile hardening (wishlist): Improved card layout for narrow screens */}
             <div className="flex gap-3 sm:gap-4">
               {/* Image */}
               {item.imageUrl && (
-                <div className="flex-shrink-0 w-16 h-20 sm:w-20 sm:h-24 rounded-lg overflow-hidden bg-gray-100">
+                <div className="flex-shrink-0 w-16 h-20 sm:w-20 sm:h-24 rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--bg-muted)' }}>
                   <img 
                     src={item.imageUrl} 
                     alt={`${item.producer} ${item.wineName}`}
@@ -457,10 +418,10 @@ export function WishlistPage() {
                 {/* Title - improved wrapping on mobile */}
                 <h3 
                   className="text-base sm:text-lg font-semibold mb-1 break-words"
-                  style={{ color: 'var(--text-primary)' }}
+                  style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
                 >
                   {item.producer} {item.wineName}
-                  {item.vintage && <span className="ml-2 font-normal whitespace-nowrap">{item.vintage}</span>}
+                  {item.vintage && <>{' '}<span className="font-normal whitespace-nowrap">{item.vintage}</span></>}
                 </h3>
 
                 {/* Metadata */}
@@ -468,18 +429,26 @@ export function WishlistPage() {
                   className="text-sm mb-2 space-y-1"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  {item.region && <div>📍 {item.region}</div>}
-                  {item.grapes && <div>🍇 {item.grapes}</div>}
+                  {item.region && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.region}
+                    </div>
+                  )}
+                  {item.grapes && (
+                    <div className="flex items-center gap-1.5">
+                      <Grape className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.grapes}
+                    </div>
+                  )}
                   {item.restaurantName && (
-                    <div className="font-medium">
-                      🍽️ {item.restaurantName}
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Utensils className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.restaurantName}
                     </div>
                   )}
                   {item.note && (
                     <div 
-                      className="italic mt-2 p-2 rounded text-sm break-words"
+                      className="italic mt-2 px-3 py-2 rounded-xl text-sm break-words"
                       style={{ 
-                        backgroundColor: 'var(--bg-secondary)',
+                        backgroundColor: 'var(--bg-muted)',
                       }}
                     >
                       "{item.note}"
@@ -507,9 +476,9 @@ export function WishlistPage() {
                   handleMoveToCellar(item);
                 }}
                 disabled={movingId === item.id}
-                className="px-4 py-3 rounded-lg font-medium transition-all flex-1 min-h-[44px]"
+                className="px-4 py-3 rounded-full font-medium transition-all flex-1 min-h-[44px]"
                 style={{
-                  background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                  background: 'var(--sommi-gradient-primary)',
                   color: 'var(--text-inverse)',
                   opacity: movingId === item.id ? 0.6 : 1,
                 }}
@@ -524,9 +493,9 @@ export function WishlistPage() {
                   handleRemove(item.id);
                 }}
                 disabled={movingId === item.id}
-                className="px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] sm:w-auto"
+                className="px-5 py-3 rounded-full font-medium transition-colors min-h-[44px] sm:w-auto hover:bg-[var(--bg-muted)]"
                 style={{
-                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)',
                   color: 'var(--text-danger)',
                 }}
               >
@@ -788,20 +757,18 @@ export function WishlistPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowAddSheet(true)}
-          className="fixed shadow-xl rounded-full w-14 h-14 flex items-center justify-center"
+          className="fixed end-4 sm:hidden rounded-full w-14 h-14 flex items-center justify-center"
           style={{
             bottom: 'calc(6.5rem + env(safe-area-inset-bottom) + 1rem)', // 104px footer + safe-area + 16px gap (PWA-safe, adjusted for new floating footer)
-            right: 'max(1rem, env(safe-area-inset-right))',
-            background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+            background: 'var(--sommi-gradient-primary)',
+            boxShadow: 'var(--shadow-cta)',
             color: 'white',
             zIndex: 40,
             WebkitTapHighlightColor: 'transparent',
           }}
           aria-label={t('wishlist.addWine')}
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="w-6 h-6" strokeWidth={2} aria-hidden />
         </motion.button>
       )}
 
@@ -813,17 +780,19 @@ export function WishlistPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
             role="dialog"
             aria-modal="true"
-            style={{ backdropFilter: 'blur(4px)' }}
+            style={{ background: 'var(--bg-overlay)', backdropFilter: 'blur(4px)' }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg p-6 text-center"
+              className="rounded-[1.5rem] px-8 py-7 text-center"
               style={{
+                backgroundColor: 'var(--bg-surface)',
+                boxShadow: 'var(--shadow-modal)',
                 // PWA animation fix: Force hardware acceleration on iOS
                 transform: 'translateZ(0)',
                 WebkitTransform: 'translateZ(0)',
@@ -842,7 +811,7 @@ export function WishlistPage() {
               >
                 🍷
               </div>
-              <p className="text-lg font-medium">{t('cellar.labelParse.reading')}</p>
+              <p className="text-lg font-medium" style={{ color: 'var(--text-heading)' }}>{t('cellar.labelParse.reading')}</p>
             </motion.div>
           </motion.div>
         )}
@@ -868,7 +837,7 @@ export function WishlistPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+            className="fixed inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
             role="dialog"
             aria-modal="true"
             onClick={() => setShowConfirmation(false)}
@@ -880,10 +849,11 @@ export function WishlistPage() {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'tween', duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="rounded-[1.5rem] w-full max-w-md overflow-hidden"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-soft)',
+                boxShadow: 'var(--shadow-modal)',
               }}
             >
               {/* Header */}
@@ -891,13 +861,7 @@ export function WishlistPage() {
                 className="px-6 py-5 border-b"
                 style={{ borderColor: 'var(--border-soft)' }}
               >
-                <h3 
-                  className="text-xl font-bold"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
+                <h3 className="app-section-title">
                   {confirmationData.title}
                 </h3>
               </div>
@@ -922,7 +886,7 @@ export function WishlistPage() {
               >
                 <button
                   onClick={() => setShowConfirmation(false)}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-colors min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-colors min-h-[44px]"
                   style={{
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-medium)',
@@ -933,11 +897,11 @@ export function WishlistPage() {
                 </button>
                 <button
                   onClick={confirmationData.onConfirm}
-                  className="px-5 py-2.5 rounded-lg font-medium transition-all min-h-[44px]"
+                  className="px-5 py-2.5 rounded-full font-medium transition-all min-h-[44px]"
                   style={{
                     background: confirmationData.isDanger 
-                      ? 'linear-gradient(135deg, #dc2626, #b91c1c)' 
-                      : 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      ? 'linear-gradient(135deg, #c0392b, #9b2c22)' 
+                      : 'var(--sommi-gradient-primary)',
                     color: 'white',
                   }}
                 >

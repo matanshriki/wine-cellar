@@ -151,7 +151,7 @@ export function FloatingTimerPill({
               transition={{ duration: reduce ? 0 : 0.2 }}
               className="fixed inset-0 z-[53]"
               style={{
-                background: 'rgba(0, 0, 0, 0.55)',
+                background: 'var(--bg-overlay)',
                 backdropFilter: 'blur(3px)',
                 WebkitBackdropFilter: 'blur(3px)',
               }}
@@ -166,7 +166,7 @@ export function FloatingTimerPill({
               exit={{ y: '100%' }}
               transition={{ type: 'tween', duration: reduce ? 0 : 0.28, ease: [0.4, 0, 0.2, 1] }}
               onClick={e => e.stopPropagation()}
-              className="fixed left-0 right-0 z-[54]"
+              className="fixed start-0 end-0 z-[54]"
               style={{
                 bottom: 0,
                 background: 'var(--bg-surface)',
@@ -199,7 +199,7 @@ export function FloatingTimerPill({
                   onClick={() => setExpanded(false)}
                   className="w-7 h-7 rounded-full flex items-center justify-center text-sm"
                   style={{ background: 'var(--bg-muted)', color: 'var(--text-tertiary)' }}
-                  aria-label="Close"
+                  aria-label={t('common.close')}
                 >
                   ✕
                 </button>
@@ -296,7 +296,7 @@ export function FloatingTimerPill({
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[62]"
               style={{
-                background: 'rgba(0,0,0,0.6)',
+                background: 'var(--bg-overlay)',
                 backdropFilter: 'blur(4px)',
                 WebkitBackdropFilter: 'blur(4px)',
               }}
@@ -307,7 +307,7 @@ export function FloatingTimerPill({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.88, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 340, damping: 26 }}
-              className="fixed left-5 right-5 z-[63] p-6 rounded-3xl"
+              className="fixed start-5 end-5 z-[63] p-6 rounded-3xl"
               style={{
                 top: '50%',
                 transform: 'translateY(-50%)',
@@ -344,7 +344,7 @@ export function FloatingTimerPill({
                     onClick={() => handleRateNow(expiredAlert)}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm text-white"
                     style={{
-                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      background: 'var(--sommi-gradient-primary)',
                     }}
                   >
                     {t('timerPill.rateNow', 'Rate now')}
@@ -355,7 +355,7 @@ export function FloatingTimerPill({
                     onClick={() => handleDismissExpired(expiredAlert)}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm text-white"
                     style={{
-                      background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                      background: 'var(--sommi-gradient-primary)',
                     }}
                   >
                     {t('timerPill.enjoyNow', 'Enjoy!')}

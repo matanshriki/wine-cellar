@@ -20,6 +20,7 @@ import { CookieConsent } from './components/CookieConsent';
 import { OpenRitualProvider } from './contexts/OpenRitualContext';
 import { useMonetizationAccess } from './hooks/useMonetizationAccess';
 import { MonetizationProvider } from './contexts/MonetizationContext';
+import i18n from './i18n/config';
 
 // ── Lazy-loaded page chunks ────────────────────────────────────────────────────
 // Each page is code-split into its own chunk. The browser downloads only what the
@@ -46,7 +47,7 @@ const LandingPage      = lazy(() => import('./pages/LandingPage').then(m => ({ d
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen luxury-background">
-      <WineLoader variant="default" size="lg" message="Loading..." />
+      <WineLoader variant="default" size="lg" message={i18n.t('loading.app')} />
     </div>
   );
 }
@@ -139,51 +140,33 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            minHeight: '100dvh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem',
-            textAlign: 'center',
-            background: 'var(--bg-surface, #fff)',
-            fontFamily: 'system-ui, sans-serif',
-          }}
-        >
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍷</div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary, #111)' }}>
-            Something went wrong
-          </h1>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary, #555)', marginBottom: '1.5rem', maxWidth: '360px' }}>
-            An unexpected error occurred. Your cellar data is safe — tap below to reload.
-          </p>
-          {this.state.error && (
-            <details style={{ fontSize: '0.75rem', color: '#999', marginBottom: '1.5rem', maxWidth: '480px', textAlign: 'left' }}>
-              <summary style={{ cursor: 'pointer' }}>Error details</summary>
-              <pre style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {this.state.error.message}
-                {this.state.error.stack ? `\n\n${this.state.error.stack}` : ''}
-              </pre>
-            </details>
-          )}
-          <button
-            onClick={this.handleReset}
-            style={{
-              padding: '0.75rem 2rem',
-              borderRadius: '9999px',
-              background: 'linear-gradient(135deg, #a44c68, #7d3450)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: '1rem',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Reload App
-          </button>
-        </div>
+        <main className="min-h-screen-ios flex items-center justify-center px-5 py-10" style={{ background: 'var(--bg)' }}>
+          <div className="app-empty w-full max-w-lg px-6 py-8 sm:px-10 sm:py-10">
+            <img
+              src="/assets/landing/pain-too-late.jpg"
+              alt=""
+              aria-hidden
+              className="app-empty-art mb-6"
+              decoding="async"
+            />
+            <h1 className="app-display text-2xl sm:text-3xl leading-tight mb-3">{i18n.t('errors.boundaryTitle')}</h1>
+            <p className="mx-auto max-w-sm mb-7 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              {i18n.t('errors.boundaryBody')}
+            </p>
+            <button type="button" onClick={this.handleReset} className="btn-luxury-primary">
+              {i18n.t('errors.boundaryReload')}
+            </button>
+            {this.state.error && (
+              <details className="mt-6 text-xs text-start" style={{ color: 'var(--text-tertiary)' }}>
+                <summary className="cursor-pointer text-center">{i18n.t('errors.boundaryDetails')}</summary>
+                <pre className="mt-2 whitespace-pre-wrap break-words ltr-content">
+                  {this.state.error.message}
+                  {this.state.error.stack ? `\n\n${this.state.error.stack}` : ''}
+                </pre>
+              </details>
+            )}
+          </div>
+        </main>
       );
     }
     return this.props.children;
@@ -223,7 +206,7 @@ function FeatureFlagRoute({
   if (authLoading || flagsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen luxury-background">
-        <WineLoader variant="default" size="lg" message="Loading..." />
+        <WineLoader variant="default" size="lg" message={i18n.t('loading.app')} />
       </div>
     );
   }
@@ -258,7 +241,7 @@ function MonetizationRoute({ children }: { children: React.ReactNode }) {
   if (authLoading || creditsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen luxury-background">
-        <WineLoader variant="default" size="lg" message="Loading..." />
+        <WineLoader variant="default" size="lg" message={i18n.t('loading.app')} />
       </div>
     );
   }
@@ -279,7 +262,7 @@ function AppRoutes() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen luxury-background">
-        <WineLoader variant="default" size="lg" message="Loading..." />
+        <WineLoader variant="default" size="lg" message={i18n.t('loading.app')} />
       </div>
     );
   }

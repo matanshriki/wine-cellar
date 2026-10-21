@@ -155,9 +155,9 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="relative w-full px-4 py-3 mb-4"
           style={{
-            background: 'linear-gradient(135deg, rgba(101, 48, 69, 0.08) 0%, rgba(139, 69, 91, 0.05) 100%)',
+            background: 'var(--wine-50)',
             borderRadius: '16px',
-            border: '1px solid rgba(139, 69, 91, 0.15)',
+            border: '1px solid var(--wine-200)',
             backdropFilter: 'blur(10px)',
           }}
         >
@@ -167,7 +167,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               <button
                 onClick={handlePrevious}
                 className="absolute top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors"
-                aria-label="Previous event"
+                aria-label={t('common.previous')}
                 style={{
                   [i18n.dir() === 'rtl' ? 'right' : 'left']: '8px',
                 }}
@@ -186,7 +186,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               <button
                 onClick={handleNext}
                 className="absolute top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors"
-                aria-label="Next event"
+                aria-label={t('common.next')}
                 style={{
                   [i18n.dir() === 'rtl' ? 'left' : 'right']: '48px',
                 }}
@@ -209,7 +209,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
           <button
             onClick={handleDismiss}
             className="absolute top-2 p-1 hover:bg-white/10 rounded-full transition-colors"
-            aria-label="Dismiss"
+            aria-label={t('common.dismiss')}
             style={{
               [i18n.dir() === 'rtl' ? 'left' : 'right']: '8px',
             }}
@@ -240,11 +240,11 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
             </div>
 
             {/* Text content */}
-            <div className="flex-1 min-w-0 pr-6">
+            <div className="flex-1 min-w-0 pe-6">
               {/* "This week is..." header */}
               <p 
                 className="text-xs font-medium mb-1 uppercase tracking-wide opacity-70"
-                style={{ color: '#8b455b' }}
+                style={{ color: 'var(--accent-text)' }}
               >
                 {t('wineEvents.thisWeek', 'This week')}
               </p>
@@ -252,7 +252,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               <h3 
                 className="text-lg font-bold mb-1"
                 style={{ 
-                  color: '#653045',
+                  color: 'var(--accent-text)',
                   lineHeight: '1.3',
                 }}
               >
@@ -263,7 +263,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               <p 
                 className="text-sm mb-1 font-medium"
                 style={{ 
-                  color: '#8b455b',
+                  color: 'var(--accent-text)',
                   lineHeight: '1.5',
                 }}
               >
@@ -273,7 +273,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               <p 
                 className="text-sm mb-2 opacity-80"
                 style={{ 
-                  color: '#653045',
+                  color: 'var(--accent-text)',
                   lineHeight: '1.5',
                 }}
               >
@@ -284,7 +284,7 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
               {event.matchCount > 0 && event.filterTag && (
                 <div 
                   className="text-sm font-medium mb-2"
-                  style={{ color: '#8b455b' }}
+                  style={{ color: 'var(--accent-text)' }}
                 >
                   {t('wineEvents.youHaveMatches', { count: event.matchCount })}
                 </div>
@@ -297,9 +297,9 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
                     onClick={handleViewMatches}
                     className="px-4 py-2 rounded-full text-sm font-medium transition-all"
                     style={{
-                      background: 'linear-gradient(135deg, #653045 0%, #8b455b 100%)',
+                      background: 'var(--sommi-gradient-primary)',
                       color: 'white',
-                      boxShadow: '0 2px 8px rgba(101, 48, 69, 0.2)',
+                      boxShadow: 'var(--shadow-cta)',
                     }}
                   >
                     {t('wineEvents.viewMatches')}
@@ -309,9 +309,9 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
                     onClick={handleLearnMore}
                     className="px-4 py-2 rounded-full text-sm font-medium transition-all"
                     style={{
-                      background: 'linear-gradient(135deg, #653045 0%, #8b455b 100%)',
+                      background: 'var(--sommi-gradient-primary)',
                       color: 'white',
-                      boxShadow: '0 2px 8px rgba(101, 48, 69, 0.2)',
+                      boxShadow: 'var(--shadow-cta)',
                     }}
                   >
                     {t('wineEvents.learnMore')}
@@ -329,16 +329,16 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
                       className="w-2 h-2 rounded-full transition-all"
                       style={{
                         backgroundColor: index === currentIndex 
-                          ? '#653045' 
-                          : 'rgba(101, 48, 69, 0.3)',
+                          ? 'var(--accent-text)' 
+                          : 'var(--border-medium)',
                         transform: index === currentIndex ? 'scale(1.2)' : 'scale(1)',
                       }}
-                      aria-label={`Go to event ${index + 1}`}
+                      aria-label={t('wineEvents.goToEvent', { index: index + 1 })}
                     />
                   ))}
                   <span 
-                    className="text-xs ml-2 opacity-60"
-                    style={{ color: '#653045' }}
+                    className="text-xs ms-2 opacity-60"
+                    style={{ color: 'var(--accent-text)' }}
                   >
                     {currentIndex + 1} / {events.length}
                   </span>

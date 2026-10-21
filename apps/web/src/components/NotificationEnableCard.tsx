@@ -131,7 +131,7 @@ export function NotificationEnableCard({
   if (compact) {
     return (
       <div
-        className={`rounded-xl px-3 py-2.5 text-left ${className}`}
+        className={`rounded-xl px-3 py-2.5 text-start ${className}`}
         style={{
           background: 'var(--bg-muted)',
           border: '1px solid var(--border-subtle)',
@@ -141,7 +141,7 @@ export function NotificationEnableCard({
           {statusMessage}
         </p>
         {error && (
-          <p className="text-xs mb-2" style={{ color: 'var(--wine-700, #8b1a1a)' }}>
+          <p className="text-xs mb-2" style={{ color: 'var(--accent-text)' }}>
             {error}
           </p>
         )}
@@ -150,7 +150,7 @@ export function NotificationEnableCard({
             type="button"
             disabled={busy}
             onClick={handleEnable}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+            className="text-xs font-semibold px-3 py-1.5 rounded-full text-white"
             style={{ background: 'var(--wine-600)', opacity: busy ? 0.7 : 1 }}
           >
             {busy
@@ -163,7 +163,7 @@ export function NotificationEnableCard({
             type="button"
             disabled={busy}
             onClick={handleDisable}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg"
+            className="text-xs font-medium px-3 py-1.5 rounded-full"
             style={{ color: 'var(--text-tertiary)' }}
           >
             {t('notifications.disableThisDevice', 'Disable on this device')}
@@ -191,7 +191,7 @@ export function NotificationEnableCard({
         {statusMessage}
       </p>
       {error && (
-        <p className="text-sm mb-3" style={{ color: 'var(--wine-700, #8b1a1a)' }}>
+        <p className="text-sm mb-3" style={{ color: 'var(--accent-text)' }}>
           {error}
         </p>
       )}
@@ -201,7 +201,7 @@ export function NotificationEnableCard({
             type="button"
             disabled={busy || !userId}
             onClick={handleEnable}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            className="px-4 py-2 rounded-full text-sm font-semibold text-white"
             style={{ background: 'var(--wine-600)', opacity: busy ? 0.7 : 1 }}
           >
             {busy ? '…' : t('notifications.enable', 'Enable alerts')}
@@ -212,7 +212,7 @@ export function NotificationEnableCard({
             type="button"
             disabled={busy}
             onClick={handleDisable}
-            className="px-4 py-2 rounded-xl text-sm font-medium"
+            className="px-4 py-2 rounded-full text-sm font-medium"
             style={{
               color: 'var(--text-secondary)',
               border: '1px solid var(--border-subtle)',

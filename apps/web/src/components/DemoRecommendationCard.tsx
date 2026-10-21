@@ -137,7 +137,7 @@ export function DemoRecommendationCard({
             onClick={onAddBottle}
             className="w-full py-4 px-6 rounded-xl font-semibold text-base sm:text-lg mb-2 transition-all min-h-[52px] sm:min-h-[56px]"
             style={{
-              background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+              background: 'var(--sommi-gradient-primary)',
               color: 'var(--text-inverse)',
               border: '1px solid var(--wine-700)',
               boxShadow: 'var(--shadow-lg)',

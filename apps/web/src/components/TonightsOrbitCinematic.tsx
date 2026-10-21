@@ -464,9 +464,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
               {activePlan ? (
                 <motion.button
                   onClick={() => setShowQueuePlayer(true)}
-                  className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+                  className="ms-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                     border: '1px solid var(--wine-700)',
                     boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
@@ -481,9 +481,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
               ) : (
                 <motion.button
                   onClick={() => setShowPlanEveningModal(true)}
-                  className="ml-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+                  className="ms-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                   style={{
-                    background: 'linear-gradient(135deg, var(--wine-500), var(--wine-600))',
+                    background: 'var(--sommi-gradient-primary)',
                     color: 'white',
                     border: '1px solid var(--wine-600)',
                     boxShadow: '0 2px 8px rgba(164, 77, 90, 0.15)',
@@ -502,7 +502,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           {/* Decorative icon (only show if Plan feature not enabled) */}
           {(!isPlanEveningEnabled || isPlanEveningLoading) && (
             <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center ml-4"
+              className="w-12 h-12 rounded-full flex items-center justify-center ms-4"
               style={{
                 background: 'linear-gradient(135deg, var(--gold-50), var(--gold-100))',
                 border: '1px solid var(--gold-200)',
@@ -587,7 +587,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 <motion.div
                   className="relative overflow-hidden rounded-2xl cursor-pointer"
                   style={{
-                    background: 'white',
+                    background: 'var(--bg-surface)',
                     border: isActive ? '2px solid var(--wine-200)' : '1px solid var(--border-light)',
                     boxShadow: isActive 
                       ? '0 20px 60px rgba(124, 48, 48, 0.15)' 
@@ -662,9 +662,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                           const cfg = isHoldBadge ? HOLD_BADGE_STYLE : SLOT_CONFIG[slotInfo.slot];
                           return (
                             <div
-                              className="absolute top-3 ltr:left-3 rtl:right-3 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
+                              className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
                               style={{
-                                background: cfg.bg,
+                                background: `linear-gradient(${cfg.bg}, ${cfg.bg}), var(--bg-surface)`,
                                 color: cfg.color,
                                 backdropFilter: 'blur(8px)',
                                 border: `1px solid ${cfg.color}33`,
@@ -679,13 +679,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                         {/* AI Badge */}
                         {displayImage.isGenerated && (
                           <div 
-                            className="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1"
+                            className="absolute top-3 end-3 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1"
                             style={{
                               background: 'rgba(0, 0, 0, 0.75)',
                               color: 'white',
                               backdropFilter: 'blur(8px)',
                             }}
-                            title="AI-generated label art"
+                            title={t('a11y.aiLabelArt')}
                           >
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
@@ -842,7 +842,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 duration: 0.2,
                 ease: [0.25, 0.1, 0.25, 1],
               }}
-              aria-label="Previous wine"
+              aria-label={t('common.previous')}
             >
               <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -878,7 +878,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                 duration: 0.2,
                 ease: [0.25, 0.1, 0.25, 1],
               }}
-              aria-label="Next wine"
+              aria-label={t('common.next')}
             >
               <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

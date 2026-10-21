@@ -70,7 +70,7 @@ function Backdrop({ onDismiss }: { onDismiss: () => void }) {
   return (
     <motion.div
       className="fixed inset-0"
-      style={{ background: 'rgba(0,0,0,0.45)', zIndex: 49 }}
+      style={{ background: 'var(--bg-overlay)', zIndex: 49 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -170,8 +170,7 @@ function IosSheet({ onDismiss }: { onDismiss: () => void }) {
           </div>
           <button
             onClick={onDismiss}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
-            style={{ background: 'var(--bg-muted)', color: 'var(--text-tertiary)' }}
+            className="app-icon-btn flex-shrink-0"
             aria-label={t('pwaPrompt.ios.dismiss')}
           >
             <IconClose />
@@ -257,8 +256,7 @@ function AndroidSheet({ onInstall, onDismiss }: { onInstall: () => void; onDismi
           </div>
           <button
             onClick={onDismiss}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
-            style={{ background: 'var(--bg-muted)', color: 'var(--text-tertiary)' }}
+            className="app-icon-btn flex-shrink-0"
             aria-label={t('pwaPrompt.android.dismiss')}
           >
             <IconClose />
@@ -308,7 +306,7 @@ function DesktopModal({ onDismiss }: { onDismiss: () => void }) {
       transition={{ duration: 0.2 }}
     >
       <div
-        className="relative w-full max-w-sm rounded-2xl p-8 text-center"
+        className="relative w-full max-w-sm rounded-[1.5rem] p-8 text-center"
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',

@@ -57,9 +57,9 @@ export function DemoBanner({ onExitDemo }: DemoBannerProps) {
         {/* CTA */}
         <button
           onClick={onExitDemo}
-          className="flex-shrink-0 px-5 py-3 rounded-xl font-semibold text-sm transition-all w-full sm:w-auto min-h-[44px]"
+          className="flex-shrink-0 px-5 py-3 rounded-full font-semibold text-sm transition-all w-full sm:w-auto min-h-[44px]"
           style={{
-            background: 'linear-gradient(135deg, var(--wine-600), var(--wine-700))',
+            background: 'var(--sommi-gradient-primary)',
             color: 'var(--text-inverse)',
             border: '1px solid var(--wine-700)',
             boxShadow: '0 4px 12px rgba(139, 21, 56, 0.2)',
