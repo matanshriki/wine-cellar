@@ -308,16 +308,16 @@
       "peakSoon": "Nearing peak",
       "ready": "Ready to drink",
       "noAnalysis": "No analysis available yet",
-      "totalAnalyzed": "Distinct wines with a drink-window analysis",
-      "totalAnalyzedHelp": "Counts wine records with an AI readiness label (READY / PEAK_SOON / HOLD) — not physical bottle quantity. Status-only or unlabeled wines are excluded from these buckets and from Ready/Aging filter chips so unknown readiness is never shown as ready or aging.",
-      "unlabeledNote_one": "{{count}} wine without a readiness label is not in these buckets — clear readiness filters to see it in your full cellar.",
-      "unlabeledNote_other": "{{count}} wines without a readiness label are not in these buckets — clear readiness filters to see them in your full cellar.",
-      "unlabeledNote": "{{count}} wines without a readiness label are not in these buckets — clear readiness filters to see them in your full cellar.",
+      "totalAnalyzed": "Wines with a drink-window assessment",
+      "totalAnalyzedHelp": "How many distinct wines have been assessed as aging, nearing peak, or ready — not your total bottle count. Wines still awaiting assessment aren’t included here.",
+      "unlabeledNote_one": "{{count}} wine hasn’t been assessed yet, so it isn’t counted here — clear readiness filters to see it in your full cellar.",
+      "unlabeledNote_other": "{{count}} wines haven’t been assessed yet, so they aren’t counted here — clear readiness filters to see them in your full cellar.",
+      "unlabeledNote": "{{count}} wines haven’t been assessed yet, so they aren’t counted here — clear readiness filters to see them in your full cellar.",
       "thisMonth": "this month",
       "tonightSignal": "{{count}} wine is perfect for tonight",
       "tonightSignal_other": "{{count}} wines are perfect for tonight",
       "tonightSignal_one": "{{count}} wine is perfect for tonight",
-      "tonightSignalHelp": "This count is READY wines with a Vivino community rating of {{threshold}}+ (stored as wines.rating). It is separate from Tonight’s Selection, which ranks ready and near-peak bottles and has no rating floor."
+      "tonightSignalHelp": "Ready to drink now, with a community rating of {{threshold}}+."
     }
   },
   "cellar": {
