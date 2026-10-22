@@ -26,7 +26,7 @@ export function ThemeToggle() {
       {/* White Theme Button */}
       <motion.button
         onClick={() => setTheme('white')}
-        className="relative px-5 min-h-[40px] rounded-full text-sm font-semibold transition-colors"
+        className="relative px-5 min-h-[44px] rounded-full text-sm font-semibold transition-colors"
         style={{
           background: theme === 'white' ? 'var(--bg-surface)' : 'transparent',
           color: theme === 'white' ? 'var(--text-heading)' : 'var(--text-secondary)',
@@ -55,7 +55,7 @@ export function ThemeToggle() {
       {/* Red Theme Button */}
       <motion.button
         onClick={() => setTheme('red')}
-        className="relative px-5 min-h-[40px] rounded-full text-sm font-semibold transition-colors"
+        className="relative px-5 min-h-[44px] rounded-full text-sm font-semibold transition-colors"
         style={{
           background: theme === 'red' ? 'var(--bg-surface)' : 'transparent',
           color: theme === 'red' ? 'var(--text-heading)' : 'var(--text-secondary)',
@@ -100,8 +100,8 @@ export function CompactThemeToggle() {
       onClick={handleClick}
       className="relative flex items-center justify-center rounded-full transition-colors hover:bg-[var(--interactive-hover)]"
       style={{
-        width: '40px',
-        height: '40px',
+        width: '44px',
+        height: '44px',
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         color: 'var(--text-secondary)',

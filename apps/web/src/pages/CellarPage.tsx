@@ -66,6 +66,12 @@ import * as wineEventsService from '../services/wineEventsService'; // Wine Worl
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 import { sumInStockBottles, type InventoryTotals } from '../utils/inventory';
+import {
+  hasDrinkWindowAnalysis,
+  matchesReadinessChip,
+  type CellarReadinessChip,
+} from '../utils/cellarReadinessFilters';
+import { getVivinoRating, vivinoRatingOrZero } from '../utils/wineRating';
 
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
@@ -1150,37 +1156,19 @@ export function CellarPage() {
           }
         });
         
-        // Check readiness filters (OR logic - wine matches ANY selected readiness state)
-        const matchesReadiness = readinessFilters.length === 0 || readinessFilters.some((filter) => {
-          switch (filter) {
-            case 'ready':
-              return (
-                bottle.readiness_status === 'InWindow' ||
-                bottle.readiness_status === 'Peak' ||
-                (bottle as any).readiness_label === 'READY'
-              );
-            case 'peakSoon':
-              return (
-                bottle.readiness_status === 'Approaching' ||
-                (bottle as any).readiness_label === 'PEAK_SOON'
-              );
-            case 'aging':
-              return (
-                bottle.readiness_status === 'TooYoung' ||
-                (bottle as any).readiness_label === 'HOLD'
-              );
-            case 'pastPeak': // Feedback iteration (dev only)
-              return bottle.readiness_status === 'PastPeak';
-            default:
-              return false;
-          }
-        });
+        // Readiness chips match Drink Window counts (AI readiness_label only),
+        // so clicking a bucket shows the same set the count represents.
+        const matchesReadiness =
+          readinessFilters.length === 0 ||
+          readinessFilters.some((filter) =>
+            matchesReadinessChip(bottle as any, filter as CellarReadinessChip),
+          );
         
         // Check other filters (AND logic - wine must match ALL other filters)
         const matchesOther = otherFilters.every((filter) => {
           switch (filter) {
             case 'analyzed':
-              return bottle.readiness_status && bottle.readiness_status !== 'Unknown';
+              return hasDrinkWindowAnalysis(bottle as any);
             case CELLAR_KOSHER_FILTER_KEY:
               return wineMatchesCellarKosherFilter(bottle.wine);
             default:
@@ -1193,12 +1181,11 @@ export function CellarPage() {
       });
     }
 
-    // Apply rating filter (from Tonight Signal navigation)
+    // Apply rating filter (from Tonight Signal / Perfect-for-tonight — Vivino community rating)
     if (ratingFilter) {
       result = result.filter((bottle) => {
-        const wine = bottle.wine || bottle;
-        const rating = (wine as any).vivino_rating || (wine as any).rating || 0;
-        return rating >= ratingFilter;
+        const rating = getVivinoRating(bottle.wine as any);
+        return rating !== null && rating >= ratingFilter;
       });
     }
 
@@ -1221,10 +1208,10 @@ export function CellarPage() {
         else if (vintageB === 0) compareValue = -1; // nulls last
         else compareValue = vintageA - vintageB;
       } else if (sortBy === 'rating') {
-        // Sort by rating (Vivino rating from wine table)
-        const ratingA = (a.wine as any).rating || 0;
-        const ratingB = (b.wine as any).rating || 0;
-        
+        // Vivino community rating (wines.rating); missing sorts last
+        const ratingA = vivinoRatingOrZero(a.wine as any);
+        const ratingB = vivinoRatingOrZero(b.wine as any);
+
         if (ratingA === 0 && ratingB === 0) compareValue = 0;
         else if (ratingA === 0) compareValue = 1; // nulls last
         else if (ratingB === 0) compareValue = -1; // nulls last
@@ -1429,9 +1416,19 @@ export function CellarPage() {
         eyebrow={t('cellar.eyebrow')}
         title={t('cellar.title')}
         subtitle={
-          filteredBottles.length === bottlesInCellar.length
-            ? t('cellar.bottleCount', { count: totalBottleCount })
-            : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })
+          <span className="block">
+            <span>
+              {filteredBottles.length === bottlesInCellar.length
+                ? t('cellar.bottleCount', { count: totalBottleCount })
+                : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
+            </span>
+            <span
+              className="block text-xs mt-1.5 font-normal leading-snug"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {t('cellar.bottleCountHelp')}
+            </span>
+          </span>
         }
         actions={
           <>
@@ -1630,7 +1627,7 @@ export function CellarPage() {
             {(searchQuery || activeFilters.length > 0) && (
               <button
                 onClick={clearFilters}
-                className="px-3 min-h-[36px] rounded-full text-sm font-semibold transition-all flex-shrink-0 underline underline-offset-4"
+                className="px-3 min-h-[44px] rounded-full text-sm font-semibold transition-all flex-shrink-0 underline underline-offset-4"
                 style={{ color: 'var(--accent-text)' }}
               >
                 {t('cellar.filters.clear')}
@@ -2541,6 +2538,13 @@ export function CellarPage() {
         
         .cellar-grid-item {
           min-width: 0;
+          height: 100%;
+          display: flex;
+        }
+
+        .cellar-grid-item > * {
+          flex: 1 1 auto;
+          width: 100%;
         }
       `}</style>
       

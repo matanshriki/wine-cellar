@@ -78,7 +78,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
   return (
     <>
       <article
-        className="luxury-card luxury-card-hover p-4 sm:p-4 md:p-5 w-full"
+        className="luxury-card luxury-card-hover p-4 sm:p-4 md:p-5 w-full h-full flex flex-col"
         onClick={(e) => {
           // Pointer convenience only; keyboard users use the title button.
           const target = e.target as HTMLElement;
@@ -89,7 +89,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         style={{ cursor: onShowDetails ? 'pointer' : 'default' }}
       >
         {/* Header Section */}
-        <div className="relative mb-3 flex gap-3 md:gap-4">
+        <div className="relative mb-3 flex gap-3 md:gap-4 items-start">
           {!displayImage.isLoading && displayImage.imageUrl && !imageErrorRetried ? (
             <button
               type="button"
@@ -163,7 +163,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           </div>
 
           <h3 
-            className="text-lg sm:text-xl md:text-2xl font-semibold line-clamp-2 leading-tight mb-2 pe-20"
+            className="text-base sm:text-lg md:text-xl font-semibold leading-snug mb-1 pe-16 sm:pe-20"
             style={{ 
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-display)',
@@ -177,22 +177,24 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 e.stopPropagation();
                 onShowDetails?.();
               }}
-              className="text-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+              className="text-start rounded-sm min-h-[44px] w-full py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
               aria-label={t('cellar.bottle.viewDetailsFor', { name: localizedWine.wine_name })}
+              title={localizedWine.wine_name}
             >
-              {localizedWine.wine_name}
+              <bdi className="break-words [overflow-wrap:anywhere]">{localizedWine.wine_name}</bdi>
             </button>
           </h3>
 
           {localizedWine.producer && (
             <p 
-              className="text-sm truncate pe-20"
+              className="text-sm line-clamp-2 pe-16 sm:pe-20"
               style={{ 
                 color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-body)',
               }}
+              title={localizedWine.producer}
             >
-              {localizedWine.producer}
+              <bdi>{localizedWine.producer}</bdi>
             </p>
           )}
 
@@ -282,7 +284,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
       )}
 
       {/* Divider */}
-      <div className="divider-luxury my-3" />
+      <div className="divider-luxury my-3 mt-auto" />
 
       {/* Analysis Status - Compact Badge or Generate Button */}
       {(bottle as any).analysis_summary && (bottle as any).readiness_label ? (
@@ -382,7 +384,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
         </button>
       )}
 
-      {/* Actions Section */}
+      {/* Actions Section — sits under analysis; divider's mt-auto aligns rows */}
       <div className="space-y-2.5">
         {/* Primary Action: Mark as Opened - Only show if quantity > 0 */}
         {onMarkOpened && bottle.quantity > 0 && (

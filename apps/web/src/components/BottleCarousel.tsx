@@ -426,21 +426,27 @@ export function BottleCarousel({
           {bottles.map((_, index) => (
             <button
               key={index}
+              type="button"
+              className="app-hit-target"
               onClick={() => {
                 setCurrentIndex(index);
                 scrollToIndex(index);
               }}
-              style={{
-                width: currentIndex === index ? '24px' : '8px',
-                height: '8px',
-                borderRadius: '4px',
-                backgroundColor: currentIndex === index ? 'var(--wine-600)' : 'var(--border-medium)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-              }}
               aria-label={`Go to bottle ${index + 1}`}
-            />
+              aria-current={currentIndex === index ? 'true' : undefined}
+            >
+              <span
+                aria-hidden
+                style={{
+                  display: 'block',
+                  width: currentIndex === index ? '24px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  backgroundColor: currentIndex === index ? 'var(--wine-600)' : 'var(--border-medium)',
+                  transition: 'all 0.3s',
+                }}
+              />
+            </button>
           ))}
         </div>
       )}

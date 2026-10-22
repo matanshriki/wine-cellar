@@ -2,7 +2,7 @@
  * Cellar Agent Page - Clean Rebuild
  */
 
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
@@ -45,6 +45,7 @@ import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { useTheme } from '../contexts/ThemeContext';
+import { useDialogA11y } from '../hooks/useDialogA11y';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 import {
   AGENT_ENTRY_TONIGHT_CARD,
@@ -236,6 +237,13 @@ export function AgentPageWorking() {
   const [currentConversation, setCurrentConversation] = useState<SommelierConversation | null>(null);
   const [isSavingConversation, setIsSavingConversation] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarPanelRef = useRef<HTMLDivElement>(null);
+  const sidebarOverlayRef = useRef<HTMLDivElement>(null);
+  const historyButtonRef = useRef<HTMLButtonElement>(null);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  useDialogA11y(sidebarPanelRef, sidebarOpen, closeSidebar, {
+    initialFocusRef: sidebarPanelRef,
+  });
   const [pricingOpen, setPricingOpen] = useState(false);
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const [noCreditsShortfall, setNoCreditsShortfall] = useState<{
@@ -817,129 +825,150 @@ export function AgentPageWorking() {
           border: none;
           color: var(--text-tertiary);
           cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
+          min-width: 44px;
+          min-height: 44px;
+          padding: 0;
+          border-radius: 9999px;
           flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
-        .sommi-conv-delete-btn:hover { color: var(--text-error); background: var(--color-error-light); }
-        .sommi-conv-item:hover .sommi-conv-delete-btn { opacity: 1; }
+        .sommi-conv-delete-btn:hover,
+        .sommi-conv-delete-btn:focus-visible { opacity: 1; color: var(--text-error); background: var(--color-error-light); }
+        .sommi-conv-item:hover .sommi-conv-delete-btn,
+        .sommi-conv-item:focus-within .sommi-conv-delete-btn { opacity: 1; }
       `}</style>
 
-      {/* Sidebar overlay */}
-      <div
-        className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
-        onClick={() => setSidebarOpen(false)}
-      />
-
-      {/* Sidebar panel */}
-      <div className={`sidebar-panel ${isRtl ? 'rtl' : 'ltr'} ${sidebarOpen ? 'open' : ''}`}>
-        {/* Sidebar header */}
-        <div style={{
-          padding: '20px 16px 12px',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-        }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-heading)', margin: 0 }}>
-            {t('cellarSommelier.conversationHistory', 'Conversations')}
-          </h2>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="app-icon-btn -me-2"
-            aria-label={t('common.close')}
+      {/* Modal conversation drawer — unmounted when closed so AT/keyboard cannot reach it.
+          Modal at all breakpoints (overlay + focus trap via useDialogA11y). */}
+      {sidebarOpen ? (
+        <>
+          <div
+            ref={sidebarOverlayRef}
+            className="sidebar-overlay open"
+            onClick={closeSidebar}
+            aria-hidden="true"
+          />
+          <div
+            ref={sidebarPanelRef}
+            id="sommi-conversation-drawer"
+            className={`sidebar-panel open ${isRtl ? 'rtl' : 'ltr'}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sommi-conversation-drawer-title"
+            tabIndex={-1}
           >
-            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* New conversation button */}
-        <div style={{ padding: '12px 16px', flexShrink: 0 }}>
-          <button
-            onClick={startNewConversation}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '9999px',
-              border: '1.5px dashed var(--border-medium)',
-              background: 'transparent',
-              color: 'var(--accent-text)',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
+            <div style={{
+              padding: '20px 16px 12px',
+              borderBottom: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.15s',
-            }}
-          >
-            <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            {t('cellarSommelier.newConversation', 'New conversation')}
-          </button>
-        </div>
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}>
+              <h2
+                id="sommi-conversation-drawer-title"
+                style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-heading)', margin: 0 }}
+              >
+                {t('cellarSommelier.conversationHistory', 'Conversations')}
+              </h2>
+              <button
+                onClick={closeSidebar}
+                className="app-icon-btn -me-2"
+                aria-label={t('common.close')}
+              >
+                <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-        {/* Conversation list */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {loadingConversations && conversationList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
-              {t('cellarSommelier.loading', 'Loading...')}
+            <div style={{ padding: '12px 16px', flexShrink: 0 }}>
+              <button
+                onClick={startNewConversation}
+                style={{
+                  width: '100%',
+                  minHeight: '44px',
+                  padding: '12px',
+                  borderRadius: '9999px',
+                  border: '1.5px dashed var(--border-medium)',
+                  background: 'transparent',
+                  color: 'var(--accent-text)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {t('cellarSommelier.newConversation', 'New conversation')}
+              </button>
             </div>
-          ) : conversationList.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
-              {t('cellarSommelier.noConversations', 'No past conversations yet')}
-            </div>
-          ) : (
-            conversationList.map((conv) => {
-              const isActive = currentConversation?.id === conv.id;
-              const msgCount = (conv.messages || []).filter((m: AgentMessage) => m.role === 'user').length;
-              return (
-                <div
-                  key={conv.id}
-                  className={`sommi-conv-item ${isActive ? 'active' : ''}`}
-                  onClick={() => resumeConversation(conv)}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: '14px',
-                      fontWeight: isActive ? 600 : 500,
-                      color: 'var(--text-primary)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {resolveConversationTitle(conv.title, conv.messages || [])}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
-                      <span>{formatConversationDate(conv.last_message_at || conv.updated_at)}</span>
-                      <span>·</span>
-                      <span>{msgCount} {msgCount === 1 ? t('cellarSommelier.message', 'message') : t('cellarSommelier.messages', 'messages')}</span>
-                    </div>
-                  </div>
-                  <button
-                    className="sommi-conv-delete-btn"
-                    title={t('cellarSommelier.deleteConversation', 'Delete')}
-                    aria-label={t('cellarSommelier.deleteConversation', 'Delete')}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteConversation(conv.id);
-                    }}
-                  >
-                    <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {loadingConversations && conversationList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
+                  {t('cellarSommelier.loading', 'Loading...')}
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+              ) : conversationList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-tertiary)', fontSize: '14px' }}>
+                  {t('cellarSommelier.noConversations', 'No past conversations yet')}
+                </div>
+              ) : (
+                conversationList.map((conv) => {
+                  const isActive = currentConversation?.id === conv.id;
+                  const msgCount = (conv.messages || []).filter((m: AgentMessage) => m.role === 'user').length;
+                  return (
+                    <div
+                      key={conv.id}
+                      className={`sommi-conv-item ${isActive ? 'active' : ''}`}
+                      onClick={() => resumeConversation(conv)}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: isActive ? 600 : 500,
+                          color: 'var(--text-primary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {resolveConversationTitle(conv.title, conv.messages || [])}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
+                          <span>{formatConversationDate(conv.last_message_at || conv.updated_at)}</span>
+                          <span>·</span>
+                          <span>{msgCount} {msgCount === 1 ? t('cellarSommelier.message', 'message') : t('cellarSommelier.messages', 'messages')}</span>
+                        </div>
+                      </div>
+                      <button
+                        className="sommi-conv-delete-btn"
+                        title={t('cellarSommelier.deleteConversation', 'Delete')}
+                        aria-label={t('cellarSommelier.deleteConversation', 'Delete')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteConversation(conv.id);
+                        }}
+                      >
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <div 
         className="agent-container"
@@ -1023,12 +1052,16 @@ export function AgentPageWorking() {
 
             {/* History / sidebar toggle */}
             <button
+              ref={historyButtonRef}
+              type="button"
               onClick={openSidebar}
               title={t('cellarSommelier.conversationHistory', 'Conversations')}
               aria-label={t('cellarSommelier.conversationHistory', 'Conversations')}
+              aria-expanded={sidebarOpen}
+              aria-controls="sommi-conversation-drawer"
               style={{
-                width: '40px',
-                height: '40px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '9999px',
                 border: '1px solid var(--border-subtle)',
                 backgroundColor: 'var(--bg-surface)',

@@ -27,6 +27,7 @@ import {
   type DiffInput,
   type MealContext,
 } from './mealPairing';
+import { bottleMatchesMaxPriceUsd } from '../utils/priceTiers';
 
 // LocalStorage key for tracking recently shown recommendations
 const RECENT_RECOMMENDATIONS_KEY = 'wine_recent_recommendations';
@@ -137,10 +138,17 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   // Filter by constraints
   let filteredBottles = bottlesWithWine;
 
-  // Filter by max price if provided
+  // Filter by max price if provided (USD cap). Unknown prices are excluded —
+  // missing purchase_price must not be treated as zero / "cheap".
+  // Intentional change from pre-2026-10 behavior that kept unknown prices in-range.
   if (input.constraints?.maxPrice && input.constraints.maxPrice > 0) {
-    filteredBottles = filteredBottles.filter(b => 
-      !b.purchase_price || b.purchase_price <= input.constraints!.maxPrice!
+    const maxUsd = input.constraints.maxPrice;
+    filteredBottles = filteredBottles.filter((b) =>
+      bottleMatchesMaxPriceUsd(
+        b.purchase_price,
+        (b as { purchase_price_currency?: string | null }).purchase_price_currency,
+        maxUsd,
+      ),
     );
   }
 

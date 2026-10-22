@@ -87,7 +87,8 @@ export function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' 
             : 'flex items-center gap-1.5 px-2.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
         }
         style={{
-          height: isPill ? '40px' : '36px',
+          height: isPill ? '44px' : '44px',
+          minWidth: '44px',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
         }}

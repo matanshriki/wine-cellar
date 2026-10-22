@@ -38,10 +38,15 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
 import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
+import {
+  formatPriceTierLabel,
+  maxPriceUsdForRange,
+  type PriceRangeIndex,
+} from '../utils/priceTiers';
 
 type WineType = 'red' | 'white' | 'rose' | 'mixed';
-type PriceRange = 0 | 1 | 2 | 3 | 4;
-const PRICE_TIERS_USD = [0, 25, 50, 100, 200] as const;
+type PriceRange = PriceRangeIndex;
 
 type Recommendation = recommendationService.Recommendation;
 
@@ -70,6 +75,7 @@ const vibes = [
 
 export function RecommendationPage() {
   const { t, i18n } = useTranslation();
+  const { preferredCurrency } = useAuth();
   const { openRitual } = useOpenRitual();
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const isOnline = useOnlineStatus();
@@ -137,7 +143,8 @@ export function RecommendationPage() {
     setLoading(true);
 
     try {
-      const maxPriceInUSD = context.priceRange > 0 ? PRICE_TIERS_USD[context.priceRange] : undefined;
+      // Caps are defined in USD (see utils/priceTiers.ts); filtering converts bottle currencies.
+      const maxPriceInUSD = maxPriceUsdForRange(context.priceRange);
 
       const requestContext: recommendationService.RecommendationInput = {
         mealType: context.mealType || undefined,
@@ -826,21 +833,22 @@ export function RecommendationPage() {
                         border: '1px solid var(--border-subtle)',
                       }}
                     >
-                      {[
-                        { value: 0, label: t('recommendation.form.priceAny') },
-                        { value: 1, label: '$' },
-                        { value: 2, label: '$$' },
-                        { value: 3, label: '$$$' },
-                        { value: 4, label: '$$$$' },
-                      ].map(({ value, label }) => {
+                      {([0, 1, 2, 3, 4] as PriceRange[]).map((value) => {
                         const selected = context.priceRange === value;
+                        const label = formatPriceTierLabel(
+                          value,
+                          preferredCurrency || 'USD',
+                          i18n.language,
+                          t('recommendation.form.priceAny'),
+                        );
                         return (
                           <button
                             key={value}
                             type="button"
-                            onClick={() => setContext({ ...context, priceRange: value as PriceRange })}
+                            onClick={() => setContext({ ...context, priceRange: value })}
                             aria-pressed={selected}
-                            className="flex-1 min-h-[44px] rounded-full font-medium text-sm transition-colors duration-150"
+                            title={label}
+                            className="flex-1 min-h-[44px] rounded-full font-medium text-xs sm:text-sm px-1 transition-colors duration-150"
                             style={{
                               background: selected ? 'var(--sommi-gradient-primary)' : 'transparent',
                               color: selected ? '#fff' : 'var(--text-secondary)',
@@ -851,6 +859,12 @@ export function RecommendationPage() {
                         );
                       })}
                     </div>
+                    <p
+                      className="text-xs mt-2 leading-relaxed"
+                      style={{ color: 'var(--text-tertiary)' }}
+                    >
+                      {t('recommendation.form.priceRangeHelp')}
+                    </p>
                   </div>
 
                   {/* Prefer ready to drink toggle */}

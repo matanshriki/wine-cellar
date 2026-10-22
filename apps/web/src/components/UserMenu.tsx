@@ -113,7 +113,8 @@ export function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 transition-colors px-1 lg:pe-2.5 rounded-full hover:bg-[var(--interactive-hover)]"
         style={{
-          height: '40px',
+          height: '44px',
+          minWidth: '44px',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
         }}

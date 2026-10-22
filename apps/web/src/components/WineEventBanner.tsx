@@ -325,16 +325,23 @@ export function WineEventBanner({ events, onDismiss, onViewMatches }: WineEventB
                   {events.map((_, index) => (
                     <button
                       key={index}
+                      type="button"
                       onClick={() => setCurrentIndex(index)}
-                      className="w-2 h-2 rounded-full transition-all"
-                      style={{
-                        backgroundColor: index === currentIndex 
-                          ? 'var(--accent-text)' 
-                          : 'var(--border-medium)',
-                        transform: index === currentIndex ? 'scale(1.2)' : 'scale(1)',
-                      }}
+                      className="app-hit-target"
                       aria-label={t('wineEvents.goToEvent', { index: index + 1 })}
-                    />
+                      aria-current={index === currentIndex ? 'true' : undefined}
+                    >
+                      <span
+                        aria-hidden
+                        className="block w-2 h-2 rounded-full transition-all"
+                        style={{
+                          backgroundColor: index === currentIndex
+                            ? 'var(--accent-text)'
+                            : 'var(--border-medium)',
+                          transform: index === currentIndex ? 'scale(1.2)' : 'scale(1)',
+                        }}
+                      />
+                    </button>
                   ))}
                   <span 
                     className="text-xs ms-2 opacity-60"

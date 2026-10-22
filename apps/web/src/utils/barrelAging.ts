@@ -21,7 +21,15 @@ const GENERIC_SOURCES = new Set(['ai general knowledge', 'general knowledge', 'a
 const GENERIC_SOURCE_PATTERN = /\b(?:style|regional)\s+norms?\b|\btypical\b|\bgeneral\b/i;
 const NOTE_STATES_MONTHS = /\d+\s*(?:[–-]\s*\d+\s*)?(?:months?|mos?\.?|חודש(?:ים)?)/i;
 
-/** Single source of truth for how barrel-aging data is labelled in the UI. */
+/**
+ * Single source of truth for how barrel-aging data is labelled in the UI.
+ *
+ * Status meanings:
+ * - verified → producer-confirmed fact (`is_estimated === false` and high confidence)
+ * - estimate → regional/style-based (or weaker) guess; confidence reflects how
+ *   typical the practice is, NOT bottle-specific verification.
+ * Drink-window confidence is a separate field and must not be conflated with this.
+ */
 export function describeBarrelAging(input: BarrelAgingInput): BarrelAgingView | null {
   const note = input.barrel_aging_note?.trim() || null;
   const rawMonths = input.barrel_aging_months_est;
@@ -30,6 +38,7 @@ export function describeBarrelAging(input: BarrelAgingInput): BarrelAgingView | 
 
   const meta = input.barrel_aging_metadata ?? null;
   const confidence = meta?.confidence ?? 'medium';
+  // Producer confirmation only — never promote a regional estimate to "verified".
   const verified = !!meta && meta.is_estimated === false && confidence === 'high';
   const rawSource = meta?.source?.trim() ?? '';
   const source = GENERIC_SOURCES.has(rawSource.toLowerCase()) || GENERIC_SOURCE_PATTERN.test(rawSource) ? null : rawSource;

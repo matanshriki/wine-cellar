@@ -407,12 +407,13 @@ export function WishlistPage() {
                 >
                   <button
                     type="button"
-                    className="text-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                    className="text-start rounded-sm min-h-[44px] inline-flex items-center py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
                     onClick={() => {
                       setSelectedItem(item);
                       setShowDetailsModal(true);
                     }}
                     aria-label={t('cellar.bottle.viewDetailsFor', { name: `${item.wineName}${item.vintage ? ` ${item.vintage}` : ''}` })}
+                    title={`${item.wineName}${item.vintage ? ` ${item.vintage}` : ''}`}
                   >
                     <bdi>{item.wineName}</bdi>
                     {item.vintage && (

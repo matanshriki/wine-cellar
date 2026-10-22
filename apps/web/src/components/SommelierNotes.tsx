@@ -287,7 +287,8 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
               {t('cellar.sommelier.barrelMonths', { count: barrel.months })}
             </p>
           ) : null}
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
+          {/* Provenance is separate from drink-window confidence; estimates are not producer verification. */}
+          <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
             {barrel.source
               ? t('cellar.sommelier.barrelBasisSource', { source: barrel.source })
               : t('cellar.sommelier.barrelBasisGeneral')}

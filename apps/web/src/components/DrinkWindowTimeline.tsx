@@ -22,6 +22,7 @@ import {
   shouldSaveSnapshot,
   type ReadinessCategory,
 } from '../utils/drinkWindowInsights';
+import { hasDrinkWindowAnalysis } from '../utils/cellarReadinessFilters';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 interface DrinkWindowTimelineProps {
@@ -37,6 +38,11 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
   // Compute insights
   const insights = getBucketInsights(bottles);
   const tonightSignal = computeTonightSignal(insights.READY.bottles);
+  // Unlabeled / unanalyzed wines are intentionally excluded from Drink Window buckets
+  // and readiness chips — they remain visible in the full cellar when no readiness filter is on.
+  const unlabeledCount = bottles.filter(
+    (b) => b.quantity > 0 && !hasDrinkWindowAnalysis(b as any),
+  ).length;
 
   // Save snapshot on mount (once per day)
   useEffect(() => {
@@ -258,20 +264,30 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             }}
           >
             <div 
-              className="flex items-center gap-2 px-3 py-2 -mx-3 rounded-lg transition-colors hover:bg-[var(--interactive-hover)] min-h-[44px]"
+              className="flex items-start gap-2 px-3 py-2 -mx-3 rounded-lg transition-colors hover:bg-[var(--interactive-hover)] min-h-[44px]"
             >
-              <span className="text-lg" aria-hidden>✨</span>
-              <span 
-                className="text-sm font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('dashboard.drinkWindow.tonightSignal', {
-                  count: tonightSignal.count,
-                  defaultValue: `${tonightSignal.count} ${tonightSignal.count === 1 ? 'wine is' : 'wines are'} perfect for tonight`
-                })}
-              </span>
+              <span className="text-lg mt-0.5" aria-hidden>✨</span>
+              <div className="flex-1 min-w-0">
+                <span 
+                  className="text-sm font-medium block"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {t('dashboard.drinkWindow.tonightSignal', {
+                    count: tonightSignal.count,
+                    defaultValue: `${tonightSignal.count} ${tonightSignal.count === 1 ? 'wine is' : 'wines are'} perfect for tonight`
+                  })}
+                </span>
+                <span
+                  className="text-xs mt-0.5 block leading-snug"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {t('dashboard.drinkWindow.tonightSignalHelp', {
+                    threshold: tonightSignal.threshold,
+                  })}
+                </span>
+              </div>
               <svg
-                className="w-4 h-4 ms-auto flip-rtl" aria-hidden
+                className="w-4 h-4 ms-auto mt-1 flex-shrink-0 flip-rtl" aria-hidden
                 style={{ 
                   color: 'var(--text-tertiary)',
                 }}
@@ -293,12 +309,34 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             borderTop: '1px solid var(--border-subtle)',
           }}
         >
-          <div className="flex items-center justify-between text-sm">
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {t('dashboard.drinkWindow.totalAnalyzed')}
-            </span>
+          <div className="flex items-start justify-between gap-3 text-sm">
+            <div className="min-w-0">
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {t('dashboard.drinkWindow.totalAnalyzed')}
+              </span>
+              <p
+                className="text-xs mt-1 leading-snug"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {t('dashboard.drinkWindow.totalAnalyzedHelp')}
+              </p>
+              {unlabeledCount > 0 && (
+                <p
+                  className="text-xs mt-1.5 leading-snug"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {t('dashboard.drinkWindow.unlabeledNote', {
+                    count: unlabeledCount,
+                    defaultValue:
+                      '{{count}} wine without a readiness label is not in these buckets — clear filters to see it in your full cellar.',
+                    defaultValue_other:
+                      '{{count}} wines without a readiness label are not in these buckets — clear filters to see them in your full cellar.',
+                  })}
+                </p>
+              )}
+            </div>
             <span 
-              className="font-semibold tabular-nums"
+              className="font-semibold tabular-nums flex-shrink-0"
               style={{ color: 'var(--text-primary)' }}
             >
               {insights.totalAnalyzed}

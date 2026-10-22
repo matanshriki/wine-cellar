@@ -17,6 +17,7 @@
  */
 
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { getVivinoRating } from './wineRating';
 
 // ─── Dev logging (Vite only, never reaches production bundle) ─────────────────
 const IS_DEV = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV === true;
@@ -61,7 +62,8 @@ interface Snapshot {
 
 const SNAPSHOT_KEY = 'drinkWindowSnapshots';
 const SNAPSHOT_RETENTION_DAYS = 90; // Keep 90 days of history
-const DEFAULT_RATING_THRESHOLD = 4.2;
+/** Vivino/rating floor for the “Perfect for tonight” signal only — not Tonight’s Selection. */
+export const DEFAULT_RATING_THRESHOLD = 4.2;
 
 /**
  * Categorize bottles by readiness
@@ -238,8 +240,9 @@ export function computeTonightSignal(
 ): TonightSignal {
   const count = readyBottles.filter((bottle) => {
     const wine = bottle.wine || bottle;
-    const rating = (wine as any).vivino_rating || (wine as any).rating || 0;
-    return rating >= ratingThreshold;
+    // Canonical community rating is wines.rating (Vivino). Never use user_rating.
+    const rating = getVivinoRating(wine as any);
+    return rating !== null && rating >= ratingThreshold;
   }).length;
 
   return {

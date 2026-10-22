@@ -437,8 +437,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-2 min-w-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg transition-all hover:opacity-80 active:scale-95"
                 style={{ 
                   background: 'none', 
-                  border: 'none', 
+                  border: 'none',
                   padding: '4px',
+                  minHeight: '44px',
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
                   userSelect: 'none',
@@ -501,7 +502,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       to={item.path}
                       onClick={handleClick}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`inline-flex items-center min-h-[40px] px-4 rounded-full text-sm font-semibold transition-colors ${
+                      className={`inline-flex items-center min-h-[44px] px-4 rounded-full text-sm font-semibold transition-colors ${
                         isActive ? '' : 'hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]'
                       }`}
                       style={{

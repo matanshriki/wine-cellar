@@ -13,6 +13,7 @@
  */
 
 import type { BottleWithWineInfo } from './bottleService';
+import { getVivinoRating } from '../utils/wineRating';
 
 export type SlotKey = 'bestTonight' | 'crowdPleaser' | 'specialBottle';
 
@@ -131,10 +132,10 @@ function scoreCrowdPleaser(bottle: BottleWithWineInfo): number {
   else if (readiness === 'PEAK_SOON') score += 10;
   else if (readiness === 'HOLD') score -= 40;
 
-  // Good Vivino rating → crowd-trusted choice
-  const rating = (bottle.wine as any).rating as number | undefined | null;
-  if (rating && rating >= 4.0) score += 20;
-  else if (rating && rating >= 3.5) score += 10;
+  // Good Vivino community rating → crowd-trusted choice (never user_rating)
+  const rating = getVivinoRating(bottle.wine as any);
+  if (rating !== null && rating >= 4.0) score += 20;
+  else if (rating !== null && rating >= 3.5) score += 10;
 
   // Avoid using prestige bottles casually
   if (hasPrestigeSignal(bottle)) score -= 15;
@@ -156,10 +157,10 @@ function scoreSpecialBottle(bottle: BottleWithWineInfo): number {
   const readiness = getReadiness(bottle);
   const age = getAge(bottle);
 
-  // High Vivino rating
-  const rating = (bottle.wine as any).rating as number | undefined | null;
-  if (rating && rating >= 4.2) score += 40;
-  else if (rating && rating >= 3.8) score += 20;
+  // High Vivino community rating
+  const rating = getVivinoRating(bottle.wine as any);
+  if (rating !== null && rating >= 4.2) score += 40;
+  else if (rating !== null && rating >= 3.8) score += 20;
 
   // Prestige region / appellation / style
   if (hasPrestigeSignal(bottle)) score += 35;
@@ -192,8 +193,8 @@ function getReasonKey(slot: SlotKey, bottle: BottleWithWineInfo): string {
   if (hasPrestigeSignal(bottle)) return `${BASE}.prestigeBottle`;
   const age = getAge(bottle);
   if (age !== null && age >= 10) return `${BASE}.matureAndReady`;
-  const ratingForReason = (bottle.wine as any).rating as number | undefined | null;
-  if (ratingForReason && ratingForReason >= 4.0) return `${BASE}.highlyRated`;
+  const ratingForReason = getVivinoRating(bottle.wine as any);
+  if (ratingForReason !== null && ratingForReason >= 4.0) return `${BASE}.highlyRated`;
   return `${BASE}.impressBottle`;
 }
 
@@ -223,9 +224,9 @@ function buildTags(slot: SlotKey, bottle: BottleWithWineInfo): CategorizedSlot['
     tags.push({ key: `${BASE}.needsDecant`, values: { min: decantMin } });
   }
 
-  // High-rated signal
-  const ratingForTag = (bottle.wine as any).rating as number | undefined | null;
-  if (ratingForTag && ratingForTag >= 4.0) {
+  // High-rated Vivino community signal
+  const ratingForTag = getVivinoRating(bottle.wine as any);
+  if (ratingForTag !== null && ratingForTag >= 4.0) {
     tags.push({ key: `${BASE}.highRated` });
   }
 

@@ -32,6 +32,7 @@ import { getLocalizedWineData } from '../utils/wineTranslations';
 import { WineImage } from './ui/WineImage';
 import { ChevronLeft, ChevronRight, Pause, Play, Star } from 'lucide-react';
 import { selectTonightCategories, type CategorizedSlot, type SlotKey } from '../services/tonightsCategoryService';
+import { getVivinoRating } from '../utils/wineRating';
 
 interface TonightsOrbitCinematicProps {
   bottles: BottleWithWineInfo[];
@@ -519,12 +520,15 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
               {t('dashboard.tonightsOrbit.viewDetails')}
               <ChevronRight className="h-4 w-4 flip-rtl" strokeWidth={1.75} aria-hidden />
             </button>
-            {bottle.wine.rating && bottle.wine.rating > 0 ? (
-              <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                <Star className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: 'var(--rating-star)', fill: 'var(--rating-star)' }} aria-hidden />
-                {bottle.wine.rating.toFixed(1)}
-              </span>
-            ) : null}
+            {(() => {
+              const vivino = getVivinoRating(bottle.wine as any);
+              return vivino !== null ? (
+                <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <Star className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: 'var(--rating-star)', fill: 'var(--rating-star)' }} aria-hidden />
+                  {vivino.toFixed(1)}
+                </span>
+              ) : null;
+            })()}
             {bottle.quantity > 1 && (
               <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
                 ×{bottle.quantity}
@@ -546,7 +550,13 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5"
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
-        <div className="flex items-start justify-between gap-3">
+        {/*
+          Mobile: stack Plan under the title and pin it to the inline-start edge so it
+          stays clear of the fixed Ask-Sommi FAB (inset-inline-end). justify-between
+          previously placed Plan on the same end edge as the FAB — crowded at 390×640 RTL.
+        */}
+        {/* Reserve inline-end space on phones so Plan never grows under the Ask-Sommi FAB */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between max-sm:pe-16">
           <div className="min-w-0 flex-1">
             <h2
               id={titleId}
@@ -570,7 +580,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             <button
               type="button"
               onClick={() => (activePlan ? setShowQueuePlayer(true) : setShowPlanEveningModal(true))}
-              className="btn-luxury-primary !min-h-[44px] !py-2 !px-4 text-sm flex-shrink-0"
+              className="btn-luxury-primary !min-h-[44px] !py-2 !px-4 text-sm flex-shrink-0 self-start"
             >
               <span aria-hidden>{activePlan ? '▶️' : '🎯'}</span>
               <span className="hidden sm:inline">
@@ -603,9 +613,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           </AnimatePresence>
         </div>
 
-        {/* Phones: controls cluster at the start edge, clear of the floating Sommi button at the end edge */}
+        {/* Phones: controls at inline-start + end padding so the Ask-Sommi FAB cannot cover dots/arrows */}
         {topBottles.length > 1 && (
-          <div className="mt-3 flex items-center justify-start sm:justify-between gap-2">
+          <div className="mt-3 flex items-center justify-start sm:justify-between gap-2 max-sm:pe-16">
             <button type="button" onClick={goToPrevious} className={navBtnClass} aria-label={t('common.previous')}>
               <ChevronLeft className="h-5 w-5 flip-rtl" strokeWidth={1.75} aria-hidden />
             </button>
@@ -618,7 +628,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
                     key={`dot-${getBottleKey(bottle)}`}
                     type="button"
                     onClick={() => goToIndex(index)}
-                    className="flex items-center justify-center min-w-[28px] min-h-[44px]"
+                    className="flex items-center justify-center min-w-[44px] min-h-[44px]"
                     aria-label={t('dashboard.tonightsOrbit.goTo', {
                       n: index + 1,
                       name: getLocalizedWineData(bottle.wine, i18n.language).wine_name,

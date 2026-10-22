@@ -189,7 +189,8 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     <div
       className="fixed z-[45]"
       style={{
-        bottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px) + 1rem)',
+        // Sit above the floating bottom nav (token includes safe-area + buffer) with a 1rem gap.
+        bottom: 'calc(var(--app-bottom-nav-layout-total, 6.5rem) + 1rem)',
         insetInlineEnd: '1rem',
       }}
     >

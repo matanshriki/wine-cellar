@@ -14,6 +14,7 @@ import type { BottleWithWineInfo } from './bottleService';
 import type { FoodProfile, WineProfile } from './wineProfileService';
 import { calculateFoodPairingScore, getWineProfile } from './wineProfileService';
 import { groundedPairingReasons } from './mealPairing';
+import { vivinoRatingOrZero } from '../utils/wineRating';
 
 export type Occasion = 'friends' | 'bbq' | 'pizza' | 'date' | 'celebration';
 export type GroupSize = '2-4' | '5-8' | '9+';
@@ -44,9 +45,9 @@ export function wineExtras(bottle: BottleWithWineInfo): WineExtras {
   return bottle.wine as BottleWithWineInfo['wine'] & WineExtras;
 }
 
+/** Vivino / community rating only — never personal user_rating. */
 export function vivinoRatingOf(bottle: BottleWithWineInfo): number {
-  const rating = wineExtras(bottle).rating;
-  return typeof rating === 'number' && rating > 0 ? rating : 0;
+  return vivinoRatingOrZero(wineExtras(bottle));
 }
 
 export const NO_FOOD: FoodChoices = { protein: 'none', sauce: 'none', spice: 'low', smoke: 'low' };

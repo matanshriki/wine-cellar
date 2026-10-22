@@ -224,19 +224,24 @@ export function BottleCarouselLuxury({ bottles, onBottleClick }: BottleCarouselL
           {bottles.map((_, index) => (
             <button
               key={index}
+              type="button"
+              className="app-hit-target"
               onClick={() => scrollToIndex(index)}
               aria-label={`Go to bottle ${index + 1}`}
-              style={{
-                width: currentIndex === index ? '24px' : '8px',
-                height: '8px',
-                borderRadius: '4px',
-                backgroundColor: currentIndex === index ? 'var(--wine-600)' : 'var(--border-medium)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                padding: 0,
-              }}
-            />
+              aria-current={currentIndex === index ? 'true' : undefined}
+            >
+              <span
+                aria-hidden
+                style={{
+                  display: 'block',
+                  width: currentIndex === index ? '24px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  backgroundColor: currentIndex === index ? 'var(--wine-600)' : 'var(--border-medium)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            </button>
           ))}
         </div>
       )}

@@ -48,7 +48,7 @@ export function SommelierCreditsDisplay({
         <div
           className="inline-flex items-center rounded-full px-2.5 animate-pulse"
           style={{
-            height: '40px',
+            height: '44px',
             width: '56px',
             background: 'var(--bg-muted)',
             border: '1px solid var(--border-subtle)',
@@ -84,7 +84,7 @@ export function SommelierCreditsDisplay({
         type="button"
         onClick={onUpgradeClick}
         className="inline-flex items-center gap-1.5 rounded-full px-3 text-xs font-semibold tabular-nums transition-colors hover:bg-[var(--interactive-hover)]"
-        style={{ ...badgeStyle, height: '40px' }}
+        style={{ ...badgeStyle, height: '44px', minWidth: '44px' }}
         aria-label={t('sommelierCredits.balance.ariaLabel', { count: effectiveBalance })}
       >
         <Sparkles size={13} strokeWidth={1.75} style={{ color: isBlocked || isLowBalance ? undefined : 'var(--color-gold-500)' }} />

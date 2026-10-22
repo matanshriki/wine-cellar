@@ -349,9 +349,15 @@ export function HistoryPage() {
                       <button
                         type="button"
                         onClick={() => handleWineClick(event)}
-                        className="text-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                        className="text-start rounded-sm min-h-[44px] inline-flex items-center py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                        title={event.bottle?.wine?.wine_name || t('history.unknownBottle')}
+                        aria-label={t('cellar.bottle.viewDetailsFor', {
+                          name: event.bottle?.wine?.wine_name || t('history.unknownBottle'),
+                        })}
                       >
-                        {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
+                        <bdi className="break-words [overflow-wrap:anywhere]">
+                          {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
+                        </bdi>
                       </button>
                     </h3>
                     <div className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
