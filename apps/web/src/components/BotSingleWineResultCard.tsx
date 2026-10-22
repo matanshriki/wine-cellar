@@ -115,7 +115,7 @@ export function BotSingleWineResultCard({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <svg
-            style={{ width: '18px', height: '18px', color: 'var(--wine-600)' }}
+            style={{ width: '18px', height: '18px', color: 'var(--accent-text)' }}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -125,7 +125,7 @@ export function BotSingleWineResultCard({
             style={{
               fontSize: '13px',
               fontWeight: 600,
-              color: 'var(--wine-700)',
+              color: 'var(--accent-text)',
               letterSpacing: '0.02em',
               textTransform: 'uppercase',
             }}
@@ -269,7 +269,7 @@ export function BotSingleWineResultCard({
                   gap: '4px',
                   fontSize: '13px',
                   fontWeight: 600,
-                  color: 'var(--gold-600)',
+                  color: 'var(--text-eyebrow)',
                 }}
               >
                 ⭐ {bottle.wine.rating.toFixed(1)}
@@ -285,7 +285,7 @@ export function BotSingleWineResultCard({
                   fontSize: '12px',
                   fontWeight: 600,
                   backgroundColor: 'var(--wine-50)',
-                  color: 'var(--wine-700)',
+                  color: 'var(--accent-text)',
                 }}
               >
                 ×{bottle.quantity} {t('cellar.inCellar', 'in cellar')}
@@ -346,7 +346,7 @@ export function BotSingleWineResultCard({
               padding: '4px 0',
               border: 'none',
               background: 'none',
-              color: 'var(--wine-600)',
+              color: 'var(--accent-text)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -478,7 +478,7 @@ export function BotSingleWineResultCard({
               borderRadius: '12px',
               border: '1px solid var(--wine-600)',
               background: 'transparent',
-              color: 'var(--wine-600)',
+              color: 'var(--accent-text)',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',

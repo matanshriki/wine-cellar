@@ -1,5 +1,5 @@
-import { Camera, Moon, Search, Sparkles, Wine, X } from 'lucide-react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Camera, ChevronDown, Moon, Search, Sparkles, Wine, X } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { MetaHead } from '../components/MetaHead';
@@ -65,6 +65,7 @@ import { addMonitoringBreadcrumb } from '../lib/monitoring';
 import * as wineEventsService from '../services/wineEventsService'; // Wine World Moments
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isConnectivityFetchFailure } from '../utils/connectivityErrors';
+import { sumInStockBottles, type InventoryTotals } from '../utils/inventory';
 
 // LOCAL DEV FLAG: Enable cinematic carousel for testing
 const ENABLE_CINEMATIC_CAROUSEL = true; // Set to false to use original version
@@ -97,6 +98,24 @@ export function CellarPage() {
   const [loading, setLoading] = useState(true); // Keep true for proper initial load
   const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll: loading more bottles
   const [hasMore, setHasMore] = useState(true); // Infinite scroll: more bottles available
+  const [inventoryTotalsFromServer, setInventoryTotalsFromServer] = useState<InventoryTotals | null>(null);
+  const [overviewOpen, setOverviewOpen] = useState(() => {
+    try {
+      return localStorage.getItem('sommi.cellar.overviewOpen') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const toggleOverview = useCallback(() => {
+    setOverviewOpen((open) => {
+      try {
+        localStorage.setItem('sommi.cellar.overviewOpen', String(!open));
+      } catch {
+        /* storage unavailable (private mode) */
+      }
+      return !open;
+    });
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingBottle, setEditingBottle] = useState<bottleService.BottleWithWineInfo | null>(null);
@@ -638,7 +657,15 @@ export function CellarPage() {
     }
     try {
       const offset = reset ? 0 : bottles.length;
-      const data = await bottleService.listBottles({ offset, limit: PAGE_SIZE });
+      const [data] = await Promise.all([
+        bottleService.listBottles({ offset, limit: PAGE_SIZE }),
+        reset
+          ? bottleService
+              .getInventoryTotals()
+              .then(setInventoryTotalsFromServer)
+              .catch(() => setInventoryTotalsFromServer(null))
+          : Promise.resolve(),
+      ]);
 
       setCellarUnreachableEmpty(false);
 
@@ -931,7 +958,7 @@ export function CellarPage() {
       // Start loading state
       setIsParsing(true);
       setScanPhase('scanning');
-      toast.info('Identifying bottle(s)…');
+      toast.info(t('cellar.addBottle.identifyingToast'));
       
       // Close sheet after starting loading (critical for iOS file reference stability)
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -1013,10 +1040,13 @@ export function CellarPage() {
     return bottles.filter(bottle => bottle.quantity > 0);
   }, [bottles, isDemoMode]);
 
-  // Total number of physical bottles (sum of all quantities)
+  // Physical bottles in the whole cellar. While more pages remain unloaded,
+  // the loaded rows undercount, so prefer the full-cellar totals.
   const totalBottleCount = useMemo(() => {
-    return bottlesInCellar.reduce((sum, bottle) => sum + bottle.quantity, 0);
-  }, [bottlesInCellar]);
+    const loaded = sumInStockBottles(bottlesInCellar);
+    if (isDemoMode || !hasMore || !inventoryTotalsFromServer) return loaded;
+    return Math.max(loaded, inventoryTotalsFromServer.bottles);
+  }, [bottlesInCellar, hasMore, inventoryTotalsFromServer, isDemoMode]);
 
   /** Show Kosher chip only when the cellar has at least one verified or likely Kosher wine */
   const cellarHasKosherFilterableWines = useMemo(
@@ -1229,9 +1259,16 @@ export function CellarPage() {
   }, [bottlesInCellar, searchQuery, activeFilters, ratingFilter, sortBy, sortDir]);
 
   // Total filtered bottle count (sum of quantities in filtered results)
-  const totalFilteredCount = useMemo(() => {
-    return filteredBottles.reduce((sum, bottle) => sum + bottle.quantity, 0);
-  }, [filteredBottles]);
+  const totalFilteredCount = useMemo(() => sumInStockBottles(filteredBottles), [filteredBottles]);
+
+  // Search and filters must see the whole cellar, not just the first page.
+  useEffect(() => {
+    const narrowing = searchQuery.trim() !== '' || activeFilters.length > 0 || ratingFilter !== null;
+    if (narrowing && hasMore && !loadingMore && !loading) {
+      loadMoreBottles();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, activeFilters, ratingFilter, hasMore, loadingMore, loading]);
 
   /**
    * Toggle filter chip
@@ -1692,11 +1729,27 @@ export function CellarPage() {
 
       {/* Innovation Widgets - Tonight's Orbit and Drink Window */}
       {bottlesInCellar.length > 0 && !searchQuery && activeFilters.length === 0 && (
+        <section className="mb-6" aria-labelledby="cellar-overview-toggle">
+          <h2 className="mb-2">
+            <button
+              id="cellar-overview-toggle"
+              type="button"
+              className="app-disclosure"
+              aria-expanded={overviewOpen}
+              aria-controls="cellar-overview-panel"
+              onClick={toggleOverview}
+            >
+              <ChevronDown className="app-disclosure-chevron h-4 w-4" strokeWidth={1.75} aria-hidden />
+              {t('cellar.overview.title')}
+            </button>
+          </h2>
+          {overviewOpen && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          id="cellar-overview-panel"
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }} // Removed delay for faster rendering
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
+          transition={{ duration: 0.2 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start"
           style={{ pointerEvents: 'auto' }} // Fix: Ensure widgets are immediately interactive
         >
           {ENABLE_CINEMATIC_CAROUSEL ? (
@@ -1718,6 +1771,8 @@ export function CellarPage() {
           )}
           <DrinkWindowTimeline bottles={filteredBottles} />
         </motion.div>
+          )}
+        </section>
       )}
 
       {bottlesInCellar.length === 0 ? (

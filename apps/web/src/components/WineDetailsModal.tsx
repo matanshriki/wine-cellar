@@ -4,7 +4,7 @@
  * Displays comprehensive wine information in a beautiful bottle-themed modal
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
@@ -16,6 +16,10 @@ import { useLocalizedWine } from '../hooks/useLocalizedWine';
 import { AddWineImageDialog } from './AddWineImageDialog';
 import { SommelierNotes } from './SommelierNotes';
 import { KeepBadge } from './KeepBadge';
+import { WineImage } from './ui/WineImage';
+import { StarRating } from './ui/StarRating';
+import { useDialogA11y } from '../hooks/useDialogA11y';
+import { ChevronDown, ExternalLink, ImagePlus, Sparkles as SparklesIcon } from 'lucide-react';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
 import { addMonitoringBreadcrumb } from '../lib/monitoring';
@@ -31,6 +35,49 @@ import { recordShownInsight } from '../services/insightCache';
 import { readCachedFoodPairing, getFoodPairingFallback, triggerFoodPairingGeneration } from '../services/foodPairingService';
 import type { FoodPairing } from '../services/foodPairingService';
 import { readKosherInfo } from '../services/kosherService';
+
+// ─── Collapsible section ──────────────────────────────────────────────────────
+
+function DetailsSection({
+  icon,
+  title,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
+  icon: string;
+  title: string;
+  badge?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const panelId = useId();
+  return (
+    <section className="min-w-0">
+      <h3 className="m-0">
+        <button
+          type="button"
+          className="app-disclosure w-full -mx-1"
+          style={{ color: 'var(--text-primary)' }}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span aria-hidden>{icon}</span>
+          <span>{title}</span>
+          {badge}
+          <ChevronDown className="app-disclosure-chevron ms-auto h-4 w-4" strokeWidth={1.75} aria-hidden />
+        </button>
+      </h3>
+      {open && (
+        <div id={panelId} className="mt-2 min-w-0">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
 
 // ─── Kosher Status Section ────────────────────────────────────────────────────
 
@@ -233,26 +280,14 @@ function FoodPairingSection({
   }, [language, bottle.wine_id]);
 
   return (
-    <div>
-      <h3
-        className="text-sm font-semibold mb-3 flex items-center gap-2"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        <span>🍽️</span>
-        <span>{t('foodPairing.sectionTitle')}</span>
-        {aiPairing && (
+    <DetailsSection icon="🍽️" title={t('foodPairing.sectionTitle')} badge={aiPairing ? (
           <span
             className="text-xs px-2 py-0.5 rounded-full font-medium"
-            style={{
-              background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
-              color: 'white',
-              fontSize: '10px',
-            }}
+            style={{ background: 'var(--gold-50)', color: 'var(--text-eyebrow)' }}
           >
             {t('foodPairing.badge')}
           </span>
-        )}
-      </h3>
+        ) : undefined}>
 
       {/* AI-generated data */}
       {aiPairing && <PairingCard pairing={aiPairing} />}
@@ -290,7 +325,7 @@ function FoodPairingSection({
           <PairingCard pairing={fallback} muted />
         </>
       )}
-    </div>
+    </DetailsSection>
   );
 }
 
@@ -388,7 +423,7 @@ function PairingCard({ pairing, muted = false }: PairingCardProps) {
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
                   background: 'var(--gold-50, rgba(212,175,55,0.08))',
-                  color: 'var(--gold-700, #8a6d00)',
+                  color: 'var(--text-eyebrow)',
                   border: '1px solid var(--gold-200, rgba(212,175,55,0.25))',
                 }}
               >
@@ -449,6 +484,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
   const displayImage = useWineDisplayImage(bottle?.wine);
   const localizedWine = useLocalizedWine(bottle?.wine);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogA11y(dialogRef, isOpen, onClose, {
+    initialFocusRef: closeButtonRef,
+    isTopmost: !showImageDialog && !showGenerateDialog,
+  });
 
   useEffect(() => {
     setBarrelFromRefresh(null);
@@ -692,13 +733,9 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.97, opacity: 0 }}
               transition={{ duration: 0.1, ease: 'easeOut' }}
-              className="luxury-card flex w-full min-w-0 flex-col overflow-x-hidden"
+              ref={dialogRef}
+              className="luxury-card flex w-full min-w-0 flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  onClose();
-                }
-              }}
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
@@ -725,7 +762,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   <div className="flex-1 pe-4">
                     <h2 
                       id="wine-details-title"
-                      className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 leading-tight"
+                      className="text-2xl sm:text-3xl font-bold mb-1 leading-tight"
                       style={{ 
                         color: 'var(--text-primary)',
                         fontFamily: 'var(--font-display)',
@@ -745,8 +782,10 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   
                   {/* Close button */}
                   <button
+                    ref={closeButtonRef}
+                    type="button"
                     onClick={onClose}
-                    className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 modal-close-button"
+                    className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 modal-close-button"
                     style={{
                       backgroundColor: 'var(--bg-muted)',
                       color: 'var(--text-secondary)',
@@ -763,7 +802,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
               {/* Content - Scrollable */}
               <div 
-                className="luxury-scrollbar min-w-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-4 py-4 pb-20 sm:px-6 sm:py-6 md:space-y-8 md:px-8 md:pb-8"
+                className="luxury-scrollbar min-w-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-6 sm:py-5"
                 style={{
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',
@@ -771,70 +810,32 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
               >
                 {/* Wine Image & Quick Stats */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                  {/* Wine Bottle Image or Placeholder */}
-                  <div className="flex-shrink-0 mx-auto sm:mx-0">
-                    <div className="relative group">
-                      {displayImage.imageUrl ? (
-                        <div className="relative">
-                          <img 
-                            src={displayImage.imageUrl}
-                            alt={localizedWine.wine_name}
-                            className="w-40 h-48 sm:w-40 sm:h-52 object-contain rounded-lg wine-image"
-                            style={{
-                              border: '2px solid var(--border-base)',
-                              boxShadow: 'var(--shadow-lg)',
-                            }}
-                            onError={(e) => {
-                              // Show placeholder on error
-                              const placeholder = e.currentTarget.parentElement?.nextElementSibling;
-                              if (placeholder) {
-                                placeholder.classList.remove('hidden');
-                              }
-                              e.currentTarget.parentElement!.style.display = 'none';
-                            }}
-                          />
-                          {/* AI Generated Badge */}
-                          {displayImage.isGenerated && (
-                            <div 
-                              className="absolute top-2 end-2 px-2 py-1 rounded text-xs font-medium flex items-center gap-1"
-                              style={{
-                                background: 'rgba(0, 0, 0, 0.6)',
-                                color: 'white',
-                                backdropFilter: 'blur(4px)',
-                              }}
-                            >
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                              </svg>
-                              <span>AI</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                      
-                      {/* Premium Placeholder */}
-                      <div 
-                        className={`w-40 h-48 sm:w-40 sm:h-52 rounded-lg flex flex-col items-center justify-center ${displayImage.imageUrl ? 'hidden' : ''}`}
-                        style={{
-                          border: '2px dashed var(--border-base)',
-                          background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
-                        }}
+                  {/* Wine image: framed, never stretched; original opens in a new tab */}
+                  <div className="flex-shrink-0 mx-auto sm:mx-0 flex flex-col items-center gap-2 w-32">
+                    <WineImage
+                      src={displayImage.imageUrl}
+                      alt={localizedWine.wine_name}
+                      isGenerated={displayImage.isGenerated}
+                      loading="eager"
+                      className="w-28 h-36 sm:w-32 sm:h-40"
+                      iconSize={36}
+                      showUnavailableText
+                    />
+                    {displayImage.imageUrl && (
+                      <a
+                        href={displayImage.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="app-link inline-flex items-center gap-1 text-xs min-h-[32px]"
                       >
-                        <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-xs text-center px-4" style={{ color: 'var(--text-tertiary)' }}>
-                          No image
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Image Management Buttons */}
-                    <div className="mt-2 md:mt-3 space-y-2">
-                      {/* Add/Update User Image */}
+                        <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                        {t('bottle.viewImage')}
+                      </a>
+                    )}
+                    <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => {
-                          // Onboarding v1 – value first: Prevent image upload for demo bottles
                           if (isDemoBottle) {
                             toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
                             return;
@@ -842,34 +843,16 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           setShowImageDialog(true);
                         }}
                         disabled={isDemoBottle}
-                        className={`w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 image-button-hover ${
-                          isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                        style={{
-                          background: 'var(--bg-surface)',
-                          border: '1px solid var(--border-base)',
-                          color: 'var(--text-secondary)',
-                          minHeight: '40px',
-                          WebkitTapHighlightColor: 'transparent',
-                        }}
-                        aria-label={displayImage.imageUrl ? 'Update wine image' : 'Add wine image'}
+                        className="app-icon-btn disabled:opacity-50"
+                        aria-label={displayImage.imageUrl ? t('wineImage.updateButton', 'Update Image') : t('wineImage.addButton', 'Add Image')}
+                        title={displayImage.imageUrl ? t('wineImage.updateButton', 'Update Image') : t('wineImage.addButton', 'Add Image')}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>
-                          {displayImage.imageUrl
-                            ? t('wineImage.updateButton', 'Update Image')
-                            : t('wineImage.addButton', 'Add Image')
-                          }
-                        </span>
+                        <ImagePlus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                       </button>
-
-                      {/* Generate Label Art Button */}
                       {userCanGenerateAI && !displayImage.imageUrl && (
                         <button
+                          type="button"
                           onClick={() => {
-                            // Onboarding v1 – value first: Prevent AI generation for demo bottles
                             if (isDemoBottle) {
                               toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
                               return;
@@ -877,37 +860,11 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             setShowGenerateDialog(true);
                           }}
                           disabled={isGenerating || isDemoBottle}
-                          className={`w-full py-2 px-3 md:py-2.5 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ai-button-hover ${
-                            isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
-                          }`}
-                          title={isDemoBottle ? t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)') : "Generate AI label art"}
-                          style={{
-                            background: isGenerating || isDemoBottle ? 'var(--bg-muted)' : 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
-                            border: '1px solid var(--gold-600)',
-                            color: 'white',
-                            minHeight: '40px',
-                            opacity: isGenerating ? 0.6 : 1,
-                            cursor: isGenerating ? 'not-allowed' : 'pointer',
-                            WebkitTapHighlightColor: 'transparent',
-                          }}
-                          aria-label={t('a11y.generateLabelArt')}
+                          className="app-icon-btn disabled:opacity-50"
+                          aria-label={isGenerating ? t('labelArt.generating', 'Generating...') : t('labelArt.generate', 'Generate Label Art')}
+                          title={isGenerating ? t('labelArt.generating', 'Generating...') : t('labelArt.generate', 'Generate Label Art')}
                         >
-                          {isGenerating ? (
-                            <>
-                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <span>{t('labelArt.generating', 'Generating...')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                              </svg>
-                              <span>{t('labelArt.generate', 'Generate Label Art')}</span>
-                            </>
-                          )}
+                          <SparklesIcon className={`h-4 w-4 ${isGenerating ? 'animate-pulse' : ''}`} strokeWidth={1.75} aria-hidden />
                         </button>
                       )}
                     </div>
@@ -953,18 +910,34 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
                           {t('wineDetails.vivinoRating')}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--wine-500)' }}>
-                            ★
-                          </span>
-                          <span className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-                            {wine.rating.toFixed(1)}
-                          </span>
-                        </div>
+                        <StarRating rating={wine.rating} size={16} />
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Readiness summary */}
+                {(displayBottle as any).readiness_label && (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{
+                        background: `var(--status-${(displayBottle as any).readiness_label === 'READY' ? 'ready' : (displayBottle as any).readiness_label === 'HOLD' ? 'hold' : 'drink-soon'}-bg)`,
+                        color: `var(--status-${(displayBottle as any).readiness_label === 'READY' ? 'ready' : (displayBottle as any).readiness_label === 'HOLD' ? 'hold' : 'drink-soon'}-text)`,
+                      }}
+                    >
+                      {t(`cellar.sommelier.status.${String((displayBottle as any).readiness_label).toLowerCase()}`)}
+                    </span>
+                    {(displayBottle as any).drink_window_start && (displayBottle as any).drink_window_end && (
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {t('wineDetails.drinkWindowRange', {
+                          start: (displayBottle as any).drink_window_start,
+                          end: (displayBottle as any).drink_window_end,
+                        })}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Sommi Insight */}
                 {!isDemoBottle && (
@@ -976,14 +949,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
 
                 {/* Location Info */}
                 {(localizedWine.region || localizedWine.country || (wine as any).regional_wine_style) && (
-                  <div>
-                    <h3 
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <span>📍</span>
-                      {t('cellar.bottle.origin')}
-                    </h3>
+                  <DetailsSection icon="📍" title={t('cellar.bottle.origin')} defaultOpen>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {localizedWine.region && (
                         <div>
@@ -1006,25 +972,18 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
                             {t('wineDetails.regionalWineStyle', 'Regional Wine Style')}
                           </div>
-                          <div className="text-sm font-medium" style={{ color: 'var(--wine-600)' }}>
+                          <div className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
                             {(wine as any).regional_wine_style}
                           </div>
                         </div>
                       )}
                     </div>
-                  </div>
+                  </DetailsSection>
                 )}
 
                 {/* Grapes */}
                 {localizedWine.grapes && localizedWine.grapes.length > 0 && (
-                  <div>
-                    <h3 
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <span>🍇</span>
-                      {t('cellar.bottle.grapes')}
-                    </h3>
+                  <DetailsSection icon="🍇" title={t('cellar.bottle.grapes')} defaultOpen>
                     <div className="flex flex-wrap gap-2">
                       {localizedWine.grapes.map((grape: string, index: number) => (
                         <span 
@@ -1032,7 +991,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           className="px-3 py-1 rounded-full text-sm"
                           style={{
                             backgroundColor: 'var(--wine-50)',
-                            color: 'var(--wine-700)',
+                            color: 'var(--accent-text)',
                             border: '1px solid var(--wine-200)',
                           }}
                         >
@@ -1040,19 +999,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         </span>
                       ))}
                     </div>
-                  </div>
+                  </DetailsSection>
                 )}
 
                 {/* Storage Info */}
                 {(bottle.storage_location || bottle.purchase_date || bottle.purchase_price) && (
-                  <div>
-                    <h3 
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <span>📦</span>
-                      {t('cellar.bottle.storage')}
-                    </h3>
+                  <DetailsSection icon="📦" title={t('cellar.bottle.storage')}>
                     <div className="grid grid-cols-2 gap-3">
                       {bottle.storage_location && (
                         <div>
@@ -1092,19 +1044,12 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         </div>
                       )}
                     </div>
-                  </div>
+                  </DetailsSection>
                 )}
 
                 {/* AI Analysis - Full Sommelier Notes */}
                 {localizedAnalysis && (displayBottle as any).readiness_label && (
-                  <div>
-                    <h3 
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <span>🔬</span>
-                      {t('cellar.bottle.analysis')}
-                    </h3>
+                  <DetailsSection icon="🔬" title={t('cellar.bottle.analysis')}>
                     <SommelierNotes
                       analysis={{
                         analysis_summary: localizedAnalysis.analysis_summary,
@@ -1152,7 +1097,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                           style={{
                             background: 'var(--bg-muted)',
                             border: '1px solid var(--border-base)',
-                            color: 'var(--wine-600)',
+                            color: 'var(--accent-text)',
                           }}
                         >
                           {i18n.language.startsWith('he')
@@ -1161,29 +1106,23 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                         </button>
                       </div>
                     )}
-                  </div>
+                  </DetailsSection>
                 )}
 
                 {/* Notes */}
                 {bottle.notes && (
-                  <div>
-                    <h3 
-                      className="text-sm font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <span>📝</span>
-                      {t('cellar.bottle.notes')}
-                    </h3>
+                  <DetailsSection icon="📝" title={t('cellar.bottle.notes')} defaultOpen>
                     <p 
                       className="text-sm p-4 rounded-lg"
                       style={{
                         backgroundColor: 'var(--bg-muted)',
                         color: 'var(--text-secondary)',
                       }}
+                      dir="auto"
                     >
                       {bottle.notes}
                     </p>
-                  </div>
+                  </DetailsSection>
                 )}
 
                 {/* Food Pairing — always shown */}
@@ -1203,7 +1142,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                       className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold-600, #a37700)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-eyebrow)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
@@ -1255,7 +1194,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                             color: 'var(--text-secondary)',
                             cursor: isRemovingKeep ? 'not-allowed' : 'pointer',
                             opacity: isRemovingKeep ? 0.6 : 1,
-                            minHeight: '32px',
+                            minHeight: '44px',
                           }}
                         >
                           {isRemovingKeep ? '…' : t('cellar.bottle.removeKeep')}
@@ -1265,120 +1204,57 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                {(onMarkAsOpened || wine.vivino_url) && (
-                  <div className="pt-4 md:pt-6 border-t mt-6" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <div className="space-y-3 md:space-y-4 mt-4">
-                      {/* Mark as Opened Button */}
-                      {onMarkAsOpened && (
-                        <button
-                          onClick={() => {
-                            // Onboarding v1 – value first: Prevent marking demo bottles as opened
-                            if (isDemoBottle) {
-                              toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
-                              return;
-                            }
-                            onMarkAsOpened(bottle);
-                            onClose();
-                          }}
-                          disabled={isDemoBottle}
-                          className={`mark-opened-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200 ${
-                            isDemoBottle ? 'opacity-50 cursor-not-allowed' : ''
-                          }`}
-                          style={{
-                            background: 'linear-gradient(135deg, var(--gold-500), var(--gold-600))',
-                            color: 'white',
-                            minHeight: '48px',
-                            boxShadow: '0 2px 8px rgba(212, 175, 55, 0.2)',
-                            border: '1px solid var(--gold-600)',
-                            WebkitTapHighlightColor: 'transparent',
-                            touchAction: 'manipulation',
-                          }}
-                          aria-label={t('a11y.markOpened')}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>{t('cellar.bottle.markOpened')}</span>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                        </button>
-                      )}
-
-                      {/* Vivino Link */}
-                      {wine.vivino_url && (
-                        <a
-                          href={wine.vivino_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="vivino-button flex items-center justify-center gap-2 md:gap-3 w-full py-3 md:py-3.5 px-4 md:px-6 rounded-lg md:rounded-xl font-medium text-sm md:text-base transition-all duration-200"
-                          style={{
-                            background: 'var(--sommi-gradient-primary)',
-                            color: 'white',
-                            minHeight: '48px',
-                            boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
-                            border: '1px solid var(--wine-600)',
-                            WebkitTapHighlightColor: 'transparent',
-                            touchAction: 'manipulation',
-                          }}
-                          aria-label={t('a11y.viewOnVivino')}
-                        >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                          </svg>
-                          <span>{t('cellar.bottle.openVivino')}</span>
-                          <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </a>
-                      )}
-                    </div>
-                    
-                    <style>{`
-                      /* Desktop Hover States */
-                      @media (hover: hover) and (pointer: fine) {
-                        .modal-close-button:hover {
-                          background-color: var(--bg-muted-hover) !important;
-                          transform: scale(1.05);
-                        }
-                        
-                        .image-button-hover:hover {
-                          transform: translateY(-1px);
-                          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                          border-color: var(--border-medium);
-                        }
-                        
-                        .ai-button-hover:hover:not(:disabled) {
-                          transform: translateY(-1px);
-                          box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
-                        }
-                        
-                        .vivino-button:hover, .mark-opened-button:hover {
-                          transform: translateY(-2px);
-                        }
-                        
-                        .vivino-button:hover {
-                          box-shadow: 0 6px 20px rgba(164, 77, 90, 0.35) !important;
-                        }
-                        
-                        .mark-opened-button:hover {
-                          box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35) !important;
-                        }
-                      }
-                      
-                      /* Touch Feedback */
-                      .vivino-button:active, .mark-opened-button:active {
-                        transform: scale(0.98);
-                      }
-                      
-                      .image-button-hover:active, .modal-close-button:active {
-                        transform: scale(0.95);
-                      }
-                    `}</style>
-                  </div>
-                )}
               </div>
+
+              {/* Sticky actions: always reachable without scrolling */}
+              {(onMarkAsOpened || wine.vivino_url) && (
+                <div
+                  className="flex-shrink-0 flex items-center gap-2 border-t px-4 pt-3 sm:px-6"
+                  style={{
+                    borderColor: 'var(--border-subtle)',
+                    backgroundColor: 'var(--bg-surface)',
+                    paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+                  }}
+                >
+                  {onMarkAsOpened && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isDemoBottle) {
+                          toast.warning(t('onboarding.demoRecommendation.demoOnly', '(Demo mode - not available)'));
+                          return;
+                        }
+                        onMarkAsOpened(bottle);
+                        onClose();
+                      }}
+                      disabled={isDemoBottle}
+                      className="btn-luxury-primary flex-1 !min-h-[48px] disabled:opacity-50"
+                    >
+                      <span aria-hidden>🍷</span>
+                      <span>{t('cellar.bottle.markOpened')}</span>
+                    </button>
+                  )}
+                  {wine.vivino_url && (
+                    <a
+                      href={wine.vivino_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn-luxury-secondary !min-h-[48px] ${onMarkAsOpened ? '' : 'flex-1'}`}
+                      aria-label={t('a11y.viewOnVivino')}
+                    >
+                      <span>{onMarkAsOpened ? 'Vivino' : t('cellar.bottle.openVivino')}</span>
+                      <ExternalLink className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    </a>
+                  )}
+                </div>
+              )}
+              <style>{`
+                @media (hover: hover) and (pointer: fine) {
+                  .modal-close-button:hover {
+                    background-color: var(--bg-muted-hover) !important;
+                  }
+                }
+              `}</style>
             </motion.div>
           </div>
         </motion.div>

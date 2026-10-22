@@ -83,7 +83,7 @@ export function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' 
         onClick={() => setIsOpen(!isOpen)}
         className={
           isPill
-            ? 'flex items-center gap-1.5 px-3 rounded-full transition-colors hover:bg-[var(--interactive-hover)]'
+            ? 'flex items-center gap-1.5 px-2.5 min-[400px]:px-3 rounded-full transition-colors hover:bg-[var(--interactive-hover)]'
             : 'flex items-center gap-1.5 px-2.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
         }
         style={{
@@ -102,7 +102,7 @@ export function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' 
         
         {/* Current language code */}
         <span 
-          className="text-xs font-medium uppercase"
+          className={`text-xs font-medium uppercase ${isPill ? 'max-[379px]:hidden' : ''}`}
           style={{ color: 'var(--text-secondary)' }}
         >
           {currentLanguage.code}
@@ -110,7 +110,7 @@ export function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' 
         
         {/* Dropdown arrow */}
         <svg
-          className={`w-3 h-3 transition-transform ${
+          className={`w-3 h-3 transition-transform ${isPill ? 'max-[379px]:hidden' : ''} ${
             isOpen ? 'rotate-180' : ''
           }`}
           style={{ color: 'var(--text-tertiary)' }}

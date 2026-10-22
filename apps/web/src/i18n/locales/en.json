@@ -259,7 +259,8 @@
       "dark": "Dark",
       "switchToDark": "Switch to dark theme",
       "switchToLight": "Switch to light theme"
-    }
+    },
+    "avatarAlt": "Your profile photo"
   },
   "dashboard": {
     "tonightsOrbit": {
@@ -275,37 +276,43 @@
         "bestAvailable": "Best available"
       },
       "reasons": {
-        "readyOpenTonight": "Ready to drink — open tonight",
-        "approachingPeak": "Approaching its peak — drink soon",
+        "readyOpenTonight": "Ready to drink — a good pick for tonight",
+        "approachingPeak": "Nearing its peak — drinkable now, even better soon",
         "bestAvailable": "Best available in your cellar",
         "crowdFriendly": "Approachable and guest-friendly",
         "prestigeBottle": "Prestige bottle — worth the occasion",
-        "matureAndReady": "Mature and ready at its best",
+        "matureAndReady": "Mature and ready to drink",
         "highlyRated": "Highly rated — sure to impress",
         "impressBottle": "A bottle worth a special evening"
       },
       "tags": {
-        "readyNow": "Ready now",
-        "inPeakWindow": "In peak window",
-        "holdWine": "Better to hold",
+        "readyNow": "Ready to drink",
+        "inPeakWindow": "Nearing peak",
+        "holdWine": "Keep aging",
         "guestFriendly": "Guest-friendly",
         "specialBottle": "Special bottle",
         "matureBottle": "Great maturity",
         "needsDecant": "Decant {{min}} min",
         "highRated": "High-rated"
-      }
+      },
+      "slideOf": "{{current}} of {{total}}",
+      "goTo": "Show wine {{n}}: {{name}}",
+      "pause": "Pause rotation",
+      "play": "Resume rotation",
+      "viewDetails": "View details"
     },
     "drinkWindow": {
       "title": "Drink Window",
       "subtitle": "Optimal timing for your collection",
-      "hold": "Hold",
-      "peakSoon": "Peak Soon",
-      "ready": "Ready Now",
+      "hold": "Keep aging",
+      "peakSoon": "Nearing peak",
+      "ready": "Ready to drink",
       "noAnalysis": "No analysis available yet",
-      "totalAnalyzed": "Total analyzed",
+      "totalAnalyzed": "Wines analyzed",
       "thisMonth": "this month",
       "tonightSignal": "{{count}} wine is perfect for tonight",
-      "tonightSignal_plural": "{{count}} wines are perfect for tonight"
+      "tonightSignal_other": "{{count}} wines are perfect for tonight",
+      "tonightSignal_one": "{{count}} wine is perfect for tonight"
     }
   },
   "cellar": {
@@ -340,10 +347,10 @@
     "filters": {
       "label": "Filters",
       "ready": "Ready to drink",
-      "aging": "Needs aging",
+      "aging": "Keep aging",
       "analyzed": "Analyzed",
       "kosher": "Kosher",
-      "pastPeak": "Past Peak",
+      "pastPeak": "Past its peak",
       "clear": "Clear all"
     },
     "sort": {
@@ -388,24 +395,31 @@
       "vivinoEnhanced": "🍷 Enriched with Vivino data!",
       "partial": "Label partially read - please review and complete",
       "failed": "Couldn't read label automatically - please fill manually",
-      "error": "Error reading label - please enter details manually"
+      "error": "Error reading label - please enter details manually",
+      "noData": "We couldn't read any details from that photo. Try another photo or enter them yourself."
     },
     "addBottle": {
-      "title": "Teach me your taste",
-      "subtitle": "The more I know, the better I get.",
+      "title": "Add a bottle",
+      "subtitle": "Scan the label, or type the details yourself.",
       "uploadPhoto": "Take or Upload Photo",
       "uploadPhotoDescNew": "Use camera or choose from gallery • AI label extraction",
-      "smartScan": "Scan Bottles",
-      "smartScanDesc": "AI detects single or multiple bottles automatically",
+      "smartScan": "Scan the label",
+      "smartScanDesc": "Take or choose a photo. Sommi reads one bottle or several.",
       "takePhoto": "Take Photo",
       "takePhotoDesc": "Use camera • AI label extraction",
       "chooseFromLibrary": "Choose from Library",
       "chooseFromLibraryDesc": "Select existing photo • AI label extraction",
-      "manualEntry": "Enter Manually",
-      "manualEntryDesc": "Fill in the details yourself",
+      "manualEntry": "Enter manually",
+      "manualEntryDesc": "Type the wine, producer and vintage yourself",
       "multiBottleDesc": "Scan multiple bottles at once",
       "addToWishlist": "Add to Wishlist",
-      "addToWishlistDesc": "Save wines to buy later"
+      "addToWishlistDesc": "Save wines to buy later",
+      "identifying": "Identifying the bottles and vintage",
+      "identifyingToast": "Identifying your bottles…",
+      "scanFailedTitle": "We couldn't read that photo",
+      "scanFailedBody": "Try a sharper, well-lit photo of the label, or enter the details yourself.",
+      "tryAnotherPhoto": "Try another photo",
+      "reading": "Reading your photo…"
     },
     "camera": {
       "fallbackTitle": "Add a Bottle",
@@ -466,7 +480,11 @@
       "selectOne": "Please select at least one bottle to add.",
       "noBottles": "Could not detect any bottles in the photo. Please try a clearer image.",
       "success": "🍷 Successfully added {{count}} bottles!",
-      "partialSuccess": "Added {{success}} bottles, {{error}} failed"
+      "partialSuccess": "Added {{success}} bottles, {{error}} failed",
+      "addBottles_one": "Add {{count}} bottle",
+      "addBottles_other": "Add {{count}} bottles",
+      "success_one": "🍷 Added {{count}} bottle!",
+      "success_other": "🍷 Added {{count}} bottles!"
     },
     "bottle": {
       "vintage": "Vintage",
@@ -505,7 +523,12 @@
       "keepReminderFor": "Reserved for",
       "keepReminderOpenNow": "Open this bottle 🍷",
       "keepReminderSnooze": "Keep for later",
-      "keepReminderRemove": "Remove reservation"
+      "keepReminderRemove": "Remove reservation",
+      "keepBannerDays_one": "Tomorrow",
+      "keepBannerDays_other": "In {{count}} days",
+      "moreActions": "More actions for {{name}}",
+      "viewDetailsFor": "View details for {{name}}",
+      "viewFullDetails": "View full details"
     },
     "openBottle": {
       "howMany": "How many bottles?",
@@ -521,11 +544,11 @@
       "sparkling": "Sparkling"
     },
     "readinessStatus": {
-      "Peak": "Peak",
-      "InWindow": "In Window",
+      "Peak": "At its peak",
+      "InWindow": "Ready to drink",
       "Approaching": "Approaching",
-      "TooYoung": "Too Young",
-      "PastPeak": "Past Peak",
+      "TooYoung": "Keep aging",
+      "PastPeak": "Past its peak",
       "Unknown": "Unknown"
     },
     "analysis": {
@@ -545,21 +568,52 @@
       "assumptions": "Assumptions",
       "analyzedOn": "Analyzed on",
       "status": {
-        "ready": "Ready to Drink",
-        "hold": "Hold for Aging",
-        "peak_soon": "Peak Soon"
+        "ready": "Ready to drink",
+        "hold": "Keep aging",
+        "peak_soon": "Nearing peak"
       },
       "confidence": {
         "high": "High confidence",
         "medium": "Medium confidence",
         "low": "Low confidence"
       },
-      "barrelAging": "Barrel aging (estimate)",
-      "barrelMonthsEst": "~{{months}} months in barrel (estimate)",
-      "barrelDisclaimer": "From public wine knowledge — not verified for this bottle."
+      "barrelAging": "Barrel aging",
+      "barrelVerified": "Verified",
+      "barrelEstimateBadge": "Estimate · {{confidence}}",
+      "barrelMonths_one": "About {{count}} month in oak",
+      "barrelMonths_other": "About {{count}} months in oak",
+      "barrelBasisSource": "Basis: {{source}}",
+      "barrelBasisGeneral": "Basis: typical practice for this wine and region, not confirmed for this bottle.",
+      "estimateBasis": "Sommi's estimate, based on the label details and general wine knowledge",
+      "decanting": {
+        "none": "No decanting",
+        "optional": "Optional decant",
+        "recommended": "Decant recommended"
+      },
+      "servingSource": "Basis",
+      "minutesUnit": "min"
     },
     "eyebrow": "Your collection",
-    "emptyEyebrow": "A fresh start"
+    "emptyEyebrow": "A fresh start",
+    "filteredCount_one": "{{count}} of {{total}} bottles",
+    "filteredCount_other": "{{count}} of {{total}} bottles",
+    "allBottlesLoaded_one": "Your {{count}} bottle is loaded",
+    "allBottlesLoaded_other": "All {{count}} bottles loaded",
+    "readiness": {
+      "ready": "Ready to drink",
+      "peak": "At its peak",
+      "aging": "Keep aging",
+      "drinkSoon": "Drink soon",
+      "nearingPeak": "Nearing peak",
+      "pastPeak": "Past its peak"
+    },
+    "overview": {
+      "title": "Tonight & drink windows"
+    },
+    "imageUnavailable": "Image unavailable",
+    "inCellar": "in cellar",
+    "markAsOpened": "Open wine",
+    "markedAsOpened": "Bottle marked as opened"
   },
   "wineDetails": {
     "country": "Country",
@@ -568,7 +622,8 @@
     "analysis": {
       "generateInHebrew": "Show analysis in Hebrew",
       "generateInEnglish": "Generate analysis in English"
-    }
+    },
+    "drinkWindowRange": "Drink window {{start}}–{{end}}"
   },
   "kosher": {
     "sectionHeading": "Kosher",
@@ -592,11 +647,11 @@
     "addTitle": "Add Bottle",
     "editTitle": "Edit Bottle",
     "name": "Name",
-    "namePlaceholder": "e.g., Château Margaux",
+    "namePlaceholder": "e.g., Tignanello",
     "wineName": "Wine Name",
     "wineNamePlaceholder": "e.g., Grand Vin",
     "producer": "Producer",
-    "producerPlaceholder": "e.g., Château Margaux",
+    "producerPlaceholder": "e.g., Marchesi Antinori",
     "vintage": "Vintage",
     "vintagePlaceholder": "e.g., 2015",
     "style": "Style",
@@ -666,7 +721,25 @@
       "notifyPast": "This date is already here — you'll see an in-app reminder when you open your cellar (no push for past dates).",
       "notifyNeedsDate": "Pick a date and we'll remind you that morning at 10:00 local time.",
       "notifySyncFailed": "Reservation saved, but the notification could not be scheduled. Try editing the Keep date again."
-    }
+    },
+    "vivinoFetchSuccess_one": "✅ Fetched from Vivino! Rating: {{rating}}/5 ⭐ ({{count}} rating)",
+    "vivinoFetchSuccess_other": "✅ Fetched from Vivino! Rating: {{rating}}/5 ⭐ ({{count}} ratings)",
+    "vintageHint": "Leave empty for non-vintage (NV) wines",
+    "grapesHint": "Separate grapes with commas",
+    "vivinoRatingValue": "Vivino rating: {{rating}}/5.0",
+    "vivinoRatingSaved": "This rating will be saved with the wine",
+    "autoEnriching": "Looking up details on Vivino…",
+    "priceCurrency": "Price in {{currencySymbol}}",
+    "fillRequired": "Please fill in the required fields",
+    "nameRequired": "Wine name is required",
+    "quantityRequired": "Quantity must be at least 1",
+    "photo": "Wine photo",
+    "photoAdd": "Add photo",
+    "photoChange": "Change photo",
+    "photoHint": "Take a photo or choose one from your library",
+    "photoRemove": "Remove",
+    "photoUploading": "Uploading…",
+    "photoAlt": "Wine photo"
   },
   "recommendation": {
     "title": "What Should I Open Tonight?",
@@ -715,7 +788,44 @@
       "maxPrice": "Maximum price ({{currencyCode}}, optional)",
       "maxPricePlaceholder": "e.g., {{currencySymbol}}100",
       "getRecommendations": "Get Recommendations",
-      "finding": "Finding recommendations..."
+      "finding": "Finding recommendations...",
+      "mealDetail": "Any detail?",
+      "mealDetailOptional": "Optional — helps Sommi match the dish",
+      "mealDetailSkip": "Skip",
+      "mealDetails": {
+        "pasta": {
+          "tomato": "Tomato sauce",
+          "creamy": "Creamy",
+          "pesto": "Pesto",
+          "meat_ragu": "Meat ragù",
+          "seafood": "Seafood"
+        },
+        "pizza": {
+          "margherita": "Margherita",
+          "meat": "Meat toppings",
+          "white": "White pizza"
+        },
+        "steak": {
+          "grilled": "Grilled",
+          "peppercorn": "Peppercorn sauce",
+          "lean": "Lean cut"
+        },
+        "fish": {
+          "white_fish": "White fish",
+          "salmon": "Salmon",
+          "shellfish": "Shellfish",
+          "raw": "Sushi / raw"
+        },
+        "cheese": {
+          "fresh": "Fresh & soft",
+          "aged": "Aged & hard",
+          "blue": "Blue cheese"
+        },
+        "spicy_asian": {
+          "mild": "Medium heat",
+          "fiery": "Very spicy"
+        }
+      }
     },
     "results": {
       "title": "Tonight's Recommendations",
@@ -735,7 +845,9 @@
       "noResults": "No matching bottles found. Try adjusting your preferences.",
       "noWineTypeMatch": "No {{wineType}} wines found in your cellar. Add some or select a different type.",
       "keepExcluded": "{{count}} bottle(s) marked Keep were excluded from suggestions.",
-      "includeKeep": "Include reserved bottles"
+      "includeKeep": "Include reserved bottles",
+      "keepExcluded_one": "{{count}} bottle marked Keep was left out of these suggestions.",
+      "keepExcluded_other": "{{count}} bottles marked Keep were left out of these suggestions."
     },
     "noResults": {
       "title": "No Matches Found",
@@ -761,16 +873,11 @@
     },
     "checkingCellar": "Checking your cellar...",
     "generated": {
-      "explainTop": "This {{color}} wine from {{origin}} is an excellent choice for {{meal}}.",
-      "explainOther": "A great {{color}} option from {{origin}} that pairs well with {{meal}}.",
-      "readinessReady": "The sommelier AI confirms it's ready to drink tonight.",
-      "readinessPeakSoon": "It's approaching its peak — a great time to open it.",
-      "readinessHold": "Note: the sommelier analysis suggests this wine still benefits from more aging, but it's the best match in your cellar for tonight.",
-      "readinessPeak": "It's at peak drinking condition right now!",
-      "readinessInWindow": "It's ready to drink and will show beautifully.",
-      "occasionCelebration": "Perfect for a special occasion.",
-      "occasionDate": "Great for a romantic evening.",
-      "occasionFriends": "Your guests will love this.",
+      "readinessReady": "The analysis says it's ready to drink now.",
+      "readinessPeakSoon": "It's nearing its peak — drinkable now, even better soon.",
+      "readinessHold": "The analysis says it would still benefit from more aging — open it only if you're happy to drink it young.",
+      "readinessPeak": "It's at its peak right now.",
+      "readinessInWindow": "It's ready to drink.",
       "serveAt": "Serve at {{temp}}.",
       "decantFor": "Decant for {{minutes}} minutes",
       "decantForBest": "Decant for 30 minutes for best results",
@@ -781,9 +888,55 @@
       "affinityFreshElegant": "Matches your taste: fresh & elegant",
       "affinityRichOaky": "Matches your taste: rich & oaky",
       "affinityDryBalanced": "Matches your taste: dry & balanced",
-      "affinityGreatMatch": "Great match for your palate"
+      "affinityGreatMatch": "Great match for your palate",
+      "affinityExplicitDislike": "Heads up: you told Sommi you avoid {{term}}",
+      "affinityTouchOfSweetness": "Matches your taste for a touch of sweetness",
+      "affinitySweeterThanUsual": {
+        "off_dry": "Heads up: off-dry — a little sweeter than your usual dry picks",
+        "medium_sweet": "Heads up: medium-sweet — sweeter than your usual dry picks",
+        "sweet": "Heads up: a sweet wine — far from your usual dry picks"
+      }
     },
-    "eyebrow": "Tonight with Sommi"
+    "eyebrow": "Tonight with Sommi",
+    "grounded": {
+      "identityGrapeOrigin": "{{grape}} from {{origin}}.",
+      "identityGrape": "Made from {{grape}}.",
+      "identityOrigin": "From {{origin}}.",
+      "pairing": {
+        "spiceSweet": "Its touch of sweetness cools the heat.",
+        "blueCheeseSweet": "Its sweetness balances the salt of blue cheese.",
+        "tomatoAcidity": "Bright acidity keeps up with the tomato.",
+        "tomatoLowAcidity": "Trade-off: its acidity is on the low side for tomato.",
+        "meatTanninBody": "Full body and firm tannins stand up to rich meat.",
+        "meatTooLight": "Trade-off: it's on the light side for rich meat.",
+        "fishFresh": "Light and fresh, so it won't overpower the fish.",
+        "fishTannin": "Trade-off: its tannins can taste metallic with fish.",
+        "creamyBodyAcid": "Enough body for the cream, with acidity to keep it lively.",
+        "herbFresh": "Fresh acidity suits green, herby flavors.",
+        "smokeOak": "Its oak echoes the char from the grill.",
+        "spiceSoftTannin": "Soft tannins won't amplify the spice.",
+        "spiceTannin": "Trade-off: firm tannins can make spicy food feel hotter.",
+        "richAcid": "Its acidity cuts through the richness."
+      },
+      "colorFits": "{{color}} is the classic direction for {{meal}}.",
+      "colorStretch": "{{color}} isn't the classic choice for {{meal}}, but it ranked highest among your bottles.",
+      "occasionBubbles": "Bubbles suit a celebration.",
+      "occasionShare_one": "You have {{count}} bottle of it.",
+      "occasionShare_other": "You have {{count}} bottles, so there's enough to share.",
+      "diff": {
+        "lighter": "Compared with your first option: lighter in body.",
+        "fuller": "Compared with your first option: fuller and richer.",
+        "otherColor": "Compared with your first option: a different color ({{color}}).",
+        "readyNow": "Compared with your first option: this one is ready to drink now.",
+        "needsTime": "Compared with your first option: this one would benefit from more time.",
+        "sweeter": "Compared with your first option: noticeably sweeter.",
+        "drier": "Compared with your first option: drier.",
+        "older": "Compared with your first option: an older vintage ({{vintage}}).",
+        "younger": "Compared with your first option: a younger vintage ({{vintage}}).",
+        "closeAlternative": "A close alternative to your first option."
+      },
+      "limitedData": "Sommi doesn't have tasting data for this bottle yet, so this pick is based on the basics: color, region and readiness."
+    }
   },
   "history": {
     "title": "History & Stats",
@@ -812,7 +965,10 @@
       "favoriteStyle": "Favorite Style",
       "bottlesOpened": "{{count}} bottles opened",
       "favoriteRegion": "Favorite Region",
-      "topRegions": "Top Regions"
+      "topRegions": "Top Regions",
+      "bottlesOpened_one": "{{count}} bottle opened",
+      "bottlesOpened_other": "{{count}} bottles opened",
+      "summary": "Your opening stats"
     },
     "openingHistory": "Opening History",
     "empty": {
@@ -831,7 +987,9 @@
       "notesFailed": "Failed to save notes",
       "eyebrow": "Something went sideways"
     },
-    "eyebrow": "Your story in wine"
+    "eyebrow": "Your story in wine",
+    "editRating": "Edit rating",
+    "rateWine": "Rate this wine"
   },
   "csvImport": {
     "title": "Import from CSV",
@@ -897,8 +1055,12 @@
       "preparing": "Preparing import...",
       "found": "Found {{count}} bottles to import",
       "importing": "Importing {{current}} of {{total}}: {{wine}}",
-      "complete": "Import complete! 🍷"
-    }
+      "complete": "Import complete! 🍷",
+      "found_one": "Found {{count}} bottle to import",
+      "found_other": "Found {{count}} bottles to import"
+    },
+    "successVivino_one": "Imported {{count}} bottle from Vivino",
+    "successVivino_other": "Imported {{count}} bottles from Vivino"
   },
   "loading": {
     "importing": "Importing your wines...",
@@ -1044,7 +1206,13 @@
     "privacyPolicy": "Privacy Policy",
     "termsAndConditions": "Terms & Conditions",
     "previous": "Previous",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "starRating_one": "{{count}} star",
+    "starRating_other": "{{count}} stars",
+    "ratingOutOf": "Rated {{rating}} out of {{max}}",
+    "retry": "Try again",
+    "viewDetails": "View details",
+    "gotIt": "Got it"
   },
   "wineImage": {
     "addTitle": "Add Wine Image",
@@ -1068,7 +1236,17 @@
     "saveFailed": "Failed to save image",
     "removeFailed": "Failed to remove image",
     "updateSuccess": "Wine image updated!",
-    "removeSuccess": "Wine image removed"
+    "removeSuccess": "Wine image removed",
+    "changePhoto": "Choose a different photo",
+    "pickPhoto": "Take a photo or choose from library",
+    "pickPhotoHint": "JPG, PNG or WEBP · Max 20 MB",
+    "tabUpload": "Upload photo",
+    "tabUrl": "Paste URL",
+    "uploadFailed": "Upload failed. Please try again.",
+    "uploading": "Uploading…",
+    "selectedAlt": "Selected photo",
+    "previewAlt": "Image preview",
+    "labelPreviewAlt": "Label photo preview"
   },
   "labelArt": {
     "generate": "Generate Label Art",
@@ -1129,7 +1307,20 @@
     "buttonLabel": "Analyze Cellar",
     "progressWithTotal": "Processed {{processed}} / {{total}} wines",
     "progressWithoutTotal": "Processed {{processed}} wines",
-    "largeCollectionNote": "Large cellars take a bit longer…"
+    "largeCollectionNote": "Large cellars take a bit longer…",
+    "missingOnlyDesc_one": "Analyze only bottles without sommelier notes ({{count}} bottle)",
+    "missingOnlyDesc_other": "Analyze only bottles without sommelier notes ({{count}} bottles)",
+    "done": {
+      "analyzed_one": "🎉 Analysis complete! {{count}} bottle analyzed",
+      "analyzed_other": "🎉 Analysis complete! {{count}} bottles analyzed",
+      "skipped_one": ", {{count}} skipped",
+      "skipped_other": ", {{count}} skipped",
+      "failed_one": ", {{count}} failed",
+      "failed_other": ", {{count}} failed",
+      "allHadNotes_one": "✓ Analysis complete! Your {{count}} bottle already has sommelier notes.",
+      "allHadNotes_other": "✓ Analysis complete! All {{count}} bottles already have sommelier notes.",
+      "fullyAnalyzed": "✓ Analysis complete! Your cellar is fully analyzed."
+    }
   },
   "onboarding": {
     "welcome": {
@@ -1264,8 +1455,6 @@
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
-    "greetingContent": "{{greeting}}! 🍷 I've scanned your cellar — {{count}} bottles ready to explore. Tell me about tonight and I'll find your perfect match.",
-    "greetingContentTonight": "{{greeting}}! Looking for tonight's bottle? Tell me what's on the table, who you're with, and the mood — I'll find the right one in your cellar ({{count}} bottles ready).",
     "quickStartHeader": "Start here — or describe tonight below",
     "inputPlaceholderFirst": "What's the occasion tonight?",
     "scenarios": {
@@ -1301,7 +1490,13 @@
     },
     "devOnly": "dev only",
     "back": "Back",
-    "bottleCount": "{{count}} bottles"
+    "bottleCount": "{{count}} bottles",
+    "greetingContent_one": "{{greeting}}! 🍷 You have {{count}} bottle in your cellar. Tell me about tonight and I'll look through it for your match.",
+    "greetingContent_other": "{{greeting}}! 🍷 You have {{count}} bottles in your cellar. Tell me about tonight and I'll look through them for your match.",
+    "greetingContentTonight_one": "{{greeting}}! Looking for tonight's bottle? Tell me what's on the table, who you're with, and the mood — I'll check it against the {{count}} bottle in your cellar.",
+    "greetingContentTonight_other": "{{greeting}}! Looking for tonight's bottle? Tell me what's on the table, who you're with, and the mood — I'll look through the {{count}} bottles in your cellar.",
+    "bottleCount_one": "{{count}} bottle",
+    "bottleCount_other": "{{count}} bottles"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -1346,6 +1541,12 @@
       "delete": "Delete",
       "resume": "Resume draft",
       "deleted": "Draft deleted"
+    },
+    "daysAgo_one": "Yesterday",
+    "daysAgo_other": "{{count}} days ago",
+    "card": {
+      "source": "Tried at {{place}}",
+      "moreActions": "More actions for {{name}}"
     }
   },
   "wineEvents": {
@@ -1356,12 +1557,13 @@
     "upcoming": "Upcoming",
     "thisWeekPassed": "This week",
     "youHaveMatches": "You have {{count}} matching bottle",
-    "youHaveMatches_plural": "You have {{count}} matching bottles",
     "viewMatches": "Show My Bottles",
     "learnMore": "Learn More",
     "source": "Source",
     "dismiss": "Dismiss",
-    "goToEvent": "Go to event {{index}}"
+    "goToEvent": "Go to event {{index}}",
+    "youHaveMatches_other": "You have {{count}} matching bottles",
+    "youHaveMatches_one": "You have {{count}} matching bottle"
   },
   "tasteProfile": {
     "title": "Your Taste Profile",
@@ -1419,8 +1621,11 @@
       "dry": "Dry",
       "offDry": "Off-dry",
       "reset": "Reset",
-      "save": "Save Preferences"
-    }
+      "save": "Save Preferences",
+      "saving": "Saving…"
+    },
+    "dataPoints_one": "Based on {{count}} rated wine",
+    "dataPoints_other": "Based on {{count}} rated wines"
   },
   "sommiMemory": {
     "title": "What Sommi remembers about me",
@@ -1455,7 +1660,13 @@
     "replaceConfirm": "Update",
     "updateSuccess": "Preference updated",
     "updateFailed": "Could not update preference",
-    "updating": "Updating…"
+    "updating": "Updating…",
+    "removeWineTitle": "Remove wine memory?",
+    "removeWineMessage": "Remove “{{label}}” from wines Sommi remembers?",
+    "winesPartialLoad": "Saved grape, region and body preferences are shown. Named-wine memories couldn't be loaded — retry to refresh them.",
+    "retryLoad": "Retry",
+    "sectionWinesLiked": "Wines I loved",
+    "sectionWinesDisliked": "Wines I didn't like"
   },
   "openRitual": {
     "ariaLabel": "Open bottle ritual",
@@ -1483,7 +1694,9 @@
         "noDecant": "No decanting needed",
         "heavyRed": "Decant to soften tannins and open aromas",
         "mediumRed": "A brief decant brings out complexity",
-        "lightRed": "Ready to enjoy immediately"
+        "lightRed": "Ready to enjoy immediately",
+        "optional": "A brief decant can help (optional)",
+        "recommended": "Decant {{min}}–{{max}} min to open aromas"
       }
     },
     "step3": {
@@ -1553,7 +1766,13 @@
       "noVotesYet": "No votes yet",
       "shareToCollect": "Share the link and guests can start voting",
       "totalVotes": "{{count}} vote",
-      "mostLoved": "Most loved:"
+      "mostLoved": "Most loved:",
+      "totalVotes_one": "{{count}} vote",
+      "totalVotes_other": "{{count}} votes",
+      "guestVotes_one": "{{count}} guest vote",
+      "guestVotes_other": "{{count}} guest votes",
+      "loadingVotes": "Loading guest votes…",
+      "waitingForVotes": "Guest link active · waiting for votes"
     },
     "wrapUp": {
       "guestFavorites": "Tonight's guest favorites"
@@ -1608,10 +1827,12 @@
       "perYear": "/ year",
       "alwaysFree": "Always free",
       "creditsRemaining": "{{count}} credit remaining",
-      "creditsRemaining_plural": "{{count}} credits remaining",
       "creditsRemainingOf": "{{count}} credit remaining of {{limit}}",
-      "creditsRemainingOf_plural": "{{count}} credits remaining of {{limit}}",
-      "perMonthBilled": "${{price}}/mo"
+      "perMonthBilled": "${{price}}/mo",
+      "creditsRemaining_other": "{{count}} credits remaining",
+      "creditsRemaining_one": "{{count}} credit remaining",
+      "creditsRemainingOf_other": "{{count}} credits remaining of {{limit}}",
+      "creditsRemainingOf_one": "{{count}} credit remaining of {{limit}}"
     },
     "billing": {
       "monthly": "Monthly",
@@ -1662,10 +1883,11 @@
       "low": "Running low — consider upgrading for deeper insights",
       "resetsMonthly": "Credits reset monthly",
       "actionCost": "This action uses {{count}} credit",
-      "actionCost_plural": "This action uses {{count}} credits",
       "upgradeCta": "Upgrade for deeper cellar insights and more time with Sommi",
       "ariaLabel_one": "You have {{count}} Sommi credit left this month",
-      "ariaLabel_other": "You have {{count}} Sommi credits left this month"
+      "ariaLabel_other": "You have {{count}} Sommi credits left this month",
+      "actionCost_other": "This action uses {{count}} credits",
+      "actionCost_one": "This action uses {{count}} credit"
     },
     "planFeatures": {
       "free": [
@@ -1749,7 +1971,11 @@
     "activity": {
       "one": "You opened 1 wine this week",
       "few": "You opened {{count}} wines this week",
-      "busy": "A busy week — you opened {{count}} bottles"
+      "busy": "A busy week — you opened {{count}} bottles",
+      "few_one": "You opened {{count}} wine this week",
+      "few_other": "You opened {{count}} wines this week",
+      "busy_one": "A busy week — you opened {{count}} bottle",
+      "busy_other": "A busy week — you opened {{count}} bottles"
     },
     "preferenceTrend": {
       "redOnly": "You leaned toward red wines this week",
@@ -1785,8 +2011,8 @@
   "insights": {
     "regionAffinity": "You tend to rate {{region}} wines highly",
     "grapeAffinity": "One of your top varietals: {{grape}}",
-    "drinkWindowReady": "At its peak — great timing to open this",
-    "drinkWindowPeakSoon": "Approaching peak window — open in the coming months",
+    "drinkWindowReady": "Ready to drink — good timing to open it",
+    "drinkWindowPeakSoon": "Nearing its peak — drinkable now, even better in the coming months",
     "pastOpenings": "You've enjoyed this wine {{count}} times before",
     "colorBiasRed": "True to your love of reds",
     "colorBiasWhite": "Matches your preference for whites",
@@ -1804,7 +2030,10 @@
       "biodynamic": "Biodynamic farming treats the vineyard as a living ecosystem",
       "naturalWine": "Natural wine is made with minimal intervention in the cellar",
       "organic": "Organic grapes grown without synthetic pesticides or fertilisers"
-    }
+    },
+    "explicitDislike": "Heads up: you told Sommi you avoid {{term}}",
+    "pastOpenings_one": "You've enjoyed this wine once before",
+    "pastOpenings_other": "You've enjoyed this wine {{count}} times before"
   },
   "sharedCellar": {
     "loading": "Loading shared cellar…",
@@ -1863,5 +2092,206 @@
   "agent": {
     "startRecording": "Start recording",
     "stopRecording": "Stop recording"
+  },
+  "form": {
+    "required": "required",
+    "purchaseDate": "Purchased",
+    "purchasePrice": "Purchase price",
+    "region": "Region",
+    "storageLocation": "Location"
+  },
+  "bottle": {
+    "viewImage": "View original image"
+  },
+  "duplicate": {
+    "createSeparate": "Create a separate entry",
+    "howMany": "How many bottles to add?",
+    "newTotal_one": "New total: {{count}} bottle",
+    "newTotal_other": "New total: {{count}} bottles",
+    "subtitle": "This wine is already in your collection",
+    "title": "Already in your cellar",
+    "addBottles_one": "Add {{count}} bottle",
+    "addBottles_other": "Add {{count}} bottles"
+  },
+  "planEvening": {
+    "queue": {
+      "decantFor": "Decant for {{time}}",
+      "serveTemp": "Serve at {{temp}}",
+      "servingNotes": "Serving notes"
+    },
+    "planShort": "Plan",
+    "resumeShort": "Resume",
+    "input": {
+      "proteins": {
+        "beef": "Beef",
+        "lamb": "Lamb",
+        "chicken": "Chicken",
+        "fish": "Fish",
+        "veggie": "Vegetarian",
+        "none": "No food"
+      },
+      "sauces": {
+        "tomato": "Tomato",
+        "bbq": "BBQ",
+        "creamy": "Creamy",
+        "none": "No sauce"
+      },
+      "title": "Tell Sommi about tonight",
+      "generate": "Generate lineup",
+      "generating": "Building your lineup…",
+      "occasion": "Occasion",
+      "occasions": {
+        "friends": "Friends",
+        "bbq": "BBQ",
+        "pizza": "Pizza night",
+        "date": "Date night",
+        "celebration": "Celebration"
+      },
+      "groupSize": "Group size",
+      "groupSizes": {
+        "2-4": "2–4 people",
+        "5-8": "5–8 people",
+        "9+": "9+ people"
+      },
+      "winesCount_one": "{{count}} wine",
+      "winesCount_other": "{{count}} wines",
+      "preferences": "Preferences",
+      "redsOnly": "Reds only",
+      "vivinoOnly": "Vivino {{rating}}+ only",
+      "vivinoHint": "Only bottles rated {{rating}} or higher on Vivino",
+      "foodLegend": "Food (optional)",
+      "foodHintOff": "No food selected — the lineup is chosen without food pairing.",
+      "foodHintOn": "The lineup favors wines that suit this dish.",
+      "protein": "Dish",
+      "sauce": "Sauce",
+      "spice": "Spice",
+      "spiceLevels": {
+        "low": "Mild",
+        "med": "Medium",
+        "high": "Spicy"
+      },
+      "smoke": "Smokiness",
+      "smokeLevels": {
+        "low": "Light",
+        "med": "Medium",
+        "high": "Strong"
+      },
+      "startTime": "Start time",
+      "startTimes": {
+        "now": "Now",
+        "1hour": "In 1 hour",
+        "2hours": "In 2 hours"
+      }
+    },
+    "title": "Plan an evening",
+    "steps": {
+      "label": "Progress",
+      "plan": "1. Plan",
+      "review": "2. Review"
+    },
+    "lineup": {
+      "title": "Review your lineup and swap anything you like",
+      "swapWine": "Swap",
+      "back": "Back",
+      "startEvening": "Start evening",
+      "starting": "Starting your evening…",
+      "startNote": "Starting saves this lineup as your evening and replaces any evening in progress. No bottle is marked as opened until you wrap up the evening and confirm what you opened."
+    },
+    "errors": {
+      "noEligible": "No bottles match these choices. Try turning off Reds only or the Vivino filter.",
+      "generateFailed": "Couldn't build a lineup. Your choices are kept — please try again.",
+      "startFailed": "Couldn't start the evening. Your lineup is still here — please try again."
+    },
+    "review": {
+      "yourChoices": "Your choices",
+      "editChoices": "Edit",
+      "spiceSummary": {
+        "low": "mild",
+        "med": "medium spice",
+        "high": "spicy"
+      },
+      "smokeSummary": {
+        "low": "light smoke",
+        "med": "some smoke",
+        "high": "smoky"
+      },
+      "startSummary": {
+        "now": "Starting now",
+        "1hour": "Starting in 1 hour",
+        "2hours": "Starting in 2 hours"
+      },
+      "heading_one": "Your lineup: {{count}} wine",
+      "heading_other": "Your lineup: {{count}} wines",
+      "fewerThanRequested_one": "Only {{count}} wine matches your choices, so the lineup is shorter than the {{requested}} suggested for your group.",
+      "fewerThanRequested_other": "Only {{count}} wines match your choices, so the lineup is shorter than the {{requested}} suggested for your group.",
+      "orderExplained": "Poured from lighter to fuller, based on each wine's estimated intensity.",
+      "singleWine": "One wine for the evening.",
+      "orderBroken": "After your swap, the order is no longer lighter to fuller.",
+      "reorder": "Reorder lighter to fuller",
+      "reordered": "Lineup reordered from lighter to fuller.",
+      "stage": "{{position}} · {{stage}}",
+      "stages": {
+        "opener": "Opening wine",
+        "middle": "Next pour",
+        "main": "Main wine",
+        "only": "Your wine"
+      },
+      "stageReason": {
+        "lighterStart": "Lighter than what follows, so it won't be overshadowed.",
+        "fullestLast": "The fullest of the lineup, saved for last.",
+        "bridge": "Bridges the lighter and fuller wines."
+      },
+      "readiness": {
+        "ready": "Ready to drink now.",
+        "peakSoon": "Approaching its peak."
+      },
+      "readinessBadge": {
+        "READY": "Ready to drink",
+        "PEAK_SOON": "Nearing peak",
+        "HOLD": "Better kept for now"
+      },
+      "vivinoRating": "{{rating}} Vivino",
+      "serveAt": "Serve at",
+      "decantRange": "Decant {{min}}–{{max}} min",
+      "decantMin": "Decant {{min}} min",
+      "swapAria": "Swap {{name}}",
+      "cautionLabel": "Heads-up:"
+    },
+    "swap": {
+      "titleFor": "Swap wine {{position}} · {{stage}}",
+      "subtitle": "Choose a wine to take its place. Only bottles that fit your plan are shown.",
+      "current": "Currently selected",
+      "alternatives": "Alternatives",
+      "error": "Couldn't load alternatives.",
+      "emptyTitle": "No other bottles fit this plan",
+      "emptyFilters": "Every eligible bottle is already in your lineup. Turning off Reds only or the Vivino filter in your plan may add options.",
+      "emptyNoFilters": "Every in-stock bottle that isn't reserved is already in your lineup.",
+      "inStock_one": "{{count}} bottle in stock",
+      "inStock_other": "{{count}} bottles in stock",
+      "choose": "Choose this wine",
+      "chooseAria": "Choose {{name}} for wine {{position}}",
+      "keepCurrent": "Keep current wine",
+      "announced": "Wine {{position}} is now {{name}}."
+    }
+  },
+  "receipt": {
+    "addToCellar_one": "Add {{count}} wine to cellar",
+    "addToCellar_other": "Add {{count}} wines to cellar",
+    "adding": "Adding…",
+    "detected_one": "Detected {{count}} wine",
+    "detected_other": "Detected {{count}} wines",
+    "noItems": "No items remaining",
+    "quantity": "Quantity",
+    "review": "Review receipt",
+    "total": "Total",
+    "totalPrice": "Total price",
+    "unknownWine": "Unknown wine"
+  },
+  "camera": {
+    "loading": "Starting camera…",
+    "error": "Camera error",
+    "capture": "Take photo",
+    "flip": "Flip camera",
+    "hint": "Position the wine label in the frame"
   }
 }

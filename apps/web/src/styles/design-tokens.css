@@ -208,6 +208,7 @@
   --z-fixed: 1030;
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
+  --z-modal-nested: 1055;
   --z-toast: 1060;
   --z-tooltip: 1070;
 
@@ -278,7 +279,7 @@
   --text-heading: #2d1810;                /* ink */
   --text-primary: #3a2a22;
   --text-secondary: #5c534c;              /* stone */
-  --text-tertiary: #766b62;               /* ≥4.5:1 on ivory */
+  --text-tertiary: #6b6058;               /* ≥4.5:1 on ivory, surface and muted */
   --text-muted: var(--text-tertiary);
   --text-inverse: #ffffff;
   --text-eyebrow: #8a6a12;                /* deep gold, readable on ivory */
@@ -331,7 +332,8 @@
   /* Aliases referenced by older components */
   --border-light: var(--border-subtle);
   --border-soft: var(--border-subtle);
-  --border-input: var(--border-medium);
+  --border-input: #928579;                /* 3:1 form-field boundary (WCAG 1.4.11) */
+  --rating-star: #9a7a10;                 /* gold that keeps 3:1 on ivory */
   --border-hover: var(--border-strong);
   --border-error: rgba(176, 68, 79, 0.45);
   --border-warning: rgba(184, 150, 46, 0.5);
@@ -431,6 +433,12 @@
   --color-info: #aebccb;
   --color-info-light: rgba(150, 170, 190, 0.16);
   --text-warning: #ecd391;
+  --border-input: rgba(255, 236, 222, 0.4);  /* 3:1 on dark surfaces */
+  --rating-star: #e3c26a;
+  /* Pale gold surfaces from the legacy palette, re-tinted for dark */
+  --gold-50: rgba(227, 194, 106, 0.08);
+  --gold-100: rgba(227, 194, 106, 0.14);
+  --gold-200: rgba(227, 194, 106, 0.3);
 }
 
 /* Smooth theme transitions - SELECTIVE ONLY */

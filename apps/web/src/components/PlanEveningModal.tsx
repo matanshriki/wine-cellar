@@ -1,1105 +1,985 @@
 /**
- * Plan an Evening - Luxury Wine Planner
- * 
- * Guided planner that creates a wine lineup for an evening:
- * - Quick inputs (occasion, group size, preferences)
- * - Generated lineup with serving order
- * - Live plan with progression
- * 
- * Gated feature - only visible to flagged users
+ * Plan an evening — guided lineup planner launched from Tonight's Selection.
+ *
+ * 1. Plan: occasion, group size, preferences, optional food, start time.
+ * 2. Review: ordered lineup with grounded reasons; swap any wine.
+ * Start evening saves the plan and opens the evening player. Inventory only
+ * changes later, when the user wraps up the evening and confirms what was opened.
+ *
+ * Rules live in services/eveningPlanner.ts; dialogs use the shared ModalLayer.
  */
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from '../lib/toast';
+import { AlertTriangle, ArrowLeftRight, Loader2, Pencil, X } from 'lucide-react';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import { EveningQueuePlayer } from './EveningQueuePlayer';
 import * as eveningPlanService from '../services/eveningPlanService';
-import type { EveningPlan } from '../services/eveningPlanService';
-import * as wineProfileService from '../services/wineProfileService';
-import type { FoodProfile, WineProfile } from '../services/wineProfileService';
+import type { EveningPlan, QueuedWine } from '../services/eveningPlanService';
+import type { WineProfile } from '../services/wineProfileService';
 import * as tasteProfileService from '../services/tasteProfileService';
+import * as labelArtService from '../services/labelArtService';
 import type { TasteProfile } from '../types/supabase';
 import { getLocalizedWineData } from '../utils/wineTranslations';
+import { ModalLayer } from './ui/ModalLayer';
+import { ChoiceChip } from './ui/ChoiceChip';
+import { WineImage } from './ui/WineImage';
+import {
+  MIN_VIVINO_RATING,
+  buildFoodProfile,
+  buildLineup,
+  fitReasons,
+  initialPlannerState,
+  isLightToFull,
+  plannerReducer,
+  readinessOf,
+  servingGuidance,
+  servingStage,
+  singleFlight,
+  stageReason,
+  swapAlternatives,
+  winesForGroup,
+  type FitReason,
+  type FoodChoices,
+  type GroupSize,
+  type Level,
+  type LineupSlot,
+  type Occasion,
+  type PlanChoices,
+  type StartTime,
+  type ServingGuidance,
+  type SwapOption,
+  vivinoRatingOf,
+  wineExtras,
+} from '../services/eveningPlanner';
 
 interface PlanEveningModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidateBottles: BottleWithWineInfo[];
+  /** Called once a plan is saved, so the launcher can offer "Resume evening". */
+  onPlanStarted?: (plan: EveningPlan) => void;
 }
 
-type Occasion = 'friends' | 'bbq' | 'pizza' | 'date' | 'celebration';
-type GroupSize = '2-4' | '5-8' | '9+';
-type StartTime = 'now' | '1hour' | '2hours';
-type PlanStep = 'input' | 'lineup' | 'live';
+const OCCASIONS: { value: Occasion; icon: string }[] = [
+  { value: 'friends', icon: '👥' },
+  { value: 'bbq', icon: '🔥' },
+  { value: 'pizza', icon: '🍕' },
+  { value: 'date', icon: '💝' },
+  { value: 'celebration', icon: '🎉' },
+];
+const GROUP_SIZES: GroupSize[] = ['2-4', '5-8', '9+'];
+const PROTEINS: FoodChoices['protein'][] = ['none', 'beef', 'lamb', 'chicken', 'fish', 'veggie'];
+const SAUCES: FoodChoices['sauce'][] = ['none', 'tomato', 'bbq', 'creamy'];
+const LEVELS: Level[] = ['low', 'med', 'high'];
+const START_TIMES: StartTime[] = ['now', '1hour', '2hours'];
+const TASTE_TIMEOUT_MS = 2500;
 
-interface WineSlot {
-  bottle: BottleWithWineInfo;
-  position: number;
-  label: string;
-  isLocked: boolean;
-  wineProfile?: WineProfile;
-  affinityReason?: string | null;
+function displayImage(bottle: BottleWithWineInfo) {
+  const b = bottle as BottleWithWineInfo & { label_image_path?: string | null; image_path?: string | null; image_url?: string | null };
+  const w = wineExtras(bottle);
+  return labelArtService.getWineDisplayImage({
+    ...bottle.wine,
+    image_path: w.image_path || b.label_image_path || b.image_path || null,
+    label_image_path: w.label_image_path || b.label_image_path || null,
+    image_url: bottle.wine.image_url || b.image_url || null,
+  } as Parameters<typeof labelArtService.getWineDisplayImage>[0]);
 }
 
-export function PlanEveningModal({ isOpen, onClose, candidateBottles }: PlanEveningModalProps) {
+function toQueuedGuidance(g: ServingGuidance | null): QueuedWine['serving_guidance'] {
+  if (!g || (!g.temp && !g.decant)) return null;
+  return {
+    ...(g.temp ? { temp_min: g.temp.min, temp_max: g.temp.max } : {}),
+    ...(g.decant
+      ? { decanting: 'recommended' as const, decant_min: g.decant.min, ...(g.decant.max ? { decant_max: g.decant.max } : {}) }
+      : { decanting: 'none' as const }),
+  };
+}
+
+export function PlanEveningModal({ isOpen, onClose, candidateBottles, onPlanStarted }: PlanEveningModalProps) {
   const { t, i18n } = useTranslation();
-  
-  // Step management
-  const [currentStep, setCurrentStep] = useState<PlanStep>('input');
-  
-  // Input state
-  const [occasion, setOccasion] = useState<Occasion>('friends');
-  const [groupSize, setGroupSize] = useState<GroupSize>('2-4');
-  const [redsOnly, setRedsOnly] = useState(false);
-  const [highRatingOnly, setHighRatingOnly] = useState(true);
-  const [startTime, setStartTime] = useState<StartTime>('now');
-  
-  // Food selection state
-  const [selectedProtein, setSelectedProtein] = useState<'beef' | 'lamb' | 'chicken' | 'fish' | 'veggie' | 'none'>('none');
-  const [selectedSauce, setSelectedSauce] = useState<'tomato' | 'bbq' | 'creamy' | 'none'>('none');
-  const [selectedSpice, setSelectedSpice] = useState<'low' | 'med' | 'high'>('low');
-  const [selectedSmoke, setSelectedSmoke] = useState<'low' | 'med' | 'high'>('low');
-  
-  // Lineup state
-  const [lineup, setLineup] = useState<WineSlot[]>([]);
-  
-  // Active plan state (persistence)
-  const [activePlan, setActivePlan] = useState<EveningPlan | null>(null);
-  const [showQueuePlayer, setShowQueuePlayer] = useState(false);
-  
-  // Swap modal state
-  const [showSwapPicker, setShowSwapPicker] = useState(false);
-  const [swapPosition, setSwapPosition] = useState<number | null>(null);
-  const [availableAlternatives, setAvailableAlternatives] = useState<BottleWithWineInfo[]>([]);
-  
-  // Taste profile state
-  const [userTasteProfile, setUserTasteProfile] = useState<TasteProfile | null>(null);
-  
-  // Fetch taste profile on mount
-  useEffect(() => {
-    tasteProfileService.getMyTasteProfile()
-      .then(profile => {
-        if (profile) {
-          console.log('[PlanEvening] Loaded taste profile with confidence:', profile.confidence);
-          setUserTasteProfile(profile);
-        }
-      })
-      .catch(err => console.log('[PlanEvening] No taste profile available'));
+  const [state, dispatch] = useReducer(plannerReducer, initialPlannerState);
+  const { step, choices, lineup, requested, busy, error } = state;
+  const choicesRef = useRef(choices);
+  choicesRef.current = choices;
+
+  const [taste, setTaste] = useState<TasteProfile | null>(null);
+  const tasteRequest = useRef<Promise<TasteProfile | null> | null>(null);
+  const loadTaste = useCallback(() => {
+    if (!tasteRequest.current) {
+      tasteRequest.current = tasteProfileService
+        .getMyTasteProfile()
+        .then((p) => {
+          setTaste(p ?? null);
+          return p ?? null;
+        })
+        .catch(() => null);
+    }
+    return tasteRequest.current;
   }, []);
-  
-  // Generate lineup based on inputs (FOOD-AWARE + TASTE PROFILE)
-  const generateLineup = () => {
-    console.log('[PlanEvening] Generating food-aware lineup...', {
-      occasion,
-      groupSize,
-      redsOnly,
-      highRatingOnly,
-      food: { selectedProtein, selectedSauce, selectedSpice, selectedSmoke },
-      hasTasteProfile: !!userTasteProfile,
-    });
-    
-    // Determine number of wines
-    const wineCount = groupSize === '2-4' ? 3 : groupSize === '5-8' ? 4 : 5;
-    
-    // Filter candidates — exclude opened and reserved (Keep) bottles
-    let candidates = [...candidateBottles].filter(b => b.quantity > 0 && !(b as any).is_reserved);
-    
-    if (redsOnly) {
-      candidates = candidates.filter(b => b.wine.color === 'red');
+
+  const [activePlan, setActivePlan] = useState<EveningPlan | null>(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [swapPosition, setSwapPosition] = useState<number | null>(null);
+  const [swapOptions, setSwapOptions] = useState<SwapOption[] | null>(null);
+  const [swapFailed, setSwapFailed] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+
+  const ids = { title: useId(), subtitle: useId(), stepHeading: useId(), swapTitle: useId(), swapDesc: useId() };
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousStep = useRef(step);
+
+  useEffect(() => {
+    if (isOpen) loadTaste();
+    else {
+      dispatch({ type: 'reset' });
+      setShowPlayer(false);
+      setActivePlan(null);
+      setSwapPosition(null);
+      setAnnouncement('');
     }
-    
-    if (highRatingOnly) {
-      candidates = candidates.filter(b => (b.wine.rating || 0) >= 4.2);
-    }
-    
-    // Build food profile
-    const foodProfile: FoodProfile = {
-      protein: selectedProtein,
-      fat: selectedProtein === 'beef' || selectedProtein === 'lamb' ? 'high' 
-         : selectedProtein === 'fish' || selectedProtein === 'veggie' ? 'low'
-         : 'med',
-      sauce: selectedSauce,
-      spice: selectedSpice,
-      smoke: selectedSmoke,
-    };
-    
-    // Score each candidate with food pairing + taste profile affinity
-    const scoredCandidates = candidates.map(bottle => {
-      const wineProfile = wineProfileService.getWineProfile(bottle.wine);
-      
-      let score = 0;
-      let affinityReason: string | null = null;
-      
-      // Readiness score
-      const analysis = bottle as any;
-      if (analysis.readiness_label === 'READY') score += 100;
-      else if (analysis.readiness_label === 'PEAK_SOON') score += 50;
-      
-      // Rating score
-      if (bottle.wine.rating && bottle.wine.rating >= 4.2) score += 30;
-      
-      // Food pairing score (uses wine profiles!)
-      if (selectedProtein !== 'none') {
-        const pairingScore = wineProfileService.calculateFoodPairingScore(wineProfile, foodProfile);
-        score += pairingScore;
-      }
-      
-      // TASTE PROFILE AFFINITY SCORING
-      if (userTasteProfile) {
-        const affinity = tasteProfileService.calculateAffinity(wineProfile, userTasteProfile);
-        const affinityWeight = tasteProfileService.getAffinityWeight(userTasteProfile.confidence);
-        const affinityBonus = affinity * affinityWeight * 50;
-        score += affinityBonus;
-        
-        affinityReason = tasteProfileService.generateAffinityReason(wineProfile, userTasteProfile);
-        
-        if (affinityBonus > 5) {
-          console.log('[PlanEvening] Affinity bonus for', bottle.wine.wine_name, ':', Math.round(affinityBonus));
+  }, [isOpen, loadTaste]);
+
+  // New step: start at the top and move focus to its heading (no focus jumps while editing).
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    bodyRef.current?.scrollTo({ top: 0 });
+    requestAnimationFrame(() => stepHeadingRef.current?.focus({ preventScroll: true }));
+  }, [step]);
+
+  const affinityOf = useMemo(() => {
+    if (!taste) return undefined;
+    const weight = tasteProfileService.getAffinityWeight(taste.confidence);
+    return (profile: WineProfile) => tasteProfileService.calculateAffinity(profile, taste) * weight;
+  }, [taste]);
+
+  const generate = useMemo(
+    () =>
+      singleFlight(async () => {
+        dispatch({ type: 'generateStart' });
+        try {
+          const profile = await Promise.race([
+            loadTaste(),
+            new Promise<null>((r) => setTimeout(() => r(null), TASTE_TIMEOUT_MS)),
+          ]);
+          const weight = profile ? tasteProfileService.getAffinityWeight(profile.confidence) : 0;
+          const result = buildLineup(candidateBottles, choicesRef.current, {
+            affinityOf: profile ? (p) => tasteProfileService.calculateAffinity(p, profile) * weight : undefined,
+          });
+          dispatch({ type: 'generateDone', result });
+        } catch (err) {
+          console.error('[PlanEvening] Lineup generation failed:', err);
+          dispatch({ type: 'generateFailed' });
         }
-      }
-      
-      // Diversity bonus
-      score += Math.random() * 10;
-      
-      return { bottle, score, wineProfile, affinityReason };
-    });
-    
-    // Sort by score (highest first)
-    scoredCandidates.sort((a, b) => b.score - a.score);
-    
-    // Take top wines
-    const selectedBottles = scoredCandidates.slice(0, Math.min(wineCount, scoredCandidates.length));
-    
-    // ORDER BY POWER for smooth progression (light to powerful)
-    selectedBottles.sort((a, b) => a.wineProfile.power - b.wineProfile.power);
-    
-    // Avoid back-to-back high tannin+oak if possible
-    for (let i = 1; i < selectedBottles.length - 1; i++) {
-      const prev = selectedBottles[i - 1].wineProfile;
-      const curr = selectedBottles[i].wineProfile;
-      const next = selectedBottles[i + 1]?.wineProfile;
-      
-      if (prev.tannin >= 4 && prev.oak >= 4 && curr.tannin >= 4 && curr.oak >= 4) {
-        if (next && next.tannin < 4) {
-          [selectedBottles[i], selectedBottles[i + 1]] = [selectedBottles[i + 1], selectedBottles[i]];
+      }),
+    [candidateBottles, loadTaste],
+  );
+
+  const start = useMemo(
+    () =>
+      singleFlight(async (slots: LineupSlot[], c: PlanChoices) => {
+        dispatch({ type: 'startBegin' });
+        try {
+          const plan = await eveningPlanService.createPlan({
+            occasion: c.occasion,
+            group_size: c.groupSize,
+            settings: {
+              occasion: c.occasion,
+              groupSize: c.groupSize,
+              startTime: c.startTime,
+              redsOnly: c.redsOnly,
+              minVivinoRating: c.highRatingOnly ? MIN_VIVINO_RATING : null,
+              food: buildFoodProfile(c.food),
+            },
+            queue: eveningPlanService
+              .lineupToQueue(
+                slots.map((s, i) => ({ bottle: s.bottle, position: s.position, label: servingStage(i, slots.length) })),
+              )
+              .map((item, i) => ({ ...item, serving_guidance: toQueuedGuidance(servingGuidance(slots[i].bottle)) })),
+          });
+          dispatch({ type: 'startDone' });
+          setActivePlan(plan);
+          setShowPlayer(true);
+          onPlanStarted?.(plan);
+        } catch (err) {
+          console.error('[PlanEvening] Failed to start evening:', err);
+          dispatch({ type: 'startFailed' });
         }
-      }
-    }
-    
-    // Create lineup with labels and profiles
-    const labels = ['Warm-up', 'Mid', 'Main', 'Finale', 'Grand Finale', 'Closer'];
-    
-    const newLineup: WineSlot[] = selectedBottles.map(({ bottle, wineProfile, affinityReason }, idx) => ({
-      bottle,
-      position: idx + 1,
-      label: labels[idx] || `Wine ${idx + 1}`,
-      isLocked: false,
-      wineProfile,
-      affinityReason,
-    }));
-    
-    console.log('[PlanEvening] Generated lineup with power progression:', newLineup.map(s => ({
-      name: s.bottle.wine.wine_name,
-      power: s.wineProfile?.power,
-    })));
-    
-    setLineup(newLineup);
-    setCurrentStep('lineup');
-  };
-  
-  // Start live plan
-  const startLivePlan = async () => {
+      }),
+    [onPlanStarted],
+  );
+
+  const handleClose = useCallback(() => {
+    if (busy === 'starting') return;
+    onClose();
+  }, [busy, onClose]);
+
+  const openSwap = (position: number) => {
+    setSwapFailed(false);
     try {
-      const plan = await eveningPlanService.createPlan({
-        occasion: occasion || '',
-        group_size: groupSize || '',
-        settings: {
-          occasion: occasion || null,
-          groupSize: groupSize || null,
-        },
-        queue: eveningPlanService.lineupToQueue(lineup),
-      });
-      setActivePlan(plan);
-      setShowQueuePlayer(true);
-    } catch (error) {
-      console.error('Failed to create evening plan:', error);
-      toast.error('Failed to start evening plan. Please try again.');
+      setSwapOptions(swapAlternatives(candidateBottles, choices, lineup, { affinityOf }));
+    } catch (err) {
+      console.error('[PlanEvening] Could not list alternatives:', err);
+      setSwapOptions(null);
+      setSwapFailed(true);
     }
-  };
-  
-  // Swap wine in lineup
-  const handleSwap = (position: number) => {
-    console.log('[PlanEvening] Opening swap picker for position', position);
-    
-    // Filter candidates - exclude wines already in lineup
-    const winesInLineup = lineup.map(slot => slot.bottle.id);
-    let alternatives = [...candidateBottles].filter(b => 
-      b.quantity > 0 && !(b as any).is_reserved && !winesInLineup.includes(b.id)
-    );
-    
-    // Apply same filters as original lineup
-    if (redsOnly) {
-      alternatives = alternatives.filter(b => b.wine.color === 'red');
-    }
-    
-    if (highRatingOnly) {
-      alternatives = alternatives.filter(b => (b.wine.rating || 0) >= 4.2);
-    }
-    
-    // Sort by readiness
-    alternatives = alternatives.sort((a, b) => {
-      const aAnalysis = a as any;
-      const bAnalysis = b as any;
-      const aReady = aAnalysis.readiness_label === 'READY' ? 100 : 0;
-      const bReady = bAnalysis.readiness_label === 'READY' ? 100 : 0;
-      return (bReady - aReady) || (Math.random() - 0.5);
-    });
-    
-    setAvailableAlternatives(alternatives.slice(0, 6)); // Limit to 6 alternatives
     setSwapPosition(position);
-    setShowSwapPicker(true);
   };
-  
-  // Confirm swap with selected wine
-  const handleConfirmSwap = (selectedBottle: BottleWithWineInfo) => {
+
+  const closeSwap = useCallback(() => setSwapPosition(null), []);
+
+  const chooseAlternative = (option: SwapOption) => {
     if (swapPosition === null) return;
-    
-    console.log('[PlanEvening] Swapping wine at position', swapPosition, 'with', selectedBottle.wine.wine_name);
-    
-    const newLineup = [...lineup];
-    const slotIndex = newLineup.findIndex(slot => slot.position === swapPosition);
-    
-    if (slotIndex !== -1) {
-      newLineup[slotIndex] = {
-        ...newLineup[slotIndex],
-        bottle: selectedBottle,
-      };
-      setLineup(newLineup);
-    }
-    
-    setShowSwapPicker(false);
+    dispatch({ type: 'swap', position: swapPosition, bottle: option.bottle, profile: option.profile });
+    setAnnouncement(
+      t('planEvening.swap.announced', {
+        position: swapPosition,
+        name: getLocalizedWineData(option.bottle.wine, i18n.language).wine_name,
+      }),
+    );
     setSwapPosition(null);
   };
-  
-  // Complete evening
-  const handleCompleteEvening = () => {
-    console.log('[PlanEvening] Evening completed! 🎉');
-    
-    // Show celebration toast
-    toast.success('🎉 Wonderful evening! Hope you enjoyed your wines.');
-    
-    // Close modal and reset
-    onClose();
-    setTimeout(() => {
-      setCurrentStep('input');
-      setLineup([]);
-    }, 300);
-  };
-  
-  // Close and reset
-  const handleClose = () => {
-    onClose();
-    setTimeout(() => {
-      setCurrentStep('input');
-      setLineup([]);
-      setActivePlan(null);
-    }, 300);
-  };
-  
-  // Handle queue player completion
-  const handleQueueComplete = () => {
-    setShowQueuePlayer(false);
-    setActivePlan(null);
-    handleClose();
-  };
 
-  if (!isOpen) return null;
-  
-  // Show Queue Player if plan is started
-  if (showQueuePlayer && activePlan) {
+  const tasteReasonOf = useCallback(
+    (slot: { bottle: BottleWithWineInfo; profile: WineProfile }) =>
+      taste
+        ? tasteProfileService.generateAffinityReason(slot.profile, taste, slot.bottle.wine, { requireTrustedStructure: true })
+        : null,
+    [taste],
+  );
+
+  if (showPlayer && activePlan) {
     return (
       <EveningQueuePlayer
-        isOpen={showQueuePlayer}
+        isOpen
         onClose={() => {
-          setShowQueuePlayer(false);
-          handleClose();
+          setShowPlayer(false);
+          onClose();
         }}
         plan={activePlan}
         onPlanUpdated={setActivePlan}
-        onComplete={handleQueueComplete}
+        onComplete={() => {
+          setShowPlayer(false);
+          onClose();
+        }}
       />
     );
   }
 
-  return (
-    <AnimatePresence mode="wait">
-      {isOpen && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center"
-        style={{
-          background: 'var(--bg-overlay)',
-          backdropFilter: 'var(--blur-medium)',
-          WebkitBackdropFilter: 'var(--blur-medium)',
-          paddingTop: 'max(1rem, var(--safe-top))',
-          paddingBottom: 'max(1rem, var(--safe-bottom))',
-          paddingLeft: 'max(1rem, var(--safe-left))',
-          paddingRight: 'max(1rem, var(--safe-right))',
-        }}
-        onClick={handleClose}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="plan-evening-title"
-      >
-        {/* Modal Container */}
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-2xl rounded-[1.5rem] overflow-hidden flex flex-col"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-modal)',
-            maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
-          }}
-        >
-          {/* Header */}
-          <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 
-                  id="plan-evening-title"
-                  className="text-2xl font-bold flex items-center gap-2"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  <span>✨</span>
-                  {t('planEvening.title', 'Plan an evening')}
-                </h2>
-                <p 
-                  className="text-sm mt-1"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {currentStep === 'input' && t('planEvening.input.title', 'Create your perfect wine lineup')}
-                  {currentStep === 'lineup' && t('planEvening.lineup.title', 'Review and customize your selection')}
-                </p>
-              </div>
-              <button
-                aria-label={t('common.close')}
-                onClick={handleClose}
-                className="app-icon-btn"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Progress dots */}
-            <div className="flex items-center gap-2 mt-4">
-              {['input', 'lineup'].map((step, idx) => (
-                <div
-                  key={step}
-                  className="h-1 flex-1 rounded-full transition-all"
-                  style={{
-                    background: currentStep === step || (idx < ['input', 'lineup'].indexOf(currentStep))
-                      ? 'var(--wine-500)'
-                      : 'var(--border-subtle)',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+  const swapSlot = swapPosition !== null ? lineup.find((s) => s.position === swapPosition) ?? null : null;
+  const food = buildFoodProfile(choices.food);
+  const errorText =
+    error === 'noEligible'
+      ? t('planEvening.errors.noEligible')
+      : error === 'generateFailed'
+        ? t('planEvening.errors.generateFailed')
+        : error === 'startFailed'
+          ? t('planEvening.errors.startFailed')
+          : null;
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto touch-scroll">
-            <AnimatePresence mode="wait">
-              {currentStep === 'input' && (
-                <InputStep
-                  occasion={occasion}
-                  setOccasion={setOccasion}
-                  groupSize={groupSize}
-                  setGroupSize={setGroupSize}
-                  redsOnly={redsOnly}
-                  setRedsOnly={setRedsOnly}
-                  highRatingOnly={highRatingOnly}
-                  setHighRatingOnly={setHighRatingOnly}
-                  startTime={startTime}
-                  setStartTime={setStartTime}
-                  selectedProtein={selectedProtein}
-                  setSelectedProtein={setSelectedProtein}
-                  selectedSauce={selectedSauce}
-                  setSelectedSauce={setSelectedSauce}
-                  selectedSpice={selectedSpice}
-                  setSelectedSpice={setSelectedSpice}
-                  selectedSmoke={selectedSmoke}
-                  setSelectedSmoke={setSelectedSmoke}
-                  onGenerate={generateLineup}
-                />
-              )}
-              
-              {currentStep === 'lineup' && (
-                <LineupStep
-                  lineup={lineup}
-                  onSwap={handleSwap}
-                  onStart={startLivePlan}
-                  onBack={() => setCurrentStep('input')}
-                  foodProfile={{
-                    protein: selectedProtein,
-                    fat: selectedProtein === 'beef' || selectedProtein === 'lamb' ? 'high' : selectedProtein === 'fish' ? 'low' : 'med',
-                    sauce: selectedSauce,
-                    spice: selectedSpice,
-                    smoke: selectedSmoke,
-                  }}
-                />
-              )}
-            </AnimatePresence>
+  return (
+    <>
+      <ModalLayer
+        open={isOpen}
+        onClose={handleClose}
+        labelledBy={ids.title}
+        describedBy={ids.subtitle}
+        testId="plan-evening-dialog"
+      >
+        <header className="modal-header">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 id={ids.title} className="app-section-title !text-xl sm:!text-2xl">
+                {t('planEvening.title')}
+              </h2>
+              <p id={ids.subtitle} className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                {step === 'plan' ? t('planEvening.input.title') : t('planEvening.lineup.title')}
+              </p>
+            </div>
+            <button type="button" className="app-icon-btn flex-shrink-0" onClick={handleClose} aria-label={t('common.close')}>
+              <X className="h-5 w-5" aria-hidden />
+            </button>
           </div>
-        </motion.div>
-      </motion.div>
-      )}
-      
-      {/* Swap Picker Modal */}
-      {showSwapPicker && (
-        <SwapPickerModal
-          isOpen={showSwapPicker}
-          onClose={() => {
-            setShowSwapPicker(false);
-            setSwapPosition(null);
-          }}
-          alternatives={availableAlternatives}
-          currentWine={lineup.find(slot => slot.position === swapPosition)?.bottle}
-          onSelect={handleConfirmSwap}
-        />
-      )}
-    </AnimatePresence>
+          <ol className="app-steps mt-3" aria-label={t('planEvening.steps.label')}>
+            <li aria-current={step === 'plan' ? 'step' : undefined} className={step === 'review' ? 'is-done' : ''}>
+              {t('planEvening.steps.plan')}
+            </li>
+            <li aria-current={step === 'review' ? 'step' : undefined}>{t('planEvening.steps.review')}</li>
+          </ol>
+          <p className="sr-only" role="status" aria-live="polite">
+            {busy === 'generating' ? t('planEvening.input.generating') : busy === 'starting' ? t('planEvening.lineup.starting') : announcement}
+          </p>
+        </header>
+
+        <div ref={bodyRef} className="modal-body" aria-busy={busy !== 'idle'}>
+          {step === 'plan' ? (
+            <PlanForm
+              headingId={ids.stepHeading}
+              headingRef={stepHeadingRef}
+              choices={choices}
+              disabled={busy !== 'idle'}
+              onChoices={(patch) => dispatch({ type: 'choices', patch })}
+              onProtein={(protein) => dispatch({ type: 'protein', protein })}
+              onFood={(patch) => dispatch({ type: 'food', patch })}
+            />
+          ) : (
+            <ReviewStep
+              headingId={ids.stepHeading}
+              headingRef={stepHeadingRef}
+              choices={choices}
+              lineup={lineup}
+              requested={requested}
+              food={food}
+              tasteReasonOf={tasteReasonOf}
+              disabled={busy !== 'idle'}
+              onEdit={() => dispatch({ type: 'back' })}
+              onSwap={openSwap}
+              onReorder={() => {
+                dispatch({ type: 'reorder' });
+                setAnnouncement(t('planEvening.review.reordered'));
+              }}
+            />
+          )}
+        </div>
+
+        <footer className="modal-footer">
+          {errorText && (
+            <p role="alert" className="mb-2.5 rounded-xl px-3 py-2 text-sm" style={{ background: 'var(--status-error-bg, var(--wine-50))', color: 'var(--status-error-text, var(--accent-text))' }}>
+              {errorText}
+            </p>
+          )}
+          {step === 'plan' ? (
+            <button
+              type="button"
+              className="btn-luxury-primary w-full"
+              onClick={() => void generate()}
+              disabled={busy !== 'idle'}
+              aria-busy={busy === 'generating'}
+            >
+              {busy === 'generating' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+                  {t('planEvening.input.generating')}
+                </>
+              ) : (
+                t('planEvening.input.generate')
+              )}
+            </button>
+          ) : (
+            <>
+              <p className="mb-2.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {t('planEvening.lineup.startNote')}
+              </p>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  className="btn-luxury-secondary flex-1"
+                  onClick={() => dispatch({ type: 'back' })}
+                  disabled={busy === 'starting'}
+                >
+                  {t('planEvening.lineup.back')}
+                </button>
+                <button
+                  type="button"
+                  className="btn-luxury-primary flex-[1.4]"
+                  onClick={() => void start(lineup, choices)}
+                  disabled={busy !== 'idle'}
+                  aria-busy={busy === 'starting'}
+                >
+                  {busy === 'starting' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+                      {t('planEvening.lineup.starting')}
+                    </>
+                  ) : (
+                    t('planEvening.lineup.startEvening')
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </footer>
+      </ModalLayer>
+
+      <ModalLayer
+        open={isOpen && swapSlot !== null}
+        onClose={closeSwap}
+        labelledBy={ids.swapTitle}
+        describedBy={ids.swapDesc}
+        level="nested"
+        size="md"
+        testId="plan-evening-swap"
+      >
+        {swapSlot && (
+          <SwapView
+            titleId={ids.swapTitle}
+            descId={ids.swapDesc}
+            slot={swapSlot}
+            total={lineup.length}
+            options={swapOptions}
+            failed={swapFailed}
+            food={food}
+            choices={choices}
+            tasteReasonOf={tasteReasonOf}
+            onChoose={chooseAlternative}
+            onRetry={() => openSwap(swapSlot.position)}
+            onClose={closeSwap}
+          />
+        )}
+      </ModalLayer>
+    </>
   );
 }
 
-// Swap Picker Modal Component
-function SwapPickerModal({
-  isOpen,
-  onClose,
-  alternatives,
-  currentWine,
-  onSelect,
+// ─── Step 1: plan ─────────────────────────────────────────────────────────
+
+function Section({ legend, hint, hintId, children }: { legend: string; hint?: string; hintId?: string; children: ReactNode }) {
+  return (
+    <fieldset className="min-w-0">
+      <legend className="text-sm font-semibold mb-1" style={{ color: 'var(--text-heading)' }}>
+        {legend}
+      </legend>
+      {hint && (
+        <p id={hintId} className="text-xs mb-2.5" style={{ color: 'var(--text-secondary)' }}>
+          {hint}
+        </p>
+      )}
+      <div className={hint ? '' : 'mt-2'}>{children}</div>
+    </fieldset>
+  );
+}
+
+function PlanForm({
+  headingId,
+  headingRef,
+  choices,
+  disabled,
+  onChoices,
+  onProtein,
+  onFood,
 }: {
-  isOpen: boolean;
-  onClose: () => void;
-  alternatives: BottleWithWineInfo[];
-  currentWine?: BottleWithWineInfo;
-  onSelect: (bottle: BottleWithWineInfo) => void;
+  headingId: string;
+  headingRef: RefObject<HTMLHeadingElement>;
+  choices: PlanChoices;
+  disabled: boolean;
+  onChoices: (patch: Partial<PlanChoices>) => void;
+  onProtein: (protein: FoodChoices['protein']) => void;
+  onFood: (patch: Partial<Omit<FoodChoices, 'protein'>>) => void;
+}) {
+  const { t } = useTranslation();
+  const name = useId();
+  const foodHintId = useId();
+  const hasFood = choices.food.protein !== 'none';
+
+  return (
+    <div className="space-y-6">
+      <h3 id={headingId} ref={headingRef} tabIndex={-1} className="sr-only">
+        {t('planEvening.steps.plan')}
+      </h3>
+
+      <Section legend={t('planEvening.input.occasion')}>
+        <div className="flex flex-wrap gap-2">
+          {OCCASIONS.map(({ value, icon }) => (
+            <ChoiceChip
+              key={value}
+              type="radio"
+              name={`${name}-occasion`}
+              checked={choices.occasion === value}
+              onChange={() => onChoices({ occasion: value })}
+              icon={icon}
+              label={t(`planEvening.input.occasions.${value}`)}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section legend={t('planEvening.input.groupSize')}>
+        <div className="grid grid-cols-3 gap-2">
+          {GROUP_SIZES.map((size) => (
+            <ChoiceChip
+              key={size}
+              type="radio"
+              name={`${name}-group`}
+              checked={choices.groupSize === size}
+              onChange={() => onChoices({ groupSize: size })}
+              label={t(`planEvening.input.groupSizes.${size}`)}
+              hint={t('planEvening.input.winesCount', { count: winesForGroup(size) })}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section legend={t('planEvening.input.preferences')}>
+        <div className="space-y-2">
+          <ChoiceChip
+            type="checkbox"
+            row
+            checked={choices.redsOnly}
+            onChange={(redsOnly) => onChoices({ redsOnly })}
+            label={t('planEvening.input.redsOnly')}
+            disabled={disabled}
+          />
+          <ChoiceChip
+            type="checkbox"
+            row
+            checked={choices.highRatingOnly}
+            onChange={(highRatingOnly) => onChoices({ highRatingOnly })}
+            label={t('planEvening.input.vivinoOnly', { rating: MIN_VIVINO_RATING })}
+            hint={t('planEvening.input.vivinoHint', { rating: MIN_VIVINO_RATING })}
+            disabled={disabled}
+          />
+        </div>
+      </Section>
+
+      <Section
+        legend={t('planEvening.input.foodLegend')}
+        hint={hasFood ? t('planEvening.input.foodHintOn') : t('planEvening.input.foodHintOff')}
+        hintId={foodHintId}
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('planEvening.input.protein')} aria-describedby={foodHintId}>
+            {PROTEINS.map((protein) => (
+              <ChoiceChip
+                key={protein}
+                type="radio"
+                name={`${name}-protein`}
+                checked={choices.food.protein === protein}
+                onChange={() => onProtein(protein)}
+                label={t(`planEvening.input.proteins.${protein}`)}
+                disabled={disabled}
+              />
+            ))}
+          </div>
+
+          {hasFood && (
+            <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: 'var(--bg-muted)' }}>
+              <Section legend={t('planEvening.input.sauce')}>
+                <div className="flex flex-wrap gap-2">
+                  {SAUCES.map((sauce) => (
+                    <ChoiceChip
+                      key={sauce}
+                      type="radio"
+                      name={`${name}-sauce`}
+                      checked={choices.food.sauce === sauce}
+                      onChange={() => onFood({ sauce })}
+                      label={t(`planEvening.input.sauces.${sauce}`)}
+                      disabled={disabled}
+                    />
+                  ))}
+                </div>
+              </Section>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Section legend={t('planEvening.input.spice')}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LEVELS.map((level) => (
+                      <ChoiceChip
+                        key={level}
+                        type="radio"
+                        name={`${name}-spice`}
+                        checked={choices.food.spice === level}
+                        onChange={() => onFood({ spice: level })}
+                        label={t(`planEvening.input.spiceLevels.${level}`)}
+                        disabled={disabled}
+                      />
+                    ))}
+                  </div>
+                </Section>
+                <Section legend={t('planEvening.input.smoke')}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LEVELS.map((level) => (
+                      <ChoiceChip
+                        key={level}
+                        type="radio"
+                        name={`${name}-smoke`}
+                        checked={choices.food.smoke === level}
+                        onChange={() => onFood({ smoke: level })}
+                        label={t(`planEvening.input.smokeLevels.${level}`)}
+                        disabled={disabled}
+                      />
+                    ))}
+                  </div>
+                </Section>
+              </div>
+            </div>
+          )}
+        </div>
+      </Section>
+
+      <Section legend={t('planEvening.input.startTime')}>
+        <div className="grid grid-cols-3 gap-2">
+          {START_TIMES.map((time) => (
+            <ChoiceChip
+              key={time}
+              type="radio"
+              name={`${name}-start`}
+              checked={choices.startTime === time}
+              onChange={() => onChoices({ startTime: time })}
+              label={t(`planEvening.input.startTimes.${time}`)}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+// ─── Step 2: review ───────────────────────────────────────────────────────
+
+function useChoiceSummary(choices: PlanChoices): string[] {
+  const { t } = useTranslation();
+  const parts = [
+    t(`planEvening.input.occasions.${choices.occasion}`),
+    t(`planEvening.input.groupSizes.${choices.groupSize}`),
+  ];
+  if (choices.redsOnly) parts.push(t('planEvening.input.redsOnly'));
+  if (choices.highRatingOnly) parts.push(t('planEvening.input.vivinoOnly', { rating: MIN_VIVINO_RATING }));
+  if (choices.food.protein === 'none') parts.push(t('planEvening.input.proteins.none'));
+  else {
+    const dish = [t(`planEvening.input.proteins.${choices.food.protein}`)];
+    if (choices.food.sauce !== 'none') dish.push(t(`planEvening.input.sauces.${choices.food.sauce}`));
+    dish.push(t(`planEvening.review.spiceSummary.${choices.food.spice}`));
+    dish.push(t(`planEvening.review.smokeSummary.${choices.food.smoke}`));
+    parts.push(dish.join(', '));
+  }
+  parts.push(t(`planEvening.review.startSummary.${choices.startTime}`));
+  return parts;
+}
+
+interface Reason {
+  text: string;
+  caution?: boolean;
+}
+
+function ReasonList({ reasons }: { reasons: Reason[] }) {
+  const { t } = useTranslation();
+  if (reasons.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-1 text-sm leading-snug" style={{ color: 'var(--text-secondary)' }}>
+      {reasons.map((r) => (
+        <li key={r.text} className="flex gap-1.5">
+          {r.caution ? (
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden style={{ color: 'var(--status-hold-text)' }} />
+          ) : (
+            <span aria-hidden style={{ color: 'var(--accent-text)' }}>•</span>
+          )}
+          <span dir="auto">
+            {r.caution && <span className="sr-only">{t('planEvening.review.cautionLabel')} </span>}
+            {r.text}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function useFitText() {
+  const { t } = useTranslation();
+  return (r: FitReason): Reason =>
+    r.kind === 'pairing'
+      ? { text: t(`recommendation.grounded.pairing.${r.key}`), caution: r.tone === 'caution' }
+      : r.kind === 'taste'
+        ? { text: r.text }
+        : { text: t(`planEvening.review.readiness.${r.key}`) };
+}
+
+function MetaChips({ bottle, showGuidance }: { bottle: BottleWithWineInfo; showGuidance: boolean }) {
+  const { t } = useTranslation();
+  const readiness = readinessOf(bottle);
+  const guidance = showGuidance ? servingGuidance(bottle) : null;
+  const rating = vivinoRatingOf(bottle);
+  const chip = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs';
+  const muted = { background: 'var(--bg-muted)', color: 'var(--text-secondary)' };
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {readiness && (
+        <span className={chip} style={readiness === 'HOLD' ? { background: 'var(--status-hold-bg)', color: 'var(--status-hold-text)' } : { background: 'var(--status-ready-bg)', color: 'var(--status-ready-text)' }}>
+          {t(`planEvening.review.readinessBadge.${readiness}`)}
+        </span>
+      )}
+      {rating > 0 && (
+        <span className={chip} style={muted}>
+          <span aria-hidden>★</span>
+          {t('planEvening.review.vivinoRating', { rating: rating.toFixed(1) })}
+        </span>
+      )}
+      {guidance?.temp && (
+        <span className={chip} style={muted}>
+          {t('planEvening.review.serveAt')} <bdi dir="ltr">{guidance.temp.min}–{guidance.temp.max}°C</bdi>
+        </span>
+      )}
+      {guidance?.decant && (
+        <span className={chip} style={muted}>
+          {guidance.decant.max
+            ? t('planEvening.review.decantRange', { min: guidance.decant.min, max: guidance.decant.max })
+            : t('planEvening.review.decantMin', { min: guidance.decant.min })}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ReviewStep({
+  headingId,
+  headingRef,
+  choices,
+  lineup,
+  requested,
+  food,
+  tasteReasonOf,
+  disabled,
+  onEdit,
+  onSwap,
+  onReorder,
+}: {
+  headingId: string;
+  headingRef: RefObject<HTMLHeadingElement>;
+  choices: PlanChoices;
+  lineup: LineupSlot[];
+  requested: number;
+  food: ReturnType<typeof buildFoodProfile>;
+  tasteReasonOf: (slot: LineupSlot) => string | null;
+  disabled: boolean;
+  onEdit: () => void;
+  onSwap: (position: number) => void;
+  onReorder: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  if (!isOpen || !currentWine) return null;
+  const summary = useChoiceSummary(choices);
+  const fitText = useFitText();
+  const ordered = isLightToFull(lineup);
+
+  // A taste reason that fits several wines is shown once, on the first of them.
+  const seenTaste = new Set<string>();
+  const reasonsBySlot = lineup.map((slot, index) => {
+    const stage = stageReason(lineup, index);
+    let taste = tasteReasonOf(slot);
+    if (taste && seenTaste.has(taste)) taste = null;
+    if (taste) seenTaste.add(taste);
+    const fits = fitReasons(slot, food, taste).map(fitText);
+    return [...(stage && ordered ? [{ text: t(`planEvening.review.stageReason.${stage}`) }] : []), ...fits];
+  });
 
   return (
-    <AnimatePresence mode="wait">
-      {isOpen && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[110] flex items-center justify-center"
-        style={{
-          background: 'var(--bg-overlay)',
-          backdropFilter: 'var(--blur-medium)',
-          WebkitBackdropFilter: 'var(--blur-medium)',
-          paddingTop: 'max(1rem, var(--safe-top))',
-          paddingBottom: 'max(1rem, var(--safe-bottom))',
-          paddingLeft: 'max(1rem, var(--safe-left))',
-          paddingRight: 'max(1rem, var(--safe-right))',
-        }}
-        onClick={onClose}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="swap-wine-title"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-lg rounded-[1.5rem] overflow-hidden flex flex-col"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-modal)',
-            maxHeight: 'calc(100dvh - max(2rem, var(--safe-top)) - max(2rem, var(--safe-bottom)))',
-          }}
-        >
-          {/* Header */}
-          <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 
-                  id="swap-wine-title"
-                  className="text-xl font-bold"
-                  style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  {t('planEvening.swap.title', 'Swap wine')}
-                </h3>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {t('planEvening.swap.chooseAlternative', 'Choose an alternative for')} {currentWine.wine.wine_name}
-                </p>
-              </div>
-              <button
-                aria-label={t('common.close')}
-                onClick={onClose}
-                className="app-icon-btn"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+    <div className="space-y-4">
+      <section aria-labelledby={`${headingId}-summary`} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-muted)' }}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 id={`${headingId}-summary`} className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+              {t('planEvening.review.yourChoices')}
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+              {summary.join(' · ')}
+            </p>
           </div>
+          <button type="button" className="app-link inline-flex items-center gap-1 text-sm font-medium min-h-[44px] flex-shrink-0" onClick={onEdit} disabled={disabled}>
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
+            {t('planEvening.review.editChoices')}
+          </button>
+        </div>
+      </section>
 
-          {/* Alternatives List */}
-          <div className="flex-1 overflow-y-auto touch-scroll p-6 space-y-3">
-            {alternatives.length === 0 && (
-              <div 
-                className="p-6 rounded-xl text-center"
-                style={{
-                  background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-medium)',
-                }}
-              >
-                <p style={{ color: 'var(--text-secondary)' }}>
-                  {t('planEvening.lineup.noAlternatives', 'No alternative wines available')}
-                </p>
-              </div>
-            )}
-            
-            {alternatives.map((bottle) => (
-              <motion.button
-                key={bottle.id}
-                onClick={() => onSelect(bottle)}
-                className="w-full p-4 rounded-xl flex gap-4 items-center text-start transition-all"
-                style={{
-                  background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-medium)',
-                }}
-                whileHover={{
-                  scale: 1.02,
-                  boxShadow: '0 4px 12px rgba(164, 77, 90, 0.15)',
-                }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {(() => { const lw = getLocalizedWineData(bottle.wine, i18n.language); return (<>
-                {bottle.wine.image_url ? (
-                  <img
-                    src={bottle.wine.image_url}
-                    alt={lw.wine_name}
-                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                    style={{ border: '1px solid var(--border-subtle)' }}
-                  />
-                ) : (
-                  <div 
-                    className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--wine-100), var(--wine-200))',
-                      border: '1px solid var(--border-subtle)',
-                    }}
-                  >
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-600)' }}>
-                      <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
-                    </svg>
-                  </div>
-                )}
-
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                    {lw.wine_name}
-                  </h4>
-                  <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                    {lw.producer}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {bottle.wine.vintage && (
-                      <span 
-                        className="text-xs px-2 py-0.5 rounded"
-                        style={{
-                          background: 'var(--wine-50)',
-                          color: 'var(--wine-700)',
-                        }}
-                      >
-                        {bottle.wine.vintage}
-                      </span>
-                    )}
-                    {bottle.wine.rating && (
-                      <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                        ⭐ {bottle.wine.rating.toFixed(1)}
-                      </span>
-                    )}
-                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      {bottle.quantity} available
-                    </span>
-                  </div>
-                </div>
-                </>); })()}
-
-                {/* Select Icon */}
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: 'var(--sommi-gradient-primary)',
-                    color: 'white',
-                  }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Footer */}
-          <div className="flex-shrink-0 px-6 pb-6">
-            <button
-              onClick={onClose}
-              className="btn-luxury-secondary w-full"
-            >
-              Cancel
-            </button>
-          </div>
-        </motion.div>
-      </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// Input Step Component
-function InputStep({
-  occasion,
-  setOccasion,
-  groupSize,
-  setGroupSize,
-  redsOnly,
-  setRedsOnly,
-  highRatingOnly,
-  setHighRatingOnly,
-  startTime,
-  setStartTime,
-  selectedProtein,
-  setSelectedProtein,
-  selectedSauce,
-  setSelectedSauce,
-  selectedSpice,
-  setSelectedSpice,
-  selectedSmoke,
-  setSelectedSmoke,
-  onGenerate,
-}: any) {
-  const { t } = useTranslation();
-  const occasions: { value: Occasion; label: string; icon: string }[] = [
-    { value: 'friends', label: t('planEvening.input.occasions.friends', 'Friends'), icon: '👥' },
-    { value: 'bbq', label: t('planEvening.input.occasions.bbq', 'BBQ'), icon: '🔥' },
-    { value: 'pizza', label: t('planEvening.input.occasions.pizza', 'Pizza night'), icon: '🍕' },
-    { value: 'date', label: t('planEvening.input.occasions.date', 'Date night'), icon: '💝' },
-    { value: 'celebration', label: t('planEvening.input.occasions.celebration', 'Celebration'), icon: '🎉' },
-  ];
-
-  return (
-    <motion.div
-      key="input"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="px-6 py-6 space-y-6"
-    >
-      {/* Occasion */}
       <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          {t('planEvening.input.occasion', 'Occasion')}
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {occasions.map((occ) => (
-            <button
-              key={occ.value}
-              onClick={() => setOccasion(occ.value)}
-              className="px-4 py-2.5 rounded-full text-sm font-medium transition-all"
-              style={{
-                background: occasion === occ.value
-                  ? 'var(--sommi-gradient-primary)'
-                  : 'var(--bg-surface-elevated)',
-                color: occasion === occ.value ? 'white' : 'var(--text-primary)',
-                border: `1px solid ${occasion === occ.value ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-              }}
-            >
-              <span className="me-1.5">{occ.icon}</span>
-              {occ.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Group Size */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          {t('planEvening.input.groupSize', 'Group size')}
-        </label>
-        <div className="flex gap-2">
-          {['2-4', '5-8', '9+'].map((size) => (
-            <button
-              key={size}
-              onClick={() => setGroupSize(size as GroupSize)}
-              className="flex-1 px-4 py-3 rounded-full text-sm font-medium transition-all"
-              style={{
-                background: groupSize === size
-                  ? 'var(--sommi-gradient-primary)'
-                  : 'var(--bg-surface-elevated)',
-                color: groupSize === size ? 'white' : 'var(--text-primary)',
-                border: `1px solid ${groupSize === size ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-              }}
-            >
-              {size}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Preferences */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          {t('planEvening.input.preferences', 'Preferences')}
-        </label>
-        <div className="space-y-2">
-          <label
-            className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
-            style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-medium)',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={redsOnly}
-              onChange={(e) => setRedsOnly(e.target.checked)}
-              className="w-5 h-5 rounded"
-              style={{ accentColor: 'var(--wine-600)' }}
-            />
-            <span style={{ color: 'var(--text-primary)' }}>{t('planEvening.input.redsOnly', 'Reds only')}</span>
-          </label>
-          
-          <label
-            className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
-            style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-medium)',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={highRatingOnly}
-              onChange={(e) => setHighRatingOnly(e.target.checked)}
-              className="w-5 h-5 rounded"
-              style={{ accentColor: 'var(--wine-600)' }}
-            />
-            <span style={{ color: 'var(--text-primary)' }}>{t('planEvening.input.highRatingOnly', 'Rating ≥ 4.2')}</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Food Selection */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🍽️</span>
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('planEvening.input.food', 'What are you eating? (optional)')}
-          </label>
-        </div>
-        
-        {/* Protein */}
-        <div>
-          <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-            {t('planEvening.input.protein', 'Protein')}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(['beef', 'lamb', 'chicken', 'fish', 'veggie', 'none'] as const).map(protein => (
-              <button
-                key={protein}
-                type="button"
-                onClick={() => setSelectedProtein(protein)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
-                style={{
-                  background: selectedProtein === protein 
-                    ? 'var(--sommi-gradient-primary)'
-                    : 'var(--bg-surface-elevated)',
-                  color: selectedProtein === protein ? 'white' : 'var(--text-secondary)',
-                  border: `1px solid ${selectedProtein === protein ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-                }}
-              >
-                {t(`planEvening.input.proteins.${protein}`, protein === 'none' ? 'No food' : protein.charAt(0).toUpperCase() + protein.slice(1))}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Sauce (only show if protein selected) */}
-        {selectedProtein !== 'none' && (
-          <div>
-            <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-              {t('planEvening.input.sauce', 'Sauce')}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {(['tomato', 'bbq', 'creamy', 'none'] as const).map(sauce => (
-                <button
-                  key={sauce}
-                  type="button"
-                  onClick={() => setSelectedSauce(sauce)}
-                  className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
-                  style={{
-                    background: selectedSauce === sauce 
-                      ? 'var(--sommi-gradient-primary)'
-                      : 'var(--bg-surface-elevated)',
-                    color: selectedSauce === sauce ? 'white' : 'var(--text-secondary)',
-                    border: `1px solid ${selectedSauce === sauce ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-                  }}
-                >
-                  {t(`planEvening.input.sauces.${sauce}`, sauce === 'none' ? 'No sauce' : sauce.charAt(0).toUpperCase() + sauce.slice(1))}
-                </button>
-              ))}
-            </div>
-          </div>
+        <h3 id={headingId} ref={headingRef} tabIndex={-1} className="text-base font-semibold focus:outline-none" style={{ color: 'var(--text-heading)' }}>
+          {t('planEvening.review.heading', { count: lineup.length })}
+        </h3>
+        {lineup.length < requested && (
+          <p className="mt-1.5 text-sm" style={{ color: 'var(--status-hold-text)' }}>
+            {t('planEvening.review.fewerThanRequested', { count: lineup.length, requested })}
+          </p>
         )}
-        
-        {/* Spice & Smoke (only show if protein selected) */}
-        {selectedProtein !== 'none' && (
-          <div className="grid grid-cols-2 gap-4">
-            {/* Spice */}
-            <div>
-              <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                {t('planEvening.input.spice', 'Spice')}
-              </div>
-              <div className="flex gap-2">
-                {(['low', 'med', 'high'] as const).map(spice => (
-                  <button
-                    key={spice}
-                    type="button"
-                    onClick={() => setSelectedSpice(spice)}
-                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
-                    style={{
-                      background: selectedSpice === spice 
-                        ? 'var(--sommi-gradient-primary)'
-                        : 'var(--bg-surface-elevated)',
-                      color: selectedSpice === spice ? 'white' : 'var(--text-secondary)',
-                      border: `1px solid ${selectedSpice === spice ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-                    }}
-                  >
-                    {spice === 'low' ? '🌶️' : spice === 'med' ? '🌶️🌶️' : '🌶️🌶️🌶️'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Smoke */}
-            <div>
-              <div className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                {t('planEvening.input.smoke', 'Smoke')}
-              </div>
-              <div className="flex gap-2">
-                {(['low', 'med', 'high'] as const).map(smoke => (
-                  <button
-                    key={smoke}
-                    type="button"
-                    onClick={() => setSelectedSmoke(smoke)}
-                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
-                    style={{
-                      background: selectedSmoke === smoke 
-                        ? 'var(--sommi-gradient-primary)'
-                        : 'var(--bg-surface-elevated)',
-                      color: selectedSmoke === smoke ? 'white' : 'var(--text-secondary)',
-                      border: `1px solid ${selectedSmoke === smoke ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-                    }}
-                  >
-                    {smoke === 'low' ? '💨' : smoke === 'med' ? '💨💨' : '💨💨💨'}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {ordered ? (
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {lineup.length > 1 ? t('planEvening.review.orderExplained') : t('planEvening.review.singleWine')}
+          </p>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-sm" style={{ background: 'var(--status-hold-bg)', color: 'var(--status-hold-text)' }}>
+            <span className="flex-1 min-w-[12rem]">{t('planEvening.review.orderBroken')}</span>
+            <button type="button" className="app-link font-semibold min-h-[44px]" onClick={onReorder} disabled={disabled}>
+              {t('planEvening.review.reorder')}
+            </button>
           </div>
         )}
       </div>
 
-      {/* Start Time */}
-      <div>
-        <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
-          {t('planEvening.input.startTime', 'Start time')}
-        </label>
-        <div className="flex gap-2">
-          {[
-            { value: 'now', label: t('planEvening.input.startTimes.now', 'Now') },
-            { value: '1hour', label: t('planEvening.input.startTimes.1hour', 'In 1 hour') },
-            { value: '2hours', label: t('planEvening.input.startTimes.2hours', 'In 2 hours') },
-          ].map((time) => (
-            <button
-              key={time.value}
-              onClick={() => setStartTime(time.value as StartTime)}
-              className="flex-1 px-4 py-3 rounded-full text-sm font-medium transition-all"
-              style={{
-                background: startTime === time.value
-                  ? 'var(--sommi-gradient-primary)'
-                  : 'var(--bg-surface-elevated)',
-                color: startTime === time.value ? 'white' : 'var(--text-primary)',
-                border: `1px solid ${startTime === time.value ? 'var(--wine-600)' : 'var(--border-medium)'}`,
-              }}
-            >
-              {time.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Generate Button */}
-      <button
-        onClick={onGenerate}
-        className="btn-luxury-primary w-full"
-        style={{ minHeight: '52px', marginTop: '1.5rem' }}
-      >
-        {t('planEvening.input.generate', 'Generate lineup ✨')}
-      </button>
-    </motion.div>
-  );
-}
-
-// Lineup Step Component
-function LineupStep({ lineup, onSwap, onStart, onBack, foodProfile }: any) {
-  const { t, i18n } = useTranslation();
-  return (
-    <motion.div
-      key="lineup"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="px-6 py-6 space-y-4"
-    >
-      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-        {lineup.length} {t('planEvening.lineup.winesSelected', 'wines selected')} • {t('planEvening.lineup.orderOptimized', 'Serving order optimized')}
-      </p>
-
-      {/* Wine Slots */}
-      <div className="space-y-3">
-        {lineup.map((slot: WineSlot, idx: number) => {
-          // Determine position for pairing explanation
-          const position = idx === 0 ? 'first' : idx === lineup.length - 1 ? 'last' : 'middle';
-          
+      <ol className="space-y-3">
+        {lineup.map((slot, index) => {
+          const lw = getLocalizedWineData(slot.bottle.wine, i18n.language);
+          const img = displayImage(slot.bottle);
+          const stage = servingStage(index, lineup.length);
           return (
-          <div
-            key={idx}
-            className="p-4 rounded-xl flex gap-4"
-            style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-medium)',
-            }}
-          >
-            {/* Position */}
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold"
-              style={{
-                background: 'var(--sommi-gradient-primary)',
-                color: 'white',
-              }}
-            >
-              {slot.position}
-            </div>
-
-            {/* Wine Info */}
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--wine-600)' }}>
-                {slot.label}
-              </div>
-              {(() => { const lw = getLocalizedWineData(slot.bottle.wine, i18n.language); return (<>
-              <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                {lw.wine_name}
-              </h4>
-              <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                {lw.producer}
-              </p>
-              </>); })()}
-              {slot.bottle.wine.vintage && (
-                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {slot.bottle.wine.vintage}
-                </span>
-              )}
-              
-              {/* Affinity reason (taste profile match) */}
-              {slot.affinityReason && (
-                <div 
-                  className="mt-2 text-xs px-2 py-1 rounded-full inline-flex items-center gap-1"
-                  style={{ 
-                    background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                    color: 'var(--wine-700)',
-                    border: '1px solid var(--wine-200)',
-                  }}
+            <li key={slot.position} className="rounded-2xl p-3.5" style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
+              <div className="flex gap-3">
+                <WineImage src={img.imageUrl} isGenerated={img.isGenerated} alt={lw.wine_name} className="w-14 h-[4.5rem] flex-shrink-0" iconSize={22} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold" style={{ color: 'var(--accent-text)' }}>
+                    {t('planEvening.review.stage', { position: slot.position, stage: t(`planEvening.review.stages.${stage}`) })}
+                  </p>
+                  <h4 className="mt-0.5 font-semibold leading-snug line-clamp-2 break-words" style={{ color: 'var(--text-heading)' }}>
+                    <bdi>{lw.wine_name}</bdi>
+                  </h4>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <bdi>{lw.producer}</bdi>
+                    {slot.bottle.wine.vintage ? <> · <bdi>{slot.bottle.wine.vintage}</bdi></> : null}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="self-start inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-full text-sm font-medium flex-shrink-0"
+                  style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border-medium)' }}
+                  onClick={() => onSwap(slot.position)}
+                  disabled={disabled}
+                  aria-label={t('planEvening.review.swapAria', { name: lw.wine_name })}
                 >
-                  <span>✨</span>
-                  {slot.affinityReason}
-                </div>
-              )}
-              
-              {/* Pairing explanation */}
-              {slot.wineProfile && foodProfile && !slot.affinityReason && (
-                <div className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-                  {wineProfileService.getPairingExplanation(
-                    slot.bottle,
-                    slot.wineProfile,
-                    foodProfile,
-                    position
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Swap Button */}
-            <button
-              onClick={() => onSwap(slot.position)}
-              className="px-3 py-2 rounded-full text-sm font-medium transition-colors"
-              style={{
-                background: 'var(--bg-surface)',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border-medium)',
-              }}
-            >
-              {t('planEvening.lineup.swapWine', 'Swap')}
-            </button>
-          </div>
-        );
+                  <ArrowLeftRight className="h-4 w-4" aria-hidden />
+                  {t('planEvening.lineup.swapWine')}
+                </button>
+              </div>
+              <ReasonList reasons={reasonsBySlot[index]} />
+              <MetaChips bottle={slot.bottle} showGuidance />
+            </li>
+          );
         })}
+      </ol>
+    </div>
+  );
+}
+
+// ─── Swap (nested dialog) ─────────────────────────────────────────────────
+
+function SwapView({
+  titleId,
+  descId,
+  slot,
+  total,
+  options,
+  failed,
+  food,
+  choices,
+  tasteReasonOf,
+  onChoose,
+  onRetry,
+  onClose,
+}: {
+  titleId: string;
+  descId: string;
+  slot: LineupSlot;
+  total: number;
+  options: SwapOption[] | null;
+  failed: boolean;
+  food: ReturnType<typeof buildFoodProfile>;
+  choices: PlanChoices;
+  tasteReasonOf: (slot: { bottle: BottleWithWineInfo; profile: WineProfile }) => string | null;
+  onChoose: (option: SwapOption) => void;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const fitText = useFitText();
+  const stage = t(`planEvening.review.stages.${servingStage(slot.position - 1, total)}`);
+  const filtersOn = choices.redsOnly || choices.highRatingOnly;
+
+  const card = (bottle: BottleWithWineInfo) => {
+    const lw = getLocalizedWineData(bottle.wine, i18n.language);
+    const img = displayImage(bottle);
+    return (
+      <div className="flex gap-3">
+        <WineImage src={img.imageUrl} isGenerated={img.isGenerated} alt={lw.wine_name} className="w-12 h-16 flex-shrink-0" iconSize={20} />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold leading-snug break-words" style={{ color: 'var(--text-heading)' }}>
+            <bdi>{lw.wine_name}</bdi>
+          </p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <bdi>{lw.producer}</bdi>
+            {bottle.wine.vintage ? <> · <bdi>{bottle.wine.vintage}</bdi></> : null}
+            {' · '}
+            {t('planEvening.swap.inStock', { count: bottle.quantity })}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <header className="modal-header">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 id={titleId} className="app-section-title !text-xl">
+              {t('planEvening.swap.titleFor', { position: slot.position, stage })}
+            </h2>
+            <p id={descId} className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              {t('planEvening.swap.subtitle')}
+            </p>
+          </div>
+          <button type="button" className="app-icon-btn flex-shrink-0" onClick={onClose} aria-label={t('common.close')}>
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+      </header>
+
+      <div className="modal-body space-y-4">
+        <section aria-label={t('planEvening.swap.current')}>
+          <div className="rounded-2xl p-3" style={{ background: 'var(--bg-muted)', border: '1px dashed var(--border-medium)' }} aria-current="true">
+            <span className="mb-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}>
+              {t('planEvening.swap.current')}
+            </span>
+            {card(slot.bottle)}
+          </div>
+        </section>
+
+        <section aria-labelledby={`${titleId}-alts`}>
+          <h3 id={`${titleId}-alts`} className="text-sm font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>
+            {t('planEvening.swap.alternatives')}
+          </h3>
+
+          {failed ? (
+            <div role="alert" className="rounded-2xl p-4 text-sm" style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)' }}>
+              <p>{t('planEvening.swap.error')}</p>
+              <button type="button" className="app-link mt-2 font-semibold min-h-[44px]" onClick={onRetry}>
+                {t('common.retry')}
+              </button>
+            </div>
+          ) : !options || options.length === 0 ? (
+            <div className="rounded-2xl p-4 text-sm" style={{ background: 'var(--bg-muted)', color: 'var(--text-secondary)' }}>
+              <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{t('planEvening.swap.emptyTitle')}</p>
+              <p className="mt-1">{filtersOn ? t('planEvening.swap.emptyFilters') : t('planEvening.swap.emptyNoFilters')}</p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {options.map((option) => {
+                const lw = getLocalizedWineData(option.bottle.wine, i18n.language);
+                const reasons = fitReasons(option, food, tasteReasonOf(option)).map(fitText);
+                return (
+                  <li key={option.bottle.id} className="rounded-2xl p-3" style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
+                    {card(option.bottle)}
+                    <ReasonList reasons={reasons} />
+                    <MetaChips bottle={option.bottle} showGuidance={false} />
+                    <button
+                      type="button"
+                      className="btn-luxury-secondary w-full mt-3 !min-h-[44px]"
+                      onClick={() => onChoose(option)}
+                      aria-label={t('planEvening.swap.chooseAria', { name: lw.wine_name, position: slot.position })}
+                    >
+                      {t('planEvening.swap.choose')}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-3 pt-4">
-        <button
-          onClick={onBack}
-          className="btn-luxury-secondary flex-1"
-        >
-          {t('planEvening.lineup.back', 'Back')}
+      <footer className="modal-footer">
+        <button type="button" className="btn-luxury-secondary w-full" onClick={onClose}>
+          {t('planEvening.swap.keepCurrent')}
         </button>
-        <button
-          onClick={onStart}
-          className="btn-luxury-primary flex-1"
-        >
-          {t('planEvening.lineup.startEvening', 'Start evening')}
-        </button>
-      </div>
-    </motion.div>
+      </footer>
+    </>
   );
 }

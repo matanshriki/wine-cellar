@@ -13,10 +13,11 @@
  * - Respects prefers-reduced-motion
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
+import { useDialogA11y } from '../hooks/useDialogA11y';
 
 interface MuseumViewBottle {
   id: string;
@@ -44,25 +45,17 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
   const { t } = useTranslation();
   const reduceMotion = shouldReduceMotion();
 
-  // Handle keyboard shortcuts
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogA11y(dialogRef, isOpen, onClose, { initialFocusRef: closeButtonRef });
+
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    // Lock body scroll
     document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Determine the readiness chip to show.
   // Priority: AI readiness_label > DB readiness_status.
@@ -73,11 +66,11 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
     if (bottle.readiness_label) {
       switch (bottle.readiness_label) {
         case 'READY':
-          return { text: t('cellar.sommelier.status.ready', 'Ready to Drink'), color: 'bg-green-500/30 text-green-100' };
+          return { text: t('cellar.sommelier.status.ready'), color: 'bg-green-500/30 text-green-100' };
         case 'PEAK_SOON':
-          return { text: t('cellar.sommelier.status.peak_soon', 'Peak Soon'), color: 'bg-yellow-500/30 text-yellow-100' };
+          return { text: t('cellar.sommelier.status.peak_soon'), color: 'bg-yellow-500/30 text-yellow-100' };
         case 'HOLD':
-          return { text: t('cellar.sommelier.status.hold', 'Hold for Aging'), color: 'bg-blue-500/30 text-blue-100' };
+          return { text: t('cellar.sommelier.status.hold'), color: 'bg-blue-500/30 text-blue-100' };
         default:
           return null;
       }
@@ -86,13 +79,13 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
     switch (bottle.readiness_status) {
       case 'InWindow':
       case 'Peak':
-        return { text: t('readiness.readyNow', 'Ready Now'), color: 'bg-green-500/30 text-green-100' };
+        return { text: t('dashboard.drinkWindow.ready'), color: 'bg-green-500/30 text-green-100' };
       case 'Approaching':
-        return { text: t('readiness.peakSoon', 'Peak Soon'), color: 'bg-yellow-500/30 text-yellow-100' };
+        return { text: t('dashboard.drinkWindow.peakSoon'), color: 'bg-yellow-500/30 text-yellow-100' };
       case 'TooYoung':
-        return { text: t('readiness.hold', 'Hold'), color: 'bg-blue-500/30 text-blue-100' };
+        return { text: t('dashboard.drinkWindow.hold'), color: 'bg-blue-500/30 text-blue-100' };
       case 'PastPeak':
-        return { text: t('readiness.pastPeak', 'Past Peak'), color: 'bg-orange-500/30 text-orange-100' };
+        return { text: t('cellar.readinessStatus.PastPeak'), color: 'bg-orange-500/30 text-orange-100' };
       default:
         return null;
     }
@@ -118,6 +111,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
           height: '100dvh',
           overflow: 'hidden',
         }}
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={bottle.name}
@@ -125,6 +119,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
       >
         {/* Close Button (Top Right) */}
         <motion.button
+          ref={closeButtonRef}
           initial={reduceMotion ? false : { opacity: 0, scale: 0.8 }}
           animate={reduceMotion ? false : { opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}

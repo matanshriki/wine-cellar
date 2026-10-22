@@ -13,6 +13,7 @@ import type { BottleWithWineInfo } from './bottleService';
 import type { TasteProfile } from '../types/supabase';
 import * as tasteProfileService from './tasteProfileService';
 import * as wineProfileService from './wineProfileService';
+import { findExplicitDislike, isSweetnessMismatch } from './tasteMatch';
 
 export interface WineInsight {
   text: string;
@@ -23,6 +24,7 @@ export interface WineInsight {
 }
 
 export type InsightType =
+  | 'taste_caution'
   | 'region_affinity'
   | 'grape_affinity'
   | 'structural_affinity'
@@ -117,6 +119,30 @@ export function getBottleInsight(
     return options?.excludeTypes?.has(insight.type) ? null : insight;
   }
 
+  // ── 0. Taste cautions: disclosed before any affinity praise ─────────────
+  if (tasteProfile) {
+    const dislike = findExplicitDislike(wine as any, tasteProfile, i18n.language);
+    if (dislike) {
+      const r = candidate({
+        type: 'taste_caution',
+        icon: '✋',
+        text: t('insights.explicitDislike', { term: dislike.label }),
+      });
+      if (r) return r;
+    }
+    const wineProfile = wineProfileService.getWineProfile(wine as any);
+    const sweetness = wineProfileService.sweetnessOf(wineProfile);
+    const userSweetness = tasteProfileService.getEffectiveVector(tasteProfile).sweetness;
+    if (isSweetnessMismatch(userSweetness, sweetness)) {
+      const r = candidate({
+        type: 'taste_caution',
+        icon: '🍯',
+        text: t(`recommendation.generated.affinitySweeterThanUsual.${sweetness.level}`),
+      });
+      if (r) return r;
+    }
+  }
+
   // ── 1. Region affinity ───────────────────────────────────────────────────
   if (tasteProfile && wine.region) {
     const regionWeight = tasteProfile.preferences.regions[wine.region];
@@ -157,7 +183,7 @@ export function getBottleInsight(
   // ── 3. Structural affinity (body / tannin / acidity / oak) ──────────────
   if (tasteProfile) {
     const wineProfile = wineProfileService.getWineProfile(wine as any);
-    const structuralReason = tasteProfileService.generateAffinityReason(wineProfile, tasteProfile);
+    const structuralReason = tasteProfileService.generateAffinityReason(wineProfile, tasteProfile, wine as any);
     if (structuralReason) {
       const r = candidate({
         type: 'structural_affinity',

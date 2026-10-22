@@ -18,10 +18,12 @@ import * as wishlistService from '../services/wishlistService';
 import * as bottleService from '../services/bottleService';
 import type { WishlistItem } from '../services/wishlistService';
 import { AddBottleSheet } from '../components/AddBottleSheet'; // Wishlist feature (dev only)
-import { Bookmark, FilePen, MapPin, Plus, Search, Utensils, Grape } from 'lucide-react';
+import { Bookmark, FilePen, MapPin, Plus, Search, Utensils, Grape, Trash2, Wine } from 'lucide-react';
 import { WineLoader } from '../components/WineLoader';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
+import { WineImage } from '../components/ui/WineImage';
+import { OverflowMenu } from '../components/ui/OverflowMenu';
 import { WishlistForm } from '../components/WishlistForm'; // Wishlist feature (dev only)
 import { WishlistDetailsModal } from '../components/WishlistDetailsModal'; // Wishlist feature - details modal
 import type { ExtractedWineData } from '../services/labelScanService'; // Wishlist feature (dev only)
@@ -378,131 +380,115 @@ export function WishlistPage() {
       {/* Wishlist Items */}
       <AnimatePresence mode="popLayout">
         {filteredItems.map((item) => (
-          <motion.div
+          <motion.article
             key={item.id}
             layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="app-card mb-4 p-4 sm:p-6 transition-shadow hover:shadow-[var(--shadow-card-hover)] cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onClick={() => {
+            className="app-card mb-4 p-4 sm:p-5 transition-shadow hover:shadow-[var(--shadow-card-hover)] cursor-pointer"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('button, a, [role="menu"]')) return;
               setSelectedItem(item);
               setShowDetailsModal(true);
             }}
-            onKeyDown={(e) => {
-              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                setSelectedItem(item);
-                setShowDetailsModal(true);
-              }
-            }}
           >
-            {/* Mobile hardening (wishlist): Improved card layout for narrow screens */}
             <div className="flex gap-3 sm:gap-4">
-              {/* Image */}
-              {item.imageUrl && (
-                <div className="flex-shrink-0 w-16 h-20 sm:w-20 sm:h-24 rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--bg-muted)' }}>
-                  <img 
-                    src={item.imageUrl} 
-                    alt={`${item.producer} ${item.wineName}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-              )}
+              <WineImage
+                src={item.imageUrl}
+                alt={`${item.producer} ${item.wineName}`}
+                className="w-16 h-20 sm:w-20 sm:h-24"
+              />
 
-              {/* Content */}
               <div className="flex-1 min-w-0">
-                {/* Title - improved wrapping on mobile */}
-                <h3 
-                  className="text-base sm:text-lg font-semibold mb-1 break-words"
+                <h3
+                  className="text-lg sm:text-xl font-semibold leading-snug break-words"
                   style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
                 >
-                  {item.producer} {item.wineName}
-                  {item.vintage && <>{' '}<span className="font-normal whitespace-nowrap">{item.vintage}</span></>}
+                  <button
+                    type="button"
+                    className="text-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setShowDetailsModal(true);
+                    }}
+                    aria-label={t('cellar.bottle.viewDetailsFor', { name: `${item.wineName}${item.vintage ? ` ${item.vintage}` : ''}` })}
+                  >
+                    <bdi>{item.wineName}</bdi>
+                    {item.vintage && (
+                      <span className="ms-2 align-middle inline-flex px-2 py-0.5 rounded-full text-sm font-semibold" style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+                        {item.vintage}
+                      </span>
+                    )}
+                  </button>
                 </h3>
+                {item.producer && (
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <bdi>{item.producer}</bdi>
+                  </p>
+                )}
 
-                {/* Metadata */}
-                <div 
-                  className="text-sm mb-2 space-y-1"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {item.region && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.region}
-                    </div>
-                  )}
-                  {item.grapes && (
-                    <div className="flex items-center gap-1.5">
-                      <Grape className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.grapes}
-                    </div>
-                  )}
-                  {item.restaurantName && (
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Utensils className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.restaurantName}
-                    </div>
-                  )}
-                  {item.note && (
-                    <div 
-                      className="italic mt-2 px-3 py-2 rounded-xl text-sm break-words"
-                      style={{ 
-                        backgroundColor: 'var(--bg-muted)',
-                      }}
-                    >
-                      "{item.note}"
-                    </div>
-                  )}
-                </div>
+                {item.restaurantName && (
+                  <p className="mt-2 flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    <Utensils className="h-4 w-4 shrink-0" strokeWidth={1.75} style={{ color: 'var(--accent-text)' }} aria-hidden />
+                    <span className="min-w-0 break-words">{t('wishlist.card.source', { place: item.restaurantName })}</span>
+                  </p>
+                )}
 
-                {/* Time ago */}
-                <div 
-                  className="text-xs mt-2"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  {formatTimeAgo(item.createdAt)}
-                </div>
+                {item.note && (
+                  <blockquote
+                    className="mt-2 px-3 py-2 rounded-xl text-sm break-words"
+                    style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-primary)', borderInlineStart: '3px solid var(--wine-200)' }}
+                  >
+                    <bdi>{item.note}</bdi>
+                  </blockquote>
+                )}
+
+                {(item.region || item.grapes) && (
+                  <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {item.region && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.region}
+                      </span>
+                    )}
+                    {item.grapes && (
+                      <span className="inline-flex items-center gap-1">
+                        <Grape className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden /> {item.grapes}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Actions */}
-            {/* Mobile hardening (wishlist): Improved touch targets and mobile stacking */}
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              {/* Primary: Move to Cellar */}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-xs me-auto" style={{ color: 'var(--text-tertiary)' }}>
+                {formatTimeAgo(item.createdAt)}
+              </span>
               <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent card click
-                  handleMoveToCellar(item);
-                }}
+                type="button"
+                onClick={() => handleMoveToCellar(item)}
                 disabled={movingId === item.id}
-                className="px-4 py-3 rounded-full font-medium transition-all flex-1 min-h-[44px]"
-                style={{
-                  background: 'var(--sommi-gradient-primary)',
-                  color: 'var(--text-inverse)',
-                  opacity: movingId === item.id ? 0.6 : 1,
-                }}
+                className="btn-luxury-secondary !min-h-[44px] !py-2 !px-4 text-sm disabled:opacity-60"
               >
+                <Wine className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 {movingId === item.id ? t('common.moving') : t('wishlist.moveToCellar')}
               </button>
-
-              {/* Secondary: Remove */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent card click
-                  handleRemove(item.id);
-                }}
-                disabled={movingId === item.id}
-                className="px-5 py-3 rounded-full font-medium transition-colors min-h-[44px] sm:w-auto hover:bg-[var(--bg-muted)]"
-                style={{
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-danger)',
-                }}
-              >
-                {t('common.remove')}
-              </button>
+              <OverflowMenu
+                label={t('wishlist.card.moreActions', { name: item.wineName })}
+                items={[
+                  {
+                    key: 'remove',
+                    label: t('common.remove'),
+                    icon: <Trash2 className="h-4 w-4" strokeWidth={1.75} />,
+                    tone: 'danger',
+                    disabled: movingId === item.id,
+                    onSelect: () => handleRemove(item.id),
+                  },
+                ]}
+              />
             </div>
-          </motion.div>
+          </motion.article>
         ))}
       </AnimatePresence>
 

@@ -11,6 +11,7 @@ import { isLocalDevEnvironment, generateVivinoSearchUrl as generateVivinoSearchU
 import { isDevEnvironment } from '../utils/devOnly'; // Wishlist feature (dev only)
 import * as wishlistService from '../services/wishlistService'; // Wishlist feature (dev only)
 import * as storageImageService from '../services/storageImageService';
+import { FormField } from './ui/FormField';
 import { uploadLabelImage } from '../services/labelScanService';
 import {
   formatKeepNotifyWhen,
@@ -99,6 +100,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   };
   
   const [formData, setFormData] = useState(getInitialFormData());
+  const [fieldErrors, setFieldErrors] = useState<{ wine_name?: string; quantity?: string }>({});
 
   // Keep / Reserve state
   const [isReserved, setIsReserved] = useState<boolean>((bottle as any)?.is_reserved === true);
@@ -375,6 +377,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   }
 
   function handleChange(field: string, value: string) {
+    if (field === 'wine_name' || field === 'quantity') {
+      setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -432,15 +437,18 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
     
     // Validate required fields
     if (!formData.wine_name || !formData.wine_name.trim()) {
+      setFieldErrors({ wine_name: t('bottleForm.nameRequired', 'Wine name is required') });
       toast.error(t('bottleForm.nameRequired', 'Wine name is required'));
       return;
     }
     
     const qty = parseInt(String(formData.quantity || '1').trim(), 10);
     if (Number.isNaN(qty) || qty < 1) {
+      setFieldErrors({ quantity: t('bottleForm.quantityRequired', 'Quantity must be at least 1') });
       toast.error(t('bottleForm.quantityRequired', 'Quantity must be at least 1'));
       return;
     }
+    setFieldErrors({});
 
     setLoading(true);
 
@@ -694,16 +702,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
 
           {/* Wine Photo Upload */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            <p id="bottle-form-photo-label" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
               {t('bottleForm.photo', 'Wine Photo')}
               <span className="text-xs ms-2" style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>
                 ({t('bottleForm.optional')})
               </span>
-            </label>
+            </p>
 
             {/* Hidden file input */}
             <input
               ref={imageFileInputRef}
+              aria-labelledby="bottle-form-photo-label"
               type="file"
               accept="image/*"
               className="hidden"
@@ -719,7 +728,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 >
                   <img
                     src={imagePreview}
-                    alt="Wine"
+                    alt={t('bottleForm.photoAlt')}
                     className="w-full h-full object-cover"
                   />
                   {imageUploading && (
@@ -789,65 +798,60 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
           </div>
 
           <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            <div className="md:col-span-2">
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.name')} *
-              </label>
-              <input
-                type="text"
-                value={formData.wine_name}
-                onChange={(e) => handleChange('wine_name', e.target.value)}
-                className="input-luxury w-full"
-                required
-                placeholder={t('bottleForm.namePlaceholder')}
-              />
-            </div>
+            <FormField
+              className="md:col-span-2"
+              label={t('bottleForm.name')}
+              required
+              error={fieldErrors.wine_name}
+            >
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  value={formData.wine_name}
+                  onChange={(e) => handleChange('wine_name', e.target.value)}
+                  className="input-luxury w-full"
+                  required
+                  autoComplete="off"
+                  placeholder={t('bottleForm.namePlaceholder')}
+                />
+              )}
+            </FormField>
 
-            <div>
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.producer')}
-              </label>
-              <input
-                type="text"
-                value={formData.producer}
-                onChange={(e) => handleChange('producer', e.target.value)}
-                className="input-luxury w-full"
-                placeholder={t('bottleForm.producerPlaceholder')}
-              />
-            </div>
+            <FormField label={t('bottleForm.producer')}>
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  value={formData.producer}
+                  onChange={(e) => handleChange('producer', e.target.value)}
+                  className="input-luxury w-full"
+                  autoComplete="off"
+                  placeholder={t('bottleForm.producerPlaceholder')}
+                />
+              )}
+            </FormField>
 
-            <div>
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.vintage')}
-              </label>
-              <input
-                type="number"
-                value={formData.vintage}
-                onChange={(e) => handleChange('vintage', e.target.value)}
-                className="input-luxury w-full"
-                placeholder={t('bottleForm.vintagePlaceholder')}
-                min="1800"
-                max={new Date().getFullYear() + 1}
-              />
-            </div>
+            <FormField label={t('bottleForm.vintage')} hint={t('bottleForm.vintageHint')}>
+              {(p) => (
+                <input
+                  {...p}
+                  type="number"
+                  inputMode="numeric"
+                  value={formData.vintage}
+                  onChange={(e) => handleChange('vintage', e.target.value)}
+                  className="input-luxury w-full"
+                  placeholder={t('bottleForm.vintagePlaceholder')}
+                  min="1800"
+                  max={new Date().getFullYear() + 1}
+                />
+              )}
+            </FormField>
 
-            <div>
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.style')} *
-              </label>
+            <FormField label={t('bottleForm.style')} required>
+              {(p) => (
               <select
+                {...p}
                 value={formData.color}
                 onChange={(e) => handleChange('color', e.target.value)}
                 className="input-luxury w-full"
@@ -858,61 +862,55 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 <option value="rose">{t('bottleForm.styles.rose')}</option>
                 <option value="sparkling">{t('bottleForm.styles.sparkling')}</option>
               </select>
-            </div>
+              )}
+            </FormField>
 
-            <div>
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.quantity')} *
-              </label>
-              <input
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => handleChange('quantity', e.target.value)}
-                className="input-luxury w-full"
-                required
-                min="0"
-                placeholder="1"
-              />
-            </div>
+            <FormField label={t('bottleForm.quantity')} required error={fieldErrors.quantity}>
+              {(p) => (
+                <input
+                  {...p}
+                  type="number"
+                  inputMode="numeric"
+                  value={formData.quantity}
+                  onChange={(e) => handleChange('quantity', e.target.value)}
+                  className="input-luxury w-full"
+                  required
+                  min="0"
+                  placeholder="1"
+                />
+              )}
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.region')}
-              </label>
-              <input
-                type="text"
-                value={formData.region}
-                onChange={(e) => handleChange('region', e.target.value)}
-                className="input-luxury w-full"
-                placeholder={t('bottleForm.regionPlaceholder')}
-              />
-            </div>
+            <FormField className="md:col-span-2" label={t('bottleForm.region')}>
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  value={formData.region}
+                  onChange={(e) => handleChange('region', e.target.value)}
+                  className="input-luxury w-full"
+                  placeholder={t('bottleForm.regionPlaceholder')}
+                />
+              )}
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.grapes')}
-              </label>
-              <input
-                type="text"
-                value={formData.grapes}
-                onChange={(e) => handleChange('grapes', e.target.value)}
-                className="input-luxury w-full"
-                placeholder={t('bottleForm.grapesPlaceholder')}
-              />
-            </div>
+            <FormField className="md:col-span-2" label={t('bottleForm.grapes')} hint={t('bottleForm.grapesHint')}>
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  value={formData.grapes}
+                  onChange={(e) => handleChange('grapes', e.target.value)}
+                  className="input-luxury w-full"
+                  placeholder={t('bottleForm.grapesPlaceholder')}
+                />
+              )}
+            </FormField>
 
             {/* Vivino Integration */}
             <div className="md:col-span-2">
-                <label 
+                <label
+                  htmlFor="bottle-form-vivino-url"
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'var(--text-primary)' }}
                 >
@@ -924,7 +922,14 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 {/* Stack vertically on mobile, horizontal on desktop */}
                 <div className="flex flex-col sm:flex-row gap-2">
                 <input
+                  id="bottle-form-vivino-url"
+                  aria-describedby={
+                    [isAIPrefilled && 'bottle-form-vivino-hint', formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && 'bottle-form-vivino-fetch-hint']
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
                   type="url"
+                  inputMode="url"
                   value={formData.vivino_url}
                   onChange={(e) => handleChange('vivino_url', e.target.value)}
                   className="input-luxury w-full sm:flex-1"
@@ -977,15 +982,17 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 </div>
               </div>
               {isAIPrefilled && (
-                <p 
+                <p
+                  id="bottle-form-vivino-hint"
                   className="text-xs mt-1"
-                  style={{ color: 'var(--color-amber-700)' }}
+                  style={{ color: 'var(--text-warning)' }}
                 >
                   💡 {t('bottleForm.vivinoHint')}
                 </p>
               )}
               {formData.vivino_url && isVivinoWineUrl(formData.vivino_url) && (
-                <p 
+                <p
+                  id="bottle-form-vivino-fetch-hint"
                   className="text-xs mt-1"
                   style={{ color: 'var(--text-success)' }}
                 >
@@ -995,15 +1002,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               
               {/* Show rating if available (from Vivino or manual entry) */}
               {formData.rating && parseFloat(formData.rating) > 0 && (
-                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-amber-50)', border: '1px solid var(--color-amber-200)' }}>
+                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-warning-subtle)', border: '1px solid var(--border-warning)' }}>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">⭐</span>
+                    <span className="text-2xl" aria-hidden>⭐</span>
                     <div>
-                      <div className="text-sm font-semibold" style={{ color: 'var(--color-amber-900)' }}>
-                        Vivino Rating: {parseFloat(formData.rating).toFixed(1)}/5.0
+                      <div className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>
+                        {t('bottleForm.vivinoRatingValue', { rating: parseFloat(formData.rating).toFixed(1) })}
                       </div>
-                      <div className="text-xs" style={{ color: 'var(--color-amber-700)' }}>
-                        This rating will be saved with the wine
+                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {t('bottleForm.vivinoRatingSaved')}
                       </div>
                     </div>
                   </div>
@@ -1014,31 +1021,36 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             {/* Auto-fetch indicator (new bottles only) */}
             {!bottle && autoFetchingVivino && (
               <div className="md:col-span-2">
-                <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'var(--color-blue-50)', border: '1px solid var(--color-blue-200)' }}>
-                  <div className="animate-spin" style={{ fontSize: '16px' }}>🔍</div>
-                  <span className="text-sm" style={{ color: 'var(--color-blue-700)' }}>
-                    Auto-enriching from Vivino...
+                <div role="status" className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}>
+                  <div className="animate-spin motion-reduce:animate-none" style={{ fontSize: '16px' }} aria-hidden>🔍</div>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {t('bottleForm.autoEnriching')}
                   </span>
                 </div>
               </div>
             )}
 
             <div>
-              <label 
+              <label
+                htmlFor="bottle-form-price"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('bottleForm.purchasePrice')}
               </label>
               <div className="relative">
-                <span 
+                <span
+                  aria-hidden
                   className="absolute start-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none z-10"
                   style={{ fontSize: '1rem' }}
                 >
                   {currencySymbol}
                 </span>
                 <input
+                  id="bottle-form-price"
+                  aria-describedby="bottle-form-price-currency"
                   type="number"
+                  inputMode="decimal"
                   value={formData.purchase_price}
                   onChange={(e) => handleChange('purchase_price', e.target.value)}
                   className="input-luxury w-full"
@@ -1047,29 +1059,30 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   min="0"
                   step="0.01"
                 />
+                <span id="bottle-form-price-currency" className="sr-only">{t('bottleForm.priceCurrency', { currencySymbol })}</span>
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label 
-                className="block text-sm font-medium mb-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('bottleForm.notes')}
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                className="input-luxury w-full"
-                rows={3}
-                placeholder={t('bottleForm.notesPlaceholder')}
-              />
-            </div>
+            <FormField className="md:col-span-2" label={t('bottleForm.notes')}>
+              {(p) => (
+                <textarea
+                  {...p}
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  className="input-luxury w-full"
+                  rows={3}
+                  placeholder={t('bottleForm.notesPlaceholder')}
+                />
+              )}
+            </FormField>
 
             {/* Keep / Reserve toggle */}
             <div className="md:col-span-2 min-w-0">
               <div
-                role="button"
+                role="switch"
+                aria-checked={isReserved}
+                aria-labelledby="bottle-form-keep-label"
+                aria-describedby="bottle-form-keep-hint"
                 tabIndex={0}
                 onClick={() => setIsReserved(v => !v)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsReserved(v => !v); } }}
@@ -1082,15 +1095,15 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                 }}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isReserved ? 'var(--gold-600, #a37700)' : 'var(--text-tertiary)'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isReserved ? 'var(--text-eyebrow)' : 'var(--text-tertiary)'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium" style={{ color: isReserved ? 'var(--gold-700, #92660a)' : 'var(--text-primary)' }}>
+                    <div id="bottle-form-keep-label" className="text-sm font-medium" style={{ color: isReserved ? 'var(--text-eyebrow)' : 'var(--text-primary)' }}>
                       {t('bottleForm.keep.toggleLabel')}
                     </div>
-                    <div className="text-xs mt-0.5 break-words" style={{ color: 'var(--text-tertiary)' }}>
+                    <div id="bottle-form-keep-hint" className="text-xs mt-0.5 break-words" style={{ color: 'var(--text-tertiary)' }}>
                       {t('bottleForm.keep.toggleHint')}
                     </div>
                   </div>
@@ -1123,10 +1136,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                   }}
                 >
                   <div className="min-w-0">
-                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <label htmlFor="bottle-form-keep-for" className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.reservedFor')}
                     </label>
                     <input
+                      id="bottle-form-keep-for"
                       type="text"
                       value={reservedFor}
                       onChange={(e) => setReservedFor(e.target.value)}
@@ -1136,10 +1150,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     />
                   </div>
                   <div className="min-w-0">
-                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <label htmlFor="bottle-form-keep-date" className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.date')}
                     </label>
                     <input
+                      id="bottle-form-keep-date"
+                      aria-describedby={keepNotifyHint ? 'bottle-form-keep-date-hint' : undefined}
                       type="date"
                       value={reservedDate}
                       onChange={(e) => setReservedDate(e.target.value)}
@@ -1155,11 +1171,12 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     />
                     {keepNotifyHint && (
                       <p
+                        id="bottle-form-keep-date-hint"
                         className="text-xs mt-1.5 leading-snug break-words"
                         style={{
                           color:
                             keepNotifyHint.kind === 'scheduled'
-                              ? 'var(--gold-700, #92660a)'
+                              ? 'var(--text-eyebrow)'
                               : 'var(--text-tertiary)',
                         }}
                       >
@@ -1168,10 +1185,11 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
                     )}
                   </div>
                   <div className="min-w-0">
-                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <label htmlFor="bottle-form-keep-note" className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                       {t('bottleForm.keep.note')}
                     </label>
                     <input
+                      id="bottle-form-keep-note"
                       type="text"
                       value={reservedNote}
                       onChange={(e) => setReservedNote(e.target.value)}

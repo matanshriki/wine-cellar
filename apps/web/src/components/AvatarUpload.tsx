@@ -262,7 +262,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess, userId }: Prop
           {currentAvatarUrl ? (
             <img
               src={currentAvatarUrl}
-              alt="Avatar"
+              alt={t('profile.avatarAlt')}
               className="w-24 h-24 rounded-full object-cover border-2 border-[var(--border-subtle)]"
             />
           ) : (

@@ -6,19 +6,31 @@
 
 import { supabase } from '../lib/supabase';
 import type { BottleWithWineInfo } from './bottleService';
+import {
+  assessWineSweetness,
+  isKnownSweeterThanDry,
+  scoreFromLevel,
+  type SweetnessAssessment,
+  type SweetnessBasis,
+  type SweetnessLevel,
+} from '../utils/sweetness';
 
 export interface WineProfile {
   body: number; // 1-5
   tannin: number; // 1-5
   acidity: number; // 1-5
   oak: number; // 1-5
-  sweetness: number; // 0-5
+  sweetness: number; // 0-5; meaning depends on sweetness_scale (see utils/sweetness.ts)
+  sweetness_scale?: number;
   alcohol_est: number | null;
   power: number; // 1-10
   style_tags: string[];
   confidence: 'low' | 'med' | 'high';
   source: 'ai' | 'vivino' | 'heuristic';
   updated_at: string;
+  /** Set by `withSweetness`; `unknown` means `sweetness` is a placeholder, never evidence of dryness. */
+  sweetness_basis?: SweetnessBasis;
+  sweetness_level?: SweetnessLevel | null;
 }
 
 export interface FoodProfile {
@@ -39,12 +51,54 @@ export function getWineProfile(wine: any): WineProfile {
     const daysSince = (Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24);
     
     if (daysSince < 30) {
-      return wine.wine_profile as WineProfile;
+      return withSweetness(wine.wine_profile as WineProfile, wine);
     }
   }
   
   // Fallback to heuristic profile
-  return getHeuristicProfile(wine);
+  return withSweetness(getHeuristicProfile(wine), wine);
+}
+
+/** Stored profile when present (any age), else heuristic — for learning from history. */
+export function getStoredOrHeuristicProfile(wine: any): WineProfile {
+  return withSweetness((wine.wine_profile as WineProfile | null) || getHeuristicProfile(wine), wine);
+}
+
+/**
+ * Attach the shared sweetness assessment. A label term (e.g. "Amabile") overrides
+ * a contradicting numeric score so no screen can call that wine dry.
+ */
+export function withSweetness(profile: WineProfile, wine: any): WineProfile {
+  const assessment = assessWineSweetness({
+    wine_name: wine?.wine_name,
+    regional_wine_style: wine?.regional_wine_style,
+    wine_profile: profile,
+  });
+  let sweetness = profile.sweetness;
+  if (assessment.basis === 'label' && assessment.level) {
+    sweetness = assessment.level === 'dry'
+      ? Math.min(sweetness, 1)
+      : Math.max(sweetness, scoreFromLevel(assessment.level));
+  }
+  return { ...profile, sweetness, sweetness_basis: assessment.basis, sweetness_level: assessment.level };
+}
+
+/** The sweetness assessment carried by a profile (derived for profiles not built by `withSweetness`). */
+export function sweetnessOf(profile: WineProfile): SweetnessAssessment {
+  if (profile.sweetness_basis) {
+    return { level: profile.sweetness_level ?? null, basis: profile.sweetness_basis };
+  }
+  return assessWineSweetness({ wine_profile: profile });
+}
+
+/** True only when residual sugar is established (label or profile), never for heuristic placeholders. */
+export function hasKnownResidualSugar(profile: WineProfile): boolean {
+  return isKnownSweeterThanDry(sweetnessOf(profile));
+}
+
+/** Whether the profile's sweetness value is evidence rather than a color/region placeholder. */
+export function isSweetnessKnown(profile: WineProfile): boolean {
+  return sweetnessOf(profile).basis !== 'unknown';
 }
 
 /**
@@ -267,7 +321,7 @@ export function calculateFoodPairingScore(
   
   // Spicy food
   if (foodProfile.spice === 'high') {
-    if (wineProfile.sweetness > 0) score += 15;
+    if (hasKnownResidualSugar(wineProfile)) score += 15;
     if (wineProfile.body >= 2 && wineProfile.body <= 3) score += 10;
     if (wineProfile.tannin >= 4 && (wineProfile.alcohol_est || 13) > 13.5) score -= 20;
   }
@@ -326,7 +380,7 @@ export function getPairingExplanation(
   
   if (position === 'last') {
     if (wineProfile.power >= 8) return 'Grand finale - bold and memorable';
-    if (wineProfile.sweetness > 0) return 'Sweet ending note';
+    if (hasKnownResidualSugar(wineProfile)) return 'Sweet ending note';
     return 'Perfect closing wine';
   }
   
@@ -347,7 +401,7 @@ export function getPairingExplanation(
   }
   
   if (spice === 'high') {
-    if (wineProfile.sweetness > 0) {
+    if (hasKnownResidualSugar(wineProfile)) {
       return 'Touch of sweetness tames the heat';
     }
     if (wineProfile.tannin <= 3) {

@@ -178,7 +178,7 @@ export function ReceiptReviewModal({
                           className="text-xs px-2 py-1 rounded"
                           style={{
                             background: 'var(--wine-50)',
-                            color: 'var(--wine-700)',
+                            color: 'var(--accent-text)',
                           }}
                         >
                           {item.vintage}
@@ -200,7 +200,7 @@ export function ReceiptReviewModal({
                           className="text-xs px-2 py-1 rounded"
                           style={{
                             background: 'var(--gold-50)',
-                            color: 'var(--gold-700)',
+                            color: 'var(--text-eyebrow)',
                           }}
                         >
                           ${item.price.toFixed(2)}
@@ -302,7 +302,7 @@ export function ReceiptReviewModal({
                     <p 
                       className="text-lg font-bold"
                       style={{ 
-                        color: 'var(--gold-700)',
+                        color: 'var(--text-eyebrow)',
                         fontFamily: 'var(--font-display)',
                       }}
                     >

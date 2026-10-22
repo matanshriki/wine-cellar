@@ -183,7 +183,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
               color: profile.confidence === 'high'
                 ? 'var(--wine-700)'
                 : profile.confidence === 'med'
-                ? 'var(--gold-700)'
+                ? 'var(--text-eyebrow)'
                 : 'var(--text-secondary)',
               border: `1px solid ${
                 profile.confidence === 'high'
@@ -242,7 +242,7 @@ export function TasteProfileCard({ onProfileUpdated }: TasteProfileCardProps) {
                     className="px-4 py-2 rounded-full text-sm font-medium"
                     style={{
                       background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-                      color: 'var(--wine-700)',
+                      color: 'var(--accent-text)',
                       border: '1px solid var(--wine-200)',
                     }}
                   >

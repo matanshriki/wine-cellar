@@ -40,7 +40,7 @@ interface ServingInfo {
   shortInstruction?: string;
 }
 
-type TFn = (key: string, fallback: string) => string;
+type TFn = (key: string, fallback: string, options?: Record<string, unknown>) => string;
 
 /** Format a Celsius range as "X–Y °C / A–B °F" */
 function formatTempRange(minC: number, maxC: number): string {
@@ -75,7 +75,7 @@ function deriveServingInfo(bottle: BottleWithWineInfo, t: TFn): ServingInfo {
     switch (sg.decanting) {
       case 'recommended':
         decantNote = sg.decant_max && sg.decant_max > sg.decant_min
-          ? t('openRitual.step2.decantNotes.recommended', `Decant ${sg.decant_min}–${sg.decant_max} min to open aromas`)
+          ? t('openRitual.step2.decantNotes.recommended', 'Decant {{min}}–{{max}} min to open aromas', { min: sg.decant_min, max: sg.decant_max })
           : t('openRitual.step2.decantNotes.heavyRed', 'Decant to soften tannins and open aromas');
         break;
       case 'optional':
@@ -342,7 +342,7 @@ function InlineStarRating({
             onMouseLeave={() => setHovered(0)}
             onTouchStart={() => setHovered(star)}
             onTouchEnd={() => setHovered(0)}
-            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            aria-label={t('common.starRating', { count: star })}
             className="p-1"
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
           >
@@ -888,7 +888,7 @@ export function OpenRitualSheet({
                             key={star}
                             whileTap={{ scale: 0.8 }}
                             onClick={() => handleQuickStarTap(star)}
-                            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                            aria-label={t('common.starRating', { count: star })}
                             className="p-1.5"
                             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                           >
@@ -1126,7 +1126,7 @@ export function OpenRitualSheet({
                     className="w-full py-3 rounded-xl font-medium text-sm transition-colors"
                     style={{
                       background: 'var(--wine-50, #fdf2f5)',
-                      color: 'var(--wine-700)',
+                      color: 'var(--accent-text)',
                       border: '1px solid var(--wine-200, #f0c5ce)',
                     }}
                   >

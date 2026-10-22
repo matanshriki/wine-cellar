@@ -30,6 +30,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { SWEETNESS_PROMPT_DEFINITION, SWEETNESS_SCALE_VERSION } from '../_shared/sweetnessScale.ts'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL           = Deno.env.get('SUPABASE_URL')!
@@ -96,7 +97,7 @@ Provide a structured wine profile with:
 - tannin (1-5): 1=none, 5=very high
 - acidity (1-5): 1=very low, 5=very high
 - oak (1-5): 1=none/unoaked, 5=heavily oaked
-- sweetness (0-5): 0=bone dry, 5=very sweet
+- ${SWEETNESS_PROMPT_DEFINITION}
 - alcohol_est (number|null): estimated ABV %
 - style_tags (array of 3-8 short kebab-case strings)
 - confidence ("low"|"med"|"high")`,
@@ -142,6 +143,7 @@ Provide a structured wine profile with:
     ...aiProfile,
     power:      computePower(aiProfile),
     source:     'ai',
+    sweetness_scale: SWEETNESS_SCALE_VERSION,
     updated_at: new Date().toISOString(),
   }
 }

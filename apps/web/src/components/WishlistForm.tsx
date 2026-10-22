@@ -326,13 +326,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
         >
           {/* Producer */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-1"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {t('bottleForm.producer')} *
+              {t('bottleForm.producer')}<span aria-hidden="true"> *</span>
             </label>
             <input
+              id="wishlist-field-1"
               type="text"
               value={formData.producer}
               onChange={(e) => handleChange('producer', e.target.value)}
@@ -349,13 +350,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
           {/* Wine Name */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-2"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {t('bottleForm.wineName')} *
+              {t('bottleForm.wineName')}<span aria-hidden="true"> *</span>
             </label>
             <input
+              id="wishlist-field-2"
               type="text"
               value={formData.wine_name}
               onChange={(e) => handleChange('wine_name', e.target.value)}
@@ -372,13 +374,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
           {/* Vintage */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-3"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
               {t('bottleForm.vintage')}
             </label>
             <input
+              id="wishlist-field-3"
               type="number"
               value={formData.vintage}
               onChange={(e) => handleChange('vintage', e.target.value)}
@@ -396,13 +399,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
           {/* Region */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-4"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
               {t('bottleForm.region')}
             </label>
             <input
+              id="wishlist-field-4"
               type="text"
               value={formData.region}
               onChange={(e) => handleChange('region', e.target.value)}
@@ -418,13 +422,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
           {/* Grapes */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-5"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
               {t('bottleForm.grapes')}
             </label>
             <input
+              id="wishlist-field-5"
               type="text"
               value={formData.grapes}
               onChange={(e) => handleChange('grapes', e.target.value)}
@@ -441,19 +446,20 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
           {/* Color */}
           {/* Mobile hardening (wishlist): Changed grid to flex-wrap for better mobile fit */}
           <div>
-            <label 
+            <p id="wishlist-label-1" 
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--text-secondary)' }}
             >
               {t('bottleForm.color')}
-            </label>
-            <div className="flex flex-wrap gap-2">
+            </p>
+            <div role="group" aria-labelledby="wishlist-label-1" className="flex flex-wrap gap-2">
               {(['red', 'white', 'rose', 'sparkling'] as const).map((color) => {
                 const isSelected = formData.color === color;
                 return (
                   <button
                     key={color}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => handleChange('color', color)}
                     className="py-2 px-4 rounded-full border-2 transition-all flex-1 min-w-[calc(50%-0.25rem)] text-sm font-medium"
                     style={{
@@ -472,7 +478,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
           {/* Vivino URL (optional) */}
           <div>
-            <label 
+            <label htmlFor="wishlist-field-6"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -480,6 +486,7 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
             </label>
             <div className="flex gap-2">
               <input
+                id="wishlist-field-6"
                 type="url"
                 value={formData.vivino_url}
                 onChange={(e) => handleChange('vivino_url', e.target.value)}
@@ -531,13 +538,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
             {/* Restaurant Name */}
             <div className="mb-4">
-              <label 
+              <label htmlFor="wishlist-field-7"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {t('wishlist.form.restaurant')} {/* "Restaurant / Location" */}
               </label>
               <input
+                id="wishlist-field-7"
                 type="text"
                 value={formData.restaurantName}
                 onChange={(e) => handleChange('restaurantName', e.target.value)}
@@ -553,13 +561,14 @@ export function WishlistForm({ onClose, onSuccess, prefillData }: Props) {
 
             {/* Personal Note */}
             <div>
-              <label 
+              <label htmlFor="wishlist-field-8"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {t('wishlist.form.note')} {/* "My Note" */}
               </label>
               <textarea
+                id="wishlist-field-8"
                 value={formData.note}
                 onChange={(e) => handleChange('note', e.target.value)}
                 rows={3}

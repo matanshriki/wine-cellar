@@ -14,6 +14,8 @@ import {
   type RecomputeTasteProfileOptions,
 } from './tasteProfileOverrides';
 import { mergeCalibrationOverrideVector } from './tasteProfileCalibration';
+import { DRY_PREFERENCE_THRESHOLD, findExplicitDislike, isSweetnessMismatch, type TasteMatchWine } from './tasteMatch';
+import { isKnownDry, isKnownSweeterThanDry } from '../utils/sweetness';
 
 export type { RecomputeTasteProfileOptions } from './tasteProfileOverrides';
 export { attachPreservedOverrides } from './tasteProfileOverrides';
@@ -129,11 +131,13 @@ async function fetchRatedHistory(userId: string): Promise<RatedWineEntry[]> {
 function computeVector(entries: RatedWineEntry[]): TasteProfileVector {
   let bodySum = 0, tanninSum = 0, aciditySum = 0, oakSum = 0, sweetnessSum = 0, powerSum = 0;
   let totalWeight = 0;
+  // Sweetness only learns from wines whose sweetness is known; placeholders would bias toward "dry".
+  let sweetnessWeight = 0;
   
   const now = Date.now();
   
   for (const entry of entries) {
-    const wineProfile = entry.wine.wine_profile || wineProfileService.getHeuristicProfile(entry.wine);
+    const wineProfile = wineProfileService.getStoredOrHeuristicProfile(entry.wine);
     const ratingWeight = mapRatingToWeight(entry.user_rating);
     
     const entryAge = (now - new Date(entry.opened_at).getTime()) / (1000 * 60 * 60 * 24);
@@ -146,7 +150,10 @@ function computeVector(entries: RatedWineEntry[]): TasteProfileVector {
       tanninSum += normalizeTannin(wineProfile.tannin) * weight;
       aciditySum += normalizeAcidity(wineProfile.acidity) * weight;
       oakSum += normalizeOak(wineProfile.oak) * weight;
-      sweetnessSum += normalizeSweetness(wineProfile.sweetness) * weight;
+      if (wineProfileService.isSweetnessKnown(wineProfile)) {
+        sweetnessSum += normalizeSweetness(wineProfile.sweetness) * weight;
+        sweetnessWeight += weight;
+      }
       powerSum += normalizePower(wineProfile.power) * weight;
       totalWeight += weight;
     }
@@ -161,7 +168,7 @@ function computeVector(entries: RatedWineEntry[]): TasteProfileVector {
     tannin: clamp(tanninSum / totalWeight, 0, 1),
     acidity: clamp(aciditySum / totalWeight, 0, 1),
     oak: clamp(oakSum / totalWeight, 0, 1),
-    sweetness: clamp(sweetnessSum / totalWeight, 0, 1),
+    sweetness: sweetnessWeight > 0 ? clamp(sweetnessSum / sweetnessWeight, 0, 1) : 0.2,
     power: clamp(powerSum / totalWeight, 0, 1),
   };
 }
@@ -523,7 +530,9 @@ export function calculateAffinity(
   let totalDiff = 0;
   let dimensions = 0;
   
+  const sweetnessKnown = wineProfileService.isSweetnessKnown(wineProfile);
   for (const key of Object.keys(wineVector) as (keyof TasteProfileVector)[]) {
+    if (key === 'sweetness' && !sweetnessKnown) continue;
     totalDiff += Math.abs(wineVector[key] - userVector[key]);
     dimensions++;
   }
@@ -551,9 +560,26 @@ export function getAffinityWeight(confidence: 'low' | 'med' | 'high'): number {
  */
 export function generateAffinityReason(
   wineProfile: WineProfile,
-  userProfile: TasteProfile
+  userProfile: TasteProfile,
+  wine?: TasteMatchWine | null,
+  options: { requireTrustedStructure?: boolean } = {},
 ): string | null {
   const userVector = getEffectiveVector(userProfile);
+  const t = i18n.t.bind(i18n);
+
+  // Disclosures come before any "matches your taste" praise.
+  const dislike = findExplicitDislike(wine, userProfile, i18n.language);
+  if (dislike) {
+    return t('recommendation.generated.affinityExplicitDislike', { term: dislike.label });
+  }
+  const sweetness = wineProfileService.sweetnessOf(wineProfile);
+  if (isSweetnessMismatch(userVector.sweetness, sweetness)) {
+    return t(`recommendation.generated.affinitySweeterThanUsual.${sweetness.level}`);
+  }
+  // Body/tannin/acidity/oak praise needs a stored AI/Vivino profile, not a color/region guess.
+  if (options.requireTrustedStructure && wineProfile.source !== 'ai' && wineProfile.source !== 'vivino') {
+    return null;
+  }
   
   const bodyMatch = Math.abs(normalizeBody(wineProfile.body) - userVector.body) < 0.2;
   const tanninMatch = Math.abs(normalizeTannin(wineProfile.tannin) - userVector.tannin) < 0.2;
@@ -564,9 +590,10 @@ export function generateAffinityReason(
   const highTannin = userVector.tannin > 0.6 && wineProfile.tannin >= 4;
   const highAcidity = userVector.acidity > 0.6 && wineProfile.acidity >= 4;
   const highOak = userVector.oak > 0.6 && wineProfile.oak >= 4;
-  const lowSweetness = userVector.sweetness < 0.3 && wineProfile.sweetness <= 1;
-  
-  const t = i18n.t.bind(i18n);
+  // "Dry" is claimed only when the wine's dryness is established, never from a heuristic placeholder.
+  const lowSweetness = userVector.sweetness < DRY_PREFERENCE_THRESHOLD && isKnownDry(sweetness);
+  const userLikesSweet = userVector.sweetness > 0.5 && isKnownSweeterThanDry(sweetness);
+
   if (highBody && highTannin) {
     return t('recommendation.generated.affinityBoldStructured');
   }
@@ -578,6 +605,9 @@ export function generateAffinityReason(
   }
   if (lowSweetness && bodyMatch) {
     return t('recommendation.generated.affinityDryBalanced');
+  }
+  if (userLikesSweet) {
+    return t('recommendation.generated.affinityTouchOfSweetness');
   }
   if (bodyMatch && tanninMatch && acidityMatch) {
     return t('recommendation.generated.affinityGreatMatch');

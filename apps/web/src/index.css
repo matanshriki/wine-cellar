@@ -257,7 +257,7 @@
     height: var(--input-height);
     padding: 0 var(--input-padding-x);
     background-color: var(--bg-surface);
-    border: 1px solid var(--border-medium);
+    border: 1px solid var(--border-input);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
     font-size: 16px; /* Prevents iOS zoom */
@@ -406,6 +406,11 @@
     padding-bottom: var(--app-bottom-nav-layout-total);
   }
 
+  /* Pages with the floating Sommi button: the last item can scroll clear of it */
+  .pb-bottom-nav.pb-sommi-fab {
+    padding-bottom: calc(var(--app-bottom-nav-layout-total) + 6rem);
+  }
+
   /* For modals: max height that accounts for bottom nav on mobile */
   .max-h-mobile-modal {
     max-height: calc(100dvh - var(--app-bottom-nav-layout-total) - 2rem);
@@ -420,6 +425,10 @@
   @media (min-width: 768px) {
     .pb-bottom-nav {
       padding-bottom: 2rem; /* Standard desktop padding */
+    }
+
+    .pb-bottom-nav.pb-sommi-fab {
+      padding-bottom: calc(7.5rem + 3.5rem + env(safe-area-inset-bottom, 0px));
     }
 
     .max-h-mobile-modal {

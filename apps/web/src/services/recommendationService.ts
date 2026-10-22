@@ -18,6 +18,15 @@ import * as wineProfileService from './wineProfileService';
 import * as tasteProfileService from './tasteProfileService';
 import { getBottleInsight } from './insightService';
 import type { BottleWithWineInfo } from './bottleService';
+import { findExplicitDislike, isSweetnessMismatch } from './tasteMatch';
+import {
+  differenceFromTop,
+  groundedPairingReasons,
+  hasTrustedStructure,
+  mealContextFor,
+  type DiffInput,
+  type MealContext,
+} from './mealPairing';
 
 // LocalStorage key for tracking recently shown recommendations
 const RECENT_RECOMMENDATIONS_KEY = 'wine_recent_recommendations';
@@ -28,6 +37,8 @@ type Wine = Database['public']['Tables']['wines']['Row'];
 
 export interface RecommendationInput {
   mealType?: string;
+  /** Optional follow-up for broad meals (e.g. pasta → "tomato"). See MEAL_DETAILS. */
+  mealDetail?: string;
   occasion?: string;
   vibe?: string;
   wineType?: 'red' | 'white' | 'rose' | 'mixed';
@@ -151,6 +162,16 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     filteredBottles = filteredBottles.filter(b => readyByStatus(b) && notHoldByAI(b));
   }
 
+  // Skip bottles the analysis says are too young, unless nothing else is left.
+  if (input.constraints?.avoidTooYoung) {
+    const notTooYoung = filteredBottles.filter(b => {
+      const label = (b as any).readiness_label as string | undefined;
+      const status = (b as any).readiness_status?.toLowerCase();
+      return label !== 'HOLD' && status !== 'tooyoung' && status !== 'too_young';
+    });
+    if (notTooYoung.length > 0) filteredBottles = notTooYoung;
+  }
+
   // If no bottles match constraints, fall back to all bottles
   if (filteredBottles.length === 0) {
     filteredBottles = bottlesWithWine;
@@ -172,11 +193,17 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     }
   }
 
+  const mealContext = mealContextFor(input.mealType, input.mealDetail);
+  const effectiveSweetness = userTasteProfile
+    ? tasteProfileService.getEffectiveVector(userTasteProfile).sweetness
+    : null;
+
   // Simple scoring algorithm based on meal type and wine style
   const scoredBottles = filteredBottles.map(bottle => {
     let score = 50; // Base score
     let affinityReason: string | null = null;
     let affinityInsightType: string | null = null;
+    const wineProfile = wineProfileService.getWineProfile(bottle.wine);
     
     const wineColor = bottle.wine.color.toLowerCase();
     const mealType = input.mealType?.toLowerCase() || '';
@@ -239,9 +266,19 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     if (aiLabel === 'PEAK_SOON') score += 8;
     if (aiLabel === 'HOLD') score -= 35;
 
+    // Meal detail (only when the user answered the optional follow-up)
+    if (mealContext) {
+      score += wineProfileService.calculateFoodPairingScore(wineProfile, mealContext.food) * 0.6;
+    }
+
+    // Explicit exclusions sink a bottle; softer sweetness preferences only nudge (and are disclosed).
+    if (userTasteProfile) {
+      if (findExplicitDislike(bottle.wine, userTasteProfile, i18n.language)) score -= 60;
+      if (isSweetnessMismatch(effectiveSweetness, wineProfileService.sweetnessOf(wineProfile))) score -= 15;
+    }
+
     // TASTE PROFILE AFFINITY SCORING
     if (userTasteProfile) {
-      const wineProfile = wineProfileService.getWineProfile(bottle.wine);
       const affinity = tasteProfileService.calculateAffinity(wineProfile, userTasteProfile);
       const affinityWeight = tasteProfileService.getAffinityWeight(userTasteProfile.confidence);
       
@@ -271,7 +308,7 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
     // This ensures different bottles can win even with similar base scores
     score += Math.random() * 25;
 
-    return { bottle, score, affinityReason, affinityInsightType };
+    return { bottle, score, affinityReason, affinityInsightType, wineProfile };
   });
 
   // Sort by score and take top 3
@@ -280,15 +317,23 @@ export async function getRecommendations(input: RecommendationInput): Promise<Re
   // Debug: Log top 5 scores to understand selection
   
   const topBottles = scoredBottles.slice(0, 3);
+  const topDiff = topBottles[0] ? diffInputOf(topBottles[0].bottle, topBottles[0].wineProfile) : null;
 
   // Format recommendations
   const recommendations: Recommendation[] = topBottles.map((item, index) => {
-    const { bottle, score, affinityReason, affinityInsightType } = item;
+    const { bottle, score, affinityReason, affinityInsightType, wineProfile } = item;
     const wine = bottle.wine;
     const localized = getLocalizedWineData(wine, i18n.language);
 
-    // Generate explanation (uses localized color/region internally)
-    let explanation = generateExplanation(bottle, wine, input, index + 1);
+    const explanation = generateExplanation({
+      bottle,
+      wine,
+      input,
+      wineProfile,
+      mealContext,
+      rank: index + 1,
+      top: index > 0 ? topDiff : null,
+    });
 
     // Generate serving instructions
     let servingInstructions = generateServingInstructions(bottle, wine);
@@ -394,44 +439,107 @@ function translateMeal(meal: string): string {
   return translated !== key ? translated : meal;
 }
 
-function generateExplanation(bottle: BottleWithWine, wine: Wine, input: RecommendationInput, rank: number): string {
+type Readiness = DiffInput['readiness'];
+
+function readinessOf(bottle: BottleWithWine): Readiness {
+  const label = (bottle as any).readiness_label as string | undefined;
+  if (label === 'READY' || label === 'PEAK_SOON' || label === 'HOLD') return label;
+  return null;
+}
+
+function diffInputOf(bottle: BottleWithWine, profile: wineProfileService.WineProfile): DiffInput {
+  return {
+    color: bottle.wine.color?.toLowerCase() ?? '',
+    profile,
+    readiness: readinessOf(bottle),
+    vintage: bottle.wine.vintage ?? null,
+  };
+}
+
+/** Same color heuristics the score uses, so the explanation never contradicts the ranking. */
+function colorFitsMeal(meal: string, color: string): boolean {
+  if (meal.includes('steak') || meal.includes('beef') || meal.includes('pizza')) return color === 'red';
+  if (meal.includes('fish') || meal.includes('seafood')) return color === 'white' || color === 'sparkling';
+  if (meal.includes('pasta') || meal.includes('chicken')) return color === 'red' || color === 'white';
+  if (meal.includes('cheese')) return color === 'red' || color === 'white' || color === 'sparkling';
+  if (meal.includes('spicy') || meal.includes('asian')) return color === 'white' || color === 'rose';
+  return false;
+}
+
+function firstGrape(grapes: unknown): string | null {
+  if (Array.isArray(grapes)) return (grapes.find((g) => typeof g === 'string' && g.trim()) as string) ?? null;
+  if (typeof grapes === 'string' && grapes.trim()) return grapes.split(',')[0].trim();
+  return null;
+}
+
+/**
+ * Builds "why this bottle" from data only: identity, how the measured style meets
+ * the dish, maturity, and (for options 2–3) how it differs from the first pick.
+ * When the data cannot support a pairing claim, it says so.
+ */
+function generateExplanation(params: {
+  bottle: BottleWithWine;
+  wine: Wine;
+  input: RecommendationInput;
+  wineProfile: wineProfileService.WineProfile;
+  mealContext: MealContext | null;
+  rank: number;
+  top: DiffInput | null;
+}): string {
+  const { bottle, wine, input, wineProfile, mealContext, top } = params;
   const t = i18n.t.bind(i18n);
-  const mealRaw = input.mealType || 'your meal';
-  const occasion = input.occasion || 'this occasion';
+  const G = 'recommendation.grounded';
+  const parts: string[] = [];
   const color = translateColor(wine.color);
-  const meal = translateMeal(mealRaw);
   const localized = getLocalizedWineData(wine, i18n.language);
-  const origin = localized.region || localized.producer;
+  const origin = localized.region || null;
+  const grape = firstGrape(localized.grapes ?? wine.grapes);
+  const mealKey = input.mealType?.toLowerCase() || '';
 
-  let explanation = rank === 1
-    ? t('recommendation.generated.explainTop', { color, origin, meal })
-    : t('recommendation.generated.explainOther', { color, origin, meal });
+  if (grape && origin) parts.push(t(`${G}.identityGrapeOrigin`, { grape, origin, color }));
+  else if (grape) parts.push(t(`${G}.identityGrape`, { grape, color }));
+  else if (origin) parts.push(t(`${G}.identityOrigin`, { origin, color }));
 
-  const aiLabel = (bottle as any).readiness_label as string | undefined;
-  if (aiLabel === 'READY') {
-    explanation += ' ' + t('recommendation.generated.readinessReady');
-  } else if (aiLabel === 'PEAK_SOON') {
-    explanation += ' ' + t('recommendation.generated.readinessPeakSoon');
-  } else if (aiLabel === 'HOLD') {
-    explanation += ' ' + t('recommendation.generated.readinessHold');
-  } else if (bottle.readiness_status) {
+  const reasons = mealContext ? groundedPairingReasons(wineProfile, mealContext) : [];
+  for (const r of reasons) parts.push(t(`${G}.pairing.${r.key}`));
+
+  if (mealKey && reasons.length === 0) {
+    const meal = translateMeal(mealKey);
+    parts.push(
+      colorFitsMeal(mealKey, wine.color.toLowerCase())
+        ? t(`${G}.colorFits`, { color, meal })
+        : t(`${G}.colorStretch`, { color, meal }),
+    );
+  }
+
+  const readiness = readinessOf(bottle);
+  if (readiness === 'READY') parts.push(t('recommendation.generated.readinessReady'));
+  else if (readiness === 'PEAK_SOON') parts.push(t('recommendation.generated.readinessPeakSoon'));
+  else if (readiness === 'HOLD') parts.push(t('recommendation.generated.readinessHold'));
+  else if (bottle.readiness_status) {
     const status = bottle.readiness_status.toLowerCase();
-    if (status === 'peak') {
-      explanation += ' ' + t('recommendation.generated.readinessPeak');
-    } else if (status === 'inwindow' || status === 'ready') {
-      explanation += ' ' + t('recommendation.generated.readinessInWindow');
-    }
+    if (status === 'peak') parts.push(t('recommendation.generated.readinessPeak'));
+    else if (status === 'inwindow' || status === 'ready') parts.push(t('recommendation.generated.readinessInWindow'));
   }
 
-  if (occasion.includes('celebration') || occasion.includes('special')) {
-    explanation += ' ' + t('recommendation.generated.occasionCelebration');
-  } else if (occasion.includes('date')) {
-    explanation += ' ' + t('recommendation.generated.occasionDate');
-  } else if (occasion.includes('friends') || occasion.includes('hosting')) {
-    explanation += ' ' + t('recommendation.generated.occasionFriends');
+  const occasion = input.occasion?.toLowerCase() || '';
+  if ((occasion.includes('celebration') || occasion.includes('special')) && wine.color.toLowerCase() === 'sparkling') {
+    parts.push(t(`${G}.occasionBubbles`));
+  } else if ((occasion.includes('friends') || occasion.includes('hosting')) && bottle.quantity >= 2) {
+    parts.push(t(`${G}.occasionShare`, { count: bottle.quantity }));
   }
 
-  return explanation.trim();
+  if (top) {
+    const key = differenceFromTop(diffInputOf(bottle, wineProfile), top);
+    parts.push(t(`${G}.diff.${key}`, { color, vintage: wine.vintage ?? '' }));
+  }
+
+  const knowsStyle = hasTrustedStructure(wineProfile) || wineProfile.sweetness_basis === 'label';
+  if (mealKey && !knowsStyle && reasons.length === 0) {
+    parts.push(t(`${G}.limitedData`));
+  }
+
+  return parts.join(' ').trim();
 }
 
 function generateServingInstructions(bottle: BottleWithWine, wine: Wine): string {

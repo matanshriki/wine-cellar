@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
 import { generateShareLink } from '../services/shareService';
 import type { BottleWithWineInfo } from '../services/bottleService';
+import { countInStockWines, sumInStockBottles } from '../utils/inventory';
 
 interface Props {
   isOpen: boolean;
@@ -195,17 +196,16 @@ export function ShareCellarModal({ isOpen, onClose, bottles }: Props) {
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-tertiary)' }}>{t('cellar.shareCellar.distinctWines')}:</span>
                 <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {bottles.filter(b => b.quantity > 0).length}
+                  {countInStockWines(bottles)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-tertiary)' }}>{t('cellar.shareCellar.totalBottles')}:</span>
                 <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {bottles.filter(b => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0)}
+                  {sumInStockBottles(bottles)}
                 </span>
               </div>
-              {bottles.filter(b => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0) !== 
-               bottles.filter(b => b.quantity > 0).length && (
+              {sumInStockBottles(bottles) !== countInStockWines(bottles) && (
                 <p className="text-xs pt-1" style={{ color: 'var(--text-tertiary)' }}>
                   {t('cellar.shareCellar.multipleBottlesNote')}
                 </p>

@@ -1,3 +1,4 @@
+import { describeStoredSweetness } from "./sweetnessScale.ts";
 /**
  * Shared OpenAI sommelier-analysis prompts for analyze-wine and analyze-cellar.
  * Keeps single-bottle and bulk cellar analysis aligned (same JSON fields + rules).
@@ -24,6 +25,7 @@ export interface WineAnalysisInput {
     acidity?: number | null;
     oak?: number | null;
     sweetness?: number | null;
+    sweetness_scale?: number | null;
     alcohol_est?: number | null;
     power?: number | null;
     style_tags?: string[] | null;
@@ -88,8 +90,16 @@ function formatWineProfileForPrompt(profile: WineAnalysisInput["wine_profile"]):
   if (a) lines.push(`  Acidity: ${a}`);
   const o = label(profile.oak, ["none/minimal", "light", "moderate", "strong", "heavy"]);
   if (o) lines.push(`  Oak: ${o}`);
-  const s = label(profile.sweetness, ["bone dry", "dry", "off-dry", "medium-sweet", "sweet"]);
-  if (s) lines.push(`  Sweetness: ${s}`);
+  // Sweetness is 0–5 (0 = bone dry), unlike the 1–5 structure scales above, and
+  // older profiles used conflicting definitions; omit values that cannot be read.
+  if (profile.sweetness != null) {
+    const word = describeStoredSweetness(profile.sweetness, profile.sweetness_scale);
+    lines.push(
+      word
+        ? `  Sweetness: ${profile.sweetness}/5 (${word})`
+        : "  Sweetness: not established — judge only from label terms in the name/style; do not call it dry by default",
+    );
+  }
   if (profile.alcohol_est != null) lines.push(`  Estimated alcohol: ${profile.alcohol_est}%`);
   if (Array.isArray(profile.style_tags) && profile.style_tags.length) {
     lines.push(`  Style tags: ${profile.style_tags.join(", ")}`);

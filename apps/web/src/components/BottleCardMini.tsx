@@ -110,7 +110,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
+              objectFit: 'contain',
             }}
             loading="lazy"
           />
@@ -211,7 +211,7 @@ export function BottleCardMini({ bottle, onClick, index }: BottleCardMiniProps) 
                 gap: '4px',
                 fontSize: '12px',
                 fontWeight: 600,
-                color: 'var(--gold-600)',
+                color: 'var(--text-eyebrow)',
               }}
             >
               ⭐ {bottle.rating.toFixed(1)}

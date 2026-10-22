@@ -59,7 +59,7 @@ export function BotRichResultCard({ summary, children, onViewAll }: BotRichResul
               border: '1px solid var(--wine-600)',
               borderRadius: '8px',
               backgroundColor: 'transparent',
-              color: 'var(--wine-600)',
+              color: 'var(--accent-text)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',

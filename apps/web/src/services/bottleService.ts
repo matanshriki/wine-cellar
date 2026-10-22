@@ -20,6 +20,7 @@ import {
 } from './pushNotificationService';
 import { toast } from '../lib/toast';
 import i18n from '../i18n/config';
+import { inventoryTotals, type InventoryTotals } from '../utils/inventory';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
 type WineInsert = Database['public']['Tables']['wines']['Insert'];
@@ -74,6 +75,40 @@ export async function listBottles(options?: {
 
   // Analysis data is already in the bottles table, no need to flatten
   return data as BottleWithWineInfo[];
+}
+
+/**
+ * Full-cellar inventory totals (bottles + wines), independent of how many rows
+ * a screen has paginated into memory.
+ */
+export async function getInventoryTotals(): Promise<InventoryTotals> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  const PAGE = 1000;
+  const rows: { quantity: number | null }[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await supabase
+      .from('bottles')
+      .select('quantity')
+      .eq('user_id', user.id)
+      .gt('quantity', 0)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE - 1);
+
+    if (error) {
+      console.error('Error fetching inventory totals:', error);
+      throw new Error('Failed to fetch inventory totals');
+    }
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
+
+  return inventoryTotals(rows);
 }
 
 /**

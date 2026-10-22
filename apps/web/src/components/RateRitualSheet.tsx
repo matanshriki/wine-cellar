@@ -62,7 +62,7 @@ function StarRating({
             onMouseLeave={() => setHovered(0)}
             onTouchStart={() => setHovered(star)}
             onTouchEnd={() => setHovered(0)}
-            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            aria-label={t('common.starRating', { count: star })}
             className="p-1"
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
           >

@@ -259,7 +259,8 @@
       "dark": "כהה",
       "switchToDark": "מעבר לערכת נושא כהה",
       "switchToLight": "מעבר לערכת נושא בהירה"
-    }
+    },
+    "avatarAlt": "תמונת הפרופיל שלך"
   },
   "dashboard": {
     "tonightsOrbit": {
@@ -275,37 +276,44 @@
         "bestAvailable": "הטוב ביותר הזמין"
       },
       "reasons": {
-        "readyOpenTonight": "מוכן לשתייה — פתח הלילה",
-        "approachingPeak": "מתקרב לשיאו — שתה בקרוב",
+        "readyOpenTonight": "מוכן לשתייה — בחירה טובה להערב",
+        "approachingPeak": "מתקרב לשיא — טעים כבר עכשיו, ועוד ישתבח",
         "bestAvailable": "הטוב ביותר הזמין במרתף שלך",
         "crowdFriendly": "נגיש וידידותי לאורחים",
         "prestigeBottle": "בקבוק יוקרה — שווה את האירוע",
-        "matureAndReady": "בוגר ומוכן בשיאו",
+        "matureAndReady": "בוגר ומוכן לשתייה",
         "highlyRated": "דירוג גבוה — בטוח להרשים",
         "impressBottle": "בקבוק שווה לערב מיוחד"
       },
       "tags": {
-        "readyNow": "מוכן עכשיו",
-        "inPeakWindow": "בחלון השיא",
-        "holdWine": "עדיף להחזיק",
+        "readyNow": "מוכן לשתייה",
+        "inPeakWindow": "מתקרב לשיא",
+        "holdWine": "להמשיך ליישן",
         "guestFriendly": "ידידותי לאורחים",
         "specialBottle": "בקבוק מיוחד",
         "matureBottle": "הבשלה מצוינת",
         "needsDecant": "דקנטציה {{min}} דק׳",
         "highRated": "דירוג גבוה"
-      }
+      },
+      "slideOf": "{{current}} מתוך {{total}}",
+      "goTo": "הצגת יין {{n}}: {{name}}",
+      "pause": "השהיית הסבב",
+      "play": "המשך הסבב",
+      "viewDetails": "לפרטים"
     },
     "drinkWindow": {
       "title": "חלון השתייה",
       "subtitle": "עיתוי אופטימלי לאוסף שלך",
-      "hold": "שמור",
-      "peakSoon": "שיא בקרוב",
-      "ready": "מוכן עכשיו",
+      "hold": "להמשיך ליישן",
+      "peakSoon": "מתקרב לשיא",
+      "ready": "מוכן לשתייה",
       "noAnalysis": "עדיין אין ניתוח זמין",
-      "totalAnalyzed": "סה\"כ נותחו",
+      "totalAnalyzed": "יינות שנותחו",
       "thisMonth": "החודש",
       "tonightSignal": "יין אחד מושלם להערב",
-      "tonightSignal_plural": "{{count}} יינות מושלמים להערב"
+      "tonightSignal_other": "{{count}} יינות מושלמים להערב",
+      "tonightSignal_one": "יין אחד מושלם להערב",
+      "tonightSignal_two": "{{count}} יינות מושלמים להערב"
     }
   },
   "cellar": {
@@ -340,7 +348,7 @@
     "filters": {
       "label": "מסננים",
       "ready": "מוכן לשתייה",
-      "aging": "צריך יישון",
+      "aging": "להמשיך ליישן",
       "analyzed": "נותח",
       "kosher": "כשר",
       "pastPeak": "עבר את השיא",
@@ -388,24 +396,32 @@
       "vivinoEnhanced": "🍷 הועשר בנתונים מ-Vivino!",
       "partial": "התווית נקראה חלקית - אנא בדוק והשלם",
       "failed": "לא ניתן לקרוא תווית אוטומטית - אנא מלא ידנית",
-      "error": "שגיאה בקריאת תווית - אנא הזן פרטים ידנית"
+      "error": "שגיאה בקריאת תווית - אנא הזן פרטים ידנית",
+      "success_two": "✨ חולצו {{count}} שדות מהתווית",
+      "noData": "לא הצלחנו לקרוא פרטים מהתמונה. נסו תמונה אחרת או הזינו אותם בעצמכם."
     },
     "addBottle": {
-      "title": "הוסף בקבוק",
+      "title": "הוספת בקבוק",
       "uploadPhoto": "צלם או העלה תמונה",
       "uploadPhotoDescNew": "השתמש במצלמה או בחר מהגלריה • חילוץ תווית אוטומטי",
-      "smartScan": "סרוק בקבוקים",
-      "smartScanDesc": "הבינה המלאכותית מזהה בקבוק בודד או מספר בקבוקים אוטומטית",
+      "smartScan": "סריקת התווית",
+      "smartScanDesc": "צלמו או בחרו תמונה. Sommi מזהה בקבוק אחד או כמה.",
       "takePhoto": "צלם תמונה",
       "takePhotoDesc": "השתמש במצלמה • חילוץ תווית אוטומטי",
       "chooseFromLibrary": "בחר מהגלריה",
       "chooseFromLibraryDesc": "בחר תמונה קיימת • חילוץ תווית אוטומטי",
       "manualEntry": "הזן ידנית",
-      "manualEntryDesc": "מלא את הפרטים בעצמך",
+      "manualEntryDesc": "הקלידו בעצמכם את היין, היצרן והבציר",
       "multiBottleDesc": "סרוק מספר בקבוקים בבת אחת",
       "addToWishlist": "הוסף לרשימת משאלות",
       "addToWishlistDesc": "שמור יינות לקנייה בעתיד",
-      "subtitle": "ככל שאדע יותר, אמליץ טוב יותר."
+      "subtitle": "סרקו את התווית או הזינו את הפרטים בעצמכם.",
+      "identifying": "מזהים את הבקבוקים והבציר",
+      "identifyingToast": "מזהים את הבקבוקים…",
+      "scanFailedTitle": "לא הצלחנו לקרוא את התמונה",
+      "scanFailedBody": "נסו תמונה חדה ומוארת יותר של התווית, או הזינו את הפרטים בעצמכם.",
+      "tryAnotherPhoto": "נסו תמונה אחרת",
+      "reading": "קוראים את התמונה…"
     },
     "camera": {
       "fallbackTitle": "הוסף בקבוק",
@@ -466,7 +482,13 @@
       "selectOne": "אנא בחר לפחות בקבוק אחד להוספה",
       "noBottles": "לא זוהו בקבוקים בתמונה. אנא נסה תמונה ברורה יותר.",
       "success": "🍷 נוספו בהצלחה {{count}} בקבוקים!",
-      "partialSuccess": "נוספו {{success}} בקבוקים, {{error}} נכשלו"
+      "partialSuccess": "נוספו {{success}} בקבוקים, {{error}} נכשלו",
+      "addBottles_one": "הוסיפו בקבוק אחד",
+      "addBottles_two": "הוסיפו שני בקבוקים",
+      "addBottles_other": "הוסיפו {{count}} בקבוקים",
+      "success_one": "🍷 נוסף בקבוק אחד!",
+      "success_two": "🍷 נוספו שני בקבוקים!",
+      "success_other": "🍷 נוספו {{count}} בקבוקים!"
     },
     "bottle": {
       "vintage": "בציר",
@@ -505,7 +527,13 @@
       "keepReminderFor": "שמור עבור",
       "keepReminderOpenNow": "פתח את הבקבוק 🍷",
       "keepReminderSnooze": "שמור לאחר כך",
-      "keepReminderRemove": "הסר הקצאה"
+      "keepReminderRemove": "הסר הקצאה",
+      "keepBannerDays_one": "מחר",
+      "keepBannerDays_two": "בעוד יומיים",
+      "keepBannerDays_other": "בעוד {{count}} ימים",
+      "moreActions": "פעולות נוספות עבור {{name}}",
+      "viewDetailsFor": "הצגת פרטים עבור {{name}}",
+      "viewFullDetails": "לכל הפרטים"
     },
     "openBottle": {
       "howMany": "כמה בקבוקים?",
@@ -521,10 +549,10 @@
       "sparkling": "מבעבע"
     },
     "readinessStatus": {
-      "Peak": "שיא",
-      "InWindow": "בחלון השתייה",
+      "Peak": "בשיאו",
+      "InWindow": "מוכן לשתייה",
       "Approaching": "מתקרב",
-      "TooYoung": "צעיר מדי",
+      "TooYoung": "להמשיך ליישן",
       "PastPeak": "עבר את השיא",
       "Unknown": "לא ידוע"
     },
@@ -546,20 +574,55 @@
       "analyzedOn": "נותח ב",
       "status": {
         "ready": "מוכן לשתייה",
-        "hold": "שמור ליישון",
-        "peak_soon": "שיא בקרוב"
+        "hold": "להמשיך ליישן",
+        "peak_soon": "מתקרב לשיא"
       },
       "confidence": {
         "high": "ביטחון גבוה",
         "medium": "ביטחון בינוני",
         "low": "ביטחון נמוך"
       },
-      "barrelAging": "יישון בחבית (הערכה)",
-      "barrelMonthsEst": "~{{months}} חודשים בחבית (הערכה)",
-      "barrelDisclaimer": "מידע כללי — לא מאומת באופן ספציפי לבקבוק זה."
+      "barrelAging": "יישון בחבית",
+      "barrelVerified": "מאומת",
+      "barrelEstimateBadge": "הערכה · {{confidence}}",
+      "barrelMonths_one": "כחודש אחד בעץ אלון",
+      "barrelMonths_two": "כחודשיים בעץ אלון",
+      "barrelMonths_other": "כ-{{count}} חודשים בעץ אלון",
+      "barrelBasisSource": "מקור: {{source}}",
+      "barrelBasisGeneral": "מקור: הנוהג המקובל ליין ולאזור הזה, לא אומת לבקבוק הזה.",
+      "estimateBasis": "הערכה של Sommi, על סמך פרטי התווית וידע כללי על יין",
+      "decanting": {
+        "none": "ללא דקנטציה",
+        "optional": "דקנטציה אופציונלית",
+        "recommended": "מומלץ לבצע דקנטציה"
+      },
+      "servingSource": "מקור",
+      "minutesUnit": "דק׳"
     },
     "eyebrow": "האוסף שלכם",
-    "emptyEyebrow": "התחלה חדשה"
+    "emptyEyebrow": "התחלה חדשה",
+    "bottleCount_two": "{{count}} בקבוקים",
+    "filteredCount_one": "{{count}} מתוך {{total}} בקבוקים",
+    "filteredCount_two": "{{count}} מתוך {{total}} בקבוקים",
+    "filteredCount_other": "{{count}} מתוך {{total}} בקבוקים",
+    "allBottlesLoaded_one": "הבקבוק שלכם נטען",
+    "allBottlesLoaded_two": "שני הבקבוקים נטענו",
+    "allBottlesLoaded_other": "כל {{count}} הבקבוקים נטענו",
+    "readiness": {
+      "ready": "מוכן לשתייה",
+      "peak": "בשיאו",
+      "aging": "להמשיך ליישן",
+      "drinkSoon": "לשתות בקרוב",
+      "nearingPeak": "מתקרב לשיא",
+      "pastPeak": "עבר את שיאו"
+    },
+    "overview": {
+      "title": "הערב וחלונות השתייה"
+    },
+    "imageUnavailable": "התמונה לא זמינה",
+    "inCellar": "במרתף",
+    "markAsOpened": "פתיחת היין",
+    "markedAsOpened": "הבקבוק סומן כנפתח"
   },
   "wineDetails": {
     "country": "מדינה",
@@ -568,7 +631,8 @@
     "analysis": {
       "generateInHebrew": "הצג ניתוח בעברית",
       "generateInEnglish": "צור ניתוח באנגלית"
-    }
+    },
+    "drinkWindowRange": "חלון שתייה ⁦{{start}}–{{end}}⁩"
   },
   "kosher": {
     "sectionHeading": "כשרות",
@@ -592,9 +656,9 @@
     "addTitle": "הוסף בקבוק",
     "editTitle": "ערוך בקבוק",
     "name": "שם",
-    "namePlaceholder": "למשל, שאטו מרגו",
+    "namePlaceholder": "למשל, Tignanello",
     "producer": "יצרן",
-    "producerPlaceholder": "למשל, שאטו מרגו",
+    "producerPlaceholder": "למשל, Marchesi Antinori",
     "vintage": "בציר",
     "vintagePlaceholder": "למשל, 2015",
     "style": "סגנון",
@@ -660,7 +724,32 @@
     },
     "color": "צבע",
     "wineName": "שם היין",
-    "wineNamePlaceholder": "לדוגמה: Grand Vin"
+    "wineNamePlaceholder": "לדוגמה: Grand Vin",
+    "vivinoFetchSuccess_one": "✅ נמשך מ-Vivino! דירוג: {{rating}}/5 ⭐ (דירוג אחד)",
+    "vivinoFetchSuccess_two": "✅ נמשך מ-Vivino! דירוג: {{rating}}/5 ⭐ (שני דירוגים)",
+    "vivinoFetchSuccess_other": "✅ נמשך מ-Vivino! דירוג: {{rating}}/5 ⭐ ({{count}} דירוגים)",
+    "vintageHint": "השאירו ריק ליינות ללא בציר (NV)",
+    "grapesHint": "הפרידו בין הזנים בפסיקים",
+    "vivinoRatingValue": "דירוג Vivino: {{rating}}/5.0",
+    "vivinoRatingSaved": "הדירוג יישמר עם היין",
+    "autoEnriching": "מחפשים פרטים ב-Vivino…",
+    "priceCurrency": "מחיר ב-{{currencySymbol}}",
+    "fillRequired": "נא למלא את שדות החובה",
+    "nameRequired": "חובה להזין את שם היין",
+    "quantityRequired": "הכמות חייבת להיות לפחות 1",
+    "photo": "תמונת היין",
+    "photoAdd": "הוספת תמונה",
+    "photoChange": "החלפת תמונה",
+    "photoHint": "צלמו תמונה או בחרו מהגלריה",
+    "photoRemove": "הסרה",
+    "photoUploading": "מעלים…",
+    "colors": {
+      "red": "אדום",
+      "white": "לבן",
+      "rose": "רוזה",
+      "sparkling": "מבעבע"
+    },
+    "photoAlt": "תמונת היין"
   },
   "recommendation": {
     "title": "מה לפתוח הערב?",
@@ -709,7 +798,44 @@
       "maxPrice": "מחיר מקסימלי ({{currencyCode}}, אופציונלי)",
       "maxPricePlaceholder": "למשל, {{currencySymbol}}100",
       "getRecommendations": "קבל המלצות",
-      "finding": "מחפש המלצות..."
+      "finding": "מחפש המלצות...",
+      "mealDetail": "רוצים לפרט?",
+      "mealDetailOptional": "לא חובה — עוזר לסומי להתאים למנה",
+      "mealDetailSkip": "דלגו",
+      "mealDetails": {
+        "pasta": {
+          "tomato": "רוטב עגבניות",
+          "creamy": "רוטב שמנת",
+          "pesto": "פסטו",
+          "meat_ragu": "ראגו בשר",
+          "seafood": "פירות ים"
+        },
+        "pizza": {
+          "margherita": "מרגריטה",
+          "meat": "תוספות בשר",
+          "white": "פיצה לבנה"
+        },
+        "steak": {
+          "grilled": "על הגריל",
+          "peppercorn": "רוטב פלפל",
+          "lean": "נתח רזה"
+        },
+        "fish": {
+          "white_fish": "דג לבן",
+          "salmon": "סלמון",
+          "shellfish": "פירות ים",
+          "raw": "סושי / נא"
+        },
+        "cheese": {
+          "fresh": "טריות ורכות",
+          "aged": "מיושנות וקשות",
+          "blue": "גבינה כחולה"
+        },
+        "spicy_asian": {
+          "mild": "חריפות בינונית",
+          "fiery": "חריף מאוד"
+        }
+      }
     },
     "results": {
       "title": "המלצות להערב",
@@ -728,7 +854,11 @@
       "inCellar": "במרתף",
       "noResults": "לא נמצאו בקבוקים מתאימים. נסה לשנות את ההעדפות שלך.",
       "keepExcluded": "{{count}} בקבוק/ים מסומנים 'לשמור' לא נכללו בהמלצות.",
-      "includeKeep": "כלול בקבוקים שמורים"
+      "includeKeep": "כלול בקבוקים שמורים",
+      "keepExcluded_one": "בקבוק אחד שסומן 'לשמור' לא נכלל בהמלצות.",
+      "keepExcluded_two": "שני בקבוקים שסומנו 'לשמור' לא נכללו בהמלצות.",
+      "keepExcluded_other": "{{count}} בקבוקים שסומנו 'לשמור' לא נכללו בהמלצות.",
+      "noWineTypeMatch": "לא נמצאו במרתף יינות {{wineType}}. הוסיפו כאלה או בחרו סוג אחר."
     },
     "emptyCellar": {
       "title": "המרתף שלך ריק",
@@ -744,16 +874,11 @@
     },
     "checkingCellar": "בודק את המרתף שלך...",
     "generated": {
-      "explainTop": "יין {{color}} מ{{origin}} הוא בחירה מצוינת ל{{meal}}.",
-      "explainOther": "אפשרות {{color}} נהדרת מ{{origin}} שמשתלבת היטב עם {{meal}}.",
-      "readinessReady": "הסומלייה מאשר שהיין מוכן לשתייה הערב.",
-      "readinessPeakSoon": "הוא מתקרב לשיאו — זמן מצוין לפתוח אותו.",
-      "readinessHold": "הערה: הסומלייה ממליץ שהיין עדיין ירוויח מיישון נוסף, אבל הוא ההתאמה הטובה ביותר במרתף שלך להערב.",
-      "readinessPeak": "הוא בשיא מצב השתייה שלו עכשיו!",
-      "readinessInWindow": "הוא מוכן לשתייה ויתבטא יפה.",
-      "occasionCelebration": "מושלם לאירוע מיוחד.",
-      "occasionDate": "נהדר לערב רומנטי.",
-      "occasionFriends": "האורחים שלך יאהבו את זה.",
+      "readinessReady": "לפי הניתוח הוא מוכן לשתייה עכשיו.",
+      "readinessPeakSoon": "הוא מתקרב לשיא — טעים כבר עכשיו, ועוד ישתבח.",
+      "readinessHold": "לפי הניתוח היין עוד ירוויח מהתיישנות — פתחו אותו רק אם לא אכפת לכם לשתות אותו צעיר.",
+      "readinessPeak": "הוא בשיאו עכשיו.",
+      "readinessInWindow": "הוא מוכן לשתייה.",
       "serveAt": "הגש ב-{{temp}}.",
       "decantFor": "דקנט ל-{{minutes}} דקות",
       "decantForBest": "דקנט ל-30 דקות לתוצאה מיטבית",
@@ -764,12 +889,65 @@
       "affinityFreshElegant": "מתאים לטעם שלך: רענן ואלגנטי",
       "affinityRichOaky": "מתאים לטעם שלך: עשיר ואלוני",
       "affinityDryBalanced": "מתאים לטעם שלך: יבש ומאוזן",
-      "affinityGreatMatch": "התאמה מצוינת לחיך שלך"
+      "affinityGreatMatch": "התאמה מצוינת לחיך שלך",
+      "affinityExplicitDislike": "שימו לב: אמרתם לסומי שאתם נמנעים מ{{term}}",
+      "affinityTouchOfSweetness": "מתאים לאהבה שלכם למתיקות עדינה",
+      "affinitySweeterThanUsual": {
+        "off_dry": "שימו לב: חצי־יבש — מעט מתוק יותר מהיינות היבשים שאתם בדרך כלל בוחרים",
+        "medium_sweet": "שימו לב: חצי־מתוק — מתוק יותר מהיינות היבשים שאתם בדרך כלל בוחרים",
+        "sweet": "שימו לב: יין מתוק — רחוק מהיינות היבשים שאתם בדרך כלל בוחרים"
+      }
     },
     "eyebrow": "הערב עם Sommi",
     "noResults": {
       "message": "לא מצאנו יינות שמתאימים להעדפות הנוכחיות שלך.",
-      "title": "לא נמצאו התאמות"
+      "title": "לא נמצאו התאמות",
+      "suggestion": "נסו לשנות את הסינון או להוסיף עוד יינות למרתף.",
+      "noTypeTitle": "אין יינות {{wineType}}",
+      "noTypeMessage": "לא מצאנו במרתף שלך יינות {{wineType}} שמתאימים להעדפות שלך.",
+      "noTypeSuggestion": "נסו לבחור ״מעורב״ או להוסיף עוד יינות למרתף.",
+      "tryMixed": "לנסות יינות מעורבים",
+      "adjustFilters": "שינוי הסינון"
+    },
+    "grounded": {
+      "identityGrapeOrigin": "{{grape}} מ{{origin}}.",
+      "identityGrape": "עשוי מ{{grape}}.",
+      "identityOrigin": "מ{{origin}}.",
+      "pairing": {
+        "spiceSweet": "המתיקות העדינה שלו מרגיעה את החריפות.",
+        "blueCheeseSweet": "המתיקות שלו מאזנת את המליחות של הגבינה הכחולה.",
+        "tomatoAcidity": "חומציות רעננה שעומדת מול העגבניות.",
+        "tomatoLowAcidity": "פשרה: החומציות שלו נמוכה יחסית לעגבניות.",
+        "meatTanninBody": "גוף מלא וטאנינים מוצקים שעומדים מול בשר עשיר.",
+        "meatTooLight": "פשרה: הוא קליל יחסית לבשר עשיר.",
+        "fishFresh": "קליל ורענן, כך שלא יכסה על הדג.",
+        "fishTannin": "פשרה: הטאנינים עלולים לתת טעם מתכתי עם דג.",
+        "creamyBodyAcid": "מספיק גוף לרוטב השמנת, עם חומציות שמשאירה אותו חי.",
+        "herbFresh": "חומציות רעננה שמתאימה לטעמים ירוקים ועשבוניים.",
+        "smokeOak": "האלון שבו מהדהד את הצריבה מהגריל.",
+        "spiceSoftTannin": "טאנינים רכים שלא יגבירו את החריפות.",
+        "spiceTannin": "פשרה: טאנינים מוצקים עלולים להגביר את תחושת החריפות.",
+        "richAcid": "החומציות שלו חותכת את העושר."
+      },
+      "colorFits": "{{color}} הוא הכיוון הקלאסי ל{{meal}}.",
+      "colorStretch": "{{color}} הוא לא הבחירה הקלאסית ל{{meal}}, אבל הוא דורג הכי גבוה מבין הבקבוקים שלכם.",
+      "occasionBubbles": "בועות מתאימות לחגיגה.",
+      "occasionShare_one": "יש לכם בקבוק אחד ממנו.",
+      "occasionShare_two": "יש לכם שני בקבוקים ממנו, כך שיש מספיק לחלוק.",
+      "occasionShare_other": "יש לכם {{count}} בקבוקים ממנו, כך שיש מספיק לחלוק.",
+      "diff": {
+        "lighter": "בהשוואה לאפשרות הראשונה: קליל יותר בגוף.",
+        "fuller": "בהשוואה לאפשרות הראשונה: מלא ועשיר יותר.",
+        "otherColor": "בהשוואה לאפשרות הראשונה: צבע אחר ({{color}}).",
+        "readyNow": "בהשוואה לאפשרות הראשונה: היין הזה מוכן לשתייה עכשיו.",
+        "needsTime": "בהשוואה לאפשרות הראשונה: היין הזה ירוויח מעוד זמן.",
+        "sweeter": "בהשוואה לאפשרות הראשונה: מתוק יותר באופן מורגש.",
+        "drier": "בהשוואה לאפשרות הראשונה: יבש יותר.",
+        "older": "בהשוואה לאפשרות הראשונה: בציר ותיק יותר ({{vintage}}).",
+        "younger": "בהשוואה לאפשרות הראשונה: בציר צעיר יותר ({{vintage}}).",
+        "closeAlternative": "חלופה קרובה לאפשרות הראשונה."
+      },
+      "limitedData": "לסומי עדיין אין נתוני טעימה על הבקבוק הזה, אז הבחירה מבוססת על הבסיס: צבע, אזור ומוכנות."
     }
   },
   "history": {
@@ -799,7 +977,11 @@
       "favoriteStyle": "סגנון מועדף",
       "bottlesOpened": "{{count}} בקבוקים נפתחו",
       "favoriteRegion": "אזור מועדף",
-      "topRegions": "אזורים מובילים"
+      "topRegions": "אזורים מובילים",
+      "bottlesOpened_one": "בקבוק אחד נפתח",
+      "bottlesOpened_two": "שני בקבוקים נפתחו",
+      "bottlesOpened_other": "{{count}} בקבוקים נפתחו",
+      "summary": "סיכום הפתיחות שלך"
     },
     "openingHistory": "היסטוריית פתיחות",
     "empty": {
@@ -818,7 +1000,9 @@
       "eyebrow": "משהו השתבש",
       "notesFailed": "שמירת ההערות נכשלה"
     },
-    "eyebrow": "הסיפור שלכם ביין"
+    "eyebrow": "הסיפור שלכם ביין",
+    "editRating": "עריכת הדירוג",
+    "rateWine": "דרגו את היין"
   },
   "csvImport": {
     "title": "ייבוא מ-CSV",
@@ -884,8 +1068,14 @@
       "preparing": "מכין ייבוא...",
       "found": "נמצאו {{count}} בקבוקים לייבוא",
       "importing": "מייבא {{current}} מתוך {{total}}: {{wine}}",
-      "complete": "הייבוא הושלם! 🍷"
-    }
+      "complete": "הייבוא הושלם! 🍷",
+      "found_one": "נמצא בקבוק אחד לייבוא",
+      "found_two": "נמצאו שני בקבוקים לייבוא",
+      "found_other": "נמצאו {{count}} בקבוקים לייבוא"
+    },
+    "successVivino_one": "יובא בקבוק אחד מ-Vivino",
+    "successVivino_two": "יובאו שני בקבוקים מ-Vivino",
+    "successVivino_other": "יובאו {{count}} בקבוקים מ-Vivino"
   },
   "loading": {
     "importing": "מייבא את היינות שלך...",
@@ -1031,7 +1221,14 @@
     "termsAndConditions": "תנאי שימוש",
     "previous": "הקודם",
     "dismiss": "סגירה",
-    "moving": "מעביר..."
+    "moving": "מעביר...",
+    "starRating_one": "כוכב אחד",
+    "starRating_two": "שני כוכבים",
+    "starRating_other": "{{count}} כוכבים",
+    "ratingOutOf": "דירוג {{rating}} מתוך {{max}}",
+    "retry": "ניסיון נוסף",
+    "viewDetails": "לפרטים",
+    "gotIt": "הבנתי"
   },
   "wineImage": {
     "addTitle": "הוסף תמונת יין",
@@ -1055,7 +1252,17 @@
     "saveFailed": "נכשל בשמירת התמונה",
     "removeFailed": "נכשל בהסרת התמונה",
     "updateSuccess": "תמונת היין עודכנה!",
-    "removeSuccess": "תמונת היין הוסרה"
+    "removeSuccess": "תמונת היין הוסרה",
+    "changePhoto": "בחירת תמונה אחרת",
+    "pickPhoto": "צלמו או בחרו מהגלריה",
+    "pickPhotoHint": "JPG,‏ PNG או WEBP · עד 20MB",
+    "tabUpload": "העלאת תמונה",
+    "tabUrl": "הדבקת קישור",
+    "uploadFailed": "ההעלאה נכשלה. נסו שוב.",
+    "uploading": "מעלים…",
+    "selectedAlt": "התמונה שנבחרה",
+    "previewAlt": "תצוגה מקדימה של התמונה",
+    "labelPreviewAlt": "תצוגה מקדימה של תמונת התווית"
   },
   "labelArt": {
     "generate": "צור אמנות תווית",
@@ -1116,7 +1323,25 @@
     "buttonLabel": "נתח מרתף",
     "progressWithTotal": "עובד על {{processed}} מתוך {{total}} יינות",
     "progressWithoutTotal": "עובד על {{processed}} יינות",
-    "largeCollectionNote": "מרתפים גדולים לוקחים קצת יותר זמן…"
+    "largeCollectionNote": "מרתפים גדולים לוקחים קצת יותר זמן…",
+    "missingOnlyDesc_one": "ניתוח רק לבקבוקים ללא הערות סומליה (בקבוק אחד)",
+    "missingOnlyDesc_two": "ניתוח רק לבקבוקים ללא הערות סומליה (שני בקבוקים)",
+    "missingOnlyDesc_other": "ניתוח רק לבקבוקים ללא הערות סומליה ({{count}} בקבוקים)",
+    "done": {
+      "analyzed_one": "🎉 הניתוח הושלם! בקבוק אחד נותח",
+      "analyzed_two": "🎉 הניתוח הושלם! שני בקבוקים נותחו",
+      "analyzed_other": "🎉 הניתוח הושלם! {{count}} בקבוקים נותחו",
+      "skipped_one": ", אחד דולג",
+      "skipped_two": ", שניים דולגו",
+      "skipped_other": ", {{count}} דולגו",
+      "failed_one": ", אחד נכשל",
+      "failed_two": ", שניים נכשלו",
+      "failed_other": ", {{count}} נכשלו",
+      "allHadNotes_one": "✓ הניתוח הושלם! לבקבוק שלכם כבר יש הערות סומליה.",
+      "allHadNotes_two": "✓ הניתוח הושלם! לשני הבקבוקים כבר יש הערות סומליה.",
+      "allHadNotes_other": "✓ הניתוח הושלם! לכל {{count}} הבקבוקים כבר יש הערות סומליה.",
+      "fullyAnalyzed": "✓ הניתוח הושלם! כל המרתף שלכם מנותח."
+    }
   },
   "sommelierFab": {
     "mobileHint": "אני Sommi",
@@ -1162,8 +1387,6 @@
     "greetingMorning": "בוקר טוב",
     "greetingAfternoon": "צהריים טובים",
     "greetingEvening": "ערב טוב",
-    "greetingContent": "{{greeting}}! 🍷 סרקתי את המרתף שלך — {{count}} בקבוקים מוכנים לחוויה. ספר לי על הערב ואמצא לך התאמה מושלמת.",
-    "greetingContentTonight": "{{greeting}}! מחפשים את הבקבוק להערב? ספרו לי מה על השולחן, עם מי ומה מצב הרוח — ואמצא את המתאים במרתף שלכם ({{count}} בקבוקים מוכנים).",
     "quickStartHeader": "אפשר להתחיל כאן — או לתאר את הערב למטה",
     "inputPlaceholderFirst": "מה המיוחד הלילה?",
     "scenarios": {
@@ -1199,7 +1422,16 @@
     },
     "devOnly": "מצב פיתוח בלבד",
     "back": "חזרה",
-    "bottleCount": "{{count}} בקבוקים"
+    "bottleCount": "{{count}} בקבוקים",
+    "greetingContent_one": "{{greeting}}! 🍷 יש לכם בקבוק אחד במרתף. ספרו לי על הערב ואבדוק אם הוא מתאים.",
+    "greetingContent_two": "{{greeting}}! 🍷 יש לכם {{count}} בקבוקים במרתף. ספרו לי על הערב ואמצא את ההתאמה שלכם.",
+    "greetingContent_other": "{{greeting}}! 🍷 יש לכם {{count}} בקבוקים במרתף. ספרו לי על הערב ואמצא את ההתאמה שלכם.",
+    "greetingContentTonight_one": "{{greeting}}! מחפשים את הבקבוק להערב? ספרו לי מה על השולחן, עם מי ומה מצב הרוח — ואבדוק את הבקבוק שבמרתף שלכם.",
+    "greetingContentTonight_two": "{{greeting}}! מחפשים את הבקבוק להערב? ספרו לי מה על השולחן, עם מי ומה מצב הרוח — ואעבור על {{count}} הבקבוקים במרתף שלכם.",
+    "greetingContentTonight_other": "{{greeting}}! מחפשים את הבקבוק להערב? ספרו לי מה על השולחן, עם מי ומה מצב הרוח — ואעבור על {{count}} הבקבוקים במרתף שלכם.",
+    "bottleCount_one": "בקבוק אחד",
+    "bottleCount_two": "שני בקבוקים",
+    "bottleCount_other": "{{count}} בקבוקים"
   },
   "wishlist": {
     "title": "רשימת משאלות",
@@ -1244,6 +1476,13 @@
       "delete": "מחיקה",
       "resume": "המשך טיוטה",
       "deleted": "הטיוטה נמחקה"
+    },
+    "daysAgo_one": "אתמול",
+    "daysAgo_two": "שלשום",
+    "daysAgo_other": "לפני {{count}} ימים",
+    "card": {
+      "source": "טעמתי ב-{{place}}",
+      "moreActions": "פעולות נוספות עבור {{name}}"
     }
   },
   "wineEvents": {
@@ -1254,20 +1493,22 @@
     "upcoming": "בקרוב",
     "thisWeekPassed": "השבוע",
     "youHaveMatches": "יש לך בקבוק {{count}} תואם",
-    "youHaveMatches_plural": "יש לך {{count}} בקבוקים תואמים",
     "viewMatches": "הצג את הבקבוקים שלי",
     "learnMore": "למד עוד",
     "source": "מקור",
     "dismiss": "סגור",
-    "goToEvent": "מעבר לאירוע {{index}}"
+    "goToEvent": "מעבר לאירוע {{index}}",
+    "youHaveMatches_other": "יש לך {{count}} בקבוקים תואמים",
+    "youHaveMatches_one": "יש לך בקבוק {{count}} תואם",
+    "youHaveMatches_two": "יש לך {{count}} בקבוקים תואמים"
   },
   "planEvening": {
-    "title": "תכנן ערב",
+    "title": "תכננו ערב",
     "subtitle": "צור את רצף היינות המושלם שלך",
-    "button": "תכנן ערב",
-    "resumeButton": "חזור לערב",
+    "button": "תכננו ערב",
+    "resumeButton": "חזרה לערב",
     "input": {
-      "title": "צור את רצף היינות המושלם שלך",
+      "title": "ספרו ל-Sommi על הערב",
       "occasion": "אירוע",
       "occasions": {
         "friends": "חברים",
@@ -1276,12 +1517,12 @@
         "date": "דייט",
         "celebration": "חגיגה"
       },
-      "groupSize": "גודל קבוצה",
+      "groupSize": "גודל הקבוצה",
       "preferences": "העדפות",
       "redsOnly": "אדומים בלבד",
       "highRatingOnly": "דירוג ≥ 4.2",
       "food": "מה אתם אוכלים? (אופציונלי)",
-      "protein": "חלבון",
+      "protein": "מנה",
       "proteins": {
         "beef": "בשר בקר",
         "lamb": "כבש",
@@ -1298,39 +1539,64 @@
         "none": "ללא רוטב"
       },
       "spice": "חריפות",
-      "smoke": "עישון",
-      "startTime": "זמן התחלה",
+      "smoke": "טעם מעושן",
+      "startTime": "שעת התחלה",
       "startTimes": {
         "now": "עכשיו",
         "1hour": "בעוד שעה",
         "2hours": "בעוד שעתיים"
       },
-      "generate": "צור רצף ✨"
+      "generate": "בנו רצף",
+      "generating": "בונים את הרצף…",
+      "groupSizes": {
+        "2-4": "⁦2–4⁩ אנשים",
+        "5-8": "⁦5–8⁩ אנשים",
+        "9+": "⁦9+⁩ אנשים"
+      },
+      "winesCount_one": "יין אחד",
+      "winesCount_two": "שני יינות",
+      "winesCount_other": "{{count}} יינות",
+      "vivinoOnly": "רק ⁦Vivino {{rating}}+⁩",
+      "vivinoHint": "רק בקבוקים עם דירוג {{rating}} ומעלה ב-Vivino",
+      "foodLegend": "אוכל (לא חובה)",
+      "foodHintOff": "לא נבחר אוכל — הרצף נבחר בלי התאמה למנה.",
+      "foodHintOn": "הרצף יעדיף יינות שמתאימים למנה.",
+      "spiceLevels": {
+        "low": "עדין",
+        "med": "בינוני",
+        "high": "חריף"
+      },
+      "smokeLevels": {
+        "low": "קל",
+        "med": "בינוני",
+        "high": "חזק"
+      }
     },
     "lineup": {
-      "title": "סקור והתאם את הבחירה שלך",
+      "title": "עברו על הרצף והחליפו מה שתרצו",
       "winesSelected": "יינות נבחרו",
       "orderOptimized": "סדר הגשה אופטימלי",
-      "swapWine": "החלף יין",
+      "swapWine": "החלפה",
       "chooseAlternative": "בחר אלטרנטיבה עבור",
       "noAlternatives": "אין יינות אלטרנטיביים זמינים",
       "noAlternativesDesc": "כל היינות המתאימים כבר בשימוש",
       "servingNote": "הערת הגשה",
-      "back": "חזור",
-      "startEvening": "התחל ערב"
+      "back": "חזרה",
+      "startEvening": "התחילו את הערב",
+      "starting": "מתחילים את הערב…",
+      "startNote": "התחלת הערב שומרת את הרצף הזה כערב שלכם ומחליפה ערב שכבר פעיל. אף בקבוק לא יסומן כנפתח עד שתסיימו את הערב ותאשרו מה נפתח."
     },
     "queue": {
       "title": "הערב שלך",
       "nowPouring": "נוגס עכשיו",
-      "servingNotes": "הערות הגשה:",
-      "note1": "פתח עכשיו ותן לנשום 10-15 דקות",
-      "note2": "הגש בטמפרטורת החדר (16-18°C)",
-      "note3": "שקול דיקנטציה למשך 30 דקות",
+      "servingNotes": "הערות הגשה",
       "queue": "תור",
       "previous": "קודם",
       "next": "הבא",
       "wrapUp": "סיים ערב 🎉",
-      "of": "מתוך"
+      "of": "מתוך",
+      "decantFor": "דקנטציה למשך ⁦{{time}}⁩",
+      "serveTemp": "להגיש ב-⁦{{temp}}⁩"
     },
     "wrapUp": {
       "title": "סיים את הערב",
@@ -1347,7 +1613,91 @@
     },
     "swap": {
       "title": "החלף יין",
-      "chooseAlternative": "בחר אלטרנטיבה עבור"
+      "chooseAlternative": "בחר אלטרנטיבה עבור",
+      "titleFor": "החלפת יין {{position}} · {{stage}}",
+      "subtitle": "בחרו יין שיחליף אותו. מוצגים רק בקבוקים שמתאימים לתכנון.",
+      "current": "נבחר כרגע",
+      "alternatives": "חלופות",
+      "error": "לא הצלחנו לטעון חלופות.",
+      "emptyTitle": "אין בקבוקים נוספים שמתאימים לתכנון",
+      "emptyFilters": "כל הבקבוקים המתאימים כבר ברצף. ביטול „אדומים בלבד” או סינון Vivino בתכנון עשוי להוסיף אפשרויות.",
+      "emptyNoFilters": "כל הבקבוקים שבמלאי ושאינם שמורים כבר ברצף.",
+      "inStock_one": "בקבוק אחד במלאי",
+      "inStock_two": "שני בקבוקים במלאי",
+      "inStock_other": "{{count}} בקבוקים במלאי",
+      "choose": "בחירת היין הזה",
+      "chooseAria": "בחירת {{name}} ליין {{position}}",
+      "keepCurrent": "השארת היין הנוכחי",
+      "announced": "יין {{position}} הוא עכשיו {{name}}."
+    },
+    "planShort": "תכנון",
+    "resumeShort": "המשך",
+    "steps": {
+      "label": "שלבים",
+      "plan": "1. תכנון",
+      "review": "2. סקירה"
+    },
+    "errors": {
+      "noEligible": "אין בקבוקים שמתאימים לבחירות האלה. נסו לבטל את „אדומים בלבד” או את סינון Vivino.",
+      "generateFailed": "לא הצלחנו לבנות רצף. הבחירות שלכם נשמרו — נסו שוב.",
+      "startFailed": "לא הצלחנו להתחיל את הערב. הרצף שלכם עדיין כאן — נסו שוב."
+    },
+    "review": {
+      "yourChoices": "הבחירות שלכם",
+      "editChoices": "עריכה",
+      "spiceSummary": {
+        "low": "עדין",
+        "med": "חריפות בינונית",
+        "high": "חריף"
+      },
+      "smokeSummary": {
+        "low": "עישון קל",
+        "med": "עישון בינוני",
+        "high": "מעושן"
+      },
+      "startSummary": {
+        "now": "מתחילים עכשיו",
+        "1hour": "מתחילים בעוד שעה",
+        "2hours": "מתחילים בעוד שעתיים"
+      },
+      "heading_one": "הרצף שלכם: יין אחד",
+      "heading_two": "הרצף שלכם: שני יינות",
+      "heading_other": "הרצף שלכם: {{count}} יינות",
+      "fewerThanRequested_one": "רק יין אחד מתאים לבחירות שלכם, ולכן הרצף קצר מ-{{requested}} היינות המומלצים לקבוצה.",
+      "fewerThanRequested_two": "רק שני יינות מתאימים לבחירות שלכם, ולכן הרצף קצר מ-{{requested}} היינות המומלצים לקבוצה.",
+      "fewerThanRequested_other": "רק {{count}} יינות מתאימים לבחירות שלכם, ולכן הרצף קצר מ-{{requested}} היינות המומלצים לקבוצה.",
+      "orderExplained": "נמזגים מהקל אל המלא, לפי העוצמה המשוערת של כל יין.",
+      "singleWine": "יין אחד לערב.",
+      "orderBroken": "אחרי ההחלפה, הסדר כבר לא מהקל אל המלא.",
+      "reorder": "סדרו מחדש מהקל אל המלא",
+      "reordered": "הרצף סודר מחדש מהקל אל המלא.",
+      "stage": "{{position}} · {{stage}}",
+      "stages": {
+        "opener": "יין פתיחה",
+        "middle": "המזיגה הבאה",
+        "main": "היין המרכזי",
+        "only": "היין שלכם"
+      },
+      "stageReason": {
+        "lighterStart": "קל יותר מהיינות שאחריו, כדי שלא יתגמד לידם.",
+        "fullestLast": "המלא ביותר ברצף, ולכן נשמר לסוף.",
+        "bridge": "מגשר בין היינות הקלים למלאים."
+      },
+      "readiness": {
+        "ready": "מוכן לשתייה עכשיו.",
+        "peakSoon": "מתקרב לשיא."
+      },
+      "readinessBadge": {
+        "READY": "מוכן לשתייה",
+        "PEAK_SOON": "מתקרב לשיא",
+        "HOLD": "עדיף לשמור עוד"
+      },
+      "vivinoRating": "{{rating}} ב-Vivino",
+      "serveAt": "להגיש ב-",
+      "decantRange": "דקנטציה ⁦{{min}}–{{max}}⁩ דק׳",
+      "decantMin": "דקנטציה {{min}} דק׳",
+      "swapAria": "החלפת {{name}}",
+      "cautionLabel": "שימו לב:"
     }
   },
   "onboarding": {
@@ -1495,8 +1845,12 @@
       "dry": "יבש",
       "offDry": "מעט מתוק",
       "reset": "איפוס",
-      "save": "שמור העדפות"
-    }
+      "save": "שמור העדפות",
+      "saving": "שומרים…"
+    },
+    "dataPoints_one": "מבוסס על יין מדורג אחד",
+    "dataPoints_two": "מבוסס על שני יינות מדורגים",
+    "dataPoints_other": "מבוסס על {{count}} יינות מדורגים"
   },
   "sommiMemory": {
     "title": "מה Sommi זוכר עליי",
@@ -1531,7 +1885,13 @@
     "replaceConfirm": "עדכן",
     "updateSuccess": "ההעדפה עודכנה",
     "updateFailed": "לא הצלחתי לעדכן את ההעדפה",
-    "updating": "מעדכן…"
+    "updating": "מעדכן…",
+    "removeWineTitle": "להסיר את זיכרון היין?",
+    "removeWineMessage": "להסיר את „{{label}}” מהיינות ש-Sommi זוכר?",
+    "winesPartialLoad": "מוצגות העדפות הזן, האזור והגוף השמורות. לא הצלחנו לטעון זיכרונות של יינות מסוימים — נסו שוב כדי לרענן.",
+    "retryLoad": "ניסיון נוסף",
+    "sectionWinesLiked": "יינות שאהבתי",
+    "sectionWinesDisliked": "יינות שלא אהבתי"
   },
   "openRitual": {
     "ariaLabel": "טקס פתיחת בקבוק",
@@ -1559,7 +1919,9 @@
         "noDecant": "אין צורך בדקנטציה",
         "heavyRed": "דקנט להרכיך טאנינים ולפתוח ארומות",
         "mediumRed": "דקנטציה קצרה תחשוף את מורכבות היין",
-        "lightRed": "מוכן ליהנות מיידית"
+        "lightRed": "מוכן ליהנות מיידית",
+        "optional": "דקנטציה קצרה יכולה לעזור (אופציונלי)",
+        "recommended": "דקנטציה של ⁦{{min}}–{{max}}⁩ דק׳ לפתיחת הארומות"
       }
     },
     "step3": {
@@ -1629,7 +1991,15 @@
       "noVotesYet": "אין הצבעות עדיין",
       "shareToCollect": "שתף את הקישור והאורחים יוכלו להתחיל להצביע",
       "totalVotes": "{{count}} הצבעה",
-      "mostLoved": "הכי אהוב:"
+      "mostLoved": "הכי אהוב:",
+      "totalVotes_one": "הצבעה אחת",
+      "totalVotes_two": "שתי הצבעות",
+      "totalVotes_other": "{{count}} הצבעות",
+      "guestVotes_one": "הצבעת אורח אחת",
+      "guestVotes_two": "שתי הצבעות אורחים",
+      "guestVotes_other": "{{count}} הצבעות אורחים",
+      "loadingVotes": "טוען הצבעות אורחים…",
+      "waitingForVotes": "קישור האורחים פעיל · ממתינים להצבעות"
     },
     "wrapUp": {
       "guestFavorites": "האהובים על האורחים של הערב"
@@ -1684,10 +2054,14 @@
       "perYear": "/ שנה",
       "alwaysFree": "תמיד בחינם",
       "creditsRemaining": "נותר {{count}} קרדיט",
-      "creditsRemaining_plural": "נותרו {{count}} קרדיטים",
       "creditsRemainingOf": "נותר {{count}} קרדיט מתוך {{limit}}",
-      "creditsRemainingOf_plural": "נותרו {{count}} קרדיטים מתוך {{limit}}",
-      "perMonthBilled": "{{price}}$ / חודש"
+      "perMonthBilled": "{{price}}$ / חודש",
+      "creditsRemaining_other": "נותרו {{count}} קרדיטים",
+      "creditsRemaining_one": "נותר {{count}} קרדיט",
+      "creditsRemaining_two": "נותרו {{count}} קרדיטים",
+      "creditsRemainingOf_other": "נותרו {{count}} קרדיטים מתוך {{limit}}",
+      "creditsRemainingOf_one": "נותר {{count}} קרדיט מתוך {{limit}}",
+      "creditsRemainingOf_two": "נותרו {{count}} קרדיטים מתוך {{limit}}"
     },
     "billing": {
       "monthly": "חודשי",
@@ -1738,11 +2112,13 @@
       "low": "הקרדיטים אוזלים — שקלו שדרוג לתובנות מעמיקות יותר",
       "resetsMonthly": "הקרדיטים מתאפסים כל חודש",
       "actionCost": "פעולה זו משתמשת ב-{{count}} קרדיט",
-      "actionCost_plural": "פעולה זו משתמשת ב-{{count}} קרדיטים",
       "upgradeCta": "שדרגו לתובנות מרתף מעמיקות יותר וזמן נוסף עם Sommi",
       "ariaLabel_one": "נותר לך קרדיט Sommi אחד החודש",
       "ariaLabel_two": "נותרו לך {{count}} קרדיטי Sommi החודש",
-      "ariaLabel_other": "נותרו לך {{count}} קרדיטי Sommi החודש"
+      "ariaLabel_other": "נותרו לך {{count}} קרדיטי Sommi החודש",
+      "actionCost_other": "פעולה זו משתמשת ב-{{count}} קרדיטים",
+      "actionCost_one": "פעולה זו משתמשת ב-{{count}} קרדיט",
+      "actionCost_two": "פעולה זו משתמשת ב-{{count}} קרדיטים"
     },
     "planFeatures": {
       "free": [
@@ -1826,7 +2202,13 @@
     "activity": {
       "one": "פתחת יין אחד השבוע",
       "few": "פתחת {{count}} יינות השבוע",
-      "busy": "שבוע עמוס — {{count}} בקבוקים נפתחו"
+      "busy": "שבוע עמוס — {{count}} בקבוקים נפתחו",
+      "few_one": "פתחתם יין אחד השבוע",
+      "few_two": "פתחתם שני יינות השבוע",
+      "few_other": "פתחתם {{count}} יינות השבוע",
+      "busy_one": "שבוע עמוס — בקבוק אחד נפתח",
+      "busy_two": "שבוע עמוס — שני בקבוקים נפתחו",
+      "busy_other": "שבוע עמוס — {{count}} בקבוקים נפתחו"
     },
     "preferenceTrend": {
       "redOnly": "השבוע נטית ליינות אדומים",
@@ -1862,8 +2244,8 @@
   "insights": {
     "regionAffinity": "אתה נוטה לדרג יינות מ{{region}} בציונים גבוהים",
     "grapeAffinity": "אחד הזנים המועדפים שלך: {{grape}}",
-    "drinkWindowReady": "בשיאו — עיתוי מושלם לפתיחה",
-    "drinkWindowPeakSoon": "מתקרב לחלון השתייה — כדאי לפתוח בחודשים הקרובים",
+    "drinkWindowReady": "מוכן לשתייה — עיתוי טוב לפתוח אותו",
+    "drinkWindowPeakSoon": "מתקרב לשיא — טעים כבר עכשיו, ועוד ישתבח בחודשים הקרובים",
     "pastOpenings": "יין זה נפתח אצלך {{count}} פעמים בעבר",
     "colorBiasRed": "מתאים לאהבתך ליינות אדומים",
     "colorBiasWhite": "מתאים להעדפתך ליינות לבנים",
@@ -1881,7 +2263,11 @@
       "biodynamic": "חקלאות ביודינמית מתייחסת לכרם כמערכת אקולוגית חיה",
       "naturalWine": "יין טבעי מיוצר עם התערבות מינימלית",
       "organic": "ענבים אורגניים גדלים ללא חומרי הדברה סינתטיים"
-    }
+    },
+    "explicitDislike": "שימו לב: אמרתם לסומי שאתם נמנעים מ{{term}}",
+    "pastOpenings_one": "פתחתם את היין הזה פעם אחת בעבר",
+    "pastOpenings_two": "פתחתם את היין הזה פעמיים בעבר",
+    "pastOpenings_other": "פתחתם את היין הזה {{count}} פעמים בעבר"
   },
   "sharedCellar": {
     "loading": "טוענים מרתף משותף…",
@@ -1943,5 +2329,49 @@
   "agent": {
     "startRecording": "התחלת הקלטה",
     "stopRecording": "עצירת הקלטה"
+  },
+  "form": {
+    "required": "שדה חובה",
+    "purchaseDate": "תאריך רכישה",
+    "purchasePrice": "מחיר רכישה",
+    "region": "אזור",
+    "storageLocation": "מיקום"
+  },
+  "bottle": {
+    "viewImage": "הצגת התמונה המקורית"
+  },
+  "duplicate": {
+    "createSeparate": "יצירת רשומה נפרדת",
+    "howMany": "כמה בקבוקים להוסיף?",
+    "newTotal_one": "סה״כ חדש: בקבוק אחד",
+    "newTotal_two": "סה״כ חדש: שני בקבוקים",
+    "newTotal_other": "סה״כ חדש: {{count}} בקבוקים",
+    "subtitle": "היין הזה כבר נמצא באוסף שלך",
+    "title": "כבר במרתף שלך",
+    "addBottles_one": "הוספת בקבוק אחד",
+    "addBottles_two": "הוספת שני בקבוקים",
+    "addBottles_other": "הוספת {{count}} בקבוקים"
+  },
+  "receipt": {
+    "addToCellar_one": "הוספת יין אחד למרתף",
+    "addToCellar_two": "הוספת שני יינות למרתף",
+    "addToCellar_other": "הוספת {{count}} יינות למרתף",
+    "adding": "מוסיפים…",
+    "detected_one": "זוהה יין אחד",
+    "detected_two": "זוהו שני יינות",
+    "detected_other": "זוהו {{count}} יינות",
+    "noItems": "לא נותרו פריטים",
+    "quantity": "כמות",
+    "review": "סקירת הקבלה",
+    "total": "סה״כ",
+    "totalPrice": "מחיר כולל",
+    "unknownWine": "יין לא מזוהה"
+  },
+  "camera": {
+    "loading": "מפעילים את המצלמה…",
+    "error": "שגיאת מצלמה",
+    "capture": "צילום",
+    "flip": "החלפת מצלמה",
+    "hint": "מקמו את תווית היין בתוך המסגרת"
   }
 }

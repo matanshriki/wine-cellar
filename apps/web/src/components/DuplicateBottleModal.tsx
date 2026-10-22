@@ -148,7 +148,7 @@ export function DuplicateBottleModal({
                     border: '1px solid var(--border-subtle)',
                   }}
                 >
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-600)' }}>
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--accent-text)' }}>
                     <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
                   </svg>
                 </div>
@@ -176,7 +176,7 @@ export function DuplicateBottleModal({
                       className="text-xs px-2 py-0.5 rounded"
                       style={{
                         background: 'var(--wine-50)',
-                        color: 'var(--wine-700)',
+                        color: 'var(--accent-text)',
                       }}
                     >
                       {existingWine.vintage}
@@ -203,14 +203,14 @@ export function DuplicateBottleModal({
 
             {/* Stepper */}
             <div>
-              <label 
+              <p id="dup-label-1" 
                 className="block text-sm font-medium mb-3"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('duplicate.howMany', 'How many bottles to add?')}
-              </label>
+              </p>
               
-              <div className="flex items-center gap-4">
+              <div role="group" aria-labelledby="dup-label-1" className="flex items-center gap-4">
                 {/* Decrement Button */}
                 <button
                   aria-label={t('common.decrease')}
@@ -235,7 +235,7 @@ export function DuplicateBottleModal({
                   style={{
                     background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
                     border: '2px solid var(--wine-200)',
-                    color: 'var(--wine-700)',
+                    color: 'var(--accent-text)',
                     fontFamily: 'var(--font-display)',
                   }}
                 >
@@ -278,9 +278,8 @@ export function DuplicateBottleModal({
               className="btn-luxury-primary w-full"
               style={{ minHeight: '52px' }}
             >
-              {t('duplicate.addBottles', 'Add {{count}} {{bottles}}', { 
+              {t('duplicate.addBottles', {
                 count: quantityToAdd,
-                bottles: quantityToAdd === 1 ? 'bottle' : 'bottles'
               })}
             </button>
 

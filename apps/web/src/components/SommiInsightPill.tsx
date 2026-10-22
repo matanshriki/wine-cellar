@@ -25,30 +25,29 @@ export function SommiInsightPill({
 }: SommiInsightPillProps) {
   if (!insight) return null;
 
+  const caution = insight.type === 'taste_caution';
   const pill = (
     <span
       className={className}
       style={{
         display: 'inline-flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: '6px',
         padding: '5px 12px',
-        borderRadius: '999px',
+        borderRadius: '14px',
         fontSize: '13px',
         fontWeight: 500,
         lineHeight: 1.4,
-        background: 'linear-gradient(135deg, var(--wine-50, #fdf2f8), var(--wine-100, #fce7f3))',
-        color: 'var(--wine-700, #be185d)',
-        border: '1px solid var(--wine-200, #fbcfe8)',
-        whiteSpace: 'nowrap' as const,
+        background: caution
+          ? 'var(--bg-muted)'
+          : 'linear-gradient(135deg, var(--wine-50, #fdf2f8), var(--wine-100, #fce7f3))',
+        color: caution ? 'var(--text-primary)' : 'var(--accent-text)',
+        border: `1px solid ${caution ? 'var(--border-medium)' : 'var(--wine-200, #fbcfe8)'}`,
         maxWidth: '100%',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
       }}
-      title={insight.text}
     >
       <span aria-hidden style={{ flexShrink: 0 }}>{insight.icon}</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{insight.text}</span>
+      <span>{insight.text}</span>
     </span>
   );
 

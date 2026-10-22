@@ -291,7 +291,7 @@ export function AddWineImageDialog({
                         >
                           <img
                             src={uploadPreview}
-                            alt="Selected"
+                            alt={t('wineImage.selectedAlt')}
                             className="max-w-full h-auto object-contain rounded-xl"
                             style={{ maxHeight: '260px' }}
                           />
@@ -388,10 +388,11 @@ export function AddWineImageDialog({
 
                     {/* URL Input */}
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                      <label htmlFor="wine-image-1" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                         {t('wineImage.imageUrl', 'Image URL')}
                       </label>
                       <input
+                        id="wine-image-1"
                         type="url"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
@@ -431,7 +432,7 @@ export function AddWineImageDialog({
                         <div className="flex items-center justify-center" style={{ maxHeight: '200px', overflow: 'hidden' }}>
                           <img
                             src={previewUrl}
-                            alt="Preview"
+                            alt={t('wineImage.previewAlt')}
                             className="max-w-full h-auto mx-auto object-contain rounded"
                             style={{ maxHeight: '200px' }}
                             onError={() => {

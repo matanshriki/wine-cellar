@@ -225,9 +225,9 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <p className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                 {t('profile.avatar.title')}
-              </label>
+              </p>
               <AvatarUpload
                 currentAvatarUrl={formData.avatar_url}
                 onUploadSuccess={(newUrl) => setFormData({ ...formData, avatar_url: newUrl })}

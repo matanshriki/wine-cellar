@@ -57,10 +57,10 @@ function BannerRow({
 
         {/* Text */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: 'var(--gold-700, #92660a)' }}>
+          <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-eyebrow)' }}>
             {daysLabel}
             {bottle.reserved_for && (
-              <span className="font-normal" style={{ color: 'var(--gold-600, #a37700)' }}>
+              <span className="font-normal" style={{ color: 'var(--text-eyebrow)' }}>
                 {' · '}{bottle.reserved_for}
               </span>
             )}
@@ -79,7 +79,7 @@ function BannerRow({
           }}
           className="flex-shrink-0 p-1.5 rounded-full transition-colors duration-150"
           style={{
-            color: 'var(--gold-600, #a37700)',
+            color: 'var(--text-eyebrow)',
             WebkitTapHighlightColor: 'transparent',
           }}
           aria-label={t('common.dismiss', 'Dismiss')}

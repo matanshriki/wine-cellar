@@ -96,6 +96,10 @@ function filterDescription(constraints: ExtractedConstraints, language?: string)
   return bits.join(he ? ' ' : ' ');
 }
 
+function heCount(n: number, one: string, many: string): string {
+  return n === 1 ? one : `${n} ${many}`;
+}
+
 export function buildInventoryMessage(params: {
   meta: CellarAccessMeta;
   constraints: ExtractedConstraints;
@@ -106,14 +110,15 @@ export function buildInventoryMessage(params: {
   const desc = filterDescription(constraints, params.language);
   const matched = meta.matchedBottleRows;
   const displayed = meta.displayedBottleRows;
-  const scanned = meta.scannedBottleRows;
+  const scannedWines = meta.scannedBottleRows;
+  const scannedBottles = meta.scannedPhysicalBottles;
   const gaps = meta.dataGaps;
 
   const lines: string[] = [];
 
   if (he) {
     lines.push(
-      `סרקתי את כל המרתף במלאי (${scanned} רשומות). נמצאו ${matched} התאמות לסינון (${desc}).`
+      `בדקתי את כל המרתף: ${heCount(scannedBottles, 'בקבוק אחד', 'בקבוקים')} ב־${heCount(scannedWines, 'יין אחד', 'יינות')}. ${matched === 1 ? 'יין אחד תואם' : `${matched} יינות תואמים`} לסינון (${desc}).`
     );
     if (displayed < matched) {
       lines.push(
@@ -138,7 +143,7 @@ export function buildInventoryMessage(params: {
     }
   } else {
     lines.push(
-      `I scanned your full in-stock cellar (${scanned} bottle records). ${matched} match your filter (${desc}).`
+      `I checked your whole cellar: ${scannedBottles} ${scannedBottles === 1 ? 'bottle' : 'bottles'} across ${scannedWines} ${scannedWines === 1 ? 'wine' : 'wines'}. ${matched} ${matched === 1 ? 'wine matches' : 'wines match'} your filter (${desc}).`
     );
     if (displayed < matched) {
       lines.push(

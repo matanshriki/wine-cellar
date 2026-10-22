@@ -202,7 +202,7 @@ export function LabelCapture({ onSuccess, onCancel, mode = 'camera' }: LabelCapt
               <div className="relative rounded-xl overflow-hidden shadow-2xl mb-6">
                 <img 
                   src={preview} 
-                  alt="Label preview" 
+                  alt={t('wineImage.labelPreviewAlt')} 
                   className="w-full h-auto"
                 />
                 {isProcessing && (

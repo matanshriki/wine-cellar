@@ -338,7 +338,7 @@
 /* ===== INPUT PRIMITIVE ===== */
 .input-luxury {
   background: var(--bg-surface);
-  border: 1px solid var(--border-medium);
+  border: 1px solid var(--border-input);
   color: var(--text-primary);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);

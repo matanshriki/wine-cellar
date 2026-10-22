@@ -59,8 +59,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
     {
       key: 'HOLD' as ReadinessCategory,
       label: t('dashboard.drinkWindow.hold', 'Hold'),
-      color: 'var(--wine-400)',
-      bgGradient: 'linear-gradient(90deg, rgba(164, 77, 90, 0.15), rgba(164, 77, 90, 0.25))',
+      bar: 'var(--status-hold-text)',
       icon: '⏳',
       count: insights.HOLD.count,
       delta: insights.HOLD.delta,
@@ -68,8 +67,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
     {
       key: 'PEAK_SOON' as ReadinessCategory,
       label: t('dashboard.drinkWindow.peakSoon', 'Peak Soon'),
-      color: 'var(--gold-400)',
-      bgGradient: 'linear-gradient(90deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.3))',
+      bar: 'var(--status-drink-soon-text)',
       icon: '⚡',
       count: insights.PEAK_SOON.count,
       delta: insights.PEAK_SOON.delta,
@@ -77,8 +75,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
     {
       key: 'READY' as ReadinessCategory,
       label: t('dashboard.drinkWindow.ready', 'Ready Now'),
-      color: 'var(--gold-300)',
-      bgGradient: 'linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.4))',
+      bar: 'var(--status-ready-text)',
       icon: '✨',
       count: insights.READY.count,
       delta: insights.READY.delta,
@@ -123,18 +120,15 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
     <div className="luxury-card overflow-hidden">
       {/* Premium Header with gradient background */}
       <div 
-        className="p-6 pb-8"
-        style={{
-          background: 'linear-gradient(135deg, rgba(164, 77, 90, 0.03) 0%, rgba(212, 175, 55, 0.03) 100%)',
-          borderBottom: '1px solid var(--border-subtle)',
-        }}
+        className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
         <div className="flex items-start justify-between">
           <div>
             <h2 
-              className="text-2xl mb-2"
+              className="text-xl"
               style={{ 
-                color: 'var(--text-primary)',
+                color: 'var(--text-heading)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 'var(--font-bold)',
                 letterSpacing: '-0.02em',
@@ -150,22 +144,12 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             </p>
           </div>
           
-          {/* Decorative icon */}
-          <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))',
-              border: '1px solid var(--wine-200)',
-            }}
-          >
-            <span className="text-2xl">⏱️</span>
-          </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="px-4 py-3 sm:px-5">
         {/* Timeline visualization - Clickable buckets */}
-        <div className="space-y-5">
+        <div className="space-y-1">
           {timelineStages.map((stage, index) => {
             const percentage = insights.totalAnalyzed > 0 ? (stage.count / insights.totalAnalyzed) * 100 : 0;
 
@@ -181,23 +165,13 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                   duration: 0.4,
                   ease: [0.4, 0, 0.2, 1]
                 }}
-                className="relative w-full text-start p-3 -mx-3 rounded-lg transition-colors"
-                style={{
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
+                className="relative w-full text-start px-3 py-2 -mx-3 rounded-lg transition-colors hover:bg-[var(--interactive-hover)] min-h-[44px]"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 {/* Stage label with delta */}
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">{stage.icon}</span>
+                    <span className="text-base" aria-hidden>{stage.icon}</span>
                     <span 
                       className="text-sm font-medium"
                       style={{ color: 'var(--text-primary)' }}
@@ -209,8 +183,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                       <span
                         className="text-xs font-normal"
                         style={{
-                          color: stage.delta > 0 ? 'var(--color-emerald-600)' : 'var(--color-rose-600)',
-                          opacity: 0.8,
+                          color: stage.delta > 0 ? 'var(--text-success)' : 'var(--text-secondary)',
                         }}
                       >
                         ({formatDelta(stage.delta)})
@@ -220,16 +193,15 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                   <div className="flex items-center gap-2">
                     <span 
                       className="text-sm font-semibold tabular-nums"
-                      style={{ color: stage.color }}
+                      style={{ color: 'var(--text-primary)' }}
                     >
                       {stage.count}
                     </span>
                     {/* Chevron indicator */}
                     <svg
-                      className="w-4 h-4 transition-opacity"
+                      className="w-4 h-4 flip-rtl" aria-hidden
                       style={{ 
                         color: 'var(--text-tertiary)',
-                        opacity: 0.4,
                       }}
                       fill="none"
                       viewBox="0 0 24 24"
@@ -261,7 +233,8 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                     }}
                     className="h-full rounded-full"
                     style={{
-                      background: stage.bgGradient,
+                      background: stage.bar,
+                      opacity: 0.75,
                     }}
                   />
                 </div>
@@ -277,7 +250,7 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
             onClick={handleTonightSignalClick}
-            className="w-full mt-6 pt-4 text-start"
+            className="w-full mt-2 pt-2 text-start"
             style={{
               borderTop: '1px solid var(--border-subtle)',
               cursor: 'pointer',
@@ -285,15 +258,9 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             }}
           >
             <div 
-              className="flex items-center gap-2 p-3 -mx-3 rounded-lg transition-colors"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
+              className="flex items-center gap-2 px-3 py-2 -mx-3 rounded-lg transition-colors hover:bg-[var(--interactive-hover)] min-h-[44px]"
             >
-              <span className="text-lg">✨</span>
+              <span className="text-lg" aria-hidden>✨</span>
               <span 
                 className="text-sm font-medium"
                 style={{ color: 'var(--text-primary)' }}
@@ -304,10 +271,9 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
                 })}
               </span>
               <svg
-                className="w-4 h-4 ms-auto transition-opacity"
+                className="w-4 h-4 ms-auto flip-rtl" aria-hidden
                 style={{ 
                   color: 'var(--text-tertiary)',
-                  opacity: 0.4,
                 }}
                 fill="none"
                 viewBox="0 0 24 24"
@@ -322,14 +288,14 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
 
         {/* Summary footer */}
         <div 
-          className="mt-6 pt-4"
+          className="mt-2 pt-3"
           style={{
             borderTop: '1px solid var(--border-subtle)',
           }}
         >
           <div className="flex items-center justify-between text-sm">
             <span style={{ color: 'var(--text-secondary)' }}>
-              {t('dashboard.drinkWindow.totalAnalyzed', 'Total analyzed')}
+              {t('dashboard.drinkWindow.totalAnalyzed')}
             </span>
             <span 
               className="font-semibold tabular-nums"

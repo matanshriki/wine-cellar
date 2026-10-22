@@ -266,58 +266,47 @@ export function HistoryPage() {
       />
 
       {stats && stats.total_opens > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="app-card p-4 sm:p-5">
-            <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.totalOpens')}</div>
-            <div className="app-display text-2xl sm:text-3xl">{stats.total_opens}</div>
-          </div>
-
-          {Number.isFinite(stats.average_rating) && stats.average_rating > 0 && (
-            <div className="app-card p-4 sm:p-5">
-              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.averageRating')}</div>
-              <div className="app-display text-2xl sm:text-3xl">
-                {Number(stats.average_rating).toFixed(1)}/5
+        <section className="app-card px-4 py-3 sm:px-5 sm:py-4 mb-5" aria-label={t('history.stats.summary')}>
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+            <div className="min-w-0">
+              <dt className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.totalOpens')}</dt>
+              <dd className="app-display text-xl tabular-nums">{stats.total_opens}</dd>
+            </div>
+            {Number.isFinite(stats.average_rating) && stats.average_rating > 0 && (
+              <div className="min-w-0">
+                <dt className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.averageRating')}</dt>
+                <dd className="app-display text-xl tabular-nums">{Number(stats.average_rating).toFixed(1)}/5</dd>
               </div>
+            )}
+            {stats.favorite_color && (
+              <div className="min-w-0">
+                <dt className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteStyle')}</dt>
+                <dd className="app-display text-xl">{t(`cellar.wineStyles.${stats.favorite_color}`)}</dd>
+              </div>
+            )}
+            {stats.favorite_region && (
+              <div className="min-w-0">
+                <dt className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.favoriteRegion')}</dt>
+                <dd className="app-display text-base sm:text-lg truncate" title={stats.favorite_region}>{stats.favorite_region}</dd>
+              </div>
+            )}
+          </dl>
+          {Array.isArray(stats.top_regions) && stats.top_regions.length > 1 && (
+            <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
+              <span className="text-xs me-1" style={{ color: 'var(--text-secondary)' }}>{t('history.stats.topRegions')}:</span>
+              {stats.top_regions.slice(0, 5).map((item) => (
+                <span
+                  key={item.region}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                  style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)' }}
+                >
+                  <bdi>{item.region}</bdi>
+                  <span className="font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>{item.count}</span>
+                </span>
+              ))}
             </div>
           )}
-
-          {stats.favorite_color && (
-            <div className="app-card p-4 sm:p-5">
-              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.favoriteStyle')}</div>
-              {/* Note: color value is NOT translated - translate the label */}
-              <div className="app-display text-2xl sm:text-3xl">
-                {t(`cellar.wineStyles.${stats.favorite_color}`)}
-              </div>
-            </div>
-          )}
-
-          {stats.favorite_region && (
-            <div className="app-card p-4 sm:p-5">
-              <div className="app-eyebrow mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('history.stats.favoriteRegion')}</div>
-              {/* Note: region name is NOT translated - it's actual geographic data */}
-              <div className="app-display text-lg sm:text-xl break-words">
-                {stats.favorite_region}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {stats && Array.isArray(stats.top_regions) && stats.top_regions.length > 1 && (
-        <div className="app-card p-5 sm:p-6 mb-6 sm:mb-8">
-          <h2 className="app-section-title mb-3 sm:mb-4">
-            {t('history.stats.topRegions')}
-          </h2>
-          <div className="space-y-2">
-            {stats.top_regions.slice(0, 5).map((item) => (
-              <div key={item.region} className="flex items-center justify-between">
-                {/* Note: region name is NOT translated - it's actual geographic data */}
-                <span className="text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>{item.region}</span>
-                <span className="badge badge-gray text-xs sm:text-sm">{item.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </section>
       )}
 
       {events.length === 0 ? (
@@ -344,14 +333,9 @@ export function HistoryPage() {
                 key={event.id} 
                 className="app-card group relative border-s-4 ps-4 pe-10 sm:ps-5 py-4 sm:py-5 transition-shadow duration-200 cursor-pointer hover:shadow-[var(--shadow-card-hover)]"
                 style={{ borderInlineStartColor: 'var(--wine-600)' }}
-                onClick={() => handleWineClick(event)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleWineClick(event);
-                  }
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('button, a, textarea, input')) return;
+                  handleWineClick(event);
                 }}
               >
                 {/* Wine Info Section */}
@@ -362,7 +346,13 @@ export function HistoryPage() {
                       className="font-semibold text-base sm:text-lg transition-colors group-hover:text-[var(--accent-text)]"
                       style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
                     >
-                      {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
+                      <button
+                        type="button"
+                        onClick={() => handleWineClick(event)}
+                        className="text-start rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                      >
+                        {event.bottle?.wine?.wine_name || t('history.unknownBottle')}
+                      </button>
                     </h3>
                     <div className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                       {event.bottle?.wine?.producer && `${event.bottle.wine.producer} • `}
@@ -386,12 +376,12 @@ export function HistoryPage() {
                   {/* Note: meal_type and occasion are stored as enum values, displayed as-is */}
                   {event.meal_type && (
                     <span className="badge badge-blue text-xs">
-                      {event.meal_type.replace('_', ' ')}
+                      {t(`recommendation.form.mealTypes.${event.meal_type}`, { defaultValue: event.meal_type.replace(/_/g, ' ') })}
                     </span>
                   )}
                   {event.occasion && (
                     <span className="badge badge-green text-xs">
-                      {event.occasion.replace('_', ' ')}
+                      {t(`recommendation.form.occasions.${event.occasion}`, { defaultValue: event.occasion.replace(/_/g, ' ') })}
                     </span>
                   )}
                 </div>
@@ -434,53 +424,21 @@ export function HistoryPage() {
                   );
                 })()}
 
-                {/* Rating Section */}
-                <div
-                  className="flex items-center justify-between gap-2 pt-2 border-t"
-                  style={{ borderColor: 'var(--border-subtle)' }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  {Number(event.user_rating) > 0 ? (
-                    <>
-                      <StarDisplay rating={Number(event.user_rating)} />
-                      <button
-                        onClick={() => openRateSheet(event)}
-                        className="app-link text-xs inline-flex items-center min-h-[44px] px-2 -me-2"
-                      >
-                        {t('history.editRating', 'Edit rating')}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => openRateSheet(event)}
-                      className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-full text-sm font-medium transition-colors hover:bg-[var(--wine-100)]"
-                      style={{
-                        background: 'var(--wine-50)',
-                        color: 'var(--accent-text)',
-                        border: '1px solid var(--wine-200)',
-                      }}
-                    >
-                      <Star className="h-4 w-4" strokeWidth={1.75} style={{ color: 'var(--color-gold-500)' }} aria-hidden />
-                      <span>{t('history.rateWine', 'Rate this wine')}</span>
-                    </button>
-                  )}
-                </div>
-
                 {/* Personal Notes Section */}
                 <div 
-                  className="mt-3 pt-3 border-t"
-                  style={{ borderColor: 'var(--border-subtle)' }}
+                  className="mb-3"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
                   {editingNotesId === event.id ? (
                     /* Editing Mode */
                     <div className="space-y-2">
-                      <label className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
+                      <label htmlFor={`history-note-${event.id}`} className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
                         <NotebookPen className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                         <span>{t('history.personalNotes')}</span>
                       </label>
                       <textarea
+                        id={`history-note-${event.id}`}
                         value={notesText}
                         onChange={(e) => setNotesText(e.target.value)}
                         placeholder={t('history.notesPlaceholder')}
@@ -533,7 +491,7 @@ export function HistoryPage() {
                             <NotebookPen className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
                             <span>{t('history.personalNotes')}:</span>
                           </div>
-                          <p className="text-sm mb-2 ps-5 whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
+                          <p className="text-sm mb-2 ps-5 whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }} dir="auto">
                             {event.notes}
                           </p>
                           <button
@@ -555,6 +513,39 @@ export function HistoryPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Rating Section */}
+                <div
+                  className="flex items-center justify-between gap-2 pt-2 border-t"
+                  style={{ borderColor: 'var(--border-subtle)' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {Number(event.user_rating) > 0 ? (
+                    <>
+                      <StarDisplay rating={Number(event.user_rating)} />
+                      <button
+                        onClick={() => openRateSheet(event)}
+                        className="app-link text-xs inline-flex items-center min-h-[44px] px-2 -me-2"
+                      >
+                        {t('history.editRating', 'Edit rating')}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => openRateSheet(event)}
+                      className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-full text-sm font-medium transition-colors hover:bg-[var(--wine-100)]"
+                      style={{
+                        background: 'var(--wine-50)',
+                        color: 'var(--accent-text)',
+                        border: '1px solid var(--wine-200)',
+                      }}
+                    >
+                      <Star className="h-4 w-4" strokeWidth={1.75} style={{ color: 'var(--rating-star)' }} aria-hidden />
+                      <span>{t('history.rateWine', 'Rate this wine')}</span>
+                    </button>
+                  )}
+                </div>
+
 
                 {/* Send back to cellar button */}
                 <div 

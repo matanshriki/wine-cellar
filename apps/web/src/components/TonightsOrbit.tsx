@@ -6,6 +6,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { StarRating } from './ui/StarRating';
 import { motion } from 'framer-motion';
 import type { BottleWithWineInfo } from '../services/bottleService';
 import * as labelArtService from '../services/labelArtService';
@@ -233,30 +234,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                       className="flex items-center gap-1"
                       title={`${bottle.wine.rating} ${t('cellar.bottle.vivinoRating')}`}
                     >
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const rating = bottle.wine.rating || 0;
-                        const filled = star <= Math.floor(rating);
-                        const halfFilled = !filled && star <= Math.ceil(rating);
-                        
-                        return (
-                          <span
-                            key={`${bottle.id}-star-${star}`}
-                            className="text-xs"
-                            style={{
-                              color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
-                            }}
-                            aria-hidden="true"
-                          >
-                            {filled ? '★' : halfFilled ? '⯪' : '☆'}
-                          </span>
-                        );
-                      })}
-                      <span
-                        className="text-xs font-medium ms-1"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        {bottle.wine.rating.toFixed(1)}
-                      </span>
+                      <StarRating rating={bottle.wine.rating} size={12} />
                     </div>
                   )}
                 </div>
@@ -411,30 +389,7 @@ export function TonightsOrbit({ bottles, onBottleClick }: TonightsOrbitProps) {
                       className="flex items-center gap-1"
                       title={`${bottle.wine.rating} ${t('cellar.bottle.vivinoRating')}`}
                     >
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const rating = bottle.wine.rating || 0;
-                        const filled = star <= Math.floor(rating);
-                        const halfFilled = !filled && star <= Math.ceil(rating);
-                        
-                        return (
-                          <span
-                            key={`${bottle.id}-star-${star}-desktop`}
-                            className="text-xs"
-                            style={{
-                              color: filled || halfFilled ? 'var(--wine-500)' : 'var(--border-base)',
-                            }}
-                            aria-hidden="true"
-                          >
-                            {filled ? '★' : halfFilled ? '⯪' : '☆'}
-                          </span>
-                        );
-                      })}
-                      <span
-                        className="text-xs font-medium ms-1"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        {bottle.wine.rating.toFixed(1)}
-                      </span>
+                      <StarRating rating={bottle.wine.rating} size={12} />
                     </div>
                   )}
                 </div>

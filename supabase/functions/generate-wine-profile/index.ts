@@ -6,6 +6,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
 import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { SWEETNESS_PROMPT_DEFINITION, SWEETNESS_SCALE_VERSION } from '../_shared/sweetnessScale.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,6 +43,7 @@ interface WineProfile {
   style_tags: string[]
   confidence: 'low' | 'med' | 'high'
   source: 'ai'
+  sweetness_scale: number
   updated_at: string
 }
 
@@ -225,7 +227,7 @@ For each wine, provide:
 - tannin (1-5): 1=low/none, 3=medium, 5=very high (mainly for reds; whites/rosés typically 1-2)
 - acidity (1-5): 1=very low, 3=medium, 5=very high
 - oak (1-5): 1=none/unoaked, 3=moderate, 5=heavily oaked
-- sweetness (0-5): 0=bone dry, 1-2=off-dry, 3-4=medium sweet, 5=very sweet
+- ${SWEETNESS_PROMPT_DEFINITION}
 - alcohol_est (number or null): Estimated ABV if not provided
 - style_tags (array of 3-8 short kebab-case descriptors)
 - confidence (low|med|high): Your confidence in this assessment
@@ -309,6 +311,7 @@ Base your analysis on:
       ...aiProfile,
       power,
       source: 'ai',
+      sweetness_scale: SWEETNESS_SCALE_VERSION,
       updated_at: new Date().toISOString(),
     }
 

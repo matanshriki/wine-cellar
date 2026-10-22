@@ -38,6 +38,7 @@ import * as labelArtService from '../services/labelArtService';
 import { trackSommelier } from '../services/analytics';
 import { addWishlistItem } from '../services/wishlistService';
 import { SommelierCreditsDisplay } from '../components/SommelierCreditsDisplay';
+import { sumInStockBottles } from '../utils/inventory';
 import { PricingModal } from '../components/PricingModal';
 import { NoCreditsModal } from '../components/NoCreditsModal';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
@@ -123,7 +124,7 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
             {suggestion.priceTier && (
               <span style={{
                 fontSize: '12px',
-                color: 'var(--wine-600)',
+                color: 'var(--accent-text)',
                 backgroundColor: 'var(--wine-50)',
                 padding: '2px 8px',
                 borderRadius: '10px',
@@ -152,7 +153,7 @@ function BuySuggestionCard({ suggestion, onAddToWishlist }: {
           rel="noopener noreferrer"
           style={{
             fontSize: '13px',
-            color: 'var(--wine-600)',
+            color: 'var(--accent-text)',
             textDecoration: 'none',
             padding: '6px 14px',
             borderRadius: '8px',
@@ -400,7 +401,7 @@ export function AgentPageWorking() {
     if (bottlesInCellar.length === 0) return;
 
     greetingInjectedRef.current = true;
-    const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
+    const count = sumInStockBottles(bottlesInCellar);
     setMessages([buildGreetingMessage(count)]);
 
     setTimeout(() => inputRef.current?.focus(), 300);
@@ -414,7 +415,7 @@ export function AgentPageWorking() {
         if (prev.length !== 1 || !prev[0].isGreeting) return prev;
         const bottlesInCellar = bottles.filter(b => b.quantity > 0);
         if (bottlesInCellar.length === 0) return prev;
-        const count = bottlesInCellar.reduce((sum, b) => sum + b.quantity, 0);
+        const count = sumInStockBottles(bottlesInCellar);
         return [buildGreetingMessage(count)];
       });
     }
@@ -1008,7 +1009,7 @@ export function AgentPageWorking() {
             </p>
             <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '5px 0 0' }}>
               {t('cellarSommelier.bottleCount', {
-                count: bottles.filter((b) => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0),
+                count: sumInStockBottles(bottles),
               })}
             </p>
           </div>
@@ -1151,7 +1152,7 @@ export function AgentPageWorking() {
                     avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        alt="User"
+                        alt=""
                         style={{
                           width: '100%',
                           height: '100%',

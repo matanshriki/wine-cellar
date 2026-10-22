@@ -5,6 +5,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { WineImage } from './ui/WineImage';
+import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WishlistItem } from '../services/wishlistService';
@@ -233,35 +235,29 @@ export function WishlistDetailsModal({
                     {t('wishlist.labelPhoto', 'Label photo')}
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
-                    <div className="flex-shrink-0 mx-auto sm:mx-0">
-                      <div className="relative">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="w-28 h-36 sm:w-32 sm:h-40 object-cover rounded-lg"
-                            style={{
-                              border: '2px solid var(--border-base)',
-                              boxShadow: 'var(--shadow-md)',
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="w-28 h-36 sm:w-32 sm:h-40 rounded-lg flex flex-col items-center justify-center px-2"
-                            style={{
-                              border: '2px dashed var(--border-base)',
-                              background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-muted) 100%)',
-                            }}
-                          >
-                            <svg className="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-                              {t('wishlist.noLabelPhotoYet', 'No photo yet')}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex-shrink-0 mx-auto sm:mx-0 flex flex-col items-center gap-1.5">
+                      <WineImage
+                        src={item.imageUrl}
+                        alt={`${item.producer} ${item.wineName}`}
+                        className="w-28 h-36 sm:w-32 sm:h-40"
+                        iconSize={36}
+                        showUnavailableText
+                      />
+                      {item.imageUrl ? (
+                        <a
+                          href={item.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="app-link inline-flex items-center gap-1 text-xs min-h-[32px]"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                          {t('bottle.viewImage')}
+                        </a>
+                      ) : (
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {t('wishlist.noLabelPhotoYet', 'No photo yet')}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
@@ -372,7 +368,7 @@ export function WishlistDetailsModal({
                         className="px-3 py-1 rounded-full text-sm"
                         style={{
                           backgroundColor: 'var(--wine-50)',
-                          color: 'var(--wine-700)',
+                          color: 'var(--accent-text)',
                           border: '1px solid var(--wine-200)',
                         }}
                       >
@@ -423,7 +419,7 @@ export function WishlistDetailsModal({
                       borderInlineStart: '3px solid var(--wine-500)',
                     }}
                   >
-                    "{item.note}"
+                    &quot;<bdi>{item.note}</bdi>&quot;
                   </div>
                 </div>
               )}
@@ -438,7 +434,7 @@ export function WishlistDetailsModal({
                     className="flex items-center justify-center gap-2 p-3 rounded-lg text-sm font-medium transition-all"
                     style={{
                       backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--wine-600)',
+                      color: 'var(--accent-text)',
                       border: '1px solid var(--border-soft)',
                     }}
                   >

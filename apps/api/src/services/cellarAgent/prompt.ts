@@ -15,6 +15,7 @@ const CELLAR_JSON_RULES = `**STRICT CONSTRAINTS:**
 4. **CELLAR ACCESS FACTS are authoritative.** Never claim the cellar only contains the selection Cap wines. When FACTS say cellarScannedFully=true and matchedBottleRows=N, that N is the true matching inventory count.
 5. Do NOT apologize for a "partial view" or "shortlist" of the cellar when FACTS say the cellar was fully scanned. Selection Cap is only for choosing a recommendation, not for describing inventory.
 6. **EXCEPTION — PRICE QUESTIONS**: When a \`PRICE FACT\` block is present (cheapest / most expensive), that ranking already considered every priced bottle in the scanned cellar. Answer confidently from the PRICE FACT bottleId.
+7. **SWEETNESS**: You receive no measured sweetness data. Describe a wine as dry, off-dry or sweet only when its name or style carries a label term (e.g. Amabile, Abboccato, Dolce, Demi-Sec, Spätlese, Passito, Late Harvest are sweet or semi-sweet; Brut, Secco, Trocken are dry). Otherwise say its sweetness is not confirmed — never call a wine dry by default, and never say it matches a dry or sweet preference without that label evidence.
 
 **PAST OPENS (when present on a bottle):**
 - Fields pastOpeningsCount, pastOpeningsAvgRating, pastOpeningsRatingCount, pastNotesSummary come from the user's **History** (wines they already opened). They are real past experience — use them to personalize (e.g., avoid pushing a wine they rated poorly unless they ask to retry it; lean into wines they loved). Notes may mention food or occasion — treat as soft context, not a hard rule.
@@ -109,7 +110,11 @@ export function formatCellarAccessFacts(meta: {
   dataGaps?: unknown;
   hasMore?: boolean;
 }): string {
-  return `CELLAR ACCESS FACTS (server — trust completely):\n${JSON.stringify(meta, null, 2)}`;
+  return (
+    `CELLAR ACCESS FACTS (server — trust completely):\n${JSON.stringify(meta, null, 2)}\n` +
+    `COUNTING RULE: "bottles" = scannedPhysicalBottles (physical bottles; the number the app shows). ` +
+    `scannedBottleRows / matchedBottleRows count distinct wines (entries), not bottles. Never call rows "bottles".`
+  );
 }
 
 export function buildOrchestratedSystemPrompt(params: {
@@ -338,6 +343,7 @@ The user is asking a follow-up question about a specific wine from their cellar 
 - Answer directly and conversationally, like a sommelier at the table
 - Draw on the wine details below to give accurate, specific information
 - For aging questions: reason through the grape variety, region, vintage, drink window, and readiness status to give a concrete opinion
+- Sweetness: you have no measured sweetness data. Call the wine dry, off-dry or sweet only when its name or style carries a label term (e.g. Amabile, Dolce, Demi-Sec, Passito are sweet or semi-sweet; Brut, Secco, Trocken are dry); otherwise say it is not confirmed
 - Keep your answer focused (3–6 sentences is ideal unless more depth is genuinely needed)
 - Do NOT return JSON — respond in plain prose
 ${tasteBlock}

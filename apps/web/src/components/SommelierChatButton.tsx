@@ -9,8 +9,8 @@
  *   - sm+: luxury gold tooltip above the button + golden FAB (once; stored in
  *     localStorage).
  *   - Mobile / narrow (global FAB only): “Meet Sommi” chip fades in, stays ~5 s,
- *     fades out, then repeats every 30 s as a CTA. Not persisted — stops when the
- *     tab closes or site data is cleared.
+ *     and fades out — once per tab session, and never after the FAB was tapped,
+ *     because the chip covers page content while it is visible.
  *
  * Subsequent visits:
  *   - Compact wine-gradient pill with a subtle wobble + ping animation.
@@ -30,9 +30,20 @@ import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
 /** Gold card + desktop scheduling (legacy key — unchanged for backward compat). */
 const DESKTOP_INTRO_KEY = 'sommelier-fab-intro-seen';
 
-/** Mobile CTA chip: repeat interval + visible duration (global FAB / narrow viewport only). */
-const MOBILE_HINT_INTERVAL_MS = 30_000;
+/** Mobile CTA chip: visible duration and once-per-session marker (global FAB / narrow viewport only). */
 const MOBILE_HINT_VISIBLE_MS = 5000;
+const MOBILE_HINT_SESSION_KEY = 'sommelier-fab-mobile-hint-shown';
+
+function claimMobileHintForSession(): boolean {
+  if (SOMMELIER_FAB_INTRO_DEBUG) return true;
+  try {
+    if (window.sessionStorage.getItem(MOBILE_HINT_SESSION_KEY)) return false;
+    window.sessionStorage.setItem(MOBILE_HINT_SESSION_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /** Dev server only: replay first-visit FAB UI every load; never persist intro-seen. */
 const SOMMELIER_FAB_INTRO_DEBUG =
@@ -76,7 +87,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     if (introTimerRef.current) clearTimeout(introTimerRef.current);
   }, [persistDesktopIntroSeen]);
 
-  /** FAB tap: hide gold + chip UI; persist desktop intro only (mobile chip loops again). */
+  /** FAB tap: hide gold + chip UI and persist, which also stops the mobile chip. */
   const dismissAllFabIntros = useCallback(() => {
     setShowIntro(false);
     setShowMobileHint(false);
@@ -93,31 +104,27 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     return () => clearTimeout(t);
   }, []);
 
-  // ── Mobile: repeating CTA chip (Layout / isGlobal FAB only; not persisted) ─
+  // ── Mobile: one CTA chip per session (Layout / isGlobal FAB only) ─────────
   useEffect(() => {
     if (!isGlobal) return;
 
     const mq = window.matchMedia('(max-width: 639px)');
-    let cleanupLoop: (() => void) | undefined;
+    let cleanupHint: (() => void) | undefined;
 
-    const startLoop = () => {
-      const initial = window.setTimeout(() => setShowMobileHint(true), 600);
-      const interval = window.setInterval(
-        () => setShowMobileHint(true),
-        MOBILE_HINT_INTERVAL_MS
-      );
-      return () => {
-        window.clearTimeout(initial);
-        window.clearInterval(interval);
-      };
+    const scheduleHint = () => {
+      if (hasDesktopIntroBeenSeen()) return undefined;
+      const initial = window.setTimeout(() => {
+        if (claimMobileHintForSession()) setShowMobileHint(true);
+      }, 600);
+      return () => window.clearTimeout(initial);
     };
 
     const sync = () => {
-      cleanupLoop?.();
-      cleanupLoop = undefined;
+      cleanupHint?.();
+      cleanupHint = undefined;
       setShowMobileHint(false);
       if (mq.matches) {
-        cleanupLoop = startLoop();
+        cleanupHint = scheduleHint();
       }
     };
 
@@ -125,11 +132,11 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     mq.addEventListener('change', sync);
     return () => {
       mq.removeEventListener('change', sync);
-      cleanupLoop?.();
+      cleanupHint?.();
     };
   }, [isGlobal]);
 
-  // Mobile chip: visible window then fade out (next show is from interval)
+  // Mobile chip: visible window then fade out
   useEffect(() => {
     if (!showMobileHint) return;
     const t = window.setTimeout(() => setShowMobileHint(false), MOBILE_HINT_VISIBLE_MS);

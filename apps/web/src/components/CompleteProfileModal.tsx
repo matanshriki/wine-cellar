@@ -64,7 +64,7 @@ export function CompleteProfileModal({ isOpen, onComplete, currentName = '' }: P
             className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
             style={{ background: 'var(--wine-50)' }}
           >
-            <svg className="w-6 h-6" style={{ color: 'var(--wine-600)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" style={{ color: 'var(--accent-text)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>

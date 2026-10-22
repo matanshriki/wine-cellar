@@ -96,10 +96,10 @@ export function BottleCarousel({
     if (!status) return null;
 
     const badges = {
-      ready: { text: t('cellar.readiness.ready'), color: '#22c55e' },
-      peak: { text: t('cellar.readiness.peak'), color: '#f59e0b' },
-      aging: { text: t('cellar.readiness.aging'), color: '#6366f1' },
-      drink_soon: { text: t('cellar.readiness.drinkSoon'), color: '#ef4444' },
+      ready: { text: t('cellar.readiness.ready'), tone: 'ready' },
+      peak: { text: t('cellar.readiness.peak'), tone: 'ready' },
+      aging: { text: t('cellar.readiness.aging'), tone: 'hold' },
+      drink_soon: { text: t('cellar.readiness.drinkSoon'), tone: 'drink-soon' },
     };
 
     const badge = badges[status as keyof typeof badges];
@@ -113,9 +113,8 @@ export function BottleCarousel({
           borderRadius: '12px',
           fontSize: '11px',
           fontWeight: 600,
-          backgroundColor: `${badge.color}20`,
-          color: badge.color,
-          border: `1px solid ${badge.color}40`,
+          backgroundColor: `var(--status-${badge.tone}-bg)`,
+          color: `var(--status-${badge.tone}-text)`,
         }}
       >
         {badge.text}
@@ -265,7 +264,7 @@ export function BottleCarousel({
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                       }}
                     />
                   </div>

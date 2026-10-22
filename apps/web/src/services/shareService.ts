@@ -9,6 +9,7 @@
 import { supabase } from '../lib/supabase';
 import { safeGetItem } from '../utils/safeLocalStorage';
 import type { BottleWithWineInfo } from './bottleService';
+import { sumInStockBottles } from '../utils/inventory';
 
 export interface ShareData {
   userId: string;
@@ -117,7 +118,7 @@ export async function generateShareLink(bottles: BottleWithWineInfo[]): Promise<
 
   // Calculate stats
   const stats = {
-    totalBottles: simplifiedBottles.reduce((sum, b) => sum + b.quantity, 0),
+    totalBottles: sumInStockBottles(simplifiedBottles),
     redCount: simplifiedBottles.filter(b => b.color === 'red').length,
     whiteCount: simplifiedBottles.filter(b => b.color === 'white').length,
     roseCount: simplifiedBottles.filter(b => b.color === 'rose').length,

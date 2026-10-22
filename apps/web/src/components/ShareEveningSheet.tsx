@@ -303,7 +303,7 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
                         onClick={refreshVotes}
                         disabled={loadingVotes}
                         className="text-xs px-2 py-1 rounded-lg transition-opacity"
-                        style={{ color: 'var(--wine-600)', background: 'var(--wine-50)' }}
+                        style={{ color: 'var(--accent-text)', background: 'var(--wine-50)' }}
                       >
                         {loadingVotes ? '...' : t('guestMode.share.refresh', 'Refresh')}
                       </button>
@@ -338,12 +338,11 @@ export function ShareEveningSheet({ isOpen, onClose, plan, onShareCreated }: Sha
                         className="flex items-center gap-3 px-4 py-3 rounded-xl mb-3"
                         style={{ background: 'var(--wine-50)', border: '1px solid var(--wine-100)' }}
                       >
-                        <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--wine-600)' }}>
+                        <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent-text)' }}>
                           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                         </svg>
-                        <p className="text-sm font-medium" style={{ color: 'var(--wine-800)' }}>
-                          {t('guestMode.share.totalVotes', '{{count}} vote', { count: totalVotes })}
-                          {totalVotes !== 1 ? 's' : ''}{' '}
+                        <p className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
+                          {t('guestMode.share.totalVotes', { count: totalVotes })}{' '}
                           {topWines[0] && (
                             <>
                               · {t('guestMode.share.mostLoved', 'Most loved:')} <strong>{topWines[0].wine_name}</strong>

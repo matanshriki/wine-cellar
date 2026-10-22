@@ -638,10 +638,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
-                    {t('csvImport.mapping.columns.name')} *
+                  <label htmlFor="csv-map-1" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                    {t('csvImport.mapping.columns.name')}<span aria-hidden="true"> *</span>
                   </label>
                   <select
+                    id="csv-map-1"
                     value={mapping.nameColumn}
                     onChange={(e) => setMapping({ ...mapping, nameColumn: e.target.value })}
                     className="input"
@@ -656,10 +657,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
-                    {t('csvImport.mapping.columns.style')} *
+                  <label htmlFor="csv-map-2" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                    {t('csvImport.mapping.columns.style')}<span aria-hidden="true"> *</span>
                   </label>
                   <select
+                    id="csv-map-2"
                     value={mapping.styleColumn}
                     onChange={(e) => setMapping({ ...mapping, styleColumn: e.target.value })}
                     className="input"
@@ -674,10 +676,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-3" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.producer')}
                   </label>
                   <select
+                    id="csv-map-3"
                     value={mapping.producerColumn}
                     onChange={(e) => setMapping({ ...mapping, producerColumn: e.target.value })}
                     className="input"
@@ -692,10 +695,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-4" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.vintage')}
                   </label>
                   <select
+                    id="csv-map-4"
                     value={mapping.vintageColumn}
                     onChange={(e) => setMapping({ ...mapping, vintageColumn: e.target.value })}
                     className="input"
@@ -710,10 +714,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-5" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.region')}
                   </label>
                   <select
+                    id="csv-map-5"
                     value={mapping.regionColumn}
                     onChange={(e) => setMapping({ ...mapping, regionColumn: e.target.value })}
                     className="input"
@@ -728,10 +733,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-6" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.regionalWineStyle')}
                   </label>
                   <select
+                    id="csv-map-6"
                     value={mapping.regionalWineStyleColumn}
                     onChange={(e) => setMapping({ ...mapping, regionalWineStyleColumn: e.target.value })}
                     className="input"
@@ -746,10 +752,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-7" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.country')}
                   </label>
                   <select
+                    id="csv-map-7"
                     value={mapping.countryColumn}
                     onChange={(e) => setMapping({ ...mapping, countryColumn: e.target.value })}
                     className="input"
@@ -764,10 +771,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-8" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.grapes')}
                   </label>
                   <select
+                    id="csv-map-8"
                     value={mapping.grapesColumn}
                     onChange={(e) => setMapping({ ...mapping, grapesColumn: e.target.value })}
                     className="input"
@@ -782,10 +790,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-9" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.rating')}
                   </label>
                   <select
+                    id="csv-map-9"
                     value={mapping.ratingColumn}
                     onChange={(e) => setMapping({ ...mapping, ratingColumn: e.target.value })}
                     className="input"
@@ -800,10 +809,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-10" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     {t('csvImport.mapping.columns.quantity')}
                   </label>
                   <select
+                    id="csv-map-10"
                     value={mapping.quantityColumn}
                     onChange={(e) => setMapping({ ...mapping, quantityColumn: e.target.value })}
                     className="input"
@@ -818,10 +828,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-11" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     Link to Wine / Vivino URL (optional)
                   </label>
                   <select
+                    id="csv-map-11"
                     value={mapping.vivinoUrlColumn}
                     onChange={(e) => setMapping({ ...mapping, vivinoUrlColumn: e.target.value })}
                     className="input"
@@ -836,10 +847,11 @@ Cloudy Bay,Sauvignon Blanc,2022,Marlborough,New Zealand,New Zealand White,4.2,12
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label htmlFor="csv-map-12" className="block text-xs sm:text-sm font-medium text-[var(--text-primary)] mb-1">
                     Wine Image URL (optional)
                   </label>
                   <select
+                    id="csv-map-12"
                     value={mapping.imageUrlColumn}
                     onChange={(e) => setMapping({ ...mapping, imageUrlColumn: e.target.value })}
                     className="input"

@@ -17,7 +17,7 @@
  * ✅ Images: Fixed aspect-ratio containers prevent layout shift
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
@@ -29,6 +29,8 @@ import { EveningQueuePlayer } from './EveningQueuePlayer';
 import * as eveningPlanService from '../services/eveningPlanService';
 import type { EveningPlan } from '../services/eveningPlanService';
 import { getLocalizedWineData } from '../utils/wineTranslations';
+import { WineImage } from './ui/WineImage';
+import { ChevronLeft, ChevronRight, Pause, Play, Star } from 'lucide-react';
 import { selectTonightCategories, type CategorizedSlot, type SlotKey } from '../services/tonightsCategoryService';
 
 interface TonightsOrbitCinematicProps {
@@ -46,6 +48,9 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const lastManualInteractionRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = shouldReduceMotion();
+  const [autoplayStopped, setAutoplayStopped] = useState(false);
+  const directionRef = useRef<1 | -1>(1);
+  const titleId = useId();
   
   // Dev logging
   const isDev = import.meta.env.DEV;
@@ -56,17 +61,18 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
   const [activePlan, setActivePlan] = useState<EveningPlan | null>(null);
   const [checkingForPlan, setCheckingForPlan] = useState(true);
   const [showQueuePlayer, setShowQueuePlayer] = useState(false);
+  const isPlanning = showPlanEveningModal || showQueuePlayer;
 
   // ─── Per-slot visual config ─────────────────────────────────────────────
   const SLOT_CONFIG: Record<SlotKey, { bg: string; color: string; icon: string }> = {
-    bestTonight:  { bg: 'rgba(164, 77, 90, 0.12)',  color: 'var(--wine-700)',  icon: '🍷' },
-    crowdPleaser: { bg: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8',          icon: '👥' },
-    specialBottle:{ bg: 'rgba(212, 175, 55, 0.15)', color: 'var(--gold-700)',  icon: '⭐' },
+    bestTonight:  { bg: 'var(--wine-50)',          color: 'var(--accent-text)',        icon: '🍷' },
+    crowdPleaser: { bg: 'var(--status-ready-bg)',  color: 'var(--status-ready-text)',  icon: '👥' },
+    specialBottle:{ bg: 'var(--gold-50)',          color: 'var(--text-eyebrow)',       icon: '⭐' },
   };
 
   // For HOLD bottles shown in bestTonight slot, the categoryKey becomes
   // 'dashboard.tonightsOrbit.categories.bestAvailable' — use a neutral amber badge
-  const HOLD_BADGE_STYLE = { bg: 'rgba(245, 158, 11, 0.12)', color: '#92400e', icon: '⏳' };
+  const HOLD_BADGE_STYLE = { bg: 'var(--status-hold-bg)', color: 'var(--status-hold-text)', icon: '⏳' };
 
   /**
    * Category-based selection — STABLE (useMemo, no randomness)
@@ -126,7 +132,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     }
 
     // Don't start autoplay if conditions aren't met
-    if (reduceMotion || topBottles.length <= 1 || isPaused) {
+    if (reduceMotion || topBottles.length <= 1 || isPaused || autoplayStopped || isPlanning) {
       if (isDev) console.log('[Carousel] Autoplay disabled:', { reduceMotion, count: topBottles.length, isPaused });
       return;
     }
@@ -152,7 +158,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         if (isDev) console.log('[Carousel] Auto-advancing:', current, '→', next);
         return next;
       });
-    }, 3000);
+    }, 6000);
 
     // Cleanup on unmount or when dependencies change
     return () => {
@@ -162,7 +168,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         timerRef.current = null;
       }
     };
-  }, [topBottles.length, isPaused, reduceMotion, isDev]);
+  }, [topBottles.length, isPaused, autoplayStopped, isPlanning, reduceMotion, isDev]);
 
   /**
    * Check for active evening plan on mount
@@ -279,6 +285,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     // Pause autoplay (will stay paused for 5s due to cooldown check)
     setIsPaused(true);
     
+    directionRef.current = 1;
     // Advance slide with functional update
     setActiveIndex((current) => {
       const next = (current + 1) % topBottles.length;
@@ -315,6 +322,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     // Pause autoplay (will stay paused for 5s due to cooldown check)
     setIsPaused(true);
     
+    directionRef.current = -1;
     // Go to previous slide with functional update
     setActiveIndex((current) => {
       const prev = (current - 1 + topBottles.length) % topBottles.length;
@@ -377,72 +385,174 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     );
   }
 
-  /**
-   * Get card style based on position relative to active index
-   * Handles circular carousel wrapping for smooth infinite loop
-   */
-  const getCardStyle = (index: number) => {
-    const totalCards = topBottles.length;
-    let diff = index - activeIndex;
-    
-    // Handle circular wrapping: find shortest path
-    // Example: with 3 cards, going from index 2 to 0 should be +1 (forward), not -2 (backward)
-    if (diff > totalCards / 2) {
-      diff -= totalCards;
-    } else if (diff < -totalCards / 2) {
-      diff += totalCards;
-    }
-    
-    const isActive = diff === 0;
-    const isAdjacent = Math.abs(diff) === 1;
+  const activeBottle = topBottles[Math.min(activeIndex, topBottles.length - 1)];
+  const canAutoplay = !reduceMotion && topBottles.length > 1;
+  const isRotating = canAutoplay && !autoplayStopped && !isPaused && !isPlanning;
 
-    if (isActive) {
-      return {
-        scale: 1,
-        opacity: 1,
-        x: '0%',
-        zIndex: 20,
-        filter: 'none',
-      };
+  const goToIndex = (index: number) => {
+    directionRef.current = index > activeIndex ? 1 : -1;
+    lastManualInteractionRef.current = Date.now();
+    if (unpauseTimerRef.current) {
+      clearTimeout(unpauseTimerRef.current);
+      unpauseTimerRef.current = null;
     }
-
-    if (isAdjacent) {
-      const direction = diff > 0 ? 1 : -1;
-      return {
-        scale: 0.93,
-        opacity: 0.7,
-        x: `${direction * 20}%`,
-        zIndex: 10,
-        filter: 'brightness(0.95)',
-      };
-    }
-
-    // Far cards - hidden
-    return {
-      scale: 0.85,
-      opacity: 0,
-      x: diff > 0 ? '40%' : '-40%',
-      zIndex: 0,
-      filter: 'brightness(0.9)',
-    };
+    setIsPaused(true);
+    setActiveIndex(index);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
-  return (
-    <div className="luxury-card isolate">
-      {/* Premium Header */}
-      <div 
-        className="p-6 pb-8"
-        style={{
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0%, rgba(164, 77, 90, 0.03) 100%)',
-          borderBottom: '1px solid var(--border-subtle)',
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (topBottles.length <= 1) return;
+    const isRtl = document.documentElement.dir === 'rtl';
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      isRtl ? goToPrevious() : goToNext();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      isRtl ? goToNext() : goToPrevious();
+    }
+  };
+
+  const renderSlide = (bottle: BottleWithWineInfo, index: number) => {
+    const lw = getLocalizedWineData(bottle.wine, i18n.language);
+    const slotInfo = slotByBottleId.get(bottle.id);
+    const isHoldBadge = slotInfo?.categoryKey.endsWith('.bestAvailable');
+    const cfg = slotInfo ? (isHoldBadge ? HOLD_BADGE_STYLE : SLOT_CONFIG[slotInfo.slot]) : null;
+    const mergedWine = {
+      ...bottle.wine,
+      image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
+      label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
+      image_url: bottle.wine.image_url || (bottle as any).image_url || null,
+    };
+    const displayImage = labelArtService.getWineDisplayImage(mergedWine);
+    const dir = directionRef.current;
+
+    return (
+      <motion.div
+        key={getBottleKey(bottle)}
+        role="group"
+        aria-roledescription="slide"
+        aria-label={t('dashboard.tonightsOrbit.slideOf', { current: index + 1, total: topBottles.length })}
+        initial={reduceMotion ? false : { opacity: 0, x: dir * 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={reduceMotion ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, x: dir * -24 }}
+        transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+        drag={topBottles.length > 1 ? 'x' : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragStart={() => {
+          setIsDragging(true);
+          handleInteractionStart();
         }}
+        onDragEnd={handleDragEnd}
+        className="flex gap-4 items-stretch"
+        style={{ touchAction: 'pan-y' }}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h2 
-              className="text-2xl mb-2"
-              style={{ 
-                color: 'var(--text-primary)',
+        <WineImage
+          src={displayImage.imageUrl}
+          alt={lw.wine_name}
+          isGenerated={displayImage.isGenerated}
+          loading="eager"
+          className="w-24 h-32 sm:w-28 sm:h-36"
+          iconSize={32}
+        />
+
+        <div className="min-w-0 flex-1 flex flex-col">
+          {cfg && slotInfo && (
+            <span
+              className="self-start inline-flex items-center gap-1 px-2 py-0.5 mb-1.5 rounded-full text-xs font-semibold"
+              style={{ background: cfg.bg, color: cfg.color }}
+            >
+              <span aria-hidden>{cfg.icon}</span>
+              <span>{t(slotInfo.categoryKey) as string}</span>
+            </span>
+          )}
+
+          <h3
+            className="text-base sm:text-lg font-semibold leading-snug line-clamp-2"
+            style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
+          >
+            <bdi>{lw.wine_name}</bdi>
+          </h3>
+
+          <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+            {lw.producer && <bdi>{lw.producer}</bdi>}
+            {lw.producer && bottle.wine.vintage ? ' · ' : ''}
+            {bottle.wine.vintage && (
+              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {bottle.wine.vintage}
+              </span>
+            )}
+          </p>
+
+          {slotInfo && (
+            <p className="text-sm mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+              {t(slotInfo.reasonKey)}
+            </p>
+          )}
+
+          {slotInfo && slotInfo.tags.length > 0 && (
+            <ul className="flex flex-wrap gap-1 mt-1.5 list-none m-0 p-0">
+              {slotInfo.tags.slice(0, 3).map((tag, i) => (
+                <li
+                  key={i}
+                  className="px-1.5 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    background: 'var(--bg-muted)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {t(tag.key, tag.values as any) as string}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-auto pt-2 flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isDragging) onBottleClick(bottle);
+              }}
+              className="btn-luxury-secondary !min-h-[44px] !py-2 !px-4 text-sm"
+            >
+              {t('dashboard.tonightsOrbit.viewDetails')}
+              <ChevronRight className="h-4 w-4 flip-rtl" strokeWidth={1.75} aria-hidden />
+            </button>
+            {bottle.wine.rating && bottle.wine.rating > 0 ? (
+              <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                <Star className="h-3.5 w-3.5" strokeWidth={1.75} style={{ color: 'var(--rating-star)', fill: 'var(--rating-star)' }} aria-hidden />
+                {bottle.wine.rating.toFixed(1)}
+              </span>
+            ) : null}
+            {bottle.quantity > 1 && (
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+                ×{bottle.quantity}
+              </span>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  const navBtnClass =
+    'app-icon-btn border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--accent-text)]';
+
+  return (
+    <section className="luxury-card isolate" aria-roledescription="carousel" aria-labelledby={titleId}>
+      {/* Header */}
+      <div
+        className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2
+              id={titleId}
+              className="text-xl"
+              style={{
+                color: 'var(--text-heading)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 'var(--font-bold)',
                 letterSpacing: '-0.02em',
@@ -450,494 +560,100 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             >
               {t('dashboard.tonightsOrbit.title', 'Tonight\'s Selection')}
             </h2>
-            <p 
-              className="text-sm"
-              style={{ color: 'var(--text-secondary)' }}
-            >
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               {t('dashboard.tonightsOrbit.subtitle', 'Perfect bottles for this evening')}
             </p>
           </div>
-          
+
           {/* Plan an evening CTA (gated feature) */}
           {!isPlanEveningLoading && isPlanEveningEnabled && !checkingForPlan && (
-            <>
-              {activePlan ? (
-                <motion.button
-                  onClick={() => setShowQueuePlayer(true)}
-                  className="ms-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
-                  style={{
-                    background: 'var(--sommi-gradient-primary)',
-                    color: 'white',
-                    border: '1px solid var(--wine-700)',
-                    boxShadow: '0 2px 8px rgba(164, 77, 90, 0.2)',
-                  }}
-                  whileHover={{ scale: 1.03, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>▶️</span>
-                  <span className="hidden sm:inline">{t('planEvening.resumeButton', 'Resume evening')}</span>
-                  <span className="sm:hidden">{t('planEvening.button', 'Resume')}</span>
-                </motion.button>
-              ) : (
-                <motion.button
-                  onClick={() => setShowPlanEveningModal(true)}
-                  className="ms-4 px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
-                  style={{
-                    background: 'var(--sommi-gradient-primary)',
-                    color: 'white',
-                    border: '1px solid var(--wine-600)',
-                    boxShadow: '0 2px 8px rgba(164, 77, 90, 0.15)',
-                  }}
-                  whileHover={{ scale: 1.03, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>🎯</span>
-                  <span className="hidden sm:inline">{t('planEvening.title', 'Plan an evening')}</span>
-                  <span className="sm:hidden">{t('planEvening.button', 'Plan')}</span>
-                </motion.button>
-              )}
-            </>
-          )}
-          
-          {/* Decorative icon (only show if Plan feature not enabled) */}
-          {(!isPlanEveningEnabled || isPlanEveningLoading) && (
-            <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center ms-4"
-              style={{
-                background: 'linear-gradient(135deg, var(--gold-50), var(--gold-100))',
-                border: '1px solid var(--gold-200)',
-              }}
+            <button
+              type="button"
+              onClick={() => (activePlan ? setShowQueuePlayer(true) : setShowPlanEveningModal(true))}
+              className="btn-luxury-primary !min-h-[44px] !py-2 !px-4 text-sm flex-shrink-0"
             >
-              <span className="text-2xl">✨</span>
-            </div>
+              <span aria-hidden>{activePlan ? '▶️' : '🎯'}</span>
+              <span className="hidden sm:inline">
+                {activePlan ? t('planEvening.resumeButton', 'Resume evening') : t('planEvening.title', 'Plan an evening')}
+              </span>
+              <span className="sm:hidden">{activePlan ? t('planEvening.resumeShort') : t('planEvening.planShort')}</span>
+            </button>
           )}
         </div>
       </div>
 
-      {/* Cinematic Carousel Container - Properly sized to contain cards */}
-      <div 
+      {/* Carousel */}
+      <div
         ref={containerRef}
-        className="relative px-6 pt-2 pb-12"
-        style={{
-          overflow: 'visible',
-        }}
+        className="px-4 pt-4 pb-3 sm:px-5 focus-visible:outline-none"
+        tabIndex={topBottles.length > 1 ? 0 : undefined}
+        onKeyDown={handleKeyDown}
         onMouseEnter={handleInteractionStart}
         onMouseLeave={handleInteractionEnd}
+        onFocus={handleInteractionStart}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) handleInteractionEnd();
+        }}
         onTouchStart={handleInteractionStart}
         onTouchEnd={handleInteractionEnd}
       >
-        {/* Carousel Track */}
-        <div 
-          className="relative z-0 flex items-center justify-center"
-          style={{
-            /* Cards are position:absolute — they do not stretch this box. Min height must
-               cover image (4:5 at max 280px wide ≈ 350px) + detail panel + tags (~200px+)
-               or painted content overlaps the footer and the Drink Window widget below. */
-            minHeight: 'clamp(560px, 58vh, 640px)',
-            perspective: '1200px',
-          }}
-        >
-          {topBottles.map((bottle, index) => {
-            const style = getCardStyle(index);
-            const isActive = index === activeIndex;
-            const bottleKey = getBottleKey(bottle);
-
-            return (
-              <motion.div
-                key={bottleKey}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  scale: style.scale,
-                  opacity: style.opacity,
-                  x: isDragging && isActive ? undefined : style.x, // Don't animate x while dragging
-                  zIndex: style.zIndex,
-                }}
-                drag={isActive && !reduceMotion ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragStart={() => {
-                  setIsDragging(true);
-                  handleInteractionStart();
-                }}
-                onDragEnd={handleDragEnd}
-                transition={reduceMotion ? { duration: 0 } : {
-                  type: 'spring',
-                  stiffness: 260,
-                  damping: 35,
-                  mass: 0.8,
-                  // Smooth luxury easing for non-spring properties
-                  opacity: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
-                  scale: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
-                  filter: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
-                }}
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  maxWidth: '280px',
-                  filter: style.filter,
-                  pointerEvents: isActive ? 'auto' : 'none',
-                  cursor: isActive ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                }}
-                onClick={() => {
-                  if (isActive && !isDragging) {
-                    onBottleClick(bottle);
-                  }
-                }}
-              >
-                <motion.div
-                  className="relative overflow-hidden rounded-2xl cursor-pointer"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: isActive ? '2px solid var(--wine-200)' : '1px solid var(--border-light)',
-                    boxShadow: isActive 
-                      ? '0 20px 60px rgba(124, 48, 48, 0.15)' 
-                      : '0 4px 12px rgba(0, 0, 0, 0.08)',
-                  }}
-                  whileHover={isActive && !reduceMotion ? {
-                    y: -8,
-                    boxShadow: '0 24px 72px rgba(124, 48, 48, 0.2)',
-                  } : {}}
-                  whileTap={isActive && !reduceMotion ? { scale: 0.98 } : {}}
-                >
-                  {/* Wine Image - Fixed dimensions to prevent layout shift */}
-                  {(() => {
-                    const mergedWine = {
-                      ...bottle.wine,
-                      image_path: bottle.wine.image_path || (bottle as any).label_image_path || (bottle as any).image_path || null,
-                      label_image_path: bottle.wine.label_image_path || (bottle as any).label_image_path || null,
-                      image_url: bottle.wine.image_url || (bottle as any).image_url || null,
-                    };
-                    const displayImage = labelArtService.getWineDisplayImage(mergedWine);
-                    return (
-                      <div 
-                        className="relative w-full bg-gradient-to-br from-stone-50 to-stone-100"
-                        style={{
-                          aspectRatio: '4 / 5', // Stable aspect ratio (wine bottle portrait)
-                          overflow: 'hidden',
-                          willChange: 'transform', // Performance hint for animations
-                        }}
-                      >
-                        {displayImage.imageUrl ? (
-                          <img 
-                            src={displayImage.imageUrl} 
-                            alt={getLocalizedWineData(bottle.wine, i18n.language).wine_name}
-                            className="w-full h-full"
-                            style={{
-                              objectFit: 'cover',
-                              objectPosition: 'center',
-                            }}
-                            // Remove lazy loading - carousel images are above fold
-                            loading="eager"
-                            // Preload for smooth transitions
-                            fetchpriority={isActive ? "high" : "low"}
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg
-                              style={{ width: '64px', height: '64px', color: 'var(--text-tertiary)' }}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                          </div>
-                        )}
-
-                        {/* Removed ranking numbers - presenting as curated selection, not ranked list */}
-
-                        {/* Category badge — top-start overlay (RTL-aware) */}
-                        {(() => {
-                          const slotInfo = slotByBottleId.get(bottle.id);
-                          if (!slotInfo) return null;
-                          const isHoldBadge = slotInfo.categoryKey.endsWith('.bestAvailable');
-                          const cfg = isHoldBadge ? HOLD_BADGE_STYLE : SLOT_CONFIG[slotInfo.slot];
-                          return (
-                            <div
-                              className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                              style={{
-                                background: `linear-gradient(${cfg.bg}, ${cfg.bg}), var(--bg-surface)`,
-                                color: cfg.color,
-                                backdropFilter: 'blur(8px)',
-                                border: `1px solid ${cfg.color}33`,
-                              }}
-                            >
-                              <span>{cfg.icon}</span>
-                              <span>{t(slotInfo.categoryKey) as string}</span>
-                            </div>
-                          );
-                        })()}
-
-                        {/* AI Badge */}
-                        {displayImage.isGenerated && (
-                          <div 
-                            className="absolute top-3 end-3 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1"
-                            style={{
-                              background: 'rgba(0, 0, 0, 0.75)',
-                              color: 'white',
-                              backdropFilter: 'blur(8px)',
-                            }}
-                            title={t('a11y.aiLabelArt')}
-                          >
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                            </svg>
-                            <span>AI</span>
-                          </div>
-                        )}
-
-                        {/* Gradient overlay for depth */}
-                        <div 
-                          className="absolute inset-0"
-                          style={{
-                            background: 'linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(0,0,0,0.05) 100%)',
-                            pointerEvents: 'none',
-                          }}
-                        />
-                      </div>
-                    );
-                  })()}
-
-                  {/* Wine Details Panel */}
-                  <div className="p-5" style={{ background: 'var(--bg-surface)' }}>
-                    {(() => {
-                      const lw = getLocalizedWineData(bottle.wine, i18n.language);
-                      const slotInfo = slotByBottleId.get(bottle.id);
-                      return (
-                        <>
-                          <h3
-                            className="text-lg font-bold mb-1 line-clamp-2 leading-tight"
-                            style={{
-                              color: 'var(--text-primary)',
-                              fontFamily: 'var(--font-display)',
-                            }}
-                          >
-                            {lw.wine_name}
-                          </h3>
-
-                          <p
-                            className="text-sm mb-2"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            {lw.producer}
-                            {bottle.wine.vintage && (
-                              <span className="font-semibold ms-2" style={{ color: 'var(--text-primary)' }}>
-                                {bottle.wine.vintage}
-                              </span>
-                            )}
-                          </p>
-
-                          {/* One-line reason */}
-                          {slotInfo && (
-                            <p
-                              className="text-xs mb-2 italic"
-                              style={{ color: 'var(--text-tertiary)' }}
-                            >
-                              {t(slotInfo.reasonKey)}
-                            </p>
-                          )}
-
-                          {/* Rationale tags */}
-                          {slotInfo && slotInfo.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {slotInfo.tags.map((tag, i) => (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded text-xs font-medium"
-                                  style={{
-                                    background: 'var(--bg-surface-elevated)',
-                                    color: 'var(--text-secondary)',
-                                    border: '1px solid var(--border-subtle)',
-                                  }}
-                                >
-                                  {t(tag.key, tag.values as any) as string}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-
-                    {/* Metadata Row */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {/* Rating */}
-                      {bottle.wine.rating && bottle.wine.rating > 0 && (
-                        <span
-                          className="flex items-center gap-1 text-sm font-semibold"
-                          style={{ color: 'var(--gold-600)' }}
-                        >
-                          ⭐ {bottle.wine.rating.toFixed(1)}
-                        </span>
-                      )}
-
-                      {/* Wine Style Badge */}
-                      <span
-                        className="px-2 py-1 rounded-md text-xs font-semibold"
-                        style={{
-                          background: 'var(--wine-50)',
-                          color: 'var(--wine-700)',
-                        }}
-                      >
-                        {t(`cellar.wineStyles.${bottle.wine.color}`)}
-                      </span>
-
-                      {/* Quantity */}
-                      {bottle.quantity > 1 && (
-                        <span
-                          className="px-2 py-1 rounded-md text-xs font-semibold"
-                          style={{
-                            background: 'var(--stone-100)',
-                            color: 'var(--text-secondary)',
-                          }}
-                        >
-                          ×{bottle.quantity}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            );
-          })}
+        <div aria-live={isRotating ? 'off' : 'polite'} className="min-h-[8rem] sm:min-h-[9rem]">
+          <AnimatePresence mode="wait" initial={false}>
+            {activeBottle && renderSlide(activeBottle, Math.min(activeIndex, topBottles.length - 1))}
+          </AnimatePresence>
         </div>
 
-        {/* Navigation Arrows - Enhanced with luxury micro-interactions */}
+        {/* Phones: controls cluster at the start edge, clear of the floating Sommi button at the end edge */}
         {topBottles.length > 1 && (
-          <>
-            <motion.button
-              type="button"
-              onClick={goToPrevious}
-              onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
-              className="absolute ltr:left-0 rtl:right-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
-              style={{
-                width: '48px',
-                height: '48px',
-                background: 'var(--bg-nav)',
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-card)',
-                color: 'var(--wine-600)',
-                padding: '12px',
-                cursor: 'pointer',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              whileHover={reduceMotion ? {} : {
-                boxShadow: 'var(--shadow-card-hover)',
-                scale: 1.05,
-              }}
-              whileTap={reduceMotion ? {} : {
-                scale: 0.95,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
-              }}
-              transition={{
-                duration: 0.2,
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
-              aria-label={t('common.previous')}
-            >
-              <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </motion.button>
+          <div className="mt-3 flex items-center justify-start sm:justify-between gap-2">
+            <button type="button" onClick={goToPrevious} className={navBtnClass} aria-label={t('common.previous')}>
+              <ChevronLeft className="h-5 w-5 flip-rtl" strokeWidth={1.75} aria-hidden />
+            </button>
 
-            <motion.button
-              type="button"
-              onClick={goToNext}
-              onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
-              className="absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center rounded-full"
-              style={{
-                width: '48px',
-                height: '48px',
-                background: 'var(--bg-nav)',
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-card)',
-                color: 'var(--wine-600)',
-                padding: '12px',
-                cursor: 'pointer',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              whileHover={reduceMotion ? {} : {
-                boxShadow: 'var(--shadow-card-hover)',
-                scale: 1.05,
-              }}
-              whileTap={reduceMotion ? {} : {
-                scale: 0.95,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
-              }}
-              transition={{
-                duration: 0.2,
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
-              aria-label={t('common.next')}
-            >
-              <svg className="w-6 h-6 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </motion.button>
-          </>
-        )}
-
-        {/* Pagination Dots - Enhanced with proper pause handling */}
-        {topBottles.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
-            {topBottles.map((bottle, index) => {
-              const bottleKey = getBottleKey(bottle);
-              return (
-                <motion.button
-                  key={`dot-${bottleKey}`}
+            <div className="flex items-center">
+              {topBottles.map((bottle, index) => {
+                const isActive = index === activeIndex;
+                return (
+                  <button
+                    key={`dot-${getBottleKey(bottle)}`}
+                    type="button"
+                    onClick={() => goToIndex(index)}
+                    className="flex items-center justify-center min-w-[28px] min-h-[44px]"
+                    aria-label={t('dashboard.tonightsOrbit.goTo', {
+                      n: index + 1,
+                      name: getLocalizedWineData(bottle.wine, i18n.language).wine_name,
+                    })}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <span
+                      className="block h-2 rounded-full transition-all duration-200"
+                      style={{
+                        width: isActive ? 20 : 8,
+                        background: isActive ? 'var(--accent-text)' : 'var(--border-strong)',
+                      }}
+                    />
+                  </button>
+                );
+              })}
+              {canAutoplay && (
+                <button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (isDev) console.log('[Carousel] 🔘 Dot clicked:', index);
-                    
-                    // Record manual interaction
-                    lastManualInteractionRef.current = Date.now();
-                    
-                    // Cancel pending unpause
-                    if (unpauseTimerRef.current) {
-                      clearTimeout(unpauseTimerRef.current);
-                      unpauseTimerRef.current = null;
-                    }
-                    
-                    // Pause and navigate
-                    setIsPaused(true);
-                    setActiveIndex(index);
-                    if (isDev) console.log('[Carousel] 📊 Direct navigation to index:', index);
-                    
-                    // Resume after cooldown
-                    setTimeout(() => {
-                      if (isDev) console.log('[Carousel] ⏱️ Dot cooldown ended, resuming');
-                      setIsPaused(false);
-                    }, 5000);
-                  }}
-                  whileTap={reduceMotion ? {} : { scale: 0.9 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    width: index === activeIndex ? '24px' : '8px',
-                    height: '8px',
-                    borderRadius: '4px',
-                    background: index === activeIndex ? 'var(--wine-600)' : 'var(--stone-300)',
-                    opacity: index === activeIndex ? 1 : 0.5,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    touchAction: 'manipulation',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  aria-label={`Go to wine ${index + 1}`}
-                />
-              );
-            })}
+                  onClick={() => setAutoplayStopped((v) => !v)}
+                  className="app-icon-btn ms-1"
+                  aria-label={autoplayStopped ? t('dashboard.tonightsOrbit.play') : t('dashboard.tonightsOrbit.pause')}
+                >
+                  {autoplayStopped ? (
+                    <Play className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  ) : (
+                    <Pause className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  )}
+                </button>
+              )}
+            </div>
+
+            <button type="button" onClick={goToNext} className={navBtnClass} aria-label={t('common.next')}>
+              <ChevronRight className="h-5 w-5 flip-rtl" strokeWidth={1.75} aria-hidden />
+            </button>
           </div>
         )}
       </div>
@@ -945,7 +661,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
       {/* Footer note — shown when cellar is small, all HOLD, or fewer than 3 slots */}
       {(topBottles.length < 3 || selection.allHold) && (
         <div
-          className="relative z-10 mx-6 mb-6 mt-1 rounded-lg p-3 text-center text-sm"
+          className="mx-4 sm:mx-5 mb-4 rounded-lg p-3 text-center text-sm"
           style={{
             background: 'var(--bg-surface-elevated)',
             color: 'var(--text-tertiary)',
@@ -963,6 +679,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           isOpen={showPlanEveningModal}
           onClose={() => setShowPlanEveningModal(false)}
           candidateBottles={bottles}
+          onPlanStarted={setActivePlan}
         />
       )}
       
@@ -982,6 +699,6 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
           }}
         />
       )}
-    </div>
+    </section>
   );
 }

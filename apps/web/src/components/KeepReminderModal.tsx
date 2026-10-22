@@ -466,7 +466,7 @@ export function KeepReminderModal({
                   className="absolute top-4 end-4 text-xs font-semibold px-2.5 py-1 rounded-full"
                   style={{
                     background: 'var(--wine-50)',
-                    color: 'var(--wine-700)',
+                    color: 'var(--accent-text)',
                     border: '1px solid var(--wine-200)',
                   }}
                 >

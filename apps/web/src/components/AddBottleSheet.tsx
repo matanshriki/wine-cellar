@@ -6,7 +6,9 @@
  * - Manual entry - SECONDARY
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Bookmark, Camera, ChevronRight, PenLine } from 'lucide-react';
+import { useDialogA11y } from '../hooks/useDialogA11y';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WineLoader } from './WineLoader';
@@ -47,6 +49,10 @@ export function AddBottleSheet({
 }: AddBottleSheetProps) {
   const { t} = useTranslation();
   const [allowBackdropClose, setAllowBackdropClose] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(sheetRef, isOpen, () => {
+    if (scanningState !== 'scanning') onClose();
+  });
   
   // Detect if we're on a mobile device for better camera handling
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -151,8 +157,10 @@ export function AddBottleSheet({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            ref={sheetRef}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="fixed start-0 end-0 z-50 ios-modal-scroll"
+            className="add-bottle-sheet fixed start-0 end-0 z-50 ios-modal-scroll flex flex-col focus:outline-none"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-light)',
@@ -177,20 +185,20 @@ export function AddBottleSheet({
             </div>
 
             {/* Content - scrollable with safe area */}
-            <div className="px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom luxury-scrollbar">
+            <div className="min-h-0 flex-1 px-5 sm:px-6 pb-6 overflow-y-auto touch-scroll safe-area-inset-bottom luxury-scrollbar">
               {scanningState === 'scanning' ? (
                 /* SCANNING STATE: Show wine-glass loader */
                 <div className="py-12">
                   <WineLoader 
                     variant="default" 
                     size="lg"
-                    message={scanningMessage || 'AI is reading your image…'}
+                    message={scanningMessage || t('cellar.addBottle.reading')}
                   />
                   <p 
                     className="text-center mt-4 text-sm"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
-                    Identifying bottle(s) and vintage
+                    {t('cellar.addBottle.identifying')}
                   </p>
                 </div>
               ) : scanningState === 'error' ? (
@@ -198,15 +206,13 @@ export function AddBottleSheet({
                 <div className="py-8 px-4 text-center">
                   <div 
                     className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-                    style={{ 
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '2px solid rgba(239, 68, 68, 0.2)',
-                    }}
+                    style={{ background: 'var(--bg-error-subtle)' }}
                   >
                     <svg 
                       className="w-10 h-10" 
                       fill="none" 
-                      stroke="rgb(239, 68, 68)" 
+                      stroke="var(--text-error)"
+                      aria-hidden
                       viewBox="0 0 24 24"
                       strokeWidth={2}
                     >
@@ -221,7 +227,7 @@ export function AddBottleSheet({
                       fontFamily: 'var(--font-display)',
                     }}
                   >
-                    Scan failed
+                    {t('cellar.addBottle.scanFailedTitle')}
                   </h3>
                   
                   <p 
@@ -232,13 +238,13 @@ export function AddBottleSheet({
                       margin: '0 auto 2rem',
                     }}
                   >
-                    {scanningMessage || 'Scan failed. Please try again.'}
+                    {scanningMessage || t('cellar.addBottle.scanFailedBody')}
                   </p>
                   
                   <div className="space-y-3 max-w-md mx-auto">
                     {/* Retry Button - Primary (wine gradient) */}
                     <label
-                      className="btn-luxury-primary w-full cursor-pointer flex items-center justify-center"
+                      className="btn-luxury-primary w-full cursor-pointer flex items-center justify-center focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--accent-text)]"
                       style={{ 
                         minHeight: '52px',
                         display: 'flex',
@@ -249,10 +255,10 @@ export function AddBottleSheet({
                         accept="image/*"
                         {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
                         onChange={(e) => handleFileSelect(e, 'library')}
-                        className="hidden"
+                        className="sr-only"
                         aria-label={t('a11y.retryScan')}
                       />
-                      <span className="text-center">Try Another Photo</span>
+                      <span className="text-center">{t('cellar.addBottle.tryAnotherPhoto')}</span>
                     </label>
                     
                     {/* Manual Entry - Secondary */}
@@ -267,7 +273,7 @@ export function AddBottleSheet({
                         display: 'flex',
                       }}
                     >
-                      <span className="text-center">Enter Manually</span>
+                      <span className="text-center">{t('cellar.addBottle.manualEntry')}</span>
                     </button>
                   </div>
                 </div>
@@ -296,133 +302,78 @@ export function AddBottleSheet({
                   </p>
 
                   {/* Options */}
-                  <div className="space-y-3">
-                {/* PRIMARY: Smart Scan - Auto-detects single or multiple bottles */}
-                <label
-                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
-                  style={{
-                    background: 'var(--sommi-gradient-primary)',
-                    border: '1px solid var(--wine-700)',
-                    color: 'var(--text-inverse)',
-                    boxShadow: 'var(--shadow-sm)',
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation',
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
-                    onChange={(e) => handleFileSelect(e, 'library')}
-                    className="hidden"
-                    aria-label={t('cellar.addBottle.smartScan')}
-                  />
-                  {/* Camera Icon with AI Sparkle */}
-                  <div className="relative w-8 h-8 flex-shrink-0">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {/* AI Indicator */}
-                    <div className="absolute -top-1 -end-1 w-3 h-3">
-                      <svg fill="currentColor" viewBox="0 0 20 20" className="w-3 h-3">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex-1 text-start">
-                    <div className="font-semibold text-lg">
-                      {t('cellar.addBottle.smartScan')}
-                    </div>
-                    <div className="text-sm opacity-90 mt-0.5">
-                      {t('cellar.addBottle.smartScanDesc')}
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </label>
+                  <div className="space-y-3" role="group" aria-labelledby="add-bottle-title">
+                    {/* PRIMARY: Scan (auto-detects one or several bottles) */}
+                    <label
+                      className="add-choice add-choice-primary focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--accent-text)]"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        {...(isMobile && !isSamsung && !isPWA ? { capture: 'environment' as const } : {})}
+                        onChange={(e) => handleFileSelect(e, 'library')}
+                        className="sr-only"
+                        aria-describedby="add-choice-scan-desc"
+                      />
+                      <span className="add-choice-icon" aria-hidden>
+                        <Camera className="h-6 w-6" strokeWidth={1.75} />
+                      </span>
+                      <span className="flex-1 min-w-0 text-start">
+                        <span className="block font-semibold text-base sm:text-lg">{t('cellar.addBottle.smartScan')}</span>
+                        <span id="add-choice-scan-desc" className="block text-sm mt-0.5 opacity-90">
+                          {t('cellar.addBottle.smartScanDesc')}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 flex-shrink-0 flip-rtl" strokeWidth={1.75} aria-hidden />
+                    </label>
 
-                {/* SECONDARY: Manual Entry */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onManualEntry();
-                  }}
-                  className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px]"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-medium)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow-xs)',
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation',
-                    pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
-                  }}
-                >
-                  <svg className="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <div className="flex-1 text-start">
-                    <div className="font-semibold">
-                      {t('cellar.addBottle.manualEntry')}
-                    </div>
-                    <div className="text-sm opacity-70 mt-0.5">
-                      {t('cellar.addBottle.manualEntryDesc')}
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                    {/* SECONDARY: Manual entry */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onManualEntry();
+                      }}
+                      className="add-choice add-choice-secondary"
+                      aria-describedby="add-choice-manual-desc"
+                    >
+                      <span className="add-choice-icon" aria-hidden>
+                        <PenLine className="h-6 w-6" strokeWidth={1.75} />
+                      </span>
+                      <span className="flex-1 min-w-0 text-start">
+                        <span className="block font-semibold text-base sm:text-lg">{t('cellar.addBottle.manualEntry')}</span>
+                        <span id="add-choice-manual-desc" className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                          {t('cellar.addBottle.manualEntryDesc')}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 flex-shrink-0 flip-rtl" strokeWidth={1.75} aria-hidden />
+                    </button>
 
-                {/* DEPRECATED: Multi-Bottle Import - Now integrated into Smart Scan above */}
-
-                {/* Wishlist feature (feature-flagged) - Add to Wishlist option */}
-                {/* Mobile: accept="image/*" without capture shows picker (Camera/Library choice) */}
-                {showWishlistOption && onPhotoSelectedForWishlist && (
-                  <label
-                    className="w-full p-4 sm:p-5 rounded-xl transition-all flex items-center gap-3 sm:gap-4 min-h-[56px] sm:min-h-[60px] cursor-pointer"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--color-amber-500), var(--color-amber-600))',
-                      border: '1px solid var(--color-amber-600)',
-                      color: 'white',
-                      boxShadow: 'var(--shadow-sm)',
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation',
-                      pointerEvents: 'auto', // Fix: Ensure button is immediately clickable
-                    }}
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelectForWishlist}
-                      className="hidden"
-                      aria-label={t('cellar.addBottle.addToWishlist')}
-                    />
-                    {/* Bookmark Icon */}
-                    <div className="relative w-8 h-8 flex-shrink-0">
-                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 text-start">
-                      <div className="font-semibold text-lg">
-                        {t('cellar.addBottle.addToWishlist')} {/* "Add to Wishlist" */}
-                      </div>
-                      <div className="text-sm opacity-90 mt-0.5">
-                        {t('cellar.addBottle.addToWishlistDesc')} {/* "Save wines to buy later" */}
-                      </div>
-                    </div>
-                    <svg className="w-5 h-5 flex-shrink-0 flip-rtl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </label>
-                )}
+                    {/* Wishlist (feature-flagged). No capture attr so mobile shows Camera/Library choice. */}
+                    {showWishlistOption && onPhotoSelectedForWishlist && (
+                      <label className="add-choice add-choice-secondary focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--accent-text)]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelectForWishlist}
+                          className="sr-only"
+                          aria-describedby="add-choice-wishlist-desc"
+                        />
+                        <span className="add-choice-icon add-choice-icon-gold" aria-hidden>
+                          <Bookmark className="h-6 w-6" strokeWidth={1.75} />
+                        </span>
+                        <span className="flex-1 min-w-0 text-start">
+                          <span className="block font-semibold text-base sm:text-lg">{t('cellar.addBottle.addToWishlist')}</span>
+                          <span id="add-choice-wishlist-desc" className="block text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                            {t('cellar.addBottle.addToWishlistDesc')}
+                          </span>
+                        </span>
+                        <ChevronRight className="h-5 w-5 flex-shrink-0 flip-rtl" strokeWidth={1.75} aria-hidden />
+                      </label>
+                    )}
                   </div>
-                  
+
                   {/* Cancel */}
                   <button
                     onClick={(e) => {

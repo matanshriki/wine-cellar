@@ -9,7 +9,7 @@
  * - Completion flow
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../lib/toast';
@@ -20,6 +20,8 @@ import { useWineDisplayImage } from '../hooks/useWineDisplayImage';
 import { ShareEveningSheet } from './ShareEveningSheet';
 import * as eveningShareService from '../services/eveningShareService';
 import type { VoteSummaryEntry } from '../services/eveningShareService';
+import { PortalRoot, useModalLayer } from './ui/ModalLayer';
+import { useDialogA11y } from '../hooks/useDialogA11y';
 
 interface EveningQueuePlayerProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ function GuestActivityBadge({
   shareId: string;
   queue: QueuedWine[];
 }) {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState<VoteSummaryEntry[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -71,19 +74,19 @@ function GuestActivityBadge({
         border: '1px solid var(--wine-200)',
       }}
     >
-      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--wine-600)' }}>
+      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent-text)' }}>
         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
       </svg>
       {loading ? (
-        <p className="text-sm" style={{ color: 'var(--wine-700)' }}>Loading guest votes…</p>
+        <p className="text-sm" style={{ color: 'var(--accent-text)' }}>{t('guestMode.share.loadingVotes')}</p>
       ) : totalVotes === 0 ? (
-        <p className="text-sm" style={{ color: 'var(--wine-700)' }}>
-          Guest link active · waiting for votes
+        <p className="text-sm" style={{ color: 'var(--accent-text)' }}>
+          {t('guestMode.share.waitingForVotes')}
         </p>
       ) : (
-        <p className="text-sm font-medium" style={{ color: 'var(--wine-800)' }}>
-          {totalVotes} guest vote{totalVotes !== 1 ? 's' : ''}
-          {topWine ? ` · Most loved: ${topWine.wine_name}` : ''}
+        <p className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
+          {t('guestMode.share.guestVotes', { count: totalVotes })}
+          {topWine ? <> · {t('guestMode.share.mostLoved')} <bdi>{topWine.wine_name}</bdi></> : null}
         </p>
       )}
     </motion.div>
@@ -103,6 +106,9 @@ export function EveningQueuePlayer({
   const [showWrapUp, setShowWrapUp] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [activeShareId, setActiveShareId] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const isTopmost = useModalLayer(isOpen);
+  useDialogA11y(panelRef, isOpen && !showWrapUp && !showShareSheet, onClose, { isTopmost });
   
   const currentWine = queue[currentIndex];
   const isFirst = currentIndex === 0;
@@ -167,6 +173,7 @@ export function EveningQueuePlayer({
 
   if (showWrapUp) {
     return (
+      <PortalRoot>
       <WrapUpModal
         isOpen={true}
         onClose={() => setShowWrapUp(false)}
@@ -175,11 +182,12 @@ export function EveningQueuePlayer({
         onComplete={onComplete}
         activeShareId={activeShareId}
       />
+      </PortalRoot>
     );
   }
 
   return (
-    <>
+    <PortalRoot>
     <AnimatePresence mode="wait">
       {isOpen && (
       <motion.div
@@ -201,10 +209,12 @@ export function EveningQueuePlayer({
         aria-labelledby="evening-queue-title"
       >
         <motion.div
+          ref={panelRef}
+          tabIndex={-1}
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-2xl rounded-[1.5rem] overflow-hidden flex flex-col"
+          className="relative w-full max-w-2xl outline-none rounded-[1.5rem] overflow-hidden flex flex-col"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
@@ -271,7 +281,7 @@ export function EveningQueuePlayer({
                   <div className="text-center mb-6">
                     <div
                       className="inline-block px-3 py-1.5 rounded-full text-xs font-medium mb-4"
-                      style={{ background: 'var(--wine-100)', color: 'var(--wine-700)' }}
+                      style={{ background: 'var(--wine-100)', color: 'var(--accent-text)' }}
                     >
                       🍷 {t('planEvening.queue.nowPouring', 'Now Pouring')}
                     </div>
@@ -293,7 +303,7 @@ export function EveningQueuePlayer({
                           border: '1px solid var(--border-medium)',
                         }}
                       >
-                        <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-600)' }}>
+                        <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--accent-text)' }}>
                           <path fill="currentColor" d="M6 2h12v2H6V2zm0 18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6H6v14zM8 8h8v12H8V8z"/>
                         </svg>
                       </div>
@@ -325,58 +335,35 @@ export function EveningQueuePlayer({
 
                   {/* Serving Notes */}
                   {(() => {
-                    const sg = (currentWine as any).serving_guidance as {
-                      temp_min?: number;
-                      temp_max?: number;
-                      decanting?: string;
-                      decant_min?: number;
-                      decant_max?: number;
-                      short_instruction?: string;
-                    } | null | undefined;
-
-                    if (sg && typeof sg.temp_min === 'number') {
-                      const tempStr = sg.temp_min === sg.temp_max
+                    const sg = currentWine.serving_guidance;
+                    const hasTemp = typeof sg?.temp_min === 'number' && typeof sg?.temp_max === 'number';
+                    const hasDecant = sg?.decanting === 'recommended' && typeof sg?.decant_min === 'number';
+                    if (!sg || (!hasTemp && !hasDecant)) return null;
+                    const tempStr = !hasTemp
+                      ? null
+                      : sg.temp_min === sg.temp_max
                         ? `${sg.temp_min}°C`
                         : `${sg.temp_min}–${sg.temp_max}°C`;
-                      const decantStr = sg.decanting === 'none' || !sg.decant_max
-                        ? null
-                        : sg.decant_min === sg.decant_max
+                    const decantStr = !hasDecant
+                      ? null
+                      : !sg.decant_max || sg.decant_min === sg.decant_max
                         ? `${sg.decant_min} min`
                         : `${sg.decant_min}–${sg.decant_max} min`;
-
-                      return (
-                        <div
-                          className="p-4 rounded-xl"
-                          style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
-                        >
-                          <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                            {t('planEvening.queue.servingNotes', 'Serving notes:')}
-                          </h4>
-                          <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            <li>• {t('planEvening.queue.serveTemp', 'Serve at {{temp}}', { temp: tempStr })}</li>
-                            {decantStr && (
-                              <li>• {t('planEvening.queue.decantFor', 'Decant for {{time}}', { time: decantStr })}</li>
-                            )}
-                            {sg.short_instruction && (
-                              <li>• {sg.short_instruction}</li>
-                            )}
-                          </ul>
-                        </div>
-                      );
-                    }
-
                     return (
                       <div
                         className="p-4 rounded-xl"
                         style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)' }}
                       >
                         <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                          {t('planEvening.queue.servingNotes', 'Serving notes:')}
+                          {t('planEvening.queue.servingNotes')}
                         </h4>
                         <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          <li>• {t('planEvening.queue.note1', 'Open now and let breathe for 10-15 minutes')}</li>
-                          <li>• {t('planEvening.queue.note2', 'Serve at room temperature (16-18°C)')}</li>
-                          {currentWine.color === 'red' && <li>• {t('planEvening.queue.note3', 'Consider decanting for 30 minutes')}</li>}
+                          {tempStr && (
+                            <li>• {t('planEvening.queue.serveTemp', 'Serve at {{temp}}', { temp: tempStr })}</li>
+                          )}
+                          {decantStr && (
+                            <li>• {t('planEvening.queue.decantFor', 'Decant for {{time}}', { time: decantStr })}</li>
+                          )}
                         </ul>
                       </div>
                     );
@@ -446,7 +433,7 @@ export function EveningQueuePlayer({
                     </div>
                     {idx === currentIndex && (
                       <div className="flex-shrink-0">
-                        <svg className="w-5 h-5 animate-pulse-subtle" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--wine-600)' }}>
+                        <svg className="w-5 h-5 animate-pulse-subtle" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--accent-text)' }}>
                           <path fill="currentColor" d="M8 5v14l11-7z"/>
                         </svg>
                       </div>
@@ -523,7 +510,7 @@ export function EveningQueuePlayer({
       plan={plan}
       onShareCreated={(shareId) => setActiveShareId(shareId)}
     />
-    </>
+    </PortalRoot>
   );
 }
 
@@ -665,7 +652,7 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
               className="p-4 rounded-xl"
               style={{ background: 'linear-gradient(135deg, var(--wine-50), var(--wine-100))', border: '1px solid var(--wine-200)' }}
             >
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--wine-700)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--accent-text)' }}>
                 🏆 {t('guestMode.wrapUp.guestFavorites', "Tonight's guest favorites")}
               </p>
               <div className="space-y-2">
@@ -673,15 +660,15 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
                   <div key={entry.wine_id} className="flex items-center gap-2">
                     <span className="text-base">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--wine-900)' }}>
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--accent-text)' }}>
                         {entry.wine_name}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--wine-600)' }}>
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent-text)' }}>
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                       </svg>
-                      <span className="text-xs font-bold" style={{ color: 'var(--wine-800)' }}>{entry.vote_count}</span>
+                      <span className="text-xs font-bold" style={{ color: 'var(--accent-text)' }}>{entry.vote_count}</span>
                     </div>
                   </div>
                 ))}
@@ -748,10 +735,10 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
                       <div className="mt-3 space-y-3">
                         {/* Quantity */}
                         <div>
-                          <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                          <p id={`wrapup-opened-${idx}`} className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
                             {t('planEvening.wrapUp.opened', 'Bottles opened')}
-                          </label>
-                          <div className="flex items-center gap-2 mt-1">
+                          </p>
+                          <div role="group" aria-labelledby={`wrapup-opened-${idx}`} className="flex items-center gap-2 mt-1">
                             <button
                               aria-label={t('common.decrease')}
                               onClick={() => setWineStates(prev => ({
@@ -782,10 +769,10 @@ function WrapUpModal({ isOpen, onClose, plan, queue, onComplete, activeShareId }
 
                         {/* Rating */}
                         <div>
-                          <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                          <p id={`wrapup-rating-${idx}`} className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
                             {t('planEvening.wrapUp.rating', 'Your rating (optional)')}
-                          </label>
-                          <div className="flex gap-1 mt-1">
+                          </p>
+                          <div role="group" aria-labelledby={`wrapup-rating-${idx}`} className="flex gap-1 mt-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
                                 key={star}

@@ -39,6 +39,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     balance: number;
   } | null>(null);
   const location = useLocation();
+  // Hidden on /recommendation (has its own), /agent (IS the agent), and admin/auth pages.
+  const showGlobalSommiFab = ['/cellar', '/history', '/community'].includes(location.pathname);
 
   // Crop editor state — shown after photo capture, before scan
   const [cropPendingFile, setCropPendingFile] = useState<File | null>(null);
@@ -398,7 +400,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center min-h-[3.5rem] sm:min-h-16 py-1.5 sm:py-0">
             {/* Logo/Brand - Scroll to Top Button */}
-            <div className="flex items-center gap-4 sm:gap-8">
+            <div className="flex items-center gap-4 sm:gap-8 min-w-0">
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -432,7 +434,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   }
                 }}
                 type="button"
-                className="flex items-center gap-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg transition-all hover:opacity-80 active:scale-95"
+                className="flex items-center gap-2 min-w-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg transition-all hover:opacity-80 active:scale-95"
                 style={{ 
                   background: 'none', 
                   border: 'none', 
@@ -472,7 +474,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {t('app.title')}
                   </bdi>
                   <span
-                    className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.18em] rtl:tracking-normal max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
+                    className="max-[379px]:hidden text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.18em] rtl:tracking-normal max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
                     style={{ color: 'var(--text-eyebrow)' }}
                   >
                     {t('app.tagline')}
@@ -516,7 +518,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* End side actions */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 min-[400px]:gap-1.5 sm:gap-2 flex-shrink-0">
               <CompactThemeToggle />
               <LanguageSwitcher variant="pill" />
               {/* Sommi credits badge — only renders for monetization-enabled users */}
@@ -541,11 +543,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav focus:outline-none"
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-bottom-nav focus:outline-none ${showGlobalSommiFab ? 'pb-sommi-fab' : ''}`}
         style={{
           paddingTop: 'calc(4rem + 1.5rem)',
           ...(isIpad
-            ? { paddingBottom: 'calc(var(--app-bottom-nav-layout-total) + 1.5rem)' }
+            ? { paddingBottom: `calc(var(--app-bottom-nav-layout-total) + ${showGlobalSommiFab ? '5rem' : '1.5rem'})` }
             : {}),
         }}
       >
@@ -557,11 +559,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <MobileFloatingFooter onCameraClick={handleCameraFabClick} isTablet={isIpad} />
       )}
 
-      {/* Global Sommelier FAB — shown on content pages that don't already have it.
-          Hidden on /recommendation (has its own), /agent (IS the agent), and admin/auth pages. */}
-      {['/cellar', '/history', '/community'].includes(location.pathname) && (
-        <SommelierChatButton isGlobal />
-      )}
+      {showGlobalSommiFab && <SommelierChatButton isGlobal />}
 
       {/* Hidden camera input for immediate capture (mobile/PWA) */}
       <input

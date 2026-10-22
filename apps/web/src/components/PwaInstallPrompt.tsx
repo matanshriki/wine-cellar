@@ -97,7 +97,7 @@ function Step({ number, icon, label, hint }: StepProps) {
         className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
         style={{
           background: 'var(--wine-50)',
-          color: 'var(--wine-600)',
+          color: 'var(--accent-text)',
           border: '1.5px solid var(--wine-300)',
         }}
       >

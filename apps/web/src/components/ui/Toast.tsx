@@ -11,6 +11,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -128,7 +129,8 @@ interface ToastContainerProps {
 }
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {
-  return (
+  // Outside #root so toasts stay visible and announced while a dialog makes the app inert.
+  return createPortal(
     <div
       className="fixed bottom-0 end-0 z-[1060] p-4 sm:p-6 space-y-3 pointer-events-none max-w-full sm:max-w-md"
       style={{ zIndex: 'var(--z-toast)' }}
@@ -140,7 +142,8 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => 
           <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
         ))}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

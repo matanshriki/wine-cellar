@@ -23,6 +23,14 @@ export interface QueuedWine {
   image_url: string | null;
   image_path?: string | null;
   label_image_path?: string | null;
+  /** Validated serving data captured when the evening starts; absent when the analysis has none. */
+  serving_guidance?: {
+    temp_min?: number;
+    temp_max?: number;
+    decanting?: 'recommended' | 'none';
+    decant_min?: number;
+    decant_max?: number;
+  } | null;
   // Completion data
   opened?: boolean;
   opened_quantity?: number;

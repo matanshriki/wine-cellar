@@ -87,17 +87,17 @@ export function BulkAnalysisModal({
         let successMsg = '';
         
         if (result.processedCount > 0) {
-          successMsg = `🎉 Analysis Complete! ${result.processedCount} bottle${result.processedCount !== 1 ? 's' : ''} analyzed`;
+          successMsg = t('bulkAnalysis.done.analyzed', { count: result.processedCount });
           if (result.skippedCount > 0) {
-            successMsg += `, ${result.skippedCount} skipped`;
+            successMsg += t('bulkAnalysis.done.skipped', { count: result.skippedCount });
           }
           if (result.failedCount > 0) {
-            successMsg += `, ${result.failedCount} failed`;
+            successMsg += t('bulkAnalysis.done.failed', { count: result.failedCount });
           }
         } else if (result.skippedCount > 0) {
-          successMsg = `✓ Analysis Complete! All ${result.skippedCount} bottle${result.skippedCount !== 1 ? 's' : ''} already have sommelier notes.`;
+          successMsg = t('bulkAnalysis.done.allHadNotes', { count: result.skippedCount });
         } else {
-          successMsg = '✓ Analysis Complete! Your cellar is fully analyzed.';
+          successMsg = t('bulkAnalysis.done.fullyAnalyzed');
         }
         
         toast.success(successMsg);
@@ -244,7 +244,7 @@ export function BulkAnalysisModal({
                     <div className="flex-1">
                       <h4
                         className="font-semibold text-sm mb-1"
-                        style={{ color: 'var(--wine-600)' }}
+                        style={{ color: 'var(--accent-text)' }}
                       >
                         {t('bulkAnalysis.errorTitle', 'Analysis Error')}
                       </h4>
@@ -318,13 +318,14 @@ export function BulkAnalysisModal({
               </div>
 
               {/* Mode Selection */}
-              <div className="space-y-3">
-                <label
+              <div className="space-y-3" role="radiogroup" aria-labelledby="bulk-mode-label">
+                <p
+                  id="bulk-mode-label"
                   className="text-sm font-medium"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {t('bulkAnalysis.modeLabel', 'Analysis Mode')}
-                </label>
+                </p>
 
                 {/* Missing Only (Default) */}
                 <label
@@ -357,7 +358,7 @@ export function BulkAnalysisModal({
                         className="ms-2 px-2 py-0.5 rounded text-xs"
                         style={{
                           background: 'var(--wine-100)',
-                          color: 'var(--wine-600)',
+                          color: 'var(--accent-text)',
                         }}
                       >
                         {t('bulkAnalysis.recommended', 'Recommended')}

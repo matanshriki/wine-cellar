@@ -11,6 +11,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { StarRating } from '../components/ui/StarRating';
+import { WineImage } from '../components/ui/WineImage';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Sparkles, Wine, GlassWater } from 'lucide-react';
@@ -21,6 +23,7 @@ import { WineDetailsModal } from '../components/WineDetailsModal';
 import { SommelierChatButton } from '../components/SommelierChatButton';
 import { TonightSommiCard } from '../components/TonightSommiCard';
 import { Toggle } from '../components/ui/Toggle';
+import { mealDetailOptions } from '../services/mealPairing';
 import * as recommendationService from '../services/recommendationService';
 import * as bottleService from '../services/bottleService';
 import * as aiAnalysisService from '../services/aiAnalysisService';
@@ -77,6 +80,7 @@ export function RecommendationPage() {
   const [hasCellarBottles, setHasCellarBottles] = useState(true);
   const [context, setContext] = useState({
     mealType: '',
+    mealDetail: '',
     occasion: '',
     vibe: '',
     avoidTooYoung: true,
@@ -137,6 +141,7 @@ export function RecommendationPage() {
 
       const requestContext: recommendationService.RecommendationInput = {
         mealType: context.mealType || undefined,
+        mealDetail: context.mealDetail || undefined,
         occasion: context.occasion || undefined,
         vibe: context.vibe || undefined,
         constraints: {
@@ -340,23 +345,11 @@ export function RecommendationPage() {
               className="app-card p-5 sm:p-6"
             >
               <div className="flex items-start gap-4 mb-4">
-                {rec.bottle?.imageUrl && (
-                  <div className="flex-shrink-0">
-                    <img
-                      src={rec.bottle.imageUrl}
-                      alt={rec.bottle.name}
-                      className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-2xl"
-                      style={{
-                        border: '1px solid var(--border-medium)',
-                        boxShadow: 'var(--shadow-card)',
-                      }}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
+                <WineImage
+                  src={rec.bottle?.imageUrl}
+                  alt={rec.bottle?.name ?? ''}
+                  className="w-16 h-20 sm:w-20 sm:h-24"
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start gap-3 mb-3">
@@ -385,32 +378,7 @@ export function RecommendationPage() {
                               className="flex items-center gap-1"
                               title={`${rec.bottle.rating} ${t('cellar.bottle.vivinoRating')}`}
                             >
-                              {[1, 2, 3, 4, 5].map((star) => {
-                                const rating = rec.bottle!.rating || 0;
-                                const filled = star <= Math.floor(rating);
-                                const halfFilled = !filled && star <= Math.ceil(rating);
-                                return (
-                                  <span
-                                    key={`${rec.bottleId}-star-${star}`}
-                                    className="text-sm"
-                                    style={{
-                                      color:
-                                        filled || halfFilled
-                                          ? 'var(--color-gold-500)'
-                                          : 'var(--border-medium)',
-                                    }}
-                                    aria-hidden
-                                  >
-                                    {filled ? '★' : halfFilled ? '⯪' : '☆'}
-                                  </span>
-                                );
-                              })}
-                              <span
-                                className="text-sm font-medium ms-1"
-                                style={{ color: 'var(--text-secondary)' }}
-                              >
-                                {rec.bottle.rating.toFixed(1)}
-                              </span>
+                              <StarRating rating={rec.bottle.rating} size={14} />
                             </div>
                             {rec.bottle.vivinoUrl && (
                               <a
@@ -438,7 +406,19 @@ export function RecommendationPage() {
 
               <div className="space-y-4">
                 {/* Taste profile affinity reason */}
-                {rec.affinityReason && (
+                {rec.affinityReason && (rec.affinityInsightType === 'taste_caution' ? (
+                  <div
+                    className="flex items-start gap-2 px-3 py-2 rounded-2xl text-sm font-medium"
+                    style={{
+                      background: 'var(--bg-muted)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)',
+                    }}
+                  >
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} aria-hidden />
+                    {rec.affinityReason}
+                  </div>
+                ) : (
                   <div 
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
                     style={{ 
@@ -450,7 +430,7 @@ export function RecommendationPage() {
                     <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} style={{ color: 'var(--color-gold-500)' }} aria-hidden />
                     {rec.affinityReason}
                   </div>
-                )}
+                ))}
                 
                 <div>
                   <h4
@@ -583,7 +563,7 @@ export function RecommendationPage() {
                 <motion.button
                   key={meal.value}
                   type="button"
-                  onClick={() => setContext({ ...context, mealType: meal.value })}
+                  onClick={() => setContext({ ...context, mealType: meal.value, mealDetail: '' })}
                   whileTap={{ scale: 0.95 }}
                   aria-pressed={context.mealType === meal.value}
                   className="flex flex-col items-center justify-center gap-1.5 p-3 min-h-[76px] rounded-2xl transition-colors hover:border-[var(--wine-300)]"
@@ -610,6 +590,53 @@ export function RecommendationPage() {
                 </motion.button>
               ))}
             </div>
+            {mealDetailOptions(context.mealType).length > 0 && (
+              <div
+                role="group"
+                aria-labelledby="meal-detail-label"
+                aria-describedby="meal-detail-help"
+                className="mt-4 rounded-2xl p-3 sm:p-4"
+                style={{ backgroundColor: 'var(--bg-muted)' }}
+              >
+                <p id="meal-detail-label" className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>
+                  {t('recommendation.form.mealDetail')}
+                </p>
+                <p id="meal-detail-help" className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                  {t('recommendation.form.mealDetailOptional')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {mealDetailOptions(context.mealType).map((detail) => {
+                    const selected = context.mealDetail === detail;
+                    return (
+                      <button
+                        key={detail}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setContext({ ...context, mealDetail: selected ? '' : detail })}
+                        className="min-h-[44px] px-4 rounded-full text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: selected ? 'var(--wine-50)' : 'var(--bg-surface)',
+                          color: selected ? 'var(--accent-text)' : 'var(--text-primary)',
+                          border: `1.5px solid ${selected ? 'var(--wine-500)' : 'var(--border-medium)'}`,
+                        }}
+                      >
+                        {t(`recommendation.form.mealDetails.${context.mealType}.${detail}`)}
+                      </button>
+                    );
+                  })}
+                  {context.mealDetail && (
+                    <button
+                      type="button"
+                      onClick={() => setContext({ ...context, mealDetail: '' })}
+                      className="min-h-[44px] px-4 rounded-full text-sm font-medium underline-offset-4 hover:underline"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {t('recommendation.form.mealDetailSkip')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -748,13 +775,13 @@ export function RecommendationPage() {
 
                   {/* Wine Type Segmented Control */}
                   <div>
-                    <label
+                    <p id="rec-label-1"
                       className="block text-sm font-medium mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {t('recommendation.form.wineType')}
-                    </label>
-                    <div
+                    </p>
+                    <div aria-labelledby="rec-label-1"
                       className="flex rounded-full p-1 gap-1"
                       role="group"
                       style={{
@@ -785,13 +812,13 @@ export function RecommendationPage() {
 
                   {/* Price Range Segmented Control */}
                   <div>
-                    <label
+                    <p id="rec-label-2"
                       className="block text-sm font-medium mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {t('recommendation.form.priceRange')}
-                    </label>
-                    <div
+                    </p>
+                    <div aria-labelledby="rec-label-2"
                       className="flex rounded-full p-1 gap-1"
                       role="group"
                       style={{

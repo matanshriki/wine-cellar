@@ -51,7 +51,7 @@ export function KeepBadge({ reservedFor, reservedDate, size = 'sm', className = 
     WebkitBackdropFilter: 'blur(8px)',
     background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(180,140,30,0.18))',
     border: '1px solid rgba(212,175,55,0.35)',
-    color: 'var(--gold-700, #92660a)',
+    color: 'var(--text-eyebrow)',
     boxShadow: '0 1px 4px rgba(212,175,55,0.15)',
     whiteSpace: 'nowrap',
     ...(size === 'sm'
