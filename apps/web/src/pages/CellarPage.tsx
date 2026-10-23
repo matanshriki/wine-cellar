@@ -1416,19 +1416,9 @@ export function CellarPage() {
         eyebrow={t('cellar.eyebrow')}
         title={t('cellar.title')}
         subtitle={
-          <span className="block">
-            <span>
-              {filteredBottles.length === bottlesInCellar.length
-                ? t('cellar.bottleCount', { count: totalBottleCount })
-                : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })}
-            </span>
-            <span
-              className="block text-xs mt-1.5 font-normal leading-snug"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {t('cellar.bottleCountHelp')}
-            </span>
-          </span>
+          filteredBottles.length === bottlesInCellar.length
+            ? t('cellar.bottleCount', { count: totalBottleCount })
+            : t('cellar.filteredCount', { count: totalFilteredCount, total: totalBottleCount })
         }
         actions={
           <>

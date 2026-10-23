@@ -107,11 +107,11 @@ export function UserMenu() {
     .slice(0, 2);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative flex items-center self-center" ref={menuRef}>
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 transition-colors px-1 lg:pe-2.5 rounded-full hover:bg-[var(--interactive-hover)]"
+        className="inline-flex items-center justify-center gap-2 transition-colors px-1 lg:pe-2.5 rounded-full hover:bg-[var(--interactive-hover)]"
         style={{
           height: '44px',
           minWidth: '44px',
@@ -123,14 +123,14 @@ export function UserMenu() {
       >
         {/* Avatar */}
         <div
-          className="w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-semibold overflow-hidden"
+          className="w-8 h-8 shrink-0 rounded-full text-white flex items-center justify-center text-xs font-semibold overflow-hidden leading-none"
           style={{ background: 'var(--sommi-gradient-primary)' }}
         >
           {profile?.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt={displayName}
-              className="w-full h-full object-cover"
+              className="block w-full h-full object-cover"
             />
           ) : (
             initials
