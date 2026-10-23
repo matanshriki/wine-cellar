@@ -342,14 +342,11 @@ export function HistoryPage() {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
                   <div className="flex-1 min-w-0 pe-2">
                     {/* Note: Wine name, producer, vintage are NOT translated - they're actual wine data */}
-                    <h3 
-                      className="font-semibold text-base sm:text-lg transition-colors group-hover:text-[var(--accent-text)]"
-                      style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-                    >
+                    <h3 className="m-0 text-base sm:text-lg transition-colors group-hover:text-[var(--accent-text)]">
                       <button
                         type="button"
                         onClick={() => handleWineClick(event)}
-                        className="text-start rounded-sm min-h-[44px] inline-flex items-center py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                        className="app-wine-name text-start rounded-sm min-h-[44px] inline-flex items-center py-1 text-[length:inherit] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
                         title={event.bottle?.wine?.wine_name || t('history.unknownBottle')}
                         aria-label={t('cellar.bottle.viewDetailsFor', {
                           name: event.bottle?.wine?.wine_name || t('history.unknownBottle'),

@@ -16,7 +16,8 @@ export default function TermsPage() {
       url="/terms"
     />
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-surface)' }}>
-      <div className="max-w-4xl mx-auto">
+      {/* English legal body stays LTR inside an RTL chrome/shell */}
+      <div className="max-w-4xl mx-auto text-start" dir="ltr" lang="en">
 
         {/* Header */}
         <div className="mb-8">

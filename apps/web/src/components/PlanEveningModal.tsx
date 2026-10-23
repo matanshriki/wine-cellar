@@ -291,7 +291,7 @@ export function PlanEveningModal({ isOpen, onClose, candidateBottles, onPlanStar
         <header className="modal-header">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id={ids.title} className="app-section-title !text-xl sm:!text-2xl">
+              <h2 id={ids.title} className="app-dialog-title">
                 {t('planEvening.title')}
               </h2>
               <p id={ids.subtitle} className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>

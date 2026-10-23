@@ -220,13 +220,7 @@ export function AddBottleSheet({
                     </svg>
                   </div>
                   
-                  <h3 
-                    className="text-2xl font-bold mb-3"
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      fontFamily: 'var(--font-display)',
-                    }}
-                  >
+                  <h3 className="app-dialog-title mb-3">
                     {t('cellar.addBottle.scanFailedTitle')}
                   </h3>
                   
@@ -283,21 +277,13 @@ export function AddBottleSheet({
                   {/* Title */}
                   <h2 
                     id="add-bottle-title"
-                    className="text-2xl font-bold mb-2 text-center"
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 'var(--font-bold)',
-                    }}
+                    className="app-dialog-title mb-2 text-center"
                   >
                     {t('cellar.addBottle.title')}
                   </h2>
 
                   {/* Onboarding v1 – production: Helper text */}
-                  <p
-                    className="text-sm mb-6 text-center"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
+                  <p className="app-helper mb-6 text-center">
                     {t('cellar.addBottle.subtitle')}
                   </p>
 

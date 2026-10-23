@@ -301,8 +301,8 @@ export function SommelierNotes({ analysis, onRefresh, isRefreshing }: SommelierN
         <div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1.5 text-xs font-medium transition-colors"
-          style={{ color: 'var(--accent-text)' }}
+            className="app-accordion-trigger flex items-center gap-1.5 text-xs transition-colors"
+            style={{ color: 'var(--accent-text)' }}
           >
             <svg
               className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}

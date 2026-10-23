@@ -401,13 +401,10 @@ export function WishlistPage() {
               />
 
               <div className="flex-1 min-w-0">
-                <h3
-                  className="text-lg sm:text-xl font-semibold leading-snug break-words"
-                  style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-                >
+                <h3 className="m-0 text-lg sm:text-xl leading-snug break-words">
                   <button
                     type="button"
-                    className="text-start rounded-sm min-h-[44px] inline-flex items-center py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                    className="app-wine-name text-start rounded-sm min-h-[44px] inline-flex items-center py-1 text-[length:inherit] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
                     onClick={() => {
                       setSelectedItem(item);
                       setShowDetailsModal(true);
@@ -417,7 +414,7 @@ export function WishlistPage() {
                   >
                     <bdi>{item.wineName}</bdi>
                     {item.vintage && (
-                      <span className="ms-2 align-middle inline-flex px-2 py-0.5 rounded-full text-sm font-semibold" style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+                      <span className="app-meta ms-2 align-middle inline-flex px-2 py-0.5 rounded-full text-sm font-semibold" style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
                         {item.vintage}
                       </span>
                     )}

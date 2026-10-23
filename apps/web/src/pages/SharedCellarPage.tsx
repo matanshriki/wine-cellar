@@ -203,28 +203,28 @@ export function SharedCellarPage() {
           <div className="app-card p-4">
             <span className="text-2xl" aria-hidden>🍷</span>
             <div className="app-display text-2xl mt-1">{stats.redCount}</div>
-            <div className="app-eyebrow mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="app-meta mt-1">
               {t('sharedCellar.stats.red')}
             </div>
           </div>
           <div className="app-card p-4">
             <span className="text-2xl" aria-hidden>🥂</span>
             <div className="app-display text-2xl mt-1">{stats.whiteCount}</div>
-            <div className="app-eyebrow mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="app-meta mt-1">
               {t('sharedCellar.stats.white')}
             </div>
           </div>
           <div className="app-card p-4">
             <span className="text-2xl" aria-hidden>🌸</span>
             <div className="app-display text-2xl mt-1">{stats.roseCount}</div>
-            <div className="app-eyebrow mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="app-meta mt-1">
               {t('sharedCellar.stats.rose')}
             </div>
           </div>
           <div className="app-card p-4">
             <span className="text-2xl" aria-hidden>✨</span>
             <div className="app-display text-2xl mt-1">{stats.sparklingCount}</div>
-            <div className="app-eyebrow mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="app-meta mt-1">
               {t('sharedCellar.stats.sparkling')}
             </div>
           </div>
@@ -232,7 +232,7 @@ export function SharedCellarPage() {
 
         {stats.topRegions.length > 0 && (
           <div className="app-card p-5 mb-8">
-            <h2 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
+            <h2 className="app-field-label mb-3">
               {t('sharedCellar.topRegions')}
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -276,7 +276,7 @@ export function SharedCellarPage() {
                     : 'var(--color-sage-500)',
               }}
             >
-              <h3 className="font-semibold mb-1 break-words" style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}>
+              <h3 className="app-wine-name text-base mb-1">
                 {bottle.wineName}
               </h3>
               <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>

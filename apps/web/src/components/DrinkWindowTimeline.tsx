@@ -131,21 +131,10 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 
-              className="text-xl"
-              style={{ 
-                color: 'var(--text-heading)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 'var(--font-bold)',
-                letterSpacing: '-0.02em',
-              }}
-            >
+            <h2 className="app-section-title">
               {t('dashboard.drinkWindow.title', 'Drink Window')}
             </h2>
-            <p 
-              className="text-sm"
-              style={{ color: 'var(--text-secondary)' }}
-            >
+            <p className="app-helper" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
               {t('dashboard.drinkWindow.subtitle', 'Optimal timing for your collection')}
             </p>
           </div>

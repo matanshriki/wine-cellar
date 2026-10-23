@@ -162,22 +162,14 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
             )}
           </div>
 
-          <h3 
-            className="text-base sm:text-lg md:text-xl font-semibold leading-snug mb-1 pe-16 sm:pe-20"
-            style={{ 
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 'var(--font-semibold)',
-              letterSpacing: '-0.01em',
-            }}
-          >
+          <h3 className="text-base sm:text-lg md:text-xl leading-snug mb-1 pe-16 sm:pe-20">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onShowDetails?.();
               }}
-              className="text-start rounded-sm min-h-[44px] w-full py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+              className="app-wine-name text-start rounded-sm min-h-[44px] w-full py-1.5 text-[length:inherit] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
               aria-label={t('cellar.bottle.viewDetailsFor', { name: localizedWine.wine_name })}
               title={localizedWine.wine_name}
             >
@@ -186,12 +178,9 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
           </h3>
 
           {localizedWine.producer && (
-            <p 
-              className="text-sm line-clamp-2 pe-16 sm:pe-20"
-              style={{ 
-                color: 'var(--text-secondary)',
-                fontFamily: 'var(--font-body)',
-              }}
+            <p
+              className="app-meta text-sm line-clamp-2 pe-16 sm:pe-20"
+              style={{ color: 'var(--text-secondary)' }}
               title={localizedWine.producer}
             >
               <bdi>{localizedWine.producer}</bdi>

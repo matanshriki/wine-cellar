@@ -160,7 +160,7 @@ export function ProfilePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                <label htmlFor="first_name" className="app-field-label block mb-1">
                   {t('profile.firstName')}
                 </label>
                 <input
@@ -175,7 +175,7 @@ export function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="last_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                <label htmlFor="last_name" className="app-field-label block mb-1">
                   {t('profile.lastName')}
                 </label>
                 <input
@@ -191,7 +191,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="display_name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="display_name" className="app-field-label block mb-1">
                 {t('profile.displayName')} *
               </label>
               <input
@@ -209,7 +209,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="email" className="app-field-label block mb-1">
                 {t('profile.email')}
               </label>
               <input
@@ -236,7 +236,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="preferred_language" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="preferred_language" className="app-field-label block mb-1">
                 {t('profile.preferredLanguage')}
               </label>
               <select
@@ -252,7 +252,7 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="preferred_currency" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="preferred_currency" className="app-field-label block mb-1">
                 {t('profile.preferredCurrency')}
               </label>
               <select
@@ -289,34 +289,34 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.firstName')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.firstName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.first_name || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.lastName')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.lastName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.last_name || t('profile.notProvided')}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.displayName')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.displayName')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>{profile.display_name}</p>
               </div>
 
               <div className="sm:col-span-2">
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.email')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.email')}</h3>
                 <p className="text-base break-all" style={{ color: 'var(--text-primary)' }}>{profile.email || t('profile.notProvided')}</p>
               </div>
 
               <div>
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredLanguage')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.preferredLanguage')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_language === 'he' ? 'עברית (Hebrew)' : 'English'}
                 </p>
               </div>
 
               <div>
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.preferredCurrency')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.preferredCurrency')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {profile.preferred_currency === 'ILS' ? 'NIS ₪' : 'USD $'}
                 </p>
@@ -324,12 +324,12 @@ export function ProfilePage() {
 
               {/* Theme Preference - disabled for production */}
               {/* <div>
-                <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>Theme Preference</h3>
+                <h3 className="app-field-label mb-2">Theme Preference</h3>
                 <ThemeToggle />
               </div> */}
 
               <div>
-                <h3 className="app-eyebrow mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('profile.memberSince')}</h3>
+                <h3 className="app-field-label mb-1.5">{t('profile.memberSince')}</h3>
                 <p className="text-base" style={{ color: 'var(--text-primary)' }}>
                   {new Date(profile.created_at).toLocaleDateString()}
                 </p>

@@ -373,10 +373,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
     return (
       <div className="luxury-card p-6 text-center">
         <p className="text-2xl mb-3">🍾</p>
-        <h2
-          className="text-xl font-bold mb-2"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-        >
+        <h2 className="app-section-title mb-2">
           {t('dashboard.tonightsOrbit.title', "Tonight's Selection")}
         </h2>
         <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -469,10 +466,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             </span>
           )}
 
-          <h3
-            className="text-base sm:text-lg font-semibold leading-snug line-clamp-2"
-            style={{ color: 'var(--text-heading)', fontFamily: 'var(--font-display)' }}
-          >
+          <h3 className="app-wine-name text-base sm:text-lg leading-snug line-clamp-2">
             <bdi>{lw.wine_name}</bdi>
           </h3>
 
@@ -553,16 +547,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         {/* Compact header: Plan stays on the same row as the title (incl. mobile). */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2
-              id={titleId}
-              className="text-xl"
-              style={{
-                color: 'var(--text-heading)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 'var(--font-bold)',
-                letterSpacing: '-0.02em',
-              }}
-            >
+            <h2 id={titleId} className="app-section-title">
               {t('dashboard.tonightsOrbit.title', 'Tonight\'s Selection')}
             </h2>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>

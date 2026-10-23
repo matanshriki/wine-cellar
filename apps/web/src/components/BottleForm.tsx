@@ -644,13 +644,7 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
             borderBottom: '1px solid var(--border-light)',
           }}
         >
-          <h2 
-            className="text-lg sm:text-xl font-bold"
-            style={{ 
-              color: 'var(--text-primary)',
-              fontWeight: 'var(--font-bold)',
-            }}
-          >
+          <h2 className="app-dialog-title">
             {bottle ? t('bottleForm.editTitle') : t('bottleForm.addTitle')}
           </h2>
         </div>
@@ -680,12 +674,9 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
               <div className="flex items-start gap-3">
                 <span className="text-2xl">✨</span>
                 <div className="flex-1">
-                  <h4 
-                    className="text-sm font-semibold mb-1"
-                    style={{ 
-                      color: 'var(--color-amber-800)',
-                      fontFamily: 'var(--font-display)',
-                    }}
+                  <h4
+                    className="app-field-label mb-1"
+                    style={{ color: 'var(--color-amber-800)', fontWeight: 600 }}
                   >
                     {t('bottleForm.aiConfirmTitle')}
                   </h4>

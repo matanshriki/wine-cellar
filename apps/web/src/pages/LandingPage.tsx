@@ -100,7 +100,7 @@ export function LandingPage() {
                 style={{ color: 'var(--lp-burgundy)', fontWeight: 650 }}
                 {...heroItem}
               >
-                <span className="block text-[0.62em] mb-2" style={{ color: 'var(--lp-burgundy-bright)' }}>
+                <span className="app-wordmark-hero block text-[0.62em] mb-2" style={{ color: 'var(--lp-burgundy-bright)' }}>
                   <bdi>Sommi.</bdi>
                 </span>
                 <span className="block">{t('landing.heroTitle')}</span>

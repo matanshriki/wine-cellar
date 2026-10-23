@@ -463,28 +463,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
                 {/* Title + tagline — visible from smallest phones; compact type for PWA */}
                 <div className="flex flex-col leading-tight pointer-events-none gap-0.5 min-w-0 text-start">
-                  <bdi
-                    className="text-[1.2rem] sm:text-[1.35rem] truncate"
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 650,
-                      color: 'var(--accent-text)',
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
+                  <bdi className="app-wordmark truncate">
                     {t('app.title')}
                   </bdi>
-                  <span
-                    className="max-[379px]:hidden text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.18em] rtl:tracking-normal max-w-[11rem] sm:max-w-none leading-snug line-clamp-2"
-                    style={{ color: 'var(--text-eyebrow)' }}
-                  >
+                  <span className="app-eyebrow max-[379px]:hidden max-w-[11rem] sm:max-w-none leading-snug line-clamp-2">
                     {t('app.tagline')}
                   </span>
                 </div>
               </button>
 
-              {/* Desktop Navigation - Light Luxury pill tabs (hidden on iPad; bottom nav handles it) */}
-              <div className={isIpad ? 'hidden' : 'hidden md:flex gap-2'}>
+              {/* Desktop Navigation — lg+ only; below that the bottom nav pattern owns primary routes
+                  (keeps labels operable at ~200% zoom without truncated/ambiguous header pills). */}
+              <div className={isIpad ? 'hidden' : 'hidden lg:flex gap-2 shrink-0'}>
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   
@@ -501,8 +491,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       key={item.path}
                       to={item.path}
                       onClick={handleClick}
+                      aria-label={item.label}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`inline-flex items-center min-h-[44px] px-4 rounded-full text-sm font-semibold transition-colors ${
+                      className={`inline-flex items-center min-h-[44px] px-4 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
                         isActive ? '' : 'hover:bg-[var(--interactive-hover)] hover:text-[var(--text-heading)]'
                       }`}
                       style={{
@@ -535,11 +526,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/**
        * Main Content Area
-       * Mobile: extra padding bottom for bottom nav (pb-bottom-nav includes safe-area)
-       * Desktop: standard padding (pb-bottom-nav automatically switches at md breakpoint)
+       * Mobile/tablet: extra padding bottom for bottom nav (pb-bottom-nav includes safe-area)
+       * Desktop (lg+): standard padding (pb-bottom-nav switches at lg breakpoint)
        * Top padding added to account for fixed header
        */}
-      {/* On iPad the md: CSS rule resets pb-bottom-nav to 2rem, but we're showing the footer
+      {/* On iPad the lg: CSS rule resets pb-bottom-nav, but we're showing the footer
           there too, so override it back to the dynamic nav layout + extra buffer. */}
       <main
         id="main-content"

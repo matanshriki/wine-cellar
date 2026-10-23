@@ -43,10 +43,7 @@ export function LoginPage() {
 
         <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-4 sm:px-6 sm:pt-6">
           <a href="/" className="rounded-full">
-            <bdi
-              className="text-2xl font-semibold tracking-tight"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--accent-text)' }}
-            >
+            <bdi className="app-wordmark" style={{ color: 'var(--accent-text)' }}>
               Sommi.
             </bdi>
           </a>

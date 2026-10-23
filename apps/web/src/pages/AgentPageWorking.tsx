@@ -1011,32 +1011,13 @@ export function AgentPageWorking() {
           </button>
 
           <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
-            <h1
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                color: 'var(--text-heading)',
-                margin: 0,
-                fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-                letterSpacing: '0.03em',
-              }}
-            >
+            <h1 className="app-wordmark" style={{ margin: 0, fontSize: '1.125rem' }}>
               {t('cellarSommelier.title')}
             </h1>
-            <p
-              style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: taglineAccent,
-                margin: '3px 0 0',
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                lineHeight: 1.25,
-              }}
-            >
+            <p className="app-eyebrow" style={{ color: taglineAccent, margin: '3px 0 0' }}>
               {t('app.tagline')}
             </p>
-            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '5px 0 0' }}>
+            <p className="app-meta" style={{ margin: '5px 0 0' }}>
               {t('cellarSommelier.bottleCount', {
                 count: sumInStockBottles(bottles),
               })}

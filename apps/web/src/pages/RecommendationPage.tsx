@@ -369,9 +369,7 @@ export function RecommendationPage() {
                     </div>
                     {rec.bottle && (
                       <div className="flex-1 min-w-0">
-                        <h3
-                          className="app-display text-xl sm:text-2xl mb-1 break-words"
-                        >
+                        <h3 className="app-wine-name text-xl sm:text-2xl mb-1">
                           {rec.bottle.name}
                         </h3>
                         <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
@@ -441,8 +439,8 @@ export function RecommendationPage() {
                 
                 <div>
                   <h4
-                    className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--accent-text)' }}
+                    className="app-field-label mb-2 flex items-center gap-2"
+                    style={{ color: 'var(--accent-text)', fontWeight: 600 }}
                   >
                     <Wine className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                     {t('recommendation.results.whyThisBottle')}
@@ -458,8 +456,8 @@ export function RecommendationPage() {
                   }}
                 >
                   <h4
-                    className="font-semibold mb-2 flex items-center gap-2"
-                    style={{ color: 'var(--text-heading)' }}
+                    className="app-field-label mb-2 flex items-center gap-2"
+                    style={{ color: 'var(--text-heading)', fontWeight: 600 }}
                   >
                     <GlassWater className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                     {t('recommendation.results.servingInstructions')}
@@ -562,7 +560,7 @@ export function RecommendationPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="app-card p-5 sm:p-6 space-y-6">
           <div>
-            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
+            <h3 className="app-field-label mb-3">
               {t('recommendation.form.mealType')}
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
@@ -647,7 +645,7 @@ export function RecommendationPage() {
           </div>
 
           <div>
-            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
+            <h3 className="app-field-label mb-3">
               {t('recommendation.form.occasion')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -685,7 +683,7 @@ export function RecommendationPage() {
           </div>
 
           <div>
-            <h3 className="app-eyebrow mb-3" style={{ color: 'var(--text-secondary)' }}>
+            <h3 className="app-field-label mb-3">
               {t('recommendation.form.vibe')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

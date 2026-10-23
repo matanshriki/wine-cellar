@@ -232,16 +232,10 @@ export function AgentPage() {
           </button>
 
           <div className="flex-1 text-center">
-            <h1 
-              className="text-xl font-bold"
-              style={{ 
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-display)',
-              }}
-            >
+            <h1 className="app-wordmark text-xl">
               Sommi
             </h1>
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--wine-400)' }}>
+            <p className="app-eyebrow text-[10px]" style={{ color: 'var(--wine-400)' }}>
               {t('app.tagline')}
             </p>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>

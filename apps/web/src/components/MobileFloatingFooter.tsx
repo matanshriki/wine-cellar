@@ -30,7 +30,7 @@ import React from 'react';
 
 interface MobileFloatingFooterProps {
   onCameraClick: () => void;
-  /** Pass true on iPad/tablet — overrides md:hidden so the footer shows on larger screens */
+  /** Pass true on iPad/tablet — overrides lg:hidden so the footer shows on larger screens */
   isTablet?: boolean;
 }
 
@@ -158,7 +158,7 @@ export function MobileFloatingFooter({ onCameraClick, isTablet = false }: Mobile
           replaying every time a modal opens/closes, which was causing the nav
           to visually "jump" on pages like Wishlist. */}
       <motion.div
-        className={`fixed bottom-0 start-0 end-0 pointer-events-none ${isTablet ? '' : 'md:hidden'}`}
+        className={`fixed bottom-0 start-0 end-0 pointer-events-none ${isTablet ? '' : 'lg:hidden'}`}
         style={{
           zIndex: 'var(--z-sticky)',
           paddingBottom: 'env(safe-area-inset-bottom)',

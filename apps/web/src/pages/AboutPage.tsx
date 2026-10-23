@@ -183,27 +183,18 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <motion.header className="pt-2 pb-10 sm:pb-12" {...item}>
-        {/* App name eyebrow */}
-        <p className="app-eyebrow mb-5">
+        {/* Brand wordmark (same role as marketing nav — not a huge hero line) */}
+        <p className="app-wordmark mb-5">
           <bdi>Sommi</bdi>
         </p>
 
         {/* Title */}
-        <h1
-          className="app-display text-[2.6rem] sm:text-5xl leading-[1.1] mb-4"
-        >
+        <h1 className="app-page-title mb-4">
           {t('about.title')}
         </h1>
 
         {/* Subtitle */}
-        <p
-          className="text-[1.1rem] sm:text-xl leading-relaxed"
-          style={{
-            color: 'var(--text-tertiary)',
-            fontStyle: 'italic',
-            letterSpacing: '0.01em',
-          }}
-        >
+        <p className="app-page-subtitle" style={{ fontStyle: 'italic' }}>
           {t('about.subtitle')}
         </p>
       </motion.header>
@@ -247,10 +238,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <motion.section className="mb-12 sm:mb-14" {...item}>
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6 px-1"
-          style={{ color: 'var(--text-tertiary)' }}
-        >
+        <p className="app-eyebrow mb-6 px-1">
           {t('about.faqTitle')}
         </p>
 
@@ -268,10 +256,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
                   onClick={() => setOpenFaq(isOpen ? null : i)}
                   aria-expanded={isOpen}
                 >
-                  <h2
-                    className="text-sm font-semibold leading-snug"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <h2 className="app-accordion-trigger m-0">
                     {question}
                   </h2>
                   <div
@@ -314,10 +299,7 @@ export function AboutPage({ appShell = false }: AboutPageProps = {}) {
       {/* ── Support section ──────────────────────────────────────────────── */}
       <motion.section {...item}>
         {/* Section label */}
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-3 px-1"
-          style={{ color: 'var(--text-tertiary)' }}
-        >
+        <p className="app-eyebrow mb-3 px-1">
           {t('about.supportTitle')}
         </p>
 

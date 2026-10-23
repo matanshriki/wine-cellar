@@ -106,10 +106,7 @@ function KosherStatusSection({ wine }: { wine: Record<string, unknown> }) {
 
   return (
     <div>
-      <h3
-        className="text-sm font-semibold mb-3 flex items-center gap-2"
-        style={{ color: 'var(--text-primary)' }}
-      >
+      <h3 className="app-field-label mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
         <span>✡️</span>
         <span>{t('kosher.sectionHeading')}</span>
       </h3>
@@ -762,11 +759,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
                   <div className="flex-1 pe-4">
                     <h2 
                       id="wine-details-title"
-                      className="text-2xl sm:text-3xl font-bold mb-1 leading-tight"
-                      style={{ 
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-display)',
-                      }}
+                      className="app-wine-name app-dialog-title mb-1"
                     >
                       {localizedWine.wine_name}
                     </h2>

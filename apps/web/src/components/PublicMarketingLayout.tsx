@@ -47,12 +47,8 @@ export function PublicMarketingLayout({ children }: { children: React.ReactNode 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between min-h-[3.5rem] gap-3">
           <Link
             to="/"
-            className={`flex items-center gap-2 font-bold tracking-wide text-lg ${isLanding ? 'lp-brand' : ''}`}
-            style={
-              isLanding
-                ? undefined
-                : { fontFamily: 'var(--font-display)', color: 'var(--wine-700)' }
-            }
+            className={`flex items-center gap-2 ${isLanding ? 'lp-brand' : 'app-wordmark'}`}
+            style={isLanding ? undefined : { color: 'var(--wine-700)' }}
           >
             <img
               src={APP_ICON_URL}

@@ -2265,24 +2265,14 @@ export function CellarPage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-3"
                 >
-                  <h3 
-                    className="text-2xl font-semibold"
-                    style={{
-                      color: 'var(--text-primary)',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 'var(--font-bold)',
-                    }}
-                  >
+                  <h3 className="app-dialog-title text-2xl">
                     {scanPhase === 'matching'
                       ? t('cellar.labelParse.matchingTitle')
                       : t('cellar.labelParse.analyzing')}
                   </h3>
-                  <p 
-                    className="text-base leading-relaxed"
-                    style={{ 
-                      color: 'var(--text-secondary)',
-                      fontFamily: 'var(--font-body)',
-                    }}
+                  <p
+                    className="app-lede text-base"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {scanPhase === 'matching'
                       ? t('cellar.labelParse.matchingSubtitle')
