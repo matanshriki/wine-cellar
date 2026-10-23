@@ -72,8 +72,7 @@
    * Heading tags are semantic structure only.
    * Visual type comes from role classes in app.css (.app-page-title, .app-section-title,
    * .app-dialog-title, .app-wine-name, …). Bare headings default to Rubik so functional
-   * labels (field/accordion) never inherit tiny Fraunces + editorial tracking.
-   * Marketing pages opt back into Fraunces via .landing-page / .lp-display.
+   * labels (field/accordion) never inherit shouty tracking from display roles.
    */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-body);

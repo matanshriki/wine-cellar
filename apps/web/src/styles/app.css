@@ -20,8 +20,8 @@
   --lp-gold-soft: #c9a227;
   --lp-ink: #2d1810;
   --lp-surface: #fffdf9;
-  --lp-font-display: 'Fraunces', 'Rubik', Georgia, 'Times New Roman', serif;
-  --lp-font-body: 'Rubik', 'Assistant', system-ui, sans-serif;
+  --lp-font-display: var(--font-display, 'Rubik', 'Heebo', 'Assistant', system-ui, sans-serif);
+  --lp-font-body: var(--font-body, 'Assistant', system-ui, sans-serif);
 }
 
 /* The landing nav embeds shared app controls (language switcher). Pin the
@@ -54,9 +54,8 @@
 
 /* ===== Typography (semantic roles) =====
  *
- * Families: Fraunces = EN display / wine names / wordmark.
- *           Rubik    = body, labels, controls, metadata, all Hebrew.
- * Prefer these classes over ad-hoc text-* + font-display mixes.
+ * Body/UI: Assistant (Regular/Medium). Display/headers: Rubik (Bold+).
+ * Video/hook captions can use .app-display-hook (ExtraBold/Black).
  */
 
 /* Decorative English eyebrow only — never field labels or Hebrew functional UI */
@@ -85,7 +84,7 @@
 .app-wordmark {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: -0.01em;
   font-size: 1.2rem;
   line-height: 1.15;
@@ -98,7 +97,7 @@
   }
 }
 
-/* Marketing hero brand line under eyebrow — larger, still Fraunces EN */
+/* Marketing hero brand line under eyebrow */
 .app-wordmark-hero {
   font-family: var(--font-display);
   font-optical-sizing: auto;
@@ -110,15 +109,25 @@
 .app-display {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
+  color: var(--text-heading);
+}
+
+/* Short-form / video caption hooks — still heavier than page titles */
+.app-display-hook {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   color: var(--text-heading);
 }
 
 .app-page-title {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.08;
   font-size: 2rem;
@@ -134,7 +143,7 @@
 .app-page-subtitle {
   font-family: var(--font-body);
   font-size: 0.975rem;
-  font-weight: 400;
+  font-weight: 400; /* Regular — body copy */
   line-height: 1.55;
   letter-spacing: normal;
   color: var(--text-secondary);
@@ -150,7 +159,7 @@
 .app-section-title {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
   font-size: 1.25rem; /* 20px */
   line-height: 1.2;
@@ -167,7 +176,7 @@
 .app-card-title {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
   font-size: 1.125rem; /* 18px */
   line-height: 1.25;
@@ -178,7 +187,7 @@
 .app-dialog-title {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
   font-size: 1.25rem; /* 20px */
   line-height: 1.2;
@@ -191,11 +200,11 @@
   }
 }
 
-/* Wine names — editorial; wrap, never shrink-to-fit */
+/* Wine names — display face; wrap, never shrink-to-fit */
 .app-wine-name {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -221,7 +230,7 @@
   color: var(--text-secondary);
 }
 
-/* Form / preference group labels — Rubik, never uppercase Fraunces */
+/* Form / preference group labels — never uppercase shouty tracking */
 .app-field-label {
   font-family: var(--font-body);
   font-size: 0.875rem; /* 14px */
@@ -269,23 +278,18 @@
   color: var(--text-secondary);
 }
 
-/* Chat chrome title — compact display, not Georgia fallback */
+/* Chat chrome title — compact display */
 .app-chat-title {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   font-size: 1.125rem; /* 18px */
   line-height: 1.2;
   color: var(--text-heading);
 }
 
-/*
- * Hebrew UI copy: Rubik (Fraunces has no Hebrew glyphs).
- * Intentional exception — Latin brand marks stay Fraunces in RTL:
- *   .app-wordmark, .app-wordmark-hero, .lp-brand
- * (Always the Latin string “Sommi”, never translated — including chat header.)
- */
+/* Hebrew: drop editorial tracking / uppercase that don’t apply to the script */
 [dir='rtl'] .app-display,
 [dir='rtl'] .app-page-title,
 [dir='rtl'] .app-section-title,
@@ -293,14 +297,12 @@
 [dir='rtl'] .app-dialog-title,
 [dir='rtl'] .app-wine-name,
 [dir='rtl'] .app-chat-title {
-  font-family: var(--font-body);
   letter-spacing: normal;
 }
 
 /*
  * Cascade: functional roles set family on the text-bearing node itself.
- * Heading tags default to Rubik in index.css; display roles opt in to Fraunces.
- * Nested controls (e.g. button.app-disclosure inside h3) keep Rubik via their class —
+ * Nested controls (e.g. button.app-disclosure inside h3) keep body face via their class —
  * no !important; specificity is class > element.
  */
 h1.app-field-label,

@@ -169,7 +169,7 @@ export function BottleCard({ bottle, onEdit, onDelete, onAnalyze, onMarkOpened, 
                 e.stopPropagation();
                 onShowDetails?.();
               }}
-              className="app-wine-name text-start rounded-sm min-h-[44px] w-full py-1.5 text-[length:inherit] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+              className="app-wine-name text-start rounded-sm min-h-[44px] w-full py-1.5 text-[length:inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
               aria-label={t('cellar.bottle.viewDetailsFor', { name: localizedWine.wine_name })}
               title={localizedWine.wine_name}
             >

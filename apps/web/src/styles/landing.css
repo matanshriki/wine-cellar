@@ -17,8 +17,8 @@
   --lp-gold-soft: #c9a227;
   --lp-ink: #2d1810;
   --lp-surface: #fffdf9;
-  --lp-font-display: 'Fraunces', 'Rubik', Georgia, 'Times New Roman', serif;
-  --lp-font-body: 'Rubik', 'Assistant', system-ui, sans-serif;
+  --lp-font-display: var(--font-display, 'Rubik', 'Heebo', 'Assistant', system-ui, sans-serif);
+  --lp-font-body: var(--font-body, 'Assistant', system-ui, sans-serif);
   --lp-radius: 1.25rem;
   --lp-shadow: 0 24px 64px rgba(45, 24, 16, 0.12);
   color: var(--lp-ink);

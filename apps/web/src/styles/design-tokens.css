@@ -124,9 +124,13 @@
   
   /* === Typography === */
   
-  /* Font families — Fraunces for EN display, Rubik for body and all Hebrew glyphs */
-  --font-display: 'Fraunces', 'Rubik', Georgia, 'Times New Roman', serif;
-  --font-body: 'Rubik', 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Font families
+   * Primary (UI & body): Assistant — clean, geometric, screen-legible
+   * Display (headers / hooks): Rubik — wide, bold, friendly (Heebo as Hebrew-capable fallback)
+   * Body weights: 400 Regular / 500 Medium · Display hooks: 800 ExtraBold / 900 Black
+   */
+  --font-body: 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Rubik', 'Heebo', 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-heading: var(--font-display);
   
   /* Font sizes - refined scale */

@@ -404,7 +404,7 @@ export function WishlistPage() {
                 <h3 className="m-0 text-lg sm:text-xl leading-snug break-words">
                   <button
                     type="button"
-                    className="app-wine-name text-start rounded-sm min-h-[44px] inline-flex items-center py-1 text-[length:inherit] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
+                    className="app-wine-name w-full text-start rounded-sm min-h-[44px] inline-flex items-start justify-between gap-2 py-1 text-[length:inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-text)]"
                     onClick={() => {
                       setSelectedItem(item);
                       setShowDetailsModal(true);
@@ -412,9 +412,12 @@ export function WishlistPage() {
                     aria-label={t('cellar.bottle.viewDetailsFor', { name: `${item.wineName}${item.vintage ? ` ${item.vintage}` : ''}` })}
                     title={`${item.wineName}${item.vintage ? ` ${item.vintage}` : ''}`}
                   >
-                    <bdi>{item.wineName}</bdi>
+                    <bdi className="min-w-0 flex-1 pe-1">{item.wineName}</bdi>
                     {item.vintage && (
-                      <span className="app-meta ms-2 align-middle inline-flex px-2 py-0.5 rounded-full text-sm font-semibold" style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      <span
+                        className="app-meta mt-0.5 inline-flex shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-sm font-semibold tabular-nums"
+                        style={{ background: 'var(--bg-muted)', color: 'var(--text-primary)', fontSize: '0.875rem' }}
+                      >
                         {item.vintage}
                       </span>
                     )}
