@@ -29,7 +29,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 import { SWEETNESS_PROMPT_DEFINITION, SWEETNESS_SCALE_VERSION } from '../_shared/sweetnessScale.ts'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -85,8 +85,10 @@ async function generateProfile(wine: any): Promise<any> {
     },
     body: JSON.stringify({
       model: OPENAI_CHAT_MODEL,
-      temperature: 0.2,
-      max_tokens: 400,
+      ...openaiChatSamplingParams({
+        maxTokens: 400,
+        reasoningEffort: 'none',
+      }),
       messages: [
         {
           role: 'system',

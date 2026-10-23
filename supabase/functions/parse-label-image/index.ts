@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
 import { withSentry, setSentryWineContext } from '../_shared/sentry.ts';
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts';
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -308,8 +308,11 @@ Return JSON in this exact format:
             ]
           }
         ],
-        max_tokens: 1000,
-        temperature: 0.1, // Low temperature for consistent extraction
+        // gpt-6-luna rejects max_tokens + custom temperature.
+        ...openaiChatSamplingParams({
+          maxTokens: 1000,
+          reasoningEffort: 'none',
+        }),
         response_format: { type: 'json_object' }, // Enforce valid JSON output
         }),
       });

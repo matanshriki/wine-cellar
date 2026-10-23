@@ -18,7 +18,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -253,9 +253,11 @@ Be SPECIFIC to this wine. Use named dishes, not vague categories. ${langInstruct
           },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.6,
+        ...openaiChatSamplingParams({
+          maxTokens: 700,
+          reasoningEffort: 'none',
+        }),
         response_format: { type: 'json_object' },
-        max_tokens: 700,
       }),
     })
 

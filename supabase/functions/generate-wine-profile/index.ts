@@ -5,7 +5,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 import { SWEETNESS_PROMPT_DEFINITION, SWEETNESS_SCALE_VERSION } from '../_shared/sweetnessScale.ts'
 
 const corsHeaders = {
@@ -279,8 +279,10 @@ Base your analysis on:
             },
           },
         },
-        temperature: 0.3,
-        max_tokens: 500,
+        ...openaiChatSamplingParams({
+          maxTokens: 500,
+          reasoningEffort: 'none',
+        }),
       }),
     })
 

@@ -23,7 +23,7 @@ import {
   type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts';
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts';
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts';
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts';
 import {
   buildAnalysisDataSlice,
   mergeAnalysisDataJson,
@@ -446,7 +446,7 @@ async function generateAIAnalysis(wine: WineAnalysisInput, language: string): Pr
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
+        ...openaiChatSamplingParams({ maxTokens: 1200 }),
         response_format: { type: 'json_object' },
       }),
     });

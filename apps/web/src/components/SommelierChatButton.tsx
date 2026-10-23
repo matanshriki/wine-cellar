@@ -9,8 +9,9 @@
  *   - sm+: luxury gold tooltip above the button + golden FAB (once; stored in
  *     localStorage).
  *   - Mobile / narrow (global FAB only): “Meet Sommi” chip fades in, stays ~5 s,
- *     and fades out — once per tab session, and never after the FAB was tapped,
- *     because the chip covers page content while it is visible.
+ *     fades out, then repeats every 30 s as a CTA. Not persisted — stops when the
+ *     tab closes or site data is cleared. Decorative only (aria-hidden); paused
+ *     while a dialog is open; respects reduced motion.
  *
  * Subsequent visits:
  *   - Compact wine-gradient pill with a subtle wobble + ping animation.
@@ -26,24 +27,14 @@ import { useTranslation } from 'react-i18next';
 import { trackSommelier } from '../services/analytics';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 import { safeGetItem, safeSetItem } from '../utils/safeLocalStorage';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 /** Gold card + desktop scheduling (legacy key — unchanged for backward compat). */
 const DESKTOP_INTRO_KEY = 'sommelier-fab-intro-seen';
 
-/** Mobile CTA chip: visible duration and once-per-session marker (global FAB / narrow viewport only). */
+/** Mobile CTA chip: repeat interval + visible duration (global FAB / narrow viewport only). */
+const MOBILE_HINT_INTERVAL_MS = 30_000;
 const MOBILE_HINT_VISIBLE_MS = 5000;
-const MOBILE_HINT_SESSION_KEY = 'sommelier-fab-mobile-hint-shown';
-
-function claimMobileHintForSession(): boolean {
-  if (SOMMELIER_FAB_INTRO_DEBUG) return true;
-  try {
-    if (window.sessionStorage.getItem(MOBILE_HINT_SESSION_KEY)) return false;
-    window.sessionStorage.setItem(MOBILE_HINT_SESSION_KEY, '1');
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /** Dev server only: replay first-visit FAB UI every load; never persist intro-seen. */
 const SOMMELIER_FAB_INTRO_DEBUG =
@@ -54,6 +45,10 @@ const SOMMELIER_FAB_INTRO_DEBUG =
 function hasDesktopIntroBeenSeen(): boolean {
   if (SOMMELIER_FAB_INTRO_DEBUG) return false;
   return !!safeGetItem(DESKTOP_INTRO_KEY);
+}
+
+function isDialogOpen(): boolean {
+  return !!document.querySelector('[role="dialog"][aria-modal="true"]');
 }
 
 interface SommelierChatButtonProps {
@@ -69,6 +64,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const reduceMotion = shouldReduceMotion();
 
   const [showIntro, setShowIntro] = useState(false);
   const [showMobileHint, setShowMobileHint] = useState(false);
@@ -87,7 +83,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     if (introTimerRef.current) clearTimeout(introTimerRef.current);
   }, [persistDesktopIntroSeen]);
 
-  /** FAB tap: hide gold + chip UI and persist, which also stops the mobile chip. */
+  /** FAB tap: hide gold + chip UI; persist desktop intro only (mobile chip loops again). */
   const dismissAllFabIntros = useCallback(() => {
     setShowIntro(false);
     setShowMobileHint(false);
@@ -104,27 +100,34 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     return () => clearTimeout(t);
   }, []);
 
-  // ── Mobile: one CTA chip per session (Layout / isGlobal FAB only) ─────────
+  // ── Mobile: repeating CTA chip (Layout / isGlobal FAB only; not persisted) ─
+  // Original behavior (e2661af): show after 600ms, visible ~5s, repeat every 30s.
   useEffect(() => {
     if (!isGlobal) return;
 
     const mq = window.matchMedia('(max-width: 639px)');
-    let cleanupHint: (() => void) | undefined;
+    let cleanupLoop: (() => void) | undefined;
 
-    const scheduleHint = () => {
-      if (hasDesktopIntroBeenSeen()) return undefined;
-      const initial = window.setTimeout(() => {
-        if (claimMobileHintForSession()) setShowMobileHint(true);
-      }, 600);
-      return () => window.clearTimeout(initial);
+    const startLoop = () => {
+      const showHint = () => {
+        // Do not surface the chip over dialogs / agent modals.
+        if (isDialogOpen()) return;
+        setShowMobileHint(true);
+      };
+      const initial = window.setTimeout(showHint, 600);
+      const interval = window.setInterval(showHint, MOBILE_HINT_INTERVAL_MS);
+      return () => {
+        window.clearTimeout(initial);
+        window.clearInterval(interval);
+      };
     };
 
     const sync = () => {
-      cleanupHint?.();
-      cleanupHint = undefined;
+      cleanupLoop?.();
+      cleanupLoop = undefined;
       setShowMobileHint(false);
       if (mq.matches) {
-        cleanupHint = scheduleHint();
+        cleanupLoop = startLoop();
       }
     };
 
@@ -132,11 +135,16 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     mq.addEventListener('change', sync);
     return () => {
       mq.removeEventListener('change', sync);
-      cleanupHint?.();
+      cleanupLoop?.();
     };
   }, [isGlobal]);
 
-  // Mobile chip: visible window then fade out
+  // Hide the chip immediately if a dialog opens mid-display.
+  useEffect(() => {
+    if (isModalOpen) setShowMobileHint(false);
+  }, [isModalOpen]);
+
+  // Mobile chip: visible window then fade out (next show is from interval)
   useEffect(() => {
     if (!showMobileHint) return;
     const t = window.setTimeout(() => setShowMobileHint(false), MOBILE_HINT_VISIBLE_MS);
@@ -157,8 +165,7 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
     if (!isGlobal) return;
 
     const check = () => {
-      const hasModal = !!document.querySelector('[role="dialog"][aria-modal="true"]');
-      setIsModalOpen(hasModal);
+      setIsModalOpen(isDialogOpen());
     };
 
     check();
@@ -183,7 +190,12 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
   }, [dismissAllFabIntros, navigate, location.pathname]);
 
   // ── Rendering ───────────────────────────────────────────────────────────────
+  // Hidden entirely on /agent (Layout) and while dialogs are open — chip cannot interrupt chat.
   if (isGlobal && isModalOpen) return null;
+
+  const chipTransition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.35, ease: 'easeOut' as const };
 
   return (
     <div
@@ -198,10 +210,14 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
       <AnimatePresence>
         {showIntro && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.93 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.93 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.95 }}
+            transition={
+              reduceMotion
+                ? { duration: 0 }
+                : { type: 'spring', damping: 22, stiffness: 280 }
+            }
             className="absolute end-0 hidden min-w-[232px] max-w-[260px] sm:block"
             style={{ bottom: 'calc(100% + 14px)', zIndex: 1 }}
           >
@@ -313,10 +329,10 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
           <AnimatePresence>
             {showMobileHint && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                transition={chipTransition}
                 className="pointer-events-none absolute end-0 z-[2] sm:hidden"
                 style={{ bottom: 'calc(100% + 10px)' }}
                 aria-hidden="true"
@@ -343,9 +359,17 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
           {showIntro && (
             <motion.div
               initial={{ scale: 1, opacity: 0.6 }}
-              animate={{ scale: [1, 1.7, 1], opacity: [0.55, 0, 0.55] }}
+              animate={
+                reduceMotion
+                  ? { scale: 1, opacity: 0.35 }
+                  : { scale: [1, 1.7, 1], opacity: [0.55, 0, 0.55] }
+              }
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.9, repeat: 3, ease: 'easeInOut' }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { duration: 1.9, repeat: 3, ease: 'easeInOut' }
+              }
               className="absolute inset-0 rounded-full pointer-events-none"
               style={{
                 background:
@@ -356,11 +380,15 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
         </AnimatePresence>
 
         <motion.button
-          initial={{ scale: 0, opacity: 0 }}
+          initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 14, stiffness: 220, delay: 0.25 }}
-          whileHover={{ scale: 1.06 }}
-          whileTap={{ scale: 0.93 }}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { type: 'spring', damping: 14, stiffness: 220, delay: 0.25 }
+          }
+          whileHover={reduceMotion ? undefined : { scale: 1.06 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.93 }}
           onClick={handleClick}
           className="relative flex h-14 w-14 min-h-[3.5rem] min-w-[3.5rem] items-center justify-center gap-2 rounded-full p-0.5 shadow-2xl sm:h-auto sm:min-h-0 sm:w-auto sm:min-w-0 sm:justify-start sm:gap-2.5 sm:p-0 sm:px-5 sm:py-3"
           style={{
@@ -382,8 +410,14 @@ export function SommelierChatButton({ isGlobal = false }: SommelierChatButtonPro
         >
           {/* Sommi agent mark — matches chat /agent avatar */}
           <motion.div
-            animate={showIntro ? { rotate: [0, -10, 10, -10, 0] } : { rotate: 0 }}
-            transition={{ duration: 1.4, repeat: showIntro ? 2 : 0 }}
+            animate={
+              reduceMotion
+                ? { rotate: 0 }
+                : showIntro
+                  ? { rotate: [0, -10, 10, -10, 0] }
+                  : { rotate: 0 }
+            }
+            transition={{ duration: 1.4, repeat: showIntro && !reduceMotion ? 2 : 0 }}
             className="h-full w-full flex-shrink-0 overflow-hidden rounded-full ring-1 ring-inset ring-white/70 shadow-none sm:h-7 sm:w-7 sm:ring-1"
           >
             <img

@@ -550,13 +550,8 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
         className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5"
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
-        {/*
-          Mobile: stack Plan under the title and pin it to the inline-start edge so it
-          stays clear of the fixed Ask-Sommi FAB (inset-inline-end). justify-between
-          previously placed Plan on the same end edge as the FAB — crowded at 390×640 RTL.
-        */}
-        {/* Reserve inline-end space on phones so Plan never grows under the Ask-Sommi FAB */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between max-sm:pe-16">
+        {/* Compact header: Plan stays on the same row as the title (incl. mobile). */}
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2
               id={titleId}
@@ -580,7 +575,7 @@ export function TonightsOrbitCinematic({ bottles, onBottleClick }: TonightsOrbit
             <button
               type="button"
               onClick={() => (activePlan ? setShowQueuePlayer(true) : setShowPlanEveningModal(true))}
-              className="btn-luxury-primary !min-h-[44px] !py-2 !px-4 text-sm flex-shrink-0 self-start"
+              className="btn-luxury-primary !min-h-[44px] !py-2 !px-4 text-sm flex-shrink-0"
             >
               <span aria-hidden>{activePlan ? '▶️' : '🎯'}</span>
               <span className="hidden sm:inline">

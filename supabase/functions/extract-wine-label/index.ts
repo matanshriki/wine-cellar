@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -156,8 +156,10 @@ RESPOND ONLY WITH JSON. NO OTHER TEXT.`
             ],
           },
         ],
-        max_tokens: 800,
-        temperature: 0.1, // Low temperature for consistent extraction
+        ...openaiChatSamplingParams({
+          maxTokens: 800,
+          reasoningEffort: 'none',
+        }),
         response_format: { type: 'json_object' },
       }),
     })

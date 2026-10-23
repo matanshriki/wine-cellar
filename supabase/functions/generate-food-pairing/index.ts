@@ -23,7 +23,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { checkCreditAccess, logCreditUsage, insufficientCreditsResponse } from '../_shared/creditHelper.ts'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -248,9 +248,11 @@ serve(async (req) => {
           { role: 'system', content: buildSystemPrompt(language) },
           { role: 'user', content: buildUserPrompt(wineData) },
         ],
-        temperature: 0.6,
+        ...openaiChatSamplingParams({
+          maxTokens: 700,
+          reasoningEffort: 'none',
+        }),
         response_format: { type: 'json_object' },
-        max_tokens: 700,
       }),
     })
 

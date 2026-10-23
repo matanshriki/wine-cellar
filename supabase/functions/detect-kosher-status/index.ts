@@ -38,7 +38,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { withSentry, setSentryWineContext } from '../_shared/sentry.ts'
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts'
 import {
   detectKosherByProducerRule,
   shouldSkipKosherEnrichment,
@@ -476,8 +476,10 @@ serve(withSentry('detect-kosher-status', async (req) => {
         body: JSON.stringify({
           model: OPENAI_CHAT_MODEL,
           response_format: { type: 'json_object' },
-          temperature: 0,
-          max_tokens: 300,
+          ...openaiChatSamplingParams({
+            maxTokens: 300,
+            reasoningEffort: 'none',
+          }),
           messages: [
             { role: 'system', content: buildKosherSystemPrompt() },
             { role: 'user', content: buildKosherUserPrompt(wineData) },

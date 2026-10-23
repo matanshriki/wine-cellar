@@ -37,7 +37,7 @@ import {
   type ServingGuidance,
   type BarrelAgingMetadata,
 } from '../_shared/wineAiAnalysis.ts';
-import { OPENAI_CHAT_MODEL } from '../_shared/openaiModels.ts';
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from '../_shared/openaiModels.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -374,7 +374,7 @@ async function generateModernOpenAI(wine: WineAnalysisInput, language: string): 
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
+        ...openaiChatSamplingParams({ maxTokens: 1200 }),
         response_format: { type: 'json_object' },
       }),
     });
@@ -452,7 +452,7 @@ async function callOpenAILegacy(wine: any): Promise<any> {
           { role: 'system', content: 'You are an expert sommelier providing professional wine analysis. Respond with valid JSON only.' },
           { role: 'user', content: buildPromptLegacy(wine) },
         ],
-        temperature: 0.7,
+        ...openaiChatSamplingParams({ maxTokens: 1200 }),
         response_format: { type: 'json_object' },
       }),
     });

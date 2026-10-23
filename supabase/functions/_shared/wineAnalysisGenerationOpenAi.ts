@@ -14,7 +14,7 @@ import {
   type WineAnalysisInput,
   type WineAnalysisMode,
 } from './wineAiAnalysis.ts'
-import { OPENAI_CHAT_MODEL } from './openaiModels.ts'
+import { OPENAI_CHAT_MODEL, openaiChatSamplingParams } from './openaiModels.ts'
 
 export interface WineDataForAnalysis {
   wine_name: string
@@ -110,7 +110,7 @@ export async function generateWineAnalysisWithOpenAi(params: {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.7,
+      ...openaiChatSamplingParams({ maxTokens: 1200 }),
       response_format: { type: 'json_object' },
     }),
   })
