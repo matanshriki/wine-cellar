@@ -22,7 +22,6 @@ import {
   shouldSaveSnapshot,
   type ReadinessCategory,
 } from '../utils/drinkWindowInsights';
-import { hasDrinkWindowAnalysis } from '../utils/cellarReadinessFilters';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 
 interface DrinkWindowTimelineProps {
@@ -38,11 +37,6 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
   // Compute insights
   const insights = getBucketInsights(bottles);
   const tonightSignal = computeTonightSignal(insights.READY.bottles);
-  // Unlabeled / unanalyzed wines are intentionally excluded from Drink Window buckets
-  // and readiness chips — they remain visible in the full cellar when no readiness filter is on.
-  const unlabeledCount = bottles.filter(
-    (b) => b.quantity > 0 && !hasDrinkWindowAnalysis(b as any),
-  ).length;
 
   // Save snapshot on mount (once per day)
   useEffect(() => {
@@ -290,48 +284,6 @@ export function DrinkWindowTimeline({ bottles }: DrinkWindowTimelineProps) {
             </div>
           </motion.button>
         )}
-
-        {/* Summary footer */}
-        <div 
-          className="mt-2 pt-3"
-          style={{
-            borderTop: '1px solid var(--border-subtle)',
-          }}
-        >
-          <div className="flex items-start justify-between gap-3 text-sm">
-            <div className="min-w-0">
-              <span style={{ color: 'var(--text-secondary)' }}>
-                {t('dashboard.drinkWindow.totalAnalyzed')}
-              </span>
-              <p
-                className="text-xs mt-1 leading-snug"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {t('dashboard.drinkWindow.totalAnalyzedHelp')}
-              </p>
-              {unlabeledCount > 0 && (
-                <p
-                  className="text-xs mt-1.5 leading-snug"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  {t('dashboard.drinkWindow.unlabeledNote', {
-                    count: unlabeledCount,
-                    defaultValue:
-                      '{{count}} wine without a readiness label is not in these buckets — clear filters to see it in your full cellar.',
-                    defaultValue_other:
-                      '{{count}} wines without a readiness label are not in these buckets — clear filters to see them in your full cellar.',
-                  })}
-                </p>
-              )}
-            </div>
-            <span 
-              className="font-semibold tabular-nums flex-shrink-0"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {insights.totalAnalyzed}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );
