@@ -16,7 +16,7 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, eyebrow, subtitle, actions, className = '', id }: PageHeaderProps) {
   return (
-    <header className={`mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 ${className}`}>
+    <header className={`mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-0 sm:gap-4 ${className}`}>
       <div className="min-w-0">
         {eyebrow ? <p className="app-eyebrow mb-2">{eyebrow}</p> : null}
         <h1 id={id} className="app-page-title">

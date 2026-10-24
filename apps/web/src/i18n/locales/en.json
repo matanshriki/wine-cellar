@@ -322,9 +322,9 @@
   },
   "cellar": {
     "title": "My Cellar",
-    "bottleCount_one": "{{count}} physical bottle",
-    "bottleCount_other": "{{count}} physical bottles",
-    "filteredCount": "{{count}} of {{total}} physical bottles",
+    "bottleCount_one": "You have {{count}} bottle in your cellar",
+    "bottleCount_other": "You have {{count}} bottles in your cellar",
+    "filteredCount": "{{count}} of {{total}} bottles in your cellar",
     "bottleCountHelp": "Physical bottles = sum of quantities. Drink Window counts are distinct wines with an analysis — not the same as bottle quantity.",
     "addBottleButton": "Add Bottle",
     "importCsv": "Import CSV",
@@ -601,8 +601,8 @@
     },
     "eyebrow": "Your collection",
     "emptyEyebrow": "A fresh start",
-    "filteredCount_one": "{{count}} of {{total}} physical bottles",
-    "filteredCount_other": "{{count}} of {{total}} physical bottles",
+    "filteredCount_one": "{{count}} of {{total}} bottles in your cellar",
+    "filteredCount_other": "{{count}} of {{total}} bottles in your cellar",
     "allBottlesLoaded_one": "Your {{count}} bottle is loaded",
     "allBottlesLoaded_other": "All {{count}} bottles loaded",
     "readiness": {
