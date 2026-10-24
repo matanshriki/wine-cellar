@@ -107,7 +107,7 @@ export function UserMenu() {
     .slice(0, 2);
 
   return (
-    <div className="relative flex items-center self-center" ref={menuRef}>
+    <div className="relative self-center" ref={menuRef}>
       {/* User Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -160,7 +160,7 @@ export function UserMenu() {
       {/* Dropdown Menu */}
       {isOpen && (
         <div 
-          className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 sm:w-72 rounded-2xl py-2 z-50 overflow-hidden animate-fadeIn"
+          className="absolute top-full end-0 mt-2 w-64 sm:w-72 rounded-2xl py-2 z-50 overflow-hidden animate-fadeIn"
           style={{
             background: 'var(--bg-dropdown)',
             boxShadow: 'var(--shadow-dropdown)',
