@@ -360,6 +360,10 @@ verify_jwt = false
 [functions.send-due-reminders]
 verify_jwt = false
 
+# Public cellar share links — guests open without a session
+[functions.shared-cellar-get]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

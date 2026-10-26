@@ -439,7 +439,9 @@
       "button": "Share Cellar",
       "sharing": "Creating link…",
       "linkCopiedTitle": "Link copied",
-      "linkCopiedDetail": "Expires in 7 days · Prices stay private",
+      "linkCopiedDetail": "Expires in 7 days · Prices stay private. Anyone with the link can view your cellar (read-only).",
+      "done": "Done",
+      "preview": "Preview link",
       "shareFailed": "Couldn't create a share link. Please try again."
     },
     "multiBottle": {
@@ -2043,11 +2045,14 @@
     "topRegions": "Top regions",
     "collection": "The collection ({{count}})",
     "errors": {
-      "invalid": "This share link is invalid or has expired",
+      "expired": "This share link has expired",
+      "not_found": "We couldn't find this shared cellar",
+      "invalid": "This share link is invalid",
       "missing": "This share link is missing its data",
       "failed": "We couldn't load this shared cellar"
     },
-    "notFoundBody": "The link may be invalid, expired, or incomplete. Ask your friend to share it again.",
+    "expiredBody": "Share links expire after 7 days. Ask your friend to share a fresh link.",
+    "notFoundBody": "The link may be invalid or incomplete. Ask your friend to share it again.",
     "goToCellar": "Go to my cellar",
     "ctaTitle": "Start your own cellar",
     "ctaBody": "Track your bottles, know when to open them, and share with friends."

@@ -10,11 +10,12 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Link2Off, MapPin, Star, Wine } from 'lucide-react';
-import { getSharedCellar, parseShareLink, type ShareData } from '../services/shareService';
+import { loadSharedCellar, parseShareLink, type ShareData } from '../services/shareService';
 import { WineLoader } from '../components/WineLoader';
-import { useFeatureFlags } from '../hooks/useFeatureFlags';
 import { MetaHead } from '../components/MetaHead';
 import { EmptyState } from '../components/ui/EmptyState';
+
+type SharePageError = 'expired' | 'not_found' | 'invalid' | 'missing' | 'failed';
 
 export function SharedCellarPage() {
   const { shareId } = useParams<{ shareId: string }>(); // New: /share/:shareId
@@ -23,10 +24,10 @@ export function SharedCellarPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [shareData, setShareData] = useState<ShareData | null>(null);
-  const [error, setError] = useState<'' | 'invalid' | 'missing' | 'failed'>('');
+  const [error, setError] = useState<'' | SharePageError>('');
 
   useEffect(() => {
-    async function loadSharedCellar() {
+    async function load() {
       setLoading(true);
       setError('');
 
@@ -34,15 +35,15 @@ export function SharedCellarPage() {
         // New format: /share/:shareId (database-backed)
         if (shareId) {
           console.log('[SharedCellarPage] Loading from database, ID:', shareId);
-          const data = await getSharedCellar(shareId);
-          
-          if (!data) {
-            setError('invalid');
+          const result = await loadSharedCellar(shareId);
+
+          if (!result.ok) {
+            setError(result.reason === 'not_found' ? 'not_found' : result.reason);
             setLoading(false);
             return;
           }
 
-          setShareData(data);
+          setShareData(result.data);
           setLoading(false);
           return;
         }
@@ -52,9 +53,9 @@ export function SharedCellarPage() {
         if (encodedData) {
           console.log('[SharedCellarPage] Loading from URL data (legacy)');
           const data = parseShareLink(encodedData);
-          
+
           if (!data) {
-            setError('invalid');
+            setError('expired');
             setLoading(false);
             return;
           }
@@ -64,17 +65,16 @@ export function SharedCellarPage() {
           return;
         }
 
-        // No share ID or data found
         setError('missing');
         setLoading(false);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('[SharedCellarPage] Error loading shared cellar:', err);
         setError('failed');
         setLoading(false);
       }
     }
 
-    loadSharedCellar();
+    load();
   }, [shareId, searchParams]);
 
   // Apply sorting to bottles - moved here so useMemo is always called
@@ -142,7 +142,11 @@ export function SharedCellarPage() {
           className="max-w-md w-full"
           icon={<Link2Off className="h-7 w-7" strokeWidth={1.75} aria-hidden />}
           title={t(`sharedCellar.errors.${error || 'invalid'}`)}
-          body={t('sharedCellar.notFoundBody')}
+          body={t(
+            error === 'expired'
+              ? 'sharedCellar.expiredBody'
+              : 'sharedCellar.notFoundBody',
+          )}
           actions={
             <button onClick={() => navigate('/cellar')} className="btn-luxury-primary">
               {t('sharedCellar.goToCellar')}

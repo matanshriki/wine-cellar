@@ -16,6 +16,7 @@ import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
 import * as bottleService from '../services/bottleService';
 import { generateShareLink } from '../services/shareService';
+import { ShareCellarSuccessModal } from './ShareCellarSuccessModal';
 
 export function UserMenu() {
   const { t } = useTranslation();
@@ -25,6 +26,7 @@ export function UserMenu() {
   const { monetizationEnabled, planKey, isFreshFromDB } = useMonetizationAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [sharingCellar, setSharingCellar] = useState(false);
+  const [shareSuccessLink, setShareSuccessLink] = useState<string | null>(null);
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -113,10 +115,7 @@ export function UserMenu() {
     try {
       const result = await generateShareLink(bottles);
       await copyText(result.link);
-      toast.success(
-        t('cellar.shareCellar.linkCopiedDetail'),
-        t('cellar.shareCellar.linkCopiedTitle'),
-      );
+      setShareSuccessLink(result.link);
     } catch (error) {
       console.error('[UserMenu] Share cellar failed:', error);
       toast.error(t('cellar.shareCellar.shareFailed'));
@@ -316,6 +315,18 @@ export function UserMenu() {
         </div>
       )}
 
+      <ShareCellarSuccessModal
+        isOpen={!!shareSuccessLink}
+        shareLink={shareSuccessLink || ''}
+        onClose={() => setShareSuccessLink(null)}
+        onPreview={
+          shareSuccessLink
+            ? () => {
+                window.open(shareSuccessLink, '_blank', 'noopener,noreferrer');
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
