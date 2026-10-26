@@ -23,7 +23,6 @@ import { NoCreditsModal } from './NoCreditsModal';
 import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
-import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
 import { APP_ICON_URL } from '../constants/brandAssets';
@@ -399,56 +398,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center min-h-[3.5rem] sm:min-h-16 py-1.5 sm:py-0">
-            {/* Logo/Brand - Scroll to Top Button */}
+            {/* Logo/Brand — home = My Cellar; if already there, scroll to top */}
             <div className="flex items-center gap-4 sm:gap-8 min-w-0">
-              <button
+              <Link
+                to="/cellar"
                 onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  
-                  const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
-                  
-                  window.scrollTo({ top: 0, behavior });
-                  document.documentElement.scrollTo?.({ top: 0, behavior });
-                  document.body.scrollTo?.({ top: 0, behavior });
-
-                  if (behavior === 'auto') {
-                    document.documentElement.scrollTop = 0;
-                    document.body.scrollTop = 0;
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (location.pathname === '/cellar') {
                     e.preventDefault();
-                    const behavior = shouldReduceMotion() ? 'auto' : 'smooth';
-                    
-                    // Try multiple scroll methods
-                    window.scrollTo({ top: 0, behavior });
-                    document.documentElement.scrollTo?.({ top: 0, behavior });
-                    document.body.scrollTo?.({ top: 0, behavior });
-                    
-                    if (behavior === 'auto') {
-                      document.documentElement.scrollTop = 0;
-                      document.body.scrollTop = 0;
-                    }
+                    scrollAppToTop();
+                    return;
                   }
+                  // Land at the top of My Cellar after navigating from another page
+                  setTimeout(() => scrollAppToTop({ behavior: 'auto' }), 0);
                 }}
-                type="button"
                 className="flex items-center gap-2 min-w-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-wine-500 focus-visible:ring-offset-2 rounded-lg transition-all hover:opacity-80 active:scale-95"
-                style={{ 
-                  background: 'none', 
-                  border: 'none',
+                style={{
                   padding: '4px',
                   minHeight: '44px',
                   WebkitTapHighlightColor: 'transparent',
                   touchAction: 'manipulation',
                   userSelect: 'none',
-                  pointerEvents: 'auto',
                   position: 'relative',
                   zIndex: 10,
                 }}
-                aria-label={t('a11y.scrollToTop')}
-                tabIndex={0}
+                aria-label={
+                  location.pathname === '/cellar'
+                    ? t('a11y.scrollToTop')
+                    : t('a11y.goToCellar')
+                }
               >
                 <img
                   src={APP_ICON_URL}
@@ -470,7 +447,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {t('app.tagline')}
                   </span>
                 </div>
-              </button>
+              </Link>
 
               {/* Desktop Navigation — lg+ only; below that the bottom nav pattern owns primary routes
                   (keeps labels operable at ~200% zoom without truncated/ambiguous header pills). */}

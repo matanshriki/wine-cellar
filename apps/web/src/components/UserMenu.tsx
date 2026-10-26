@@ -12,10 +12,10 @@ import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useFeatureFlags as useContextFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useFeatureFlags as useBetaFeatureFlags } from '../hooks/useFeatureFlags';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
-import { ShareCellarModal } from './ShareCellarModal';
 import { toast } from '../lib/toast';
 import { trackAuth } from '../services/analytics';
 import * as bottleService from '../services/bottleService';
+import { generateShareLink } from '../services/shareService';
 
 export function UserMenu() {
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ export function UserMenu() {
   const betaFlags = useBetaFeatureFlags(); // For share cellar, multi-bottle import
   const { monetizationEnabled, planKey, isFreshFromDB } = useMonetizationAccess();
   const [isOpen, setIsOpen] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharingCellar, setSharingCellar] = useState(false);
   const [bottles, setBottles] = useState<bottleService.BottleWithWineInfo[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -93,9 +93,36 @@ export function UserMenu() {
     }
   }
 
-  function handleShareCellar() {
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+    }
+  }
+
+  async function handleShareCellar() {
+    if (sharingCellar) return;
     setIsOpen(false);
-    setShowShareModal(true);
+    setSharingCellar(true);
+    try {
+      const result = await generateShareLink(bottles);
+      await copyText(result.link);
+      toast.success(
+        t('cellar.shareCellar.linkCopiedDetail'),
+        t('cellar.shareCellar.linkCopiedTitle'),
+      );
+    } catch (error) {
+      console.error('[UserMenu] Share cellar failed:', error);
+      toast.error(t('cellar.shareCellar.shareFailed'));
+    } finally {
+      setSharingCellar(false);
+    }
   }
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
@@ -244,13 +271,18 @@ export function UserMenu() {
             {betaFlags.canShareCellar && bottles.length > 0 && (
               <button
                 onClick={handleShareCellar}
-                className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)]"
+                disabled={sharingCellar}
+                className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm font-medium transition-colors hover:bg-[var(--interactive-hover)] disabled:opacity-60"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <svg className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                <span>{t('cellar.shareCellar.button')}</span>
+                <span>
+                  {sharingCellar
+                    ? t('cellar.shareCellar.sharing')
+                    : t('cellar.shareCellar.button')}
+                </span>
               </button>
             )}
 
@@ -284,14 +316,6 @@ export function UserMenu() {
         </div>
       )}
 
-      {/* Share Cellar Modal */}
-      {betaFlags.canShareCellar && (
-        <ShareCellarModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          bottles={bottles}
-        />
-      )}
     </div>
   );
 }
