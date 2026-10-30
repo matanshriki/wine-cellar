@@ -12,9 +12,14 @@ export function useDialogA11y(
   dialogRef: RefObject<HTMLElement>,
   isOpen: boolean,
   onClose: () => void,
-  options: { initialFocusRef?: RefObject<HTMLElement>; isTopmost?: boolean } = {},
+  options: {
+    initialFocusRef?: RefObject<HTMLElement>;
+    isTopmost?: boolean;
+    /** When false, Escape is ignored (required choice dialogs). Default true. */
+    closeOnEscape?: boolean;
+  } = {},
 ) {
-  const { initialFocusRef, isTopmost = true } = options;
+  const { initialFocusRef, isTopmost = true, closeOnEscape = true } = options;
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -36,7 +41,7 @@ export function useDialogA11y(
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onCloseRef.current();
+        if (closeOnEscape) onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab' || !dialogRef.current) return;
@@ -57,5 +62,5 @@ export function useDialogA11y(
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, isTopmost, dialogRef]);
+  }, [isOpen, isTopmost, dialogRef, closeOnEscape]);
 }

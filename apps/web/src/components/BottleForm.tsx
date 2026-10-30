@@ -18,6 +18,7 @@ import {
   isKeepFireAtInFuture,
   keepReminderFireAtIso,
 } from '../utils/keepReminderSchedule';
+import { registerUnsavedBlocker } from '../utils/unsavedWork';
 
 interface Props {
   bottle: BottleWithWineInfo | null;
@@ -133,6 +134,25 @@ export function BottleForm({ bottle, onClose, onSuccess, prefillData, showWishli
   const [fetchingVivino, setFetchingVivino] = useState(false);
   const [autoFetchingVivino, setAutoFetchingVivino] = useState(false); // Background auto-fetch indicator
   const autoFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer
+
+  // Bottle add/edit is not fully draft-persisted (only Vivino handoff uses sessionStorage).
+  // Block SW reload while the form is open with meaningful input or an upload/save in flight.
+  useEffect(() => {
+    return registerUnsavedBlocker(
+      'bottle-form',
+      () => {
+        const hasContent = Boolean(
+          formData.wine_name?.trim() ||
+            formData.producer?.trim() ||
+            formData.notes?.trim() ||
+            formData.vivino_url?.trim() ||
+            formData.label_image_path?.trim(),
+        );
+        return hasContent || loading || fetchingVivino || autoFetchingVivino;
+      },
+      { kind: 'form', reason: 'open_dialog_form' },
+    );
+  }, [formData, loading, fetchingVivino, autoFetchingVivino]);
 
   // Image upload state
   const [imagePreview, setImagePreview] = useState<string | null>(null);

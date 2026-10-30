@@ -1264,7 +1264,40 @@
     "boundaryTitle": "This pour didn't go as planned.",
     "boundaryBody": "Something unexpected happened. Your cellar data is safe — reload and we'll pick up where you left off.",
     "boundaryDetails": "Error details",
-    "boundaryReload": "Reload Sommi"
+    "boundaryReload": "Reload Sommi",
+    "boundaryChunkTitle": "Sommi needs a refresh",
+    "boundaryChunkBody": "A newer version may be available, or a file failed to load. Your cellar data is safe.",
+    "boundaryChunkUpdate": "Update Sommi",
+    "boundaryChunkReload": "Try reloading"
+  },
+  "appUpdate": {
+    "title": "A new version of Sommi is ready",
+    "body": "Update now to get the latest improvements, or continue and update later.",
+    "updateNow": "Update now",
+    "later": "Later",
+    "updating": "Updating…",
+    "updatingBody": "Installing the latest version. This only takes a moment.",
+    "unsavedTitle": "You have unsaved work",
+    "unsavedBody": "Updating now will reload the page and may discard unsaved changes. Finish or discard them first, or update anyway.",
+    "unsavedReason": {
+      "generic": "Open forms or in-progress actions may be lost.",
+      "scanning": "A label or receipt scan is still in progress.",
+      "uploading": "An upload is still in progress.",
+      "open_dialog_form": "A form you are editing has not been saved yet.",
+      "form": "A form you are editing has not been saved yet.",
+      "ritual": "An open-bottle flow is still in progress.",
+      "composer": "You have unsent text in the composer.",
+      "agent_inflight": "Sommi is still answering — wait for the reply, or discard it by updating.",
+      "custom": "An in-progress action may be lost."
+    },
+    "goBack": "Go back",
+    "keepEditing": "Keep editing",
+    "updateAnyway": "Update anyway",
+    "errorTitle": "Couldn’t finish the update",
+    "errorBody": "The new version didn’t activate. You can retry, or continue with this version for now.",
+    "errorTimeout": "The update took too long. You can retry, or continue with this version for now.",
+    "retry": "Retry",
+    "continueWithout": "Continue"
   },
   "cookieConsent": {
     "title": "🍷 We Value Your Privacy",

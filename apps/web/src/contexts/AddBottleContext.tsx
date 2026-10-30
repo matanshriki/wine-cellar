@@ -12,6 +12,7 @@ import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import * as smartScanService from '../services/smartScanService';
 import { trackLabelParse, trackBottle } from '../services/analytics';
 import { trackEvent } from '../lib/analytics/trackEvent';
+import { registerUnsavedBlocker } from '../utils/unsavedWork';
 
 type ScanningState = 'idle' | 'scanning' | 'complete' | 'error';
 type FallbackReason = 'cancelled' | 'permission-denied' | 'not-available' | 'error';
@@ -113,6 +114,27 @@ export function AddBottleProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('showCameraFallback' as any, handleShowFallback);
     };
   }, []);
+
+  // Block SW update reload while a scan is in flight; also mark body for heuristics.
+  useEffect(() => {
+    const busy = scanningState === 'scanning';
+    if (busy) {
+      document.body.dataset.sommiBusy = 'scanning';
+    } else if (document.body.dataset.sommiBusy === 'scanning') {
+      delete document.body.dataset.sommiBusy;
+    }
+    const unregister = registerUnsavedBlocker(
+      'add-bottle-scan',
+      () => scanningState === 'scanning',
+      { kind: 'scanning', reason: 'scanning' },
+    );
+    return () => {
+      unregister();
+      if (document.body.dataset.sommiBusy === 'scanning') {
+        delete document.body.dataset.sommiBusy;
+      }
+    };
+  }, [scanningState]);
 
   /**
    * Handle smart scan - unified single/multi bottle detection

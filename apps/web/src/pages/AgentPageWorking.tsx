@@ -46,6 +46,7 @@ import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDialogA11y } from '../hooks/useDialogA11y';
+import { registerUnsavedBlocker } from '../utils/unsavedWork';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 import {
   AGENT_ENTRY_TONIGHT_CARD,
@@ -326,6 +327,18 @@ export function AgentPageWorking() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Protect in-flight Sommi replies and unsent composer text from SW update reloads.
+  useEffect(() => {
+    return registerUnsavedBlocker(
+      'sommi-agent-composer',
+      () => isSubmitting || inputValue.trim().length > 0,
+      {
+        kind: isSubmitting ? 'custom' : 'composer',
+        reason: isSubmitting ? 'agent_inflight' : 'composer',
+      },
+    );
+  }, [isSubmitting, inputValue]);
 
   // Feature flag guard
   useEffect(() => {

@@ -63,8 +63,12 @@ interface ModalLayerProps {
   size?: 'md' | 'lg';
   initialFocusRef?: RefObject<HTMLElement>;
   closeOnBackdrop?: boolean;
+  /** When false, Escape does not dismiss. Default true. */
+  closeOnEscape?: boolean;
   /** Stable hook for tests and diagnostics. */
   testId?: string;
+  /** Marks the panel so unsaved-work heuristics ignore this dialog. */
+  ignoreUnsavedScan?: boolean;
   children: ReactNode;
 }
 
@@ -82,13 +86,15 @@ export function ModalLayer({
   size = 'lg',
   initialFocusRef,
   closeOnBackdrop = true,
+  closeOnEscape = true,
   testId,
+  ignoreUnsavedScan = false,
   children,
 }: ModalLayerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const isTopmost = useModalLayer(open);
   const reduceMotion = useReducedMotion();
-  useDialogA11y(panelRef, open, onClose, { initialFocusRef, isTopmost });
+  useDialogA11y(panelRef, open, onClose, { initialFocusRef, isTopmost, closeOnEscape });
 
   if (typeof document === 'undefined') return null;
   return createPortal(
@@ -118,6 +124,7 @@ export function ModalLayer({
             aria-describedby={describedBy}
             tabIndex={-1}
             className={`modal-panel modal-panel--${size}`}
+            data-sommi-update-dialog={ignoreUnsavedScan ? 'true' : undefined}
             initial={reduceMotion ? false : { y: 16 }}
             animate={{ y: 0 }}
             exit={reduceMotion ? undefined : { y: 16 }}

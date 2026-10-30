@@ -21,6 +21,7 @@ import {
 import { toast } from '../lib/toast';
 import i18n from '../i18n/config';
 import { inventoryTotals, type InventoryTotals } from '../utils/inventory';
+import { trackEvent } from '../lib/analytics/trackEvent';
 
 type Wine = Database['public']['Tables']['wines']['Row'];
 type WineInsert = Database['public']['Tables']['wines']['Insert'];
@@ -357,6 +358,16 @@ export async function createBottle(input: CreateBottleInput): Promise<BottleWith
   if (bottleError) {
     throw new Error('Failed to create bottle');
   }
+
+  trackEvent({
+    event_name: 'bottle_added',
+    event_type: 'action',
+    source: 'bottle_service',
+    metadata: {
+      entry_source: input.entry_source ?? 'unknown',
+      quantity: input.quantity || 1,
+    },
+  });
 
   // Notify the PWA install prompt that the user now has at least one bottle.
   // Dispatched after a successful creation so the prompt can show for the first time.

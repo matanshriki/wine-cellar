@@ -2,11 +2,20 @@
  * Service Worker — Sommi PWA
  * Production build replaces CACHE_NAME + PRECACHE_ASSETS with hashed /assets/* URLs.
  * Offline: app shell (index.html + JS/CSS) must be precached or cache-first served.
+ *
+ * Update policy:
+ * - First install: skipWaiting + claim so the page gets a controller without a reload.
+ * - Replacement workers stay waiting until the page posts SKIP_WAITING (user accepted).
+ * - On update activate we do NOT call clients.claim(). Browsers may still
+ *   reassign controllers after skipWaiting; the page app must not auto-reload
+ *   non-initiating tabs (see serviceWorkerUpdate.ts).
+ * - Previous precache is retained so open pages can still resolve old hashed assets.
  */
 
 // Replaced at build time (vite closeBundle) — dev/preview keeps these fallbacks
 const CACHE_NAME = 'wine-cellar-v1';
 const RUNTIME_CACHE = 'wine-cellar-runtime';
+const PRECACHE_PREFIX = 'wine-cellar-precache-';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -19,6 +28,9 @@ const PRECACHE_ASSETS = [
   '/wine.svg',
 ];
 
+/** True only for the very first install (no previously active worker). */
+let shouldClaimClientsOnActivate = false;
+
 function precacheInstall(cache) {
   return Promise.allSettled(PRECACHE_ASSETS.map((url) => cache.add(url))).then((results) => {
     results.forEach((r, i) => {
@@ -29,26 +41,61 @@ function precacheInstall(cache) {
   });
 }
 
+/**
+ * Keep current + one previous precache (and runtime) so tabs still on an older
+ * document can resolve their hashed /assets/* after a deploy.
+ */
+async function retainUsefulCaches() {
+  const cacheNames = await caches.keys();
+  const precaches = cacheNames
+    .filter((name) => name === CACHE_NAME || name.startsWith(PRECACHE_PREFIX))
+    .sort();
+  const previous = precaches.filter((name) => name !== CACHE_NAME).slice(-1);
+  const keep = new Set([CACHE_NAME, RUNTIME_CACHE, ...previous]);
+
+  await Promise.all(
+    cacheNames
+      .filter((name) => !keep.has(name))
+      .map((name) => {
+        console.log('[Service Worker] Deleting old cache:', name);
+        return caches.delete(name);
+      })
+  );
+}
+
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing…', CACHE_NAME);
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => precacheInstall(cache)).then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await precacheInstall(cache);
+
+      // First install only. Updates stay in `waiting` until SKIP_WAITING.
+      if (!self.registration.active) {
+        shouldClaimClientsOnActivate = true;
+        console.log('[Service Worker] First install — skipWaiting');
+        await self.skipWaiting();
+      } else {
+        console.log('[Service Worker] Update installed — waiting for user acceptance');
+      }
+    })()
   );
 });
 
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating…', CACHE_NAME);
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
-          .map((name) => {
-            console.log('[Service Worker] Deleting old cache:', name);
-            return caches.delete(name);
-          })
-      )
-    ).then(() => self.clients.claim())
+    (async () => {
+      await retainUsefulCaches();
+      if (shouldClaimClientsOnActivate) {
+        console.log('[Service Worker] Claiming clients (first install)');
+        await self.clients.claim();
+      } else {
+        // Update path: skip clients.claim(). Initiating tab reloads itself after
+        // SKIP_WAITING; other tabs must not be force-reloaded by page JS.
+        console.log('[Service Worker] Activate without clients.claim()');
+      }
+    })()
   );
 });
 
@@ -60,6 +107,10 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (url.href.includes('supabase.co')) return;
+
+  // Never intercept the worker script itself — clients fingerprint / update-check
+  // against the network file. Caching sw.js would make Later dismiss sticky across deploys.
+  if (url.pathname === '/sw.js') return;
 
   // SPA navigations: network, then cached index.html (paths like /cellar are not files)
   if (request.mode === 'navigate') {
@@ -79,7 +130,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Immutable hashed bundles: cache first (critical for offline after precache)
+  // Immutable hashed bundles: cache first (searches all caches, incl. previous precache)
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -173,7 +224,16 @@ self.addEventListener('message', (event) => {
   if (!data) return;
 
   if (data.type === 'SKIP_WAITING') {
+    console.log('[Service Worker] SKIP_WAITING received');
     self.skipWaiting();
+    return;
+  }
+
+  if (data.type === 'GET_CACHE_NAME') {
+    const port = event.ports && event.ports[0];
+    if (port) {
+      port.postMessage({ cacheName: CACHE_NAME });
+    }
     return;
   }
 

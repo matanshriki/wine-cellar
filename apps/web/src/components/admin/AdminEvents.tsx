@@ -7,6 +7,7 @@ const PAGE_SIZE = 100;
 const KNOWN_EVENTS = [
   'user_signed_up',
   'login_completed',
+  'bottle_added',
   'bottle_scan_started',
   'bottle_scan_completed',
   'bottle_scan_failed',
@@ -16,6 +17,9 @@ const KNOWN_EVENTS = [
   'food_pairing_viewed',
   'food_pairing_generated',
   'tonights_selection_opened',
+  'recommendation_run_completed',
+  'evening_plan_completed',
+  'sommelier_message_sent',
   'language_changed',
 ];
 

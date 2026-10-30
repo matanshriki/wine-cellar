@@ -29,6 +29,7 @@ import { recordShownInsight, getRecentlyShownTypes } from '../services/insightCa
 import { trackInsight } from '../services/analytics';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { NotificationEnableCard } from './NotificationEnableCard';
+import { registerUnsavedBlocker } from '../utils/unsavedWork';
 
 // ─── Serving guidance derivation ──────────────────────────────────────────────
 
@@ -410,6 +411,16 @@ export function OpenRitualSheet({
   const [ratedInsight, setRatedInsight] = useState<WineInsight | null>(null);
 
   const serving = bottle ? deriveServingInfo(bottle, t as TFn) : null;
+
+  // Block SW update reload while the open-bottle ritual is mid-flow.
+  useEffect(() => {
+    if (!isOpen) return;
+    return registerUnsavedBlocker(
+      'open-ritual',
+      () => true,
+      { kind: 'ritual', reason: 'ritual' },
+    );
+  }, [isOpen]);
 
   // Reset all state whenever the sheet opens for a new bottle.
   // useEffect on isOpen is reliable and avoids the onAnimationComplete pitfall

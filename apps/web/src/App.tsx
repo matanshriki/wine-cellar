@@ -17,10 +17,17 @@ import { Layout } from './components/Layout';
 import { PublicMarketingLayout } from './components/PublicMarketingLayout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookieConsent } from './components/CookieConsent';
+import { AppUpdateModal } from './components/AppUpdateModal';
 import { OpenRitualProvider } from './contexts/OpenRitualContext';
 import { useMonetizationAccess } from './hooks/useMonetizationAccess';
 import { MonetizationProvider } from './contexts/MonetizationContext';
 import i18n from './i18n/config';
+import {
+  CHUNK_RELOAD_KEY,
+  SW_UPDATE_RELOAD_KEY,
+  decideChunkLoadRecovery,
+  serviceWorkerUpdateController,
+} from './utils/serviceWorkerUpdate';
 
 // ── Lazy-loaded page chunks ────────────────────────────────────────────────────
 // Each page is code-split into its own chunk. The browser downloads only what the
@@ -73,10 +80,8 @@ const queryClient = new QueryClient({
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  chunkRecovery: boolean;
 }
-
-/** Key used in sessionStorage to prevent an infinite reload loop. */
-const CHUNK_RELOAD_KEY = 'sommi_chunk_error_reload_at';
 
 /**
  * Returns true when the error is a stale-chunk / SW-update module loading failure.
@@ -95,33 +100,67 @@ function isChunkLoadError(error: Error): boolean {
 class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, chunkRecovery: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Stale-chunk / SW-update: the browser can't load a JS module (old hash, network
-    // failure, or newly activated service worker serving different bundles).
-    // Auto-reload once per session — if the reload itself fails we fall through and
-    // show the normal error screen so the user can retry manually.
+    // Stale-chunk / SW-update: prefer the update prompt when a worker is waiting;
+    // otherwise auto-reload once with cooldown guards to avoid loops.
     if (isChunkLoadError(error)) {
-      const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) ?? 0);
       const now = Date.now();
-      if (now - lastReload > 15_000) {
-        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
+      const lastChunkReload = Number(
+        (() => {
+          try {
+            return sessionStorage.getItem(CHUNK_RELOAD_KEY) ?? 0;
+          } catch {
+            return 0;
+          }
+        })(),
+      );
+      const lastUpdateReload = Number(
+        (() => {
+          try {
+            return sessionStorage.getItem(SW_UPDATE_RELOAD_KEY) ?? 0;
+          } catch {
+            return 0;
+          }
+        })(),
+      );
+
+      const action = decideChunkLoadRecovery({
+        now,
+        lastChunkReloadAt: lastChunkReload,
+        lastUpdateReloadAt: lastUpdateReload,
+        hasWaitingWorker: serviceWorkerUpdateController.hasWaitingWorker(),
+      });
+
+      if (action === 'reload') {
+        try {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
+        } catch {
+          /* ignore */
+        }
         console.warn('[ErrorBoundary] Chunk load failure — auto-reloading once:', error.message);
         window.location.reload();
-        // Return no-error state while the reload is in flight so React doesn't
-        // render the error screen in the brief moment before the page refreshes.
-        return { hasError: false, error: null };
+        return { hasError: false, error: null, chunkRecovery: false };
       }
-      console.warn('[ErrorBoundary] Chunk load failure — already reloaded recently, showing error');
+
+      if (action === 'prefer_update') {
+        console.warn('[ErrorBoundary] Chunk load failure — preferring SW update prompt');
+        // Offer update on next tick (controller may not be mounted yet in this phase)
+        queueMicrotask(() => serviceWorkerUpdateController.offerFromChunkRecovery());
+        return { hasError: true, error, chunkRecovery: true };
+      }
+
+      console.warn('[ErrorBoundary] Chunk load failure — showing recovery UI (reload cooldown)');
+      return { hasError: true, error, chunkRecovery: true };
     }
-    return { hasError: true, error };
+    return { hasError: true, error, chunkRecovery: false };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
-    // Chunk load errors are expected after deploys and self-heal via auto-reload.
+    // Chunk load errors are expected after deploys and self-heal via recovery UI.
     // Don't flood Sentry with known-handled noise.
     if (!isChunkLoadError(error)) {
       captureAppError(error, {
@@ -132,13 +171,27 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
-    // Navigate to cellar as a safe landing page
+    this.setState({ hasError: false, error: null, chunkRecovery: false });
     window.location.href = '/cellar';
+  };
+
+  handleChunkReload = () => {
+    try {
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+    window.location.reload();
+  };
+
+  handleChunkUpdate = () => {
+    serviceWorkerUpdateController.offerFromChunkRecovery();
+    void serviceWorkerUpdateController.requestUpdate({ force: true });
   };
 
   render() {
     if (this.state.hasError) {
+      const chunk = this.state.chunkRecovery;
       return (
         <main className="min-h-screen-ios flex items-center justify-center px-5 py-10" style={{ background: 'var(--bg)' }}>
           <div className="app-empty w-full max-w-lg px-6 py-8 sm:px-10 sm:py-10">
@@ -149,13 +202,28 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
               className="app-empty-art mb-6"
               decoding="async"
             />
-            <h1 className="app-display text-2xl sm:text-3xl leading-tight mb-3">{i18n.t('errors.boundaryTitle')}</h1>
+            <h1 className="app-display text-2xl sm:text-3xl leading-tight mb-3">
+              {chunk ? i18n.t('errors.boundaryChunkTitle') : i18n.t('errors.boundaryTitle')}
+            </h1>
             <p className="mx-auto max-w-sm mb-7 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              {i18n.t('errors.boundaryBody')}
+              {chunk ? i18n.t('errors.boundaryChunkBody') : i18n.t('errors.boundaryBody')}
             </p>
-            <button type="button" onClick={this.handleReset} className="btn-luxury-primary">
-              {i18n.t('errors.boundaryReload')}
-            </button>
+            {chunk ? (
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-center">
+                {serviceWorkerUpdateController.hasWaitingWorker() && (
+                  <button type="button" onClick={this.handleChunkUpdate} className="btn-luxury-primary">
+                    {i18n.t('errors.boundaryChunkUpdate')}
+                  </button>
+                )}
+                <button type="button" onClick={this.handleChunkReload} className="btn-luxury-secondary">
+                  {i18n.t('errors.boundaryChunkReload')}
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={this.handleReset} className="btn-luxury-primary">
+                {i18n.t('errors.boundaryReload')}
+              </button>
+            )}
             {this.state.error && (
               <details className="mt-6 text-xs text-start" style={{ color: 'var(--text-tertiary)' }}>
                 <summary className="cursor-pointer text-center">{i18n.t('errors.boundaryDetails')}</summary>
@@ -456,6 +524,7 @@ export function App() {
                   <MonetizationProvider>
                     <AddBottleProvider>
                       <OpenRitualProvider>
+                        <AppUpdateModal />
                         <AppRoutes />
                       </OpenRitualProvider>
                     </AddBottleProvider>

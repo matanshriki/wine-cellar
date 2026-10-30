@@ -25,9 +25,11 @@
  * TRACKED SO FAR (see call sites for details)
  *   user_signed_up       — SupabaseAuthContext: signUp success
  *   login_completed      — SupabaseAuthContext: onAuthStateChange SIGNED_IN
+ *   bottle_added         — bottleService.createBottle success
  *   bottle_scan_started  — AddBottleContext: handleSmartScan
  *   bottle_scan_completed — AddBottleContext: handleSmartScan success
  *   bottle_scan_failed   — AddBottleContext: handleSmartScan error
+ *   wine_analysis_started / completed / failed — aiAnalysisService.generateAIAnalysis
  */
 
 import { supabase } from '../supabase';

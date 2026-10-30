@@ -5,6 +5,7 @@ import { WineLoader } from '../components/WineLoader';
 import { captureAppError } from '../lib/monitoring';
 import { isSentryInitialized } from '../lib/sentry';
 import { AdminOverview }           from '../components/admin/AdminOverview';
+import { AdminEngagement }         from '../components/admin/AdminEngagement';
 import { AdminUsers }              from '../components/admin/AdminUsers';
 import { AdminWineDataQuality }    from '../components/admin/AdminWineDataQuality';
 import { AdminEvents }             from '../components/admin/AdminEvents';
@@ -12,17 +13,18 @@ import { AdminAiUsage }            from '../components/admin/AdminAiUsage';
 import { AdminInsights }           from '../components/admin/AdminInsights';
 import { AdminGoogleAnalytics }    from '../components/admin/AdminGoogleAnalytics';
 
-type Tab = 'overview' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights' | 'traffic' | 'monitoring';
+type Tab = 'overview' | 'engagement' | 'users' | 'wine-data' | 'events' | 'ai' | 'insights' | 'traffic' | 'monitoring';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'overview',   label: 'Overview'   },
-  { id: 'users',      label: 'Users'      },
-  { id: 'wine-data',  label: 'Wine Data'  },
-  { id: 'events',     label: 'Events'     },
-  { id: 'ai',         label: 'AI & Usage' },
-  { id: 'insights',   label: 'Insights'   },
-  { id: 'traffic',    label: 'Traffic'    },
-  { id: 'monitoring', label: 'Monitoring' },
+  { id: 'overview',    label: 'Overview'    },
+  { id: 'engagement',  label: 'Engagement'  },
+  { id: 'users',       label: 'Users'       },
+  { id: 'wine-data',   label: 'Wine Data'   },
+  { id: 'events',      label: 'Events'      },
+  { id: 'ai',          label: 'AI & Usage'  },
+  { id: 'insights',    label: 'Insights'    },
+  { id: 'traffic',     label: 'Traffic'     },
+  { id: 'monitoring',  label: 'Monitoring'  },
 ];
 
 function AdminMonitoringPanel() {
@@ -220,6 +222,7 @@ export function AdminDashboardPage() {
       {/* Tab content */}
       <div>
         {activeTab === 'overview'    && <AdminOverview />}
+        {activeTab === 'engagement'  && <AdminEngagement />}
         {activeTab === 'users'       && <AdminUsers />}
         {activeTab === 'wine-data'   && <AdminWineDataQuality />}
         {activeTab === 'events'      && <AdminEvents />}

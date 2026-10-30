@@ -231,6 +231,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           timeoutCheckInterval = setInterval(checkAndEnforceTimeout, 60 * 1000);
           trackEvent({ event_name: 'login_completed', source: 'auth_state_change' });
 
+          // Heartbeat for admin engagement (throttled server-side to 1/hour).
+          // Not counted as meaningful activity by itself.
+          void (supabase as any).rpc('touch_profile_last_active');
+
           // For Google OAuth sign-ups the signUp() function is never called;
           // the first SIGNED_IN event IS the signup. Write attribution if not
           // already stored (the .is('signup_source', null) guard in the helper
