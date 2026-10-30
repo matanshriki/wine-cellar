@@ -324,7 +324,7 @@ billingRouter.get(
 
     const { data: credits } = await supabase
       .from('user_ai_credits')
-      .select('paddle_customer_id')
+      .select('paddle_customer_id, paddle_subscription_id')
       .eq('user_id', req.userId!)
       .maybeSingle();
 
@@ -334,15 +334,48 @@ billingRouter.get(
     }
 
     try {
+      // Optional subscription_ids unlock authenticated deep-links in the portal.
+      // Empty body still returns the overview URL (urls.general.overview).
+      const body: Record<string, unknown> = {};
+      const subscriptionId = credits?.paddle_subscription_id;
+      if (typeof subscriptionId === 'string' && subscriptionId.startsWith('sub_')) {
+        body.subscription_ids = [subscriptionId];
+      }
+
       const data = await paddleApi(
         `/customers/${customerId}/portal-sessions`,
-        { method: 'POST', body: JSON.stringify({}) },
+        { method: 'POST', body: JSON.stringify(body) },
       );
       const portalUrl = data?.data?.urls?.general?.overview ?? null;
       if (!portalUrl) throw new Error('Portal URL not returned by Paddle API');
       return res.json({ url: portalUrl });
     } catch (err: any) {
-      console.error('[Paddle Portal] Error:', err.message);
+      const message = String(err?.message ?? err);
+      console.error('[Paddle Portal] Error:', {
+        userId: req.userId,
+        customerIdPrefix: String(customerId).slice(0, 8),
+        message,
+      });
+
+      // paddleApi throws: `Paddle API <path> → <status>: <body>`
+      const statusMatch = message.match(/→\s*(\d{3}):/);
+      const paddleStatus = statusMatch ? Number(statusMatch[1]) : null;
+
+      if (paddleStatus === 403) {
+        // Most common cause: API key missing `customer_portal_session.write`
+        // (new Paddle permissions are NOT auto-applied to existing keys).
+        return res.status(502).json({
+          error: 'Billing portal is temporarily unavailable',
+          code: 'paddle_portal_forbidden',
+        });
+      }
+      if (paddleStatus === 404) {
+        return res.status(404).json({
+          error: 'No billing account found — subscribe first',
+          code: 'paddle_customer_not_found',
+        });
+      }
+
       return res.status(500).json({ error: 'Failed to create portal session' });
     }
   },
