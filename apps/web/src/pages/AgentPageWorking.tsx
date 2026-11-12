@@ -46,6 +46,7 @@ import { isInsufficientCreditsError } from '../lib/insufficientCredits';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDialogA11y } from '../hooks/useDialogA11y';
+import { useVisualViewportFrame } from '../hooks/useVisualViewportFrame';
 import { registerUnsavedBlocker } from '../utils/unsavedWork';
 import { SOMMI_AGENT_ICON_URL } from '../constants/brandAssets';
 import {
@@ -266,9 +267,11 @@ export function AgentPageWorking() {
   const [conversationList, setConversationList] = useState<SommelierConversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const viewport = useVisualViewportFrame();
   const greetingInjectedRef = useRef(false);
   const restoredRef = useRef(false);
   /** Keep conversation id synchronous across ensure → send → save (avoids stale React state). */
@@ -323,10 +326,12 @@ export function AgentPageWorking() {
     };
   }, []);
 
-  // Auto-scroll to bottom when messages change
+  // Scroll only the messages pane — never the document (avoids iOS keyboard jumps).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, isSubmitting]);
 
   // Protect in-flight Sommi replies and unsent composer text from SW update reloads.
   useEffect(() => {
@@ -771,13 +776,6 @@ export function AgentPageWorking() {
           50% { transform: translateY(-4px); opacity: 1; }
         }
         
-        /* Mobile viewport fix: Use dynamic viewport height */
-        @supports (height: 100dvh) {
-          .agent-container {
-            height: 100dvh !important;
-          }
-        }
-
         .sidebar-overlay {
           position: fixed;
           inset: 0;
@@ -988,11 +986,14 @@ export function AgentPageWorking() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100vh',
-          maxHeight: '-webkit-fill-available',
+          position: 'fixed',
+          top: viewport.offsetTop,
+          left: 0,
+          right: 0,
+          height: viewport.height || '100dvh',
           backgroundColor: 'var(--bg)',
-          position: 'relative',
           overflow: 'hidden',
+          zIndex: 30,
         }}
       >
         {/* Header */}
@@ -1102,12 +1103,18 @@ export function AgentPageWorking() {
       </div>
 
       {/* Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '12px 16px 20px',
-        position: 'relative',
-      }}>
+      <div
+        ref={messagesContainerRef}
+        className="touch-scroll"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          padding: '12px 16px 20px',
+          position: 'relative',
+        }}
+      >
         {/* Empty cellar warning */}
         {bottles.filter(b => b.quantity > 0).length === 0 && (
           <div style={{
@@ -1443,10 +1450,12 @@ export function AgentPageWorking() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
+      {/* Input area — drop home-indicator padding while the keyboard owns the bottom edge */}
       <div style={{
         padding: '16px',
-        paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+        paddingBottom: viewport.keyboardOpen
+          ? '12px'
+          : 'calc(16px + env(safe-area-inset-bottom))',
         backgroundColor: 'var(--bg-elevated)',
         borderTop: '1px solid var(--border-subtle)',
         flexShrink: 0,
@@ -1459,6 +1468,11 @@ export function AgentPageWorking() {
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
+            }}
+            onFocus={() => {
+              // Undo iOS document scroll-into-view; shell is pinned to visualViewport.
+              window.scrollTo(0, 0);
+              document.body.scrollTop = 0;
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -1475,6 +1489,7 @@ export function AgentPageWorking() {
             }
             disabled={isSubmitting || bottles.filter(b => b.quantity > 0).length === 0 || isRecording || isTranscribing}
             rows={1}
+            enterKeyHint="send"
             style={{
               flex: 1,
               padding: '12px 14px',
