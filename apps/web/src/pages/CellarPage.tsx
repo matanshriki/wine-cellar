@@ -1,5 +1,6 @@
 import { Camera, ChevronDown, Moon, Search, Sparkles, Wine, X } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { MetaHead } from '../components/MetaHead';
@@ -200,6 +201,35 @@ export function CellarPage() {
 
   // Ref for bottles section (for smooth scroll)
   const bottlesSectionRef = useRef<HTMLDivElement>(null);
+  const pendingBottlesScrollRef = useRef<number | null>(null);
+
+  /**
+   * Brings the bottle grid into view after the next layout. One native smooth
+   * scroll (interruptible by touch) — never a per-frame scrollTop loop, which
+   * desyncs iOS PWA hit-testing while widgets mount/unmount.
+   */
+  const scrollToBottlesAfterLayout = useCallback(() => {
+    if (pendingBottlesScrollRef.current !== null) {
+      cancelAnimationFrame(pendingBottlesScrollRef.current);
+    }
+    // Two frames: the first runs before React commits the filter change.
+    pendingBottlesScrollRef.current = requestAnimationFrame(() => {
+      pendingBottlesScrollRef.current = requestAnimationFrame(() => {
+        pendingBottlesScrollRef.current = null;
+        const el = bottlesSectionRef.current;
+        if (!el) return;
+        const { top } = el.getBoundingClientRect();
+        if (top >= 0 && top <= 150) return;
+        el.scrollIntoView({ behavior: shouldReduceMotion() ? 'auto' : 'smooth', block: 'start' });
+      });
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (pendingBottlesScrollRef.current !== null) {
+      cancelAnimationFrame(pendingBottlesScrollRef.current);
+    }
+  }, []);
   
   // Label scan state
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -1261,54 +1291,15 @@ export function CellarPage() {
    * Toggle filter chip
    */
   function toggleFilter(filter: string) {
-    const willHaveFilters = !activeFilters.includes(filter) || activeFilters.length > 1;
+    const isAdding = !activeFilters.includes(filter);
 
     setIsFilteringByEvent(false);
     setActiveFilters((prev) =>
       prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
     );
 
-    // Scroll to bottles section after DOM updates (widgets may hide/show)
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (bottlesSectionRef.current) {
-          const rect = bottlesSectionRef.current.getBoundingClientRect();
-          const isVisible = rect.top >= 0 && rect.top <= window.innerHeight / 2;
-          const offsetPosition = rect.top + window.pageYOffset - 100;
-          if (!isVisible || rect.top > 150) {
-            luxuryScrollTo(Math.max(0, offsetPosition), 1200);
-          }
-        }
-      }, 300);
-    });
-
-    void willHaveFilters; // used for future tooltip/animation if needed
-  }
-
-  /**
-   * Luxury smooth scroll with custom easing
-   * Slower, more elegant animation than browser default
-   */
-  function luxuryScrollTo(targetPosition: number, duration: number = 1200) {
-    const startPosition = document.body.scrollTop || document.documentElement.scrollTop || window.pageYOffset || 0;
-    const distance = targetPosition - startPosition;
-    let startTime: number | null = null;
-
-    function easeInOutCubic(t: number): number {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    }
-
-    function animation(currentTime: number) {
-      if (startTime === null) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      const currentPosition = startPosition + distance * easeInOutCubic(progress);
-      document.body.scrollTop = currentPosition;
-      document.documentElement.scrollTop = currentPosition;
-      window.scrollTo(0, currentPosition);
-      if (progress < 1) requestAnimationFrame(animation);
-    }
-
-    requestAnimationFrame(animation);
+    // Removing a filter brings the overview back at the top; don't pull the page away.
+    if (isAdding) scrollToBottlesAfterLayout();
   }
 
   /**
@@ -1354,22 +1345,7 @@ export function CellarPage() {
     safeSetItem('cellar-sort-by', newSortBy);
     safeSetItem('cellar-sort-dir', newSortDir);
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (bottlesSectionRef.current) {
-          const rect = bottlesSectionRef.current.getBoundingClientRect();
-          const isVisible = rect.top >= 0 && rect.top <= 150;
-          const finalPosition = Math.max(0, rect.top + window.pageYOffset - 100);
-          if (!isVisible || rect.top > 150) {
-            try {
-              luxuryScrollTo(finalPosition, 1200);
-            } catch (error) {
-              console.error('[CellarPage] Scroll error:', error);
-            }
-          }
-        }
-      }, 200);
-    });
+    scrollToBottlesAfterLayout();
   }
 
   // Sort options (6 total as requested)
@@ -1867,6 +1843,7 @@ export function CellarPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 cellar-grid"
+            style={{ scrollMarginTop: '100px' }}
           >
             {filteredBottles.map((bottle, index) => (
               <motion.div

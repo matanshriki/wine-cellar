@@ -5,8 +5,9 @@
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useDialogA11y } from '../hooks/useDialogA11y';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 interface Props {
   isOpen: boolean;
@@ -27,14 +28,7 @@ export function ShareCellarSuccessModal({
 
   useDialogA11y(dialogRef, isOpen, onClose, { initialFocusRef: closeRef });
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   return createPortal(
     <AnimatePresence>

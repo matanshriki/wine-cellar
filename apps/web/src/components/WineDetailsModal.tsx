@@ -19,6 +19,7 @@ import { KeepBadge } from './KeepBadge';
 import { WineImage } from './ui/WineImage';
 import { StarRating } from './ui/StarRating';
 import { useDialogA11y } from '../hooks/useDialogA11y';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { ChevronDown, ExternalLink, ImagePlus, Sparkles as SparklesIcon } from 'lucide-react';
 import { toast } from '../lib/toast';
 import { trackAILabel, trackUpload, trackInsight } from '../services/analytics';
@@ -568,28 +569,7 @@ export function WineDetailsModal({ isOpen, onClose, bottle, onMarkAsOpened, onRe
     }
   };
 
-  // Lock body scroll when modal is open.
-  // Uses the negative-top trick so the page doesn't visually snap to y=0
-  // (which can make the cellar behind the modal look "blank" to users).
-  useEffect(() => {
-    if (isOpen) {
-      const scrollY = window.scrollY;
-
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-
-      return () => {
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        // Restore the exact scroll position the user was at
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   // Check AI label art access once per session (result is cached in the service)
   useEffect(() => {

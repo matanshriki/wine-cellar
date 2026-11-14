@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { X, Sparkles, ArrowRight, Zap } from 'lucide-react';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { trackEvent } from '../services/analytics';
 import { addMonitoringBreadcrumb } from '../lib/monitoring';
 
@@ -117,13 +118,12 @@ export function NoCreditsModal({
     (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); },
     [onClose],
   );
+  useScrollLock(visible);
   useEffect(() => {
     if (!visible) return;
     document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
     };
   }, [visible, handleKeyDown]);
 

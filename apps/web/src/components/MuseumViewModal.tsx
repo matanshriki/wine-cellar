@@ -13,11 +13,12 @@
  * - Respects prefers-reduced-motion
  */
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { shouldReduceMotion } from '../utils/pwaAnimationFix';
 import { useDialogA11y } from '../hooks/useDialogA11y';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 interface MuseumViewBottle {
   id: string;
@@ -49,13 +50,7 @@ export function MuseumViewModal({ isOpen, onClose, bottle, onShowDetails }: Muse
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   useDialogA11y(dialogRef, isOpen, onClose, { initialFocusRef: closeButtonRef });
 
-  useEffect(() => {
-    if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   // Determine the readiness chip to show.
   // Priority: AI readiness_label > DB readiness_status.

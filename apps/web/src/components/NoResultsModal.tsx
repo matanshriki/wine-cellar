@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wine, Search, ArrowLeft } from 'lucide-react';
@@ -46,6 +47,8 @@ export function NoResultsModal({
   const { t } = useTranslation();
   const modalRef = useRef<HTMLDivElement>(null);
 
+  useScrollLock(isOpen);
+
   // Handle ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -55,11 +58,9 @@ export function NoResultsModal({
     };
 
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleEscape);
 
       return () => {
-        document.body.style.overflow = '';
         document.removeEventListener('keydown', handleEscape);
       };
     }

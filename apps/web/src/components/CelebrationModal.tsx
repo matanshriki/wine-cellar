@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
 import { shouldReduceMotion, ensureAnimationOnVisible } from '../utils/pwaAnimationFix';
@@ -190,8 +191,10 @@ export function CelebrationModal({
     }
   }, [isOpen]);
 
+  useScrollLock(isOpen);
+
   /**
-   * Handle ESC key and scroll lock
+   * Handle ESC key
    */
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -201,21 +204,11 @@ export function CelebrationModal({
     };
 
     if (isOpen) {
-      // Store original overflow before locking
-      const originalOverflow = document.body.style.overflow;
-      
-      // Lock scroll
-      document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleEscape);
-
-      // Cleanup: ALWAYS restore scroll when modal closes or unmounts
       return () => {
-        document.body.style.overflow = originalOverflow || '';
         document.removeEventListener('keydown', handleEscape);
       };
     }
-
-    // No cleanup needed when modal is not open
   }, [isOpen, onClose]);
 
   /**

@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { X, Sparkles, Check, Zap, Star, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, TOP_UP_OPTIONS, type PlanDefinition } from '../lib/creditPolicy';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { trackEvent } from '../services/analytics';
 import { toast } from '../lib/toast';
 import { openCheckout } from '../lib/paddle';
@@ -327,10 +328,10 @@ export function PricingModal({
     [onClose],
   );
 
+  useScrollLock(visible);
   useEffect(() => {
     if (!visible) return;
     document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
     trackEvent('pricing_modal_opened', {
       current_plan: currentPlan,
       show_low_credit_prompt: showLowCreditPrompt,
@@ -338,7 +339,6 @@ export function PricingModal({
     });
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
     };
   }, [visible, handleKeyDown, currentPlan, showLowCreditPrompt, recommendedPlanKey]);
 

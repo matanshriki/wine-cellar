@@ -24,6 +24,8 @@ import { useAddBottleContext } from '../contexts/AddBottleContext';
 import { useMonetizationAccess } from '../hooks/useMonetizationAccess';
 import { getCreditsRequired, isBelowActionCost } from '../lib/creditPolicy';
 import { scrollAppToTop } from '../utils/scrollAppToTop';
+import { releaseOrphanedScrollLock, suspendScrollLock } from '../lib/scrollLock';
+import { releaseOrphanedAppInert, subscribeModalStack } from '../lib/modalStack';
 import { isIosStandalonePwa, isAndroidPwa as isAndroidPwaCheck, isMobileDevice, isSamsungBrowser, isIPad } from '../utils/deviceDetection';
 import { APP_ICON_URL } from '../constants/brandAssets';
 
@@ -141,28 +143,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       // when the chooser is dismissed, causing a "stuck scroll" bug.
       // Solution: release the lock before clicking, then restore it (only if
       // a modal is still open) when the window regains focus.
-      const prevOverflow = document.body.style.overflow;
-      const prevPosition = document.body.style.position;
-      const prevWidth    = document.body.style.width;
-      const scrollY      = window.scrollY;
-
-      if (prevOverflow === 'hidden') {
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width    = '';
-        // position:fixed snaps the page to top — restore the real scroll pos
-        if (prevPosition === 'fixed') window.scrollTo(0, scrollY);
-      }
-
-      // Restore scroll state when chooser is dismissed
-      const restoreScrollState = () => {
-        const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
-        if (hasOpenModal && prevOverflow === 'hidden') {
-          document.body.style.overflow = prevOverflow;
-          document.body.style.position = prevPosition;
-          document.body.style.width    = prevWidth;
-        }
-      };
+      const restoreScrollState = suspendScrollLock();
 
       // ── iOS camera-cancellation detection ─────────────────────────────────
       // On iOS, cancelling the native camera does NOT fire onChange on the
@@ -322,19 +303,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [i18n.language]);
 
   /**
-   * SAFEGUARD: Reset body overflow on route change
-   * Prevents stuck scroll lock if a modal fails to clean up
-   * Only resets if no modal/dialog is currently open
+   * SAFEGUARD: the page must never stay frozen. If no modal holds a lock but
+   * `body` is still locked or the app root is still `inert`, clear it — on
+   * route change, whenever the modal stack changes, and when the app returns
+   * to the foreground (iOS PWA can suspend JS mid-cleanup).
    */
   useEffect(() => {
-    // Check if any modal is open by looking for common modal attributes
-    const hasOpenModal = document.querySelector('[role="dialog"][aria-modal="true"]');
-    
-    if (!hasOpenModal && document.body.style.overflow === 'hidden') {
-      // No modal is open but scroll is locked - unlock it
-      console.warn('[Layout] Unlocking stuck scroll on route change');
-      document.body.style.overflow = '';
-    }
+    const heal = () => {
+      // Let same-tick cleanups and re-locks settle before judging.
+      requestAnimationFrame(() => {
+        if (releaseOrphanedScrollLock()) console.warn('[Layout] Released stuck scroll lock');
+        if (releaseOrphanedAppInert()) console.warn('[Layout] Released stuck inert app root');
+      });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') heal();
+    };
+
+    heal();
+    const unsubscribe = subscribeModalStack(heal);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', heal);
+    window.addEventListener('focus', heal);
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', heal);
+      window.removeEventListener('focus', heal);
+    };
   }, [location.pathname]);
 
   // Scroll-to-top on route change is handled by <ScrollToTop /> in App.tsx.

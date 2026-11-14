@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { WineImage } from './ui/WineImage';
 import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -34,32 +35,7 @@ export function WishlistDetailsModal({
   const { t, i18n } = useTranslation();
   const [showImageDialog, setShowImageDialog] = useState(false);
 
-  // Lock body scroll when modal is open (prevents iOS background scroll).
-  // We save scrollY and restore it via window.scrollTo on close — without this,
-  // iOS Safari jumps the page back to the top when position:fixed is removed.
-  useEffect(() => {
-    if (isOpen) {
-      const scrollY = window.scrollY;
-      const originalOverflow = document.body.style.overflow;
-      const originalPosition = document.body.style.position;
-      const originalTop = document.body.style.top;
-      const originalWidth = document.body.style.width;
-
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-
-      return () => {
-        document.body.style.overflow = originalOverflow || '';
-        document.body.style.position = originalPosition || '';
-        document.body.style.top = originalTop || '';
-        document.body.style.width = originalWidth || '';
-        // Restore scroll position that was lost when position:fixed was applied
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) setShowImageDialog(false);

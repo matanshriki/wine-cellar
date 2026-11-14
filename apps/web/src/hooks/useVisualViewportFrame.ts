@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { acquireScrollLock } from '../lib/scrollLock';
 
 export type VisualViewportFrame = {
   /** Visible viewport height (shrinks when the soft keyboard is open). */
@@ -32,10 +33,9 @@ export function useVisualViewportFrame(): VisualViewportFrame {
     const html = document.documentElement;
     const body = document.body;
     const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
 
     html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
+    const releaseScrollLock = acquireScrollLock();
 
     const sync = () => {
       // iOS often scrolls the document to keep a focused field visible — undo that.
@@ -58,7 +58,7 @@ export function useVisualViewportFrame(): VisualViewportFrame {
       window.removeEventListener('resize', sync);
       window.removeEventListener('orientationchange', sync);
       html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
+      releaseScrollLock();
     };
   }, []);
 

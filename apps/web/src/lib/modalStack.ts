@@ -6,6 +6,8 @@
  * locked. Only the topmost layer reacts to Escape.
  */
 
+import { acquireScrollLock } from './scrollLock';
+
 export interface ModalBackgroundAdapter {
   lock(): void;
   unlock(): void;
@@ -14,24 +16,37 @@ export interface ModalBackgroundAdapter {
 const APP_ROOT_ID = 'root';
 
 const domAdapter: ModalBackgroundAdapter = (() => {
-  let savedOverflow = '';
+  let releaseScroll: (() => void) | null = null;
   return {
     lock() {
       const root = document.getElementById(APP_ROOT_ID);
       root?.setAttribute('inert', '');
       root?.setAttribute('aria-hidden', 'true');
-      // `body` is the app's scroll container (see index.css), not `window`.
-      savedOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
+      releaseScroll?.();
+      releaseScroll = acquireScrollLock();
     },
     unlock() {
       const root = document.getElementById(APP_ROOT_ID);
       root?.removeAttribute('inert');
       root?.removeAttribute('aria-hidden');
-      document.body.style.overflow = savedOverflow;
+      releaseScroll?.();
+      releaseScroll = null;
     },
   };
 })();
+
+/**
+ * Clears `inert` left on the app root when no modal layer is open, so the page
+ * can never stay untappable after a dialog failed to clean up.
+ */
+export function releaseOrphanedAppInert(): boolean {
+  if (stack.length > 0) return false;
+  const root = document.getElementById(APP_ROOT_ID);
+  if (!root?.hasAttribute('inert')) return false;
+  root.removeAttribute('inert');
+  root.removeAttribute('aria-hidden');
+  return true;
+}
 
 let adapter: ModalBackgroundAdapter = domAdapter;
 const stack: symbol[] = [];
